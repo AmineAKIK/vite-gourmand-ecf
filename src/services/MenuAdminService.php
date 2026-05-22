@@ -48,9 +48,9 @@ class MenuAdminService
     public static function platPayloadFromRequest(array $source): array
     {
         $payload = [
-            'titre'        => sanitize($source['titre'] ?? ''),
+            'titre'        => trim($source['titre'] ?? ''),
             'categorie_id' => (int)($source['categorie_id'] ?? 0),
-            'allergenes'   => sanitize($source['allergenes'] ?? ''),
+            'allergenes'   => trim($source['allergenes'] ?? ''),
         ];
 
         if (!$payload['titre'] || !$payload['categorie_id']) {
