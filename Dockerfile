@@ -1,7 +1,9 @@
 FROM php:8.2-fpm-alpine
 
 RUN apk add --no-cache \
-    nginx zip unzip curl libpng-dev openssl-dev pkgconfig \
+    nginx zip unzip curl \
+    libpng-dev openssl-dev pkgconfig \
+    libzip-dev icu-dev oniguruma-dev \
     && docker-php-ext-install pdo pdo_mysql zip \
     && pecl install mongodb-2.1.0 \
     && docker-php-ext-enable mongodb
