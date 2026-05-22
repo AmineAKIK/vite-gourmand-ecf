@@ -4,7 +4,6 @@ RUN apt-get update && apt-get install -y \
     libzip-dev libpng-dev libssl-dev pkg-config \
     zip unzip curl autoconf g++ make \
     && docker-php-ext-install pdo pdo_mysql zip \
-    && docker-php-ext-enable fileinfo \
     && pecl install mongodb-2.1.0 \
     && docker-php-ext-enable mongodb \
     && apt-get remove -y autoconf g++ make \
