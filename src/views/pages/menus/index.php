@@ -6,22 +6,22 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
 
     <!-- FILTRES -->
     <aside class="filtres-panel mb-5" aria-label="Filtres de recherche">
-        <div class="d-flex align-items-center justify-content-between mb-3">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
             <h2 class="h6 mb-0 fw-semibold"><i class="bi bi-funnel me-2"></i>Filtrer les menus</h2>
             <button id="reset-filtres" class="btn btn-sm btn-vg-outline">
                 <i class="bi bi-arrow-counterclockwise me-1"></i>Réinitialiser
             </button>
         </div>
         <div class="row g-3">
-            <div class="col-md col-6">
+            <div class="col-6 col-md">
                 <label for="filtre-prix-min" class="form-label small fw-medium">Prix min (€)</label>
                 <input type="number" id="filtre-prix-min" class="form-control filtre" placeholder="0" min="0" value="<?= sanitize($filters['prix_min'] ?? '') ?>">
             </div>
-            <div class="col-md col-6">
+            <div class="col-6 col-md">
                 <label for="filtre-prix-max" class="form-label small fw-medium">Prix max (€)</label>
                 <input type="number" id="filtre-prix-max" class="form-control filtre" placeholder="Sans limite" min="0" value="<?= sanitize($filters['prix_max'] ?? '') ?>">
             </div>
-            <div class="col-md">
+            <div class="col-6 col-md">
                 <label for="filtre-theme" class="form-label small fw-medium">Thème</label>
                 <select id="filtre-theme" class="form-select filtre">
                     <option value="">Tous les thèmes</option>
@@ -32,7 +32,7 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md">
+            <div class="col-6 col-md">
                 <label for="filtre-regime" class="form-label small fw-medium">Régime</label>
                 <select id="filtre-regime" class="form-select filtre">
                     <option value="">Tous les régimes</option>
@@ -43,7 +43,7 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md col-6">
+            <div class="col-6 col-md">
                 <label for="filtre-personnes" class="form-label small fw-medium">Nb. personnes min.</label>
                 <input type="number" id="filtre-personnes" class="form-control filtre" placeholder="ex : 4" min="1" value="<?= sanitize($filters['nb_personnes'] ?? '') ?>">
             </div>
