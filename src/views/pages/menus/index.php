@@ -13,15 +13,15 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
             </button>
         </div>
         <div class="row g-3">
-            <div class="col-6 col-md">
+            <div class="col-6 col-lg">
                 <label for="filtre-prix-min" class="form-label small fw-medium">Prix min (€)</label>
                 <input type="number" id="filtre-prix-min" class="form-control filtre" placeholder="0" min="0" value="<?= sanitize($filters['prix_min'] ?? '') ?>">
             </div>
-            <div class="col-6 col-md">
+            <div class="col-6 col-lg">
                 <label for="filtre-prix-max" class="form-label small fw-medium">Prix max (€)</label>
                 <input type="number" id="filtre-prix-max" class="form-control filtre" placeholder="Sans limite" min="0" value="<?= sanitize($filters['prix_max'] ?? '') ?>">
             </div>
-            <div class="col-6 col-md">
+            <div class="col-6 col-lg">
                 <label for="filtre-theme" class="form-label small fw-medium">Thème</label>
                 <select id="filtre-theme" class="form-select filtre">
                     <option value="">Tous les thèmes</option>
@@ -32,7 +32,7 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-6 col-md">
+            <div class="col-6 col-lg">
                 <label for="filtre-regime" class="form-label small fw-medium">Régime</label>
                 <select id="filtre-regime" class="form-select filtre">
                     <option value="">Tous les régimes</option>
@@ -43,7 +43,7 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-6 col-md">
+            <div class="col-6 col-lg">
                 <label for="filtre-personnes" class="form-label small fw-medium">Nb. personnes min.</label>
                 <input type="number" id="filtre-personnes" class="form-control filtre" placeholder="ex : 4" min="1" value="<?= sanitize($filters['nb_personnes'] ?? '') ?>">
             </div>
