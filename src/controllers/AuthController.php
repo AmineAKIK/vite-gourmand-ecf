@@ -1,9 +1,6 @@
 <?php
 // src/controllers/AuthController.php
 
-require_once __DIR__ . '/../models/UserModel.php';
-require_once __DIR__ . '/../services/MailService.php';
-
 class AuthController {
 
     public function loginForm(): void {
@@ -38,11 +35,7 @@ class AuthController {
             'role'   => $user['role_libelle'],
         ];
 
-        $redirect = $_SESSION['redirect_after_login'] ?? match ($user['role_libelle']) {
-            'administrateur' => '/admin',
-            'employe' => '/employe',
-            default => '/mon-compte',
-        };
+        $redirect = $_SESSION['redirect_after_login'] ?? roleHomePath($user['role_libelle']);
         unset($_SESSION['redirect_after_login']);
         redirect($redirect);
     }
@@ -73,13 +66,13 @@ class AuthController {
             flash('error', 'Email invalide.'); redirect('/inscription');
         }
         if (!validatePassword($data['password'])) {
-            flash('error', 'Mot de passe trop faible (10 car. min, 1 maj, 1 min, 1 chiffre, 1 spécial).'); redirect('/inscription');
+            flash('error', passwordPolicyMessage()); redirect('/inscription');
         }
         if (UserModel::findByEmail($data['email'])) {
             flash('error', 'Cet email est déjà utilisé.'); redirect('/inscription');
         }
 
-        $data['password'] = password_hash($data['password'], PASSWORD_BCRYPT, ['cost' => 12]);
+        $data['password'] = hashPassword($data['password']);
         UserModel::create($data);
 
         // Mail de bienvenue
@@ -133,9 +126,9 @@ class AuthController {
         $tokenData = UserModel::findResetToken($token);
         if (!$tokenData) { flash('error', 'Lien invalide.'); redirect('/connexion'); }
         if ($password !== $confirm) { flash('error', 'Mots de passe différents.'); redirect("/reinitialiser?token=$token"); }
-        if (!validatePassword($password)) { flash('error', 'Mot de passe trop faible.'); redirect("/reinitialiser?token=$token"); }
+        if (!validatePassword($password)) { flash('error', passwordPolicyMessage()); redirect("/reinitialiser?token=$token"); }
 
-        UserModel::updatePassword($tokenData['utilisateur_id'], password_hash($password, PASSWORD_BCRYPT, ['cost' => 12]));
+        UserModel::updatePassword($tokenData['utilisateur_id'], hashPassword($password));
         UserModel::invalidateResetToken($token);
 
         flash('success', 'Mot de passe réinitialisé !');

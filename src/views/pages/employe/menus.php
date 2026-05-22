@@ -1,7 +1,6 @@
 <?php
 // src/views/pages/employe/menus.php
 $pageTitle = 'Gestion des menus - Vite & Gourmand';
-$dashboardUrl = hasRole('administrateur') ? '/admin' : '/employe';
 
 /* Regroupe les plats par catégorie pour les checkboxes */
 $platsByCategorie = [];
@@ -13,9 +12,7 @@ foreach ($plats as $plat) {
 
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
         <div class="d-flex align-items-center gap-3">
-            <a href="<?= $dashboardUrl ?>" class="btn btn-outline-secondary btn-sm" aria-label="Retour au tableau de bord">
-                <i class="bi bi-arrow-left me-1"></i>Tableau de bord
-            </a>
+            <?php partial('partials/dashboard_back_link'); ?>
             <h1 class="h3 fw-bold mb-0">
                 <i class="bi bi-journal-text me-2 text-vg"></i>Gestion des menus
             </h1>
@@ -57,7 +54,7 @@ foreach ($plats as $plat) {
                         <td><?= sanitize($menu['regime'] ?? '—') ?></td>
                         <td><?= (int)($menu['nombre_personne_minimum'] ?? 0) ?></td>
                         <td>
-                            <span class="prix-tag"><?= number_format((float)($menu['prix_par_personne'] ?? 0), 2, ',', ' ') ?> €</span>
+                            <span class="prix-tag"><?= sanitize(formatPrice($menu['prix_par_personne'] ?? 0)) ?></span>
                         </td>
                         <td>
                             <?php $stock = $menu['quantite_restante']; ?>
@@ -77,7 +74,7 @@ foreach ($plats as $plat) {
                                 aria-label="Modifier le menu <?= sanitize($menu['titre'] ?? '') ?>"
                             ><i class="bi bi-pencil"></i></button>
                             <form method="POST" action="/employe/menu/supprimer" class="d-inline form-confirm">
-                                <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                                <?= csrfField() ?>
                                 <input type="hidden" name="menu_id" value="<?= (int)$menu['menu_id'] ?>">
                                 <button type="submit" class="btn btn-sm btn-outline-danger"
                                     aria-label="Supprimer le menu <?= sanitize($menu['titre'] ?? '') ?>">
@@ -121,7 +118,7 @@ foreach ($plats as $plat) {
                                 <i class="bi bi-pencil"></i>
                             </button>
                             <form method="POST" action="/employe/plat/supprimer" class="d-inline form-confirm">
-                                <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                                <?= csrfField() ?>
                                 <input type="hidden" name="plat_id" value="<?= (int)$plat['plat_id'] ?>">
                                 <button type="submit" class="btn btn-sm btn-outline-danger"
                                         aria-label="Supprimer le plat <?= sanitize($plat['titre']) ?>">
@@ -148,7 +145,7 @@ foreach ($plats as $plat) {
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
                 <form method="POST" action="/employe/plat/modifier" enctype="multipart/form-data">
-                    <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                    <?= csrfField() ?>
                     <input type="hidden" name="plat_id" value="<?= (int)$plat['plat_id'] ?>">
                     <div class="modal-body">
                         <div class="mb-3">
@@ -181,31 +178,14 @@ foreach ($plats as $plat) {
                             <input type="file" class="form-control"
                                    id="photo_plat_<?= (int)$plat['plat_id'] ?>"
                                    name="photo"
-                                   accept="image/jpeg,image/png,image/webp">
+                                   accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>">
                         </div>
-                        <?php if (!empty($allergenes)): ?>
                         <?php $allergenesPlat = array_filter(array_map('intval', explode(',', (string)($plat['allergene_ids'] ?? '')))); ?>
-                        <fieldset class="mb-3">
-                            <legend class="form-label fs-6">Allergènes</legend>
-                            <div class="row g-1">
-                                <?php foreach ($allergenes as $al): ?>
-                                <div class="col-6">
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox"
-                                               name="allergenes[]"
-                                               value="<?= (int)$al['allergene_id'] ?>"
-                                               id="modif-al-<?= (int)$plat['plat_id'] ?>-<?= (int)$al['allergene_id'] ?>"
-                                               <?= in_array((int)$al['allergene_id'], $allergenesPlat, true) ? 'checked' : '' ?>>
-                                        <label class="form-check-label small"
-                                               for="modif-al-<?= (int)$plat['plat_id'] ?>-<?= (int)$al['allergene_id'] ?>">
-                                            <?= sanitize($al['libelle']) ?>
-                                        </label>
-                                    </div>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </fieldset>
-                        <?php endif; ?>
+                        <?php partial('partials/allergene_checkboxes', [
+                            'allergenes' => $allergenes,
+                            'selectedAllergeneIds' => $allergenesPlat,
+                            'idPrefix' => 'modif-al-' . (int)$plat['plat_id'],
+                        ]); ?>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
@@ -233,7 +213,7 @@ foreach ($plats as $plat) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <form method="POST" action="/employe/menu/creer" enctype="multipart/form-data" novalidate>
-                <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                <?= csrfField() ?>
                 <div class="modal-body">
                     <div class="row g-3">
                         <div class="col-12">
@@ -287,36 +267,16 @@ foreach ($plats as $plat) {
                         <div class="col-12">
                             <label for="creer-images" class="form-label">Photos du menu (plusieurs possibles)</label>
                             <input type="file" class="form-control" id="creer-images" name="images[]"
-                                   multiple accept="image/jpeg,image/png,image/webp"
+                                   multiple accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>"
                                    aria-label="Galerie d'images du menu">
-                            <div class="form-text">Formats acceptés : JPG, PNG, WEBP</div>
+                            <div class="form-text"><?= sanitize(MenuAdminService::acceptedImageFormatsLabel()) ?></div>
                         </div>
 
-                        <!-- Sélection des plats groupés par catégorie -->
-                        <?php if (!empty($platsByCategorie)): ?>
-                        <fieldset class="col-12">
-                            <legend class="form-label fw-semibold fs-6">Plats composant ce menu</legend>
-                            <div class="row g-2">
-                                <?php foreach ($platsByCategorie as $categorie => $platsGroupe): ?>
-                                <div class="col-md-4">
-                                    <p class="fw-semibold small text-vg mb-1"><?= sanitize($categorie) ?></p>
-                                    <?php foreach ($platsGroupe as $plat): ?>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox"
-                                            name="plats[]"
-                                            value="<?= (int)$plat['plat_id'] ?>"
-                                            id="creer-plat-<?= (int)$plat['plat_id'] ?>">
-                                        <label class="form-check-label small"
-                                            for="creer-plat-<?= (int)$plat['plat_id'] ?>">
-                                            <?= sanitize($plat['titre']) ?>
-                                        </label>
-                                    </div>
-                                    <?php endforeach; ?>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </fieldset>
-                        <?php endif; ?>
+                        <?php partial('partials/menu_plat_checkboxes', [
+                            'platsByCategorie' => $platsByCategorie,
+                            'selectedPlatIds' => [],
+                            'idPrefix' => 'creer-plat',
+                        ]); ?>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -344,7 +304,7 @@ foreach ($plats as $plat) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <form method="POST" action="/employe/plat/creer" enctype="multipart/form-data" novalidate>
-                <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                <?= csrfField() ?>
                 <div class="modal-body">
                     <div class="mb-3">
                         <label for="plat-titre" class="form-label">Titre du plat <span class="text-danger" aria-hidden="true">*</span></label>
@@ -369,29 +329,14 @@ foreach ($plats as $plat) {
                     <div class="mb-3">
                         <label for="plat-photo" class="form-label">Photo du plat</label>
                         <input type="file" class="form-control" id="plat-photo" name="photo"
-                               accept="image/jpeg,image/png,image/webp"
+                               accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>"
                                aria-label="Photo du plat">
                     </div>
-                    <?php if (!empty($allergenes)): ?>
-                    <fieldset class="mb-3">
-                        <legend class="form-label fs-6">Allergènes</legend>
-                        <div class="row g-1">
-                            <?php foreach ($allergenes as $al): ?>
-                            <div class="col-6">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox"
-                                        name="allergenes[]"
-                                        value="<?= (int)$al['allergene_id'] ?>"
-                                        id="al-<?= (int)$al['allergene_id'] ?>">
-                                    <label class="form-check-label small" for="al-<?= (int)$al['allergene_id'] ?>">
-                                        <?= sanitize($al['libelle']) ?>
-                                    </label>
-                                </div>
-                            </div>
-                            <?php endforeach; ?>
-                        </div>
-                    </fieldset>
-                    <?php endif; ?>
+                    <?php partial('partials/allergene_checkboxes', [
+                        'allergenes' => $allergenes,
+                        'selectedAllergeneIds' => [],
+                        'idPrefix' => 'al',
+                    ]); ?>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
@@ -421,7 +366,7 @@ foreach ($plats as $plat) {
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <form method="POST" action="/employe/menu/modifier" enctype="multipart/form-data" novalidate>
-                <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                <?= csrfField() ?>
                 <input type="hidden" name="menu_id" value="<?= (int)$menu['menu_id'] ?>">
                 <div class="modal-body">
                     <div class="row g-3">
@@ -453,7 +398,7 @@ foreach ($plats as $plat) {
                             <input type="number" class="form-control"
                                 id="modif-prix-<?= (int)$menu['menu_id'] ?>"
                                 name="prix_par_personne" min="0" step="0.01"
-                                value="<?= number_format((float)($menu['prix_par_personne'] ?? 0), 2, '.', '') ?>"
+                                value="<?= sanitize(formatPriceInput($menu['prix_par_personne'] ?? 0)) ?>"
                                 required aria-required="true">
                         </div>
                         <div class="col-md-4">
@@ -497,15 +442,11 @@ foreach ($plats as $plat) {
                         <div class="col-12">
                             <label for="modif-images-<?= (int)$menu['menu_id'] ?>" class="form-label">Ajouter des photos</label>
                             <input type="file" class="form-control" id="modif-images-<?= (int)$menu['menu_id'] ?>" name="images[]"
-                                   multiple accept="image/jpeg,image/png,image/webp"
+                                   multiple accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>"
                                    aria-label="Galerie d'images du menu">
-                            <div class="form-text">Formats acceptés : JPG, PNG, WEBP</div>
-                            <?php
-                            $db = \Database::getConnection();
-                            $stmtImg = $db->prepare("SELECT * FROM menu_image WHERE menu_id=? ORDER BY ordre");
-                            $stmtImg->execute([(int)$menu['menu_id']]);
-                            $imagesMenu = $stmtImg->fetchAll();
-                            if (!empty($imagesMenu)): ?>
+                            <div class="form-text"><?= sanitize(MenuAdminService::acceptedImageFormatsLabel()) ?></div>
+                            <?php $imagesMenu = $imagesByMenu[(int)$menu['menu_id']] ?? []; ?>
+                            <?php if (!empty($imagesMenu)): ?>
                             <div class="d-flex flex-wrap gap-2 mt-2">
                                 <?php foreach ($imagesMenu as $img): ?>
                                 <div class="d-flex align-items-center gap-1">
@@ -514,7 +455,7 @@ foreach ($plats as $plat) {
                                          style="object-fit:cover;border-radius:4px"
                                          alt="Image menu">
                                     <form method="POST" action="/employe/menu/image/supprimer" class="d-inline">
-                                        <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                                        <?= csrfField() ?>
                                         <input type="hidden" name="image_id" value="<?= (int)$img['image_id'] ?>">
                                         <button type="submit" class="btn btn-sm btn-outline-danger p-0 px-1"
                                                 aria-label="Supprimer cette image"
@@ -528,32 +469,11 @@ foreach ($plats as $plat) {
                             <?php endif; ?>
                         </div>
 
-                        <!-- Plats du menu -->
-                        <?php if (!empty($platsByCategorie)): ?>
-                        <fieldset class="col-12">
-                            <legend class="form-label fw-semibold fs-6">Plats composant ce menu</legend>
-                            <div class="row g-2">
-                                <?php foreach ($platsByCategorie as $categorie => $platsGroupe): ?>
-                                <div class="col-md-4">
-                                    <p class="fw-semibold small text-vg mb-1"><?= sanitize($categorie) ?></p>
-                                    <?php foreach ($platsGroupe as $plat): ?>
-                                    <div class="form-check">
-                                        <input class="form-check-input" type="checkbox"
-                                            name="plats[]"
-                                            value="<?= (int)$plat['plat_id'] ?>"
-                                            id="modif-plat-<?= (int)$menu['menu_id'] ?>-<?= (int)$plat['plat_id'] ?>"
-                                            <?= in_array((int)$plat['plat_id'], $platsMenu, true) ? 'checked' : '' ?>>
-                                        <label class="form-check-label small"
-                                            for="modif-plat-<?= (int)$menu['menu_id'] ?>-<?= (int)$plat['plat_id'] ?>">
-                                            <?= sanitize($plat['titre']) ?>
-                                        </label>
-                                    </div>
-                                    <?php endforeach; ?>
-                                </div>
-                                <?php endforeach; ?>
-                            </div>
-                        </fieldset>
-                        <?php endif; ?>
+                        <?php partial('partials/menu_plat_checkboxes', [
+                            'platsByCategorie' => $platsByCategorie,
+                            'selectedPlatIds' => $platsMenu,
+                            'idPrefix' => 'modif-plat-' . (int)$menu['menu_id'],
+                        ]); ?>
                     </div>
                 </div>
                 <div class="modal-footer">

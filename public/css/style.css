@@ -17,6 +17,12 @@
     --vg-muted: #5F6470;
     --vg-border: rgba(139, 26, 43, .14);
     --vg-shadow: 0 8px 24px rgba(44, 44, 44, .08);
+    --vg-status-warning-bg: #FFF6DA;
+    --vg-status-warning-text: #5F4100;
+    --vg-status-soft-bg: #F4E6E8;
+    --vg-status-neutral-bg: #F4F0EA;
+    --vg-status-danger-bg: #F7E9EC;
+    --vg-table-hover-bg: #F8EFE3;
     --bs-primary: var(--vg-bordeaux);
     --bs-primary-rgb: 139, 26, 43;
     --bs-secondary: var(--vg-muted);
@@ -153,6 +159,23 @@ a:focus {
 .navbar-dark .navbar-nav .dropdown-toggle:focus::after {
     transform: none;
 }
+.navbar-dark .navbar-nav .dropdown-toggle.nav-link::before {
+    content: '';
+    position: absolute;
+    left: .75rem;
+    right: 1.55rem;
+    bottom: 4px;
+    height: 2px;
+    background-color: var(--vg-or-light);
+    transform: scaleX(0);
+    transform-origin: center;
+    transition: transform .18s ease;
+}
+.navbar-dark .navbar-nav .dropdown-toggle.nav-link:hover::before,
+.navbar-dark .navbar-nav .dropdown-toggle.nav-link:focus::before,
+.navbar-dark .navbar-nav .dropdown-toggle.nav-link.active::before {
+    transform: scaleX(1);
+}
 .navbar-toggler {
     border-color: rgba(255,255,255,.55);
     box-shadow: inset 0 0 0 1px rgba(255,255,255,.12);
@@ -173,6 +196,16 @@ a:focus {
 .btn-vg:focus {
     background-color: var(--vg-bordeaux-dark);
     border-color: var(--vg-bordeaux-dark);
+    color: #fff;
+}
+.btn-vg-outline {
+    background-color: transparent;
+    color: var(--vg-bordeaux);
+    border: 1px solid var(--vg-bordeaux);
+}
+.btn-vg-outline:hover,
+.btn-vg-outline:focus {
+    background-color: var(--vg-bordeaux);
     color: #fff;
 }
 .btn-outline-secondary {
@@ -206,6 +239,12 @@ a:focus {
     background-color: var(--vg-or-light);
     border-color: var(--vg-or-light);
     color: var(--vg-text);
+}
+
+.workspace-nav .btn[aria-current="page"] {
+    background-color: var(--vg-bordeaux);
+    border-color: var(--vg-bordeaux);
+    color: #fff;
 }
 
 .btn-primary,
@@ -303,7 +342,7 @@ a:focus {
     --bs-table-color: var(--vg-text);
     --bs-table-border-color: var(--vg-border);
     --bs-table-striped-bg: var(--vg-creme-soft);
-    --bs-table-hover-bg: #F8EFE3;
+    --bs-table-hover-bg: var(--vg-table-hover-bg);
 }
 
 .breadcrumb a {
@@ -323,13 +362,13 @@ a:focus {
 }
 
 .alert-warning {
-    background-color: #FFF6DA;
+    background-color: var(--vg-status-warning-bg);
     border-color: var(--vg-or-light);
-    color: #5F4100;
+    color: var(--vg-status-warning-text);
 }
 
 .alert-danger {
-    background-color: #F7E9EC;
+    background-color: var(--vg-status-danger-bg);
     border-color: rgba(139, 26, 43, .28);
     color: var(--vg-bordeaux-dark);
 }
@@ -595,14 +634,14 @@ a:focus {
     font-size: .8rem;
     font-weight: 600;
 }
-.statut-en_attente       { background: #FFF6DA; color: #5F4100; }
-.statut-accepte          { background: #F4E6E8; color: var(--vg-bordeaux-dark); }
+.statut-en_attente       { background: var(--vg-status-warning-bg); color: var(--vg-status-warning-text); }
+.statut-accepte          { background: var(--vg-status-soft-bg); color: var(--vg-bordeaux-dark); }
 .statut-en_preparation   { background: var(--vg-creme); color: var(--vg-bordeaux); }
-.statut-en_cours_livraison{ background: #F8EFE3; color: #5F4100; }
-.statut-livre            { background: #F4E6E8; color: var(--vg-bordeaux); }
-.statut-en_attente_materiel{ background: #FFF6DA; color: #5F4100; }
-.statut-terminee         { background: #F4F0EA; color: var(--vg-muted); }
-.statut-annulee          { background: #F7E9EC; color: var(--vg-bordeaux-dark); }
+.statut-en_cours_livraison{ background: var(--vg-table-hover-bg); color: var(--vg-status-warning-text); }
+.statut-livre            { background: var(--vg-status-soft-bg); color: var(--vg-bordeaux); }
+.statut-en_attente_materiel{ background: var(--vg-status-warning-bg); color: var(--vg-status-warning-text); }
+.statut-terminee         { background: var(--vg-status-neutral-bg); color: var(--vg-muted); }
+.statut-annulee          { background: var(--vg-status-danger-bg); color: var(--vg-bordeaux-dark); }
 
 /* Formulaires */
 .form-control:focus, .form-select:focus {

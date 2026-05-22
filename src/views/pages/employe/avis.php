@@ -1,18 +1,10 @@
 <?php
 // src/views/pages/employe/avis.php
 $pageTitle = 'Modération des avis - Vite & Gourmand';
-$dashboardUrl = hasRole('administrateur') ? '/admin' : '/employe';
 ?>
 <div class="container py-5">
 
-    <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
-        <a href="<?= $dashboardUrl ?>" class="btn btn-outline-secondary btn-sm" aria-label="Retour au tableau de bord">
-            <i class="bi bi-arrow-left me-1"></i>Tableau de bord
-        </a>
-        <h1 class="h3 fw-bold mb-0">
-            <i class="bi bi-star me-2 text-vg"></i>Modération des avis
-        </h1>
-    </div>
+    <?php partial('partials/page_title_bar', ['icon' => 'bi-star', 'title' => 'Modération des avis']); ?>
 
     <?php if (empty($avis)): ?>
         <div class="alert alert-success">
@@ -50,7 +42,7 @@ $dashboardUrl = hasRole('administrateur') ? '/admin' : '/employe';
                         <!-- Commentaire -->
                         <td style="max-width:260px">
                             <span class="text-truncate d-block" title="<?= sanitize($a['description'] ?? '') ?>">
-                                <?= sanitize($a['description'] ?? '<em class="text-muted">Aucun commentaire</em>') ?>
+                                <?= !empty($a['description']) ? sanitize($a['description']) : '<em class="text-muted">Aucun commentaire</em>' ?>
                             </span>
                         </td>
 
@@ -64,7 +56,7 @@ $dashboardUrl = hasRole('administrateur') ? '/admin' : '/employe';
                         <td>
                             <small class="text-muted">
                                 <?= !empty($a['created_at'])
-                                    ? date('d/m/Y à H\hi', strtotime($a['created_at']))
+                                    ? sanitize(formatDateTimeFr($a['created_at']))
                                     : '—' ?>
                             </small>
                         </td>
@@ -74,7 +66,7 @@ $dashboardUrl = hasRole('administrateur') ? '/admin' : '/employe';
                             <div class="d-flex gap-2">
                                 <!-- Valider -->
                                 <form method="POST" action="/employe/avis/valider">
-                                    <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                                    <?= csrfField() ?>
                                     <input type="hidden" name="commande_id" value="<?= (int)($a['commande_id'] ?? 0) ?>">
                                     <input type="hidden" name="action" value="valider">
                                     <button
@@ -88,7 +80,7 @@ $dashboardUrl = hasRole('administrateur') ? '/admin' : '/employe';
 
                                 <!-- Refuser -->
                                 <form method="POST" action="/employe/avis/valider" class="form-confirm">
-                                    <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                                    <?= csrfField() ?>
                                     <input type="hidden" name="commande_id" value="<?= (int)($a['commande_id'] ?? 0) ?>">
                                     <input type="hidden" name="action" value="refuser">
                                     <button

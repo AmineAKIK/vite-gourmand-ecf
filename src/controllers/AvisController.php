@@ -1,7 +1,5 @@
 <?php
 // src/controllers/AvisController.php
-require_once __DIR__ . '/../models/CommandeModel.php';
-
 class AvisController
 {
     public function create(): void
@@ -20,23 +18,17 @@ class AvisController
         }
 
         $commande = CommandeModel::getById($commandeId);
-        if (!$commande || $commande['utilisateur_id'] != $user['id'] || $commande['statut'] !== 'terminee') {
+        if (!$commande || $commande['utilisateur_id'] != $user['id'] || !commandeCanReview($commande['statut'] ?? null)) {
             flash('error', 'Impossible de laisser un avis.');
             redirect('/mon-compte');
         }
 
-        $db = Database::getConnection();
-
-        /* Vérifie qu'un avis n'existe pas déjà pour cette commande */
-        $stmt = $db->prepare("SELECT avis_id FROM avis WHERE commande_id = ?");
-        $stmt->execute([$commandeId]);
-        if ($stmt->fetch()) {
+        if (AvisModel::existsForCommande($commandeId)) {
             flash('error', 'Vous avez déjà laissé un avis pour cette commande.');
             redirect('/mon-compte');
         }
 
-        $db->prepare("INSERT INTO avis (commande_id, utilisateur_id, note, description) VALUES (?, ?, ?, ?)")
-           ->execute([$commandeId, $user['id'], $note, $commentaire]);
+        AvisModel::create($commandeId, $user['id'], $note, $commentaire);
 
         flash('success', 'Merci pour votre avis ! Il sera affiché après validation.');
         redirect('/mon-compte');

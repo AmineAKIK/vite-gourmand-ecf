@@ -3,7 +3,7 @@
     <h1 class="mb-4">Passer une commande</h1>
 
     <form method="POST" action="/commande" id="form-commande" novalidate>
-        <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+        <?= csrfField() ?>
 
         <!-- Étape 1 : Infos client (pré-remplies) -->
         <div class="card border-0 shadow-sm mb-4">
@@ -44,7 +44,7 @@
                     <div class="col-md-6">
                         <label for="ville_livraison" class="form-label">Ville <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="ville_livraison" name="ville_livraison" required>
-                        <div class="form-text">Livraison gratuite à Bordeaux. 5€ + 0,59€/km au-delà.</div>
+                        <div class="form-text"><?= sanitize(deliveryPricingLabel()) ?></div>
                     </div>
                     <div class="col-md-6">
                         <label for="code_postal_livraison" class="form-label">Code postal <span class="text-danger">*</span></label>
@@ -52,7 +52,7 @@
                     </div>
                     <div class="col-md-6">
                         <label for="date_prestation" class="form-label">Date <span class="text-danger">*</span></label>
-                        <input type="date" class="form-control" id="date_prestation" name="date_prestation" min="<?= date('Y-m-d', strtotime('+1 day')) ?>" required>
+                        <input type="date" class="form-control" id="date_prestation" name="date_prestation" min="<?= sanitize(tomorrowDateInput()) ?>" required>
                     </div>
                     <div class="col-md-6">
                         <label for="heure_livraison" class="form-label">Heure souhaitée <span class="text-danger">*</span></label>
@@ -76,7 +76,7 @@
                                 data-prix="<?= $m['prix_par_personne'] ?>"
                                 data-conditions="<?= sanitize($m['conditions'] ?? '') ?>"
                                 <?= ($menuPreselect && $menuPreselect['menu_id'] == $m['menu_id']) ? 'selected' : '' ?>>
-                                <?= sanitize($m['titre']) ?> — <?= number_format($m['prix_par_personne'], 2) ?>€/pers. (min. <?= $m['nombre_personne_minimum'] ?> pers.)
+                                <?= sanitize($m['titre']) ?> — <?= sanitize(formatPrice($m['prix_par_personne'])) ?>/pers. (min. <?= (int)$m['nombre_personne_minimum'] ?> pers.)
                             </option>
                         <?php endforeach; ?>
                     </select>
@@ -124,6 +124,8 @@ const conditionsTexte = document.getElementById('conditions-texte');
 const hintMin       = document.getElementById('hint-min');
 const recapDiv      = document.getElementById('recap-prix');
 const submitBtn     = document.querySelector('#form-commande button[type="submit"]');
+const reductionSeuil = <?= (int)REDUCTION_SEUIL ?>;
+const reductionTaux = <?= json_encode((float)REDUCTION_TAUX) ?>;
 let recapRequestId  = 0;
 
 async function updateRecap() {
@@ -157,7 +159,7 @@ async function updateRecap() {
     }
 
     let prixMenu = prixParPers * nb;
-    if ((nb - min) >= 5) prixMenu *= 0.9; // -10%
+    if ((nb - min) >= reductionSeuil) prixMenu *= (1 - reductionTaux);
 
     const ville = villeInput.value.trim().toLowerCase();
     recapDiv.style.removeProperty('display');
@@ -186,36 +188,6 @@ async function updateRecap() {
         document.getElementById('recap-livraison').textContent = 'Distance impossible';
         document.getElementById('recap-total').textContent     = '—';
     }
-}
-
-function distanceDepuisBordeaux(ville) {
-    const coords = {
-        'merignac': [44.8448, -0.6564],
-        'mérignac': [44.8448, -0.6564],
-        'pessac': [44.8058, -0.6305],
-        'talence': [44.8088, -0.5892],
-        'begles': [44.8077, -0.5488],
-        'bègles': [44.8077, -0.5488],
-        'cenon': [44.8558, -0.5328],
-        'lormont': [44.8792, -0.5256],
-        'floirac': [44.8327, -0.5278],
-        'bruges': [44.8829, -0.6120],
-        'gradignan': [44.7736, -0.6156],
-        "villenave-d'ornon": [44.7733, -0.5679],
-        'villenave d ornon': [44.7733, -0.5679],
-        'le bouscat': [44.8662, -0.5984],
-    };
-    if (ville === '' || ville === 'bordeaux') return 0;
-    if (!coords[ville]) return null;
-    const [lat2, lon2] = coords[ville];
-    const lat1 = 44.8378;
-    const lon1 = -0.5792;
-    const toRad = deg => deg * Math.PI / 180;
-    const dLat = toRad(lat2 - lat1);
-    const dLon = toRad(lon2 - lon1);
-    const a = Math.sin(dLat / 2) ** 2 +
-        Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
-    return 6371 * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)));
 }
 
 menuSelect.addEventListener('change', updateRecap);

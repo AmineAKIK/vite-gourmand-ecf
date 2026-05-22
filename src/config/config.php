@@ -29,6 +29,12 @@ define('MAIL_FROM',     $_ENV['MAIL_FROM']     ?? 'noreply@vitegourmand.fr');
 define('MAIL_FROM_NAME','Vite & Gourmand');
 
 define('BASE_URL', $_ENV['BASE_URL'] ?? 'http://localhost:8080');
+define('ROLE_USER', 'utilisateur');
+define('ROLE_EMPLOYE', 'employe');
+define('ROLE_ADMIN', 'administrateur');
+define('ROLE_ID_USER', 1);
+define('ROLE_ID_EMPLOYE', 2);
+define('ROLE_ID_ADMIN', 3);
 define('BORDEAUX_LAT', 44.8378);
 define('BORDEAUX_LNG', -0.5792);
 define('LIVRAISON_BASE', 5.00);

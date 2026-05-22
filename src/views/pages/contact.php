@@ -14,7 +14,7 @@ $pageTitle = 'Contact - Vite & Gourmand';
 
             <div class="card border-0 shadow p-4">
                 <form method="POST" action="/contact" novalidate>
-                    <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                    <?= csrfField() ?>
 
                     <div class="mb-3">
                         <label for="titre" class="form-label">Objet du message <span class="text-danger" aria-hidden="true">*</span></label>

@@ -1,18 +1,10 @@
 <?php
 // src/views/pages/employe/commandes.php
 $pageTitle = 'Gestion des commandes - Vite & Gourmand';
-$dashboardUrl = hasRole('administrateur') ? '/admin' : '/employe';
 ?>
 <div class="container py-5">
 
-    <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
-        <a href="<?= $dashboardUrl ?>" class="btn btn-outline-secondary btn-sm" aria-label="Retour au tableau de bord">
-            <i class="bi bi-arrow-left me-1"></i>Tableau de bord
-        </a>
-        <h1 class="h3 fw-bold mb-0">
-            <i class="bi bi-list-check me-2 text-vg"></i>Gestion des commandes
-        </h1>
-    </div>
+    <?php partial('partials/page_title_bar', ['icon' => 'bi-list-check', 'title' => 'Gestion des commandes']); ?>
 
     <!-- Formulaire de filtres -->
     <div class="filtres-panel card border-0 shadow-sm p-3 mb-4">
@@ -23,7 +15,7 @@ $dashboardUrl = hasRole('administrateur') ? '/admin' : '/employe';
                     <option value="">— Tous les statuts —</option>
                     <?php foreach ($statuts as $s): ?>
                         <option value="<?= sanitize($s) ?>" <?= ($filters['statut'] ?? '') === $s ? 'selected' : '' ?>>
-                            <?= sanitize(str_replace('_', ' ', ucfirst($s))) ?>
+                            <?= sanitize(commandeStatusLabel($s)) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
@@ -69,14 +61,12 @@ $dashboardUrl = hasRole('administrateur') ? '/admin' : '/employe';
                     >
                         <div class="d-flex flex-wrap gap-3 align-items-center w-100 pe-3">
                             <small class="text-muted"><?= sanitize($cmd['numero_commande'] ?? '') ?></small>
-                            <strong><?= sanitize(trim(($cmd['prenom'] ?? '') . ' ' . ($cmd['nom'] ?? ''))) ?></strong>
+                            <strong><?= sanitize(personFullName($cmd)) ?></strong>
                             <span><?= sanitize($cmd['menu_titre'] ?? '') ?></span>
                             <span class="ms-auto">
-                                <?= !empty($cmd['date_prestation']) ? date('d/m/Y', strtotime($cmd['date_prestation'])) : '—' ?>
+                                <?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?>
                             </span>
-                            <span class="badge-statut statut-<?= sanitize($cmd['statut'] ?? '') ?>">
-                                <?= sanitize(str_replace('_', ' ', $cmd['statut'] ?? '')) ?>
-                            </span>
+                            <?= commandeStatusBadge($cmd['statut'] ?? null) ?>
                         </div>
                     </button>
                 </h2>
@@ -90,7 +80,7 @@ $dashboardUrl = hasRole('administrateur') ? '/admin' : '/employe';
                                 <h3 class="h6 fw-bold">Détails</h3>
                                 <dl class="row small mb-0">
                                     <dt class="col-5">Client</dt>
-                                    <dd class="col-7"><?= sanitize(trim(($cmd['prenom'] ?? '') . ' ' . ($cmd['nom'] ?? ''))) ?></dd>
+                                    <dd class="col-7"><?= sanitize(personFullName($cmd)) ?></dd>
                                     <dt class="col-5">Email</dt>
                                     <dd class="col-7"><?= sanitize($cmd['email'] ?? '') ?></dd>
                                     <dt class="col-5">Téléphone</dt>
@@ -102,7 +92,7 @@ $dashboardUrl = hasRole('administrateur') ? '/admin' : '/employe';
                                     <dt class="col-5">Adresse</dt>
                                     <dd class="col-7"><?= sanitize(($cmd['adresse_livraison'] ?? '') . ' ' . ($cmd['ville_livraison'] ?? '')) ?></dd>
                                     <dt class="col-5">Prix total</dt>
-                                    <dd class="col-7 fw-bold"><?= number_format((float)($cmd['prix_total'] ?? 0), 2, ',', ' ') ?> €</dd>
+                                    <dd class="col-7 fw-bold"><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></dd>
                                 </dl>
                             </div>
 
@@ -110,7 +100,7 @@ $dashboardUrl = hasRole('administrateur') ? '/admin' : '/employe';
                             <div class="col-md-4">
                                 <h3 class="h6 fw-bold">Mettre à jour le statut</h3>
                                 <form method="POST" action="/employe/commande/statut">
-                                    <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                                    <?= csrfField() ?>
                                     <input type="hidden" name="commande_id" value="<?= (int)$cmd['commande_id'] ?>">
                                     <input type="hidden" name="action" value="changer_statut">
 
@@ -124,7 +114,7 @@ $dashboardUrl = hasRole('administrateur') ? '/admin' : '/employe';
                                         >
                                             <?php foreach ($statuts as $s): ?>
                                                 <option value="<?= sanitize($s) ?>" <?= ($cmd['statut'] ?? '') === $s ? 'selected' : '' ?>>
-                                                    <?= sanitize(str_replace('_', ' ', ucfirst($s))) ?>
+                                                    <?= sanitize(commandeStatusLabel($s)) ?>
                                                 </option>
                                             <?php endforeach; ?>
                                         </select>
@@ -148,15 +138,15 @@ $dashboardUrl = hasRole('administrateur') ? '/admin' : '/employe';
                                 </form>
                             </div>
 
-                            <!-- Annulation (si en_attente) -->
-                            <?php if (($cmd['statut'] ?? '') === 'en_attente'): ?>
+                            <!-- Annulation si la commande est encore modifiable -->
+                            <?php if (commandeCanClientModify($cmd)): ?>
                             <div class="col-md-3">
                                 <h3 class="h6 fw-bold text-danger">Annuler la commande</h3>
                                 <form method="POST" action="/employe/commande/statut" class="form-confirm">
-                                    <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                                    <?= csrfField() ?>
                                     <input type="hidden" name="commande_id" value="<?= (int)$cmd['commande_id'] ?>">
                                     <input type="hidden" name="action" value="annuler">
-                                    <input type="hidden" name="statut" value="annulee">
+                                    <input type="hidden" name="statut" value="<?= sanitize(commandeCancelledStatus()) ?>">
 
                                     <div class="mb-2">
                                         <label for="motif-<?= $cmd['commande_id'] ?>" class="form-label form-label-sm">Motif d'annulation</label>

@@ -1,10 +1,6 @@
 <?php
 // src/controllers/CommandeController.php
 
-require_once __DIR__ . '/../models/CommandeModel.php';
-require_once __DIR__ . '/../models/MenuModel.php';
-require_once __DIR__ . '/../services/MailService.php';
-
 class CommandeController {
 
     public function calculLivraison(): void {
@@ -22,11 +18,7 @@ class CommandeController {
             return;
         }
 
-        echo json_encode([
-            'ok' => true,
-            'distance' => $distance,
-            'prix' => round(LIVRAISON_BASE + (LIVRAISON_KM * $distance), 2),
-        ]);
+        echo json_encode(['ok' => true, 'distance' => $distance, 'prix' => calculPrixLivraison($ville)]);
     }
 
     public function form(): void {
@@ -50,48 +42,17 @@ class CommandeController {
             flash('error', 'Ce menu n\'est plus disponible.'); redirect('/menus');
         }
 
-        $nbPersonnes  = (int)($_POST['nombre_personne'] ?? 0);
-        if ($nbPersonnes < $menu['nombre_personne_minimum']) {
-            flash('error', 'Nombre de personnes insuffisant (minimum : ' . $menu['nombre_personne_minimum'] . ').');
+        try {
+            $payload = CommandeService::payloadFromRequest($_POST, $menu);
+        } catch (InvalidArgumentException $e) {
+            flash('error', $e->getMessage());
             redirect('/commande?menu_id=' . $menuId);
         }
 
-        $datePrestation = sanitize($_POST['date_prestation'] ?? '');
-        $heureLivraison = sanitize($_POST['heure_livraison'] ?? '');
-        $adresse        = sanitize($_POST['adresse_livraison'] ?? '');
-        $ville          = sanitize($_POST['ville_livraison'] ?? '');
-        $codePostal     = sanitize($_POST['code_postal_livraison'] ?? '');
-
-        if (!$datePrestation || !$heureLivraison || !$adresse || !$ville || !$codePostal) {
-            flash('error', 'Tous les champs de livraison sont obligatoires.');
-            redirect('/commande?menu_id=' . $menuId);
-        }
-        if ($datePrestation < date('Y-m-d', strtotime('+1 day'))) {
-            flash('error', 'La date de prestation doit être au minimum demain.');
-            redirect('/commande?menu_id=' . $menuId);
-        }
-        if (strtolower(trim($ville)) !== 'bordeaux' && distanceKmDepuisBordeaux($ville) <= 0) {
-            flash('error', 'Distance de livraison impossible à calculer pour cette ville.');
-            redirect('/commande?menu_id=' . $menuId);
-        }
-
-        $prixMenu     = calculPrixMenu($menu['prix_par_personne'], $nbPersonnes, $menu['nombre_personne_minimum']);
-        $prixLivraison= calculPrixLivraison($ville);
-        $prixTotal    = $prixMenu + $prixLivraison;
-
-        $data = [
+        $data = $payload + [
             'numero_commande'       => generateNumeroCommande(),
             'utilisateur_id'        => $user['id'],
             'menu_id'               => $menuId,
-            'date_prestation'       => $datePrestation,
-            'heure_livraison'       => $heureLivraison,
-            'adresse_livraison'     => $adresse,
-            'ville_livraison'       => $ville,
-            'code_postal_livraison' => $codePostal,
-            'nombre_personne'       => $nbPersonnes,
-            'prix_menu'             => $prixMenu,
-            'prix_livraison'        => $prixLivraison,
-            'prix_total'            => $prixTotal,
         ];
 
         try {
@@ -101,24 +62,7 @@ class CommandeController {
             redirect('/menus');
         }
 
-        try {
-            $mongoUri = defined('MONGO_URI') ? MONGO_URI : ($_ENV['MONGO_URI'] ?? null);
-            if ($mongoUri && $mongoUri !== 'mongodb+srv://user:pass@cluster.mongodb.net' && class_exists(\MongoDB\Client::class)) {
-                $client     = new \MongoDB\Client($mongoUri);
-                $collection = $client->selectCollection(MONGO_DB, 'commandes_stats');
-                $collection->insertOne([
-                    'commande_id'  => $commandeId,
-                    'menu_id'      => $data['menu_id'],
-                    'menu_titre'   => $menu['titre'],
-                    'prix_total'   => $data['prix_total'],
-                    'nb_personnes' => $data['nombre_personne'],
-                    'created_at'   => new \MongoDB\BSON\UTCDateTime(),
-                ]);
-            }
-        } catch (\Throwable $e) {
-            // Log silencieux si MongoDB indisponible
-            error_log('MongoDB insert failed: ' . $e->getMessage());
-        }
+        StatsService::recordCommande($commandeId, $data, $menu);
 
         // Mail de confirmation
         $userFull = \UserModel::findById($user['id']);
@@ -132,11 +76,9 @@ class CommandeController {
         requireAuth();
         verifyCsrf();
         $user       = currentUser();
-        $commandeId = (int)($_POST['commande_id'] ?? 0);
-        $commande   = CommandeModel::getById($commandeId);
-
-        if (!$commande || $commande['utilisateur_id'] != $user['id']) {
-            flash('error', 'Commande introuvable.'); redirect('/mon-compte');
+        $commande = $this->currentUserCommande((int)($_POST['commande_id'] ?? 0), $user['id']);
+        if (!$commande) {
+            $this->redirectCommandeIntrouvable();
         }
         if (!CommandeModel::canModify($commande)) {
             flash('error', 'Cette commande ne peut plus être modifiée.'); redirect('/mon-compte');
@@ -147,46 +89,14 @@ class CommandeController {
             flash('error', 'Menu introuvable.'); redirect('/mon-compte');
         }
 
-        $datePrestation = sanitize($_POST['date_prestation'] ?? '');
-        $heureLivraison = sanitize($_POST['heure_livraison'] ?? '');
-        $adresse        = sanitize($_POST['adresse_livraison'] ?? '');
-        $ville          = sanitize($_POST['ville_livraison'] ?? '');
-        $codePostal     = sanitize($_POST['code_postal_livraison'] ?? '');
-        $nbPersonnes    = (int)($_POST['nombre_personne'] ?? 0);
-
-        if (!$datePrestation || !$heureLivraison || !$adresse || !$ville || !$codePostal) {
-            flash('error', 'Tous les champs de livraison sont obligatoires.');
-            redirect('/mon-compte');
-        }
-        if ($datePrestation < date('Y-m-d', strtotime('+1 day'))) {
-            flash('error', 'La date de prestation doit être au minimum demain.');
-            redirect('/mon-compte');
-        }
-        if ($nbPersonnes < (int)$menu['nombre_personne_minimum']) {
-            flash('error', 'Nombre de personnes insuffisant (minimum : ' . (int)$menu['nombre_personne_minimum'] . ').');
-            redirect('/mon-compte');
-        }
-        if (strtolower(trim($ville)) !== 'bordeaux' && distanceKmDepuisBordeaux($ville) <= 0) {
-            flash('error', 'Distance de livraison impossible à calculer pour cette ville.');
+        try {
+            $payload = CommandeService::payloadFromRequest($_POST, $menu);
+        } catch (InvalidArgumentException $e) {
+            flash('error', $e->getMessage());
             redirect('/mon-compte');
         }
 
-        $prixMenu      = calculPrixMenu((float)$menu['prix_par_personne'], $nbPersonnes, (int)$menu['nombre_personne_minimum']);
-        $prixLivraison = calculPrixLivraison($ville);
-        $prixTotal     = $prixMenu + $prixLivraison;
-
-        $db   = \Database::getConnection();
-        $stmt = $db->prepare("
-            UPDATE commande SET date_prestation=?, heure_livraison=?, adresse_livraison=?,
-            ville_livraison=?, code_postal_livraison=?, nombre_personne=?,
-            prix_menu=?, prix_livraison=?, prix_total=? WHERE commande_id=?
-        ");
-        $stmt->execute([
-            $datePrestation, $heureLivraison, $adresse,
-            $ville, $codePostal, $nbPersonnes,
-            $prixMenu, $prixLivraison, $prixTotal,
-            $commandeId
-        ]);
+        CommandeModel::updateDetails((int)$commande['commande_id'], $payload);
 
         flash('success', 'Commande modifiée.');
         redirect('/mon-compte');
@@ -196,17 +106,15 @@ class CommandeController {
         requireAuth();
         verifyCsrf();
         $user       = currentUser();
-        $commandeId = (int)($_POST['commande_id'] ?? 0);
-        $commande   = CommandeModel::getById($commandeId);
-
-        if (!$commande || $commande['utilisateur_id'] != $user['id']) {
-            flash('error', 'Commande introuvable.'); redirect('/mon-compte');
+        $commande = $this->currentUserCommande((int)($_POST['commande_id'] ?? 0), $user['id']);
+        if (!$commande) {
+            $this->redirectCommandeIntrouvable();
         }
         if (!CommandeModel::canModify($commande)) {
             flash('error', 'Impossible d\'annuler cette commande.'); redirect('/mon-compte');
         }
 
-        CommandeModel::cancel($commandeId, 'Annulation demandée par le client', 'client', $user['id']);
+        CommandeModel::cancel((int)$commande['commande_id'], 'Annulation demandée par le client', 'client', $user['id']);
         flash('success', 'Commande annulée.');
         redirect('/mon-compte');
     }
@@ -214,14 +122,25 @@ class CommandeController {
     public function suivi(): void {
         requireAuth();
         $user       = currentUser();
-        $commandeId = (int)($_GET['id'] ?? 0);
-        $commande   = CommandeModel::getById($commandeId);
-
-        if (!$commande || $commande['utilisateur_id'] != $user['id']) {
-            flash('error', 'Commande introuvable.'); redirect('/mon-compte');
+        $commande = $this->currentUserCommande((int)($_GET['id'] ?? 0), $user['id']);
+        if (!$commande) {
+            $this->redirectCommandeIntrouvable();
         }
 
-        $historique = CommandeModel::getHistorique($commandeId);
+        $historique = CommandeModel::getHistorique((int)$commande['commande_id']);
         view('pages/commande/suivi', compact('commande', 'historique'));
+    }
+
+    private function currentUserCommande(int $commandeId, int $userId): ?array {
+        $commande = CommandeModel::getById($commandeId);
+        if (!$commande || (int)$commande['utilisateur_id'] !== $userId) {
+            return null;
+        }
+        return $commande;
+    }
+
+    private function redirectCommandeIntrouvable(): void {
+        flash('error', 'Commande introuvable.');
+        redirect('/mon-compte');
     }
 }

@@ -4,14 +4,7 @@ $pageTitle = 'Gestion des employés - Vite & Gourmand';
 ?>
 <div class="container py-5">
 
-    <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
-        <a href="/admin" class="btn btn-outline-secondary btn-sm" aria-label="Retour au tableau de bord administrateur">
-            <i class="bi bi-arrow-left me-1"></i>Tableau de bord
-        </a>
-        <h1 class="h3 fw-bold mb-0">
-            <i class="bi bi-people me-2 text-vg"></i>Gestion des employés
-        </h1>
-    </div>
+    <?php partial('partials/page_title_bar', ['icon' => 'bi-people', 'title' => 'Gestion des employés']); ?>
 
     <div class="row g-4">
 
@@ -22,7 +15,7 @@ $pageTitle = 'Gestion des employés - Vite & Gourmand';
                     <i class="bi bi-person-plus me-2 text-vg"></i>Ajouter un employé
                 </h2>
                 <form method="POST" action="/admin/employe/creer" novalidate>
-                    <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                    <?= csrfField() ?>
 
                     <div class="mb-3">
                         <label for="emp-email" class="form-label">Adresse email <span class="text-danger" aria-hidden="true">*</span></label>
@@ -79,13 +72,13 @@ $pageTitle = 'Gestion des employés - Vite & Gourmand';
                             <button
                                 class="btn btn-outline-secondary"
                                 type="button"
-                                id="toggleEmpPwd"
+                                data-password-toggle="emp-password"
                                 aria-label="Afficher ou masquer le mot de passe"
                             >
                                 <i class="bi bi-eye"></i>
                             </button>
                         </div>
-                        <div class="form-text">Min. 10 caractères, maj., min., chiffre, caractère spécial.</div>
+                        <div class="form-text"><?= sanitize(passwordPolicyMessage()) ?></div>
                     </div>
 
                     <div class="d-grid">
@@ -117,7 +110,7 @@ $pageTitle = 'Gestion des employés - Vite & Gourmand';
                         <tbody>
                                     <?php foreach ($employes as $employe): ?>
                             <tr>
-                                <td><?= sanitize(trim(($employe['prenom'] ?? '') . ' ' . ($employe['nom'] ?? ''))) ?></td>
+                                <td><?= sanitize(personFullName($employe)) ?></td>
                                 <td><?= sanitize($employe['email'] ?? '') ?></td>
                                 <td>
                                     <?php if ($employe['actif'] ?? false): ?>
@@ -128,7 +121,7 @@ $pageTitle = 'Gestion des employés - Vite & Gourmand';
                                 </td>
                                 <td>
                                     <form method="POST" action="/admin/employe/desactiver" class="form-confirm">
-                                        <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                                        <?= csrfField() ?>
                                         <input type="hidden" name="employe_id" value="<?= (int)($employe['utilisateur_id'] ?? 0) ?>">
                                         <input type="hidden" name="actif" value="<?= ($employe['actif'] ?? false) ? '0' : '1' ?>">
 
@@ -136,7 +129,7 @@ $pageTitle = 'Gestion des employés - Vite & Gourmand';
                                             <button
                                                 type="submit"
                                                 class="btn btn-sm btn-outline-danger"
-                                                aria-label="Désactiver le compte de <?= sanitize(trim(($employe['prenom'] ?? '') . ' ' . ($employe['nom'] ?? ''))) ?>"
+                                                aria-label="Désactiver le compte de <?= sanitize(personFullName($employe)) ?>"
                                             >
                                                 <i class="bi bi-person-x me-1"></i>Désactiver
                                             </button>
@@ -144,7 +137,7 @@ $pageTitle = 'Gestion des employés - Vite & Gourmand';
                                             <button
                                                 type="submit"
                                                 class="btn btn-sm btn-outline-success"
-                                                aria-label="Réactiver le compte de <?= sanitize(trim(($employe['prenom'] ?? '') . ' ' . ($employe['nom'] ?? ''))) ?>"
+                                                aria-label="Réactiver le compte de <?= sanitize(personFullName($employe)) ?>"
                                             >
                                                 <i class="bi bi-person-check me-1"></i>Réactiver
                                             </button>
@@ -162,21 +155,3 @@ $pageTitle = 'Gestion des employés - Vite & Gourmand';
     </div><!-- /row -->
 
 </div>
-
-<script>
-/* Afficher/masquer le mot de passe du formulaire de création */
-const btnToggle = document.getElementById('toggleEmpPwd');
-if (btnToggle) {
-    btnToggle.addEventListener('click', function () {
-        const input = document.getElementById('emp-password');
-        const icon  = this.querySelector('i');
-        if (input.type === 'password') {
-            input.type = 'text';
-            icon.className = 'bi bi-eye-slash';
-        } else {
-            input.type = 'password';
-            icon.className = 'bi bi-eye';
-        }
-    });
-}
-</script>

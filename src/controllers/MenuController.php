@@ -1,8 +1,6 @@
 <?php
 // src/controllers/MenuController.php
 
-require_once __DIR__ . '/../models/MenuModel.php';
-
 class MenuController {
 
     public function index(): void {

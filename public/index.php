@@ -11,6 +11,7 @@ spl_autoload_register(function($class) {
     $paths = [
         __DIR__ . '/../src/controllers/' . $class . '.php',
         __DIR__ . '/../src/models/'      . $class . '.php',
+        __DIR__ . '/../src/services/'    . $class . '.php',
     ];
     foreach ($paths as $path) {
         if (file_exists($path)) { require_once $path; return; }
@@ -48,9 +49,9 @@ $routes = [
         '/commande'            => ['CommandeController','form'],
         '/commande/suivi'      => ['CommandeController','suivi'],
     ],
-    // ✅ AJOUT : route mise à jour profil
     'POST_AUTH' => [
-        '/mon-compte/modifier' => ['UserController', 'update'],
+        '/mon-compte/modifier'  => ['UserController', 'update'],
+        '/mon-compte/supprimer' => ['UserController', 'deleteAccount'],
         '/commande'            => ['CommandeController','create'],
         '/commande/modifier'   => ['CommandeController','update'],
         '/commande/annuler'    => ['CommandeController','cancel'],
@@ -61,7 +62,7 @@ $routes = [
         '/employe/commandes'    => ['EmployeController', 'commandes'],
         '/employe/menus'        => ['EmployeController', 'menus'],
         '/employe/avis'         => ['EmployeController', 'avis'],
-        '/employe/horaires'     => ['EmployeController', 'horaires'],  // ✅ AJOUT
+        '/employe/horaires'     => ['EmployeController', 'horaires'],
     ],
     'GET_ADMIN' => [
         '/admin'               => ['AdminController',   'dashboard'],
@@ -92,21 +93,20 @@ function resolveRoute($routes, $method, $uri): ?array {
     if ($method === 'GET' && isset($routes['GET_AUTH'][$uri])) {
         requireAuth(); return $routes['GET_AUTH'][$uri];
     }
-    // ✅ AJOUT résolution POST_AUTH
     if ($method === 'POST' && isset($routes['POST_AUTH'][$uri])) {
         requireAuth(); return $routes['POST_AUTH'][$uri];
     }
     if ($method === 'GET' && isset($routes['GET_EMPLOYE'][$uri])) {
-        requireRole(['employe','administrateur']); return $routes['GET_EMPLOYE'][$uri];
+        requireRole([ROLE_EMPLOYE, ROLE_ADMIN]); return $routes['GET_EMPLOYE'][$uri];
     }
     if ($method === 'GET' && isset($routes['GET_ADMIN'][$uri])) {
-        requireRole(['administrateur']); return $routes['GET_ADMIN'][$uri];
+        requireRole([ROLE_ADMIN]); return $routes['GET_ADMIN'][$uri];
     }
     if ($method === 'POST' && isset($routes['POST_EMPLOYE'][$uri])) {
-        requireRole(['employe','administrateur']); return $routes['POST_EMPLOYE'][$uri];
+        requireRole([ROLE_EMPLOYE, ROLE_ADMIN]); return $routes['POST_EMPLOYE'][$uri];
     }
     if ($method === 'POST' && isset($routes['POST_ADMIN'][$uri])) {
-        requireRole(['administrateur']); return $routes['POST_ADMIN'][$uri];
+        requireRole([ROLE_ADMIN]); return $routes['POST_ADMIN'][$uri];
     }
     return null;
 }

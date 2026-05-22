@@ -9,7 +9,7 @@
     <?php endforeach; ?>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css">
-    <link rel="stylesheet" href="/css/style.css?v=20260522-12">
+    <link rel="stylesheet" href="/css/style.css?v=20260522-13">
 </head>
 <body>
 
@@ -18,7 +18,10 @@
 </a>
 
 <!-- NAVBAR -->
-<?php $currentPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/'; ?>
+<?php
+$workspaceActive = isAuth() && roleWorkspaceIsActive();
+$roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
+?>
 <nav class="navbar navbar-expand-md navbar-dark bg-vg sticky-top" role="navigation" aria-label="Navigation principale">
     <div class="container">
         <a class="navbar-brand fw-bold" href="/" aria-label="Retour à l'accueil Vite et Gourmand">
@@ -30,36 +33,40 @@
         <div class="collapse navbar-collapse" id="navMain">
             <ul class="navbar-nav me-auto mb-0">
                 <li class="nav-item">
-                    <a class="nav-link <?= $currentPath === '/' ? 'active' : '' ?>" href="/" <?= $currentPath === '/' ? 'aria-current="page"' : '' ?>>Accueil</a>
+                    <a class="nav-link <?= routeIsActive('/') ? 'active' : '' ?>" href="/" <?= routeIsActive('/') ? 'aria-current="page"' : '' ?>>Accueil</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= str_starts_with($currentPath, '/menus') ? 'active' : '' ?>" href="/menus" <?= str_starts_with($currentPath, '/menus') ? 'aria-current="page"' : '' ?>>Tous les menus</a>
+                    <a class="nav-link <?= routeIsActive('/menus*') ? 'active' : '' ?>" href="/menus" <?= routeIsActive('/menus*') ? 'aria-current="page"' : '' ?>>Tous les menus</a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= $currentPath === '/contact' ? 'active' : '' ?>" href="/contact" <?= $currentPath === '/contact' ? 'aria-current="page"' : '' ?>>Contact</a>
+                    <a class="nav-link <?= routeIsActive('/contact') ? 'active' : '' ?>" href="/contact" <?= routeIsActive('/contact') ? 'aria-current="page"' : '' ?>>Contact</a>
                 </li>
             </ul>
             <ul class="navbar-nav ms-auto">
                 <?php if (isAuth()): ?>
                     <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" role="button" data-bs-toggle="dropdown">
+                        <a
+                            class="nav-link dropdown-toggle <?= $workspaceActive ? 'active' : '' ?>"
+                            href="#"
+                            role="button"
+                            data-bs-toggle="dropdown"
+                            <?= $roleHomeIsCurrent ? 'aria-current="page"' : '' ?>
+                        >
                             <?= sanitize(currentUser()['prenom']) ?>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
-                            <?php if (hasRole('administrateur')): ?>
-                                <li><a class="dropdown-item" href="/admin">Espace administrateur</a></li>
-                            <?php elseif (hasRole('employe')): ?>
-                                <li><a class="dropdown-item" href="/employe">Espace employé</a></li>
-                            <?php else: ?>
-                                <li><a class="dropdown-item" href="/mon-compte">Mon compte</a></li>
-                            <?php endif; ?>
+                            <li>
+                                <a class="dropdown-item <?= $roleHomeIsCurrent ? 'active' : '' ?>" href="<?= sanitize(roleHomePath()) ?>">
+                                    <?= sanitize(roleHomeLabel()) ?>
+                                </a>
+                            </li>
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item text-danger" href="/deconnexion">Déconnexion</a></li>
                         </ul>
                     </li>
                 <?php else: ?>
                     <li class="nav-item">
-                        <a class="nav-link <?= $currentPath === '/connexion' ? 'active' : '' ?>" href="/connexion" <?= $currentPath === '/connexion' ? 'aria-current="page"' : '' ?>>Connexion</a>
+                        <a class="nav-link <?= routeIsActive('/connexion') ? 'active' : '' ?>" href="/connexion" <?= routeIsActive('/connexion') ? 'aria-current="page"' : '' ?>>Connexion</a>
                     </li>
                 <?php endif; ?>
             </ul>
@@ -94,12 +101,8 @@
         <div class="footer-grid">
             <section class="footer-section" aria-labelledby="footer-horaires">
                 <h2 id="footer-horaires" class="footer-title">Horaires d'ouverture</h2>
-                <?php
-                $db = Database::getConnection();
-                $horaires = $db->query("SELECT * FROM horaire ORDER BY horaire_id")->fetchAll();
-                ?>
                 <ul class="footer-hours list-unstyled mb-0">
-                    <?php foreach ($horaires as $h): ?>
+                    <?php foreach (($siteHoraires ?? []) as $h): ?>
                         <li>
                             <strong><?= sanitize($h['jour']) ?> :</strong>
                             <?= $h['heure_ouverture'] === 'Fermé' ? '<span class="text-danger">Fermé</span>' : sanitize($h['heure_ouverture']) . ' - ' . sanitize($h['heure_fermeture']) ?>

@@ -11,7 +11,7 @@ $pageTitle = 'Réinitialisation du mot de passe - Vite & Gourmand';
         </div>
 
         <form method="POST" action="/reinitialiser" novalidate>
-            <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+            <?= csrfField() ?>
             <input type="hidden" name="token" value="<?= sanitize($token ?? '') ?>">
 
             <div class="mb-3">
@@ -30,7 +30,7 @@ $pageTitle = 'Réinitialisation du mot de passe - Vite & Gourmand';
                     <button
                         class="btn btn-outline-secondary"
                         type="button"
-                        id="togglePwd"
+                        data-password-toggle="password"
                         aria-label="Afficher ou masquer le mot de passe"
                     >
                         <i class="bi bi-eye"></i>
@@ -53,7 +53,7 @@ $pageTitle = 'Réinitialisation du mot de passe - Vite & Gourmand';
                     <button
                         class="btn btn-outline-secondary"
                         type="button"
-                        id="togglePwdConfirm"
+                        data-password-toggle="password_confirm"
                         aria-label="Afficher ou masquer la confirmation du mot de passe"
                     >
                         <i class="bi bi-eye"></i>
@@ -65,11 +65,9 @@ $pageTitle = 'Réinitialisation du mot de passe - Vite & Gourmand';
             <div id="regles-mdp" class="alert alert-info small mb-3" role="note" aria-label="Règles de sécurité du mot de passe">
                 <strong><i class="bi bi-info-circle me-1"></i>Votre mot de passe doit contenir :</strong>
                 <ul class="mb-0 mt-1">
-                    <li>Au moins <strong>10 caractères</strong></li>
-                    <li>Au moins une <strong>majuscule</strong> (A–Z)</li>
-                    <li>Au moins une <strong>minuscule</strong> (a–z)</li>
-                    <li>Au moins un <strong>chiffre</strong> (0–9)</li>
-                    <li>Au moins un <strong>caractère spécial</strong> (!@#$%…)</li>
+                    <?php foreach (passwordPolicyRules() as $rule): ?>
+                        <li><?= sanitize($rule) ?></li>
+                    <?php endforeach; ?>
                 </ul>
             </div>
 
@@ -81,24 +79,3 @@ $pageTitle = 'Réinitialisation du mot de passe - Vite & Gourmand';
         </form>
     </div>
 </div>
-
-<script>
-/* Bascule visibilité mot de passe */
-function toggleVisibility(btnId, inputId) {
-    const btn   = document.getElementById(btnId);
-    const input = document.getElementById(inputId);
-    if (!btn || !input) return;
-    btn.addEventListener('click', function () {
-        const icon = this.querySelector('i');
-        if (input.type === 'password') {
-            input.type = 'text';
-            icon.className = 'bi bi-eye-slash';
-        } else {
-            input.type = 'password';
-            icon.className = 'bi bi-eye';
-        }
-    });
-}
-toggleVisibility('togglePwd', 'password');
-toggleVisibility('togglePwdConfirm', 'password_confirm');
-</script>

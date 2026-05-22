@@ -223,4 +223,3 @@ INSERT INTO categorie_plat (libelle) VALUES ('entree'), ('plat'), ('dessert');
 -- Aucun compte administrateur ne peut être créé depuis l'application.
 INSERT INTO utilisateur (email, password, prenom, nom, telephone, adresse, ville, code_postal, role_id) VALUES
 ('admin@vitegourmand.fr', '$2y$12$Pf9cuDAArTbDZxL8GxcF8ePqdDWjxClzpFHycFuxQVJA3F13Rgnha', 'José', 'Admin', '0600000000', '1 Rue de la Restauration', 'Bordeaux', '33000', 3);
--- Mot de passe initial : Admin@2024! - À changer en production.

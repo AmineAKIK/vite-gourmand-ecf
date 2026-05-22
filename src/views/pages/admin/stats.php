@@ -12,14 +12,7 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
 ?>
 <div class="container py-5">
 
-    <div class="d-flex align-items-center gap-3 mb-4 flex-wrap">
-        <a href="/admin" class="btn btn-outline-secondary btn-sm" aria-label="Retour au tableau de bord administrateur">
-            <i class="bi bi-arrow-left me-1"></i>Tableau de bord
-        </a>
-        <h1 class="h3 fw-bold mb-0">
-            <i class="bi bi-graph-up me-2 text-vg"></i>Statistiques — Chiffre d'affaires
-        </h1>
-    </div>
+    <?php partial('partials/page_title_bar', ['icon' => 'bi-graph-up', 'title' => "Statistiques — Chiffre d'affaires"]); ?>
 
     <!-- Formulaire de filtres -->
     <div class="filtres-panel card border-0 shadow-sm p-3 mb-4">
@@ -89,9 +82,9 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
                             <?php foreach ($caStats as $row): ?>
                             <tr>
                                 <td><?= sanitize($row['titre']) ?></td>
-                                <td class="text-end"><?= number_format($row['nb'], 0) ?></td>
+                                <td class="text-end"><?= sanitize(formatInteger($row['nb'] ?? 0)) ?></td>
                                 <td class="text-end fw-semibold">
-                                    <?= number_format($row['ca'], 2) ?> €
+                                    <?= sanitize(formatPrice($row['ca'] ?? 0)) ?>
                                 </td>
                             </tr>
                             <?php endforeach; ?>
@@ -101,7 +94,7 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
                             <tr>
                                 <td>TOTAL</td>
                                 <td class="text-end"><?= $totalNb ?></td>
-                                <td class="text-end"><?= number_format($totalCA, 2) ?> €</td>
+                                <td class="text-end"><?= sanitize(formatPrice($totalCA)) ?></td>
                             </tr>
                         </tfoot>
                     </table>
@@ -133,51 +126,10 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
 </div>
 
 <?php if (!empty($mongoStats)): ?>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" integrity="sha512-ZwR1/gSZM3ai6vCdI+LVF1zSq/5HznD3oD+sCoJrzXJ+yKwtkiTap5sVAArNg2b/LTNqcrh11PC3w7TnCdXiQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
-<script>
-(function () {
-    var ctx = document.getElementById('chartCA');
-    if (!ctx) return;
-
-    new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: <?= json_encode($chartLabels, JSON_UNESCAPED_UNICODE) ?>,
-            datasets: [{
-                label: 'Nb commandes',
-                data: <?= json_encode($chartData) ?>,
-                backgroundColor: 'rgba(114,47,55,0.75)',
-                borderColor: 'rgba(114,47,55,1)',
-                borderWidth: 1,
-                borderRadius: 4
-            }]
-        },
-        options: {
-            indexAxis: 'y',
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { display: false },
-                tooltip: {
-                    callbacks: {
-                        label: function (ctx) {
-                            return ' ' + ctx.parsed.x + ' commande(s)';
-                        }
-                    }
-                }
-            },
-            scales: {
-                x: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function (val) {
-                            return val.toFixed(0);
-                        }
-                    }
-                }
-            }
-        }
-    });
-})();
-</script>
+<?php partial('partials/chart_bar', [
+    'chartId' => 'chartCA',
+    'chartLabels' => $chartLabels,
+    'chartData' => $chartData,
+    'horizontal' => true,
+]); ?>
 <?php endif; ?>

@@ -2,17 +2,6 @@
 // src/views/pages/home.php
 $pageTitle    = 'Vite & Gourmand - Traiteur à Bordeaux';
 $preloadImages = ['/images/hero-traiteur-bordeaux.webp'];
-$db           = Database::getConnection();
-$avisValides  = $db->query("
-    SELECT a.*, u.prenom, u.nom, m.titre AS menu_titre
-    FROM avis a
-    JOIN utilisateur u ON u.utilisateur_id = a.utilisateur_id
-    JOIN commande c ON c.commande_id = a.commande_id
-    JOIN menu m ON m.menu_id = c.menu_id
-    WHERE a.statut = 'valide'
-    ORDER BY a.created_at DESC
-    LIMIT 6
-")->fetchAll();
 ?>
 
 <!-- HERO -->
@@ -99,7 +88,7 @@ $avisValides  = $db->query("
                         </div>
                         <p class="card-text fst-italic">"<?= sanitize($avis['description']) ?>"</p>
                         <footer class="text-muted small mt-3">
-                            <strong><?= sanitize($avis['prenom'] . ' ' . $avis['nom']) ?></strong>
+                            <strong><?= sanitize(personFullName($avis)) ?></strong>
                             · Menu : <?= sanitize($avis['menu_titre']) ?>
                         </footer>
                     </div>

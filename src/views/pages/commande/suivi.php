@@ -28,9 +28,7 @@ $pageTitle = 'Suivi de commande #' . sanitize($commande['numero_commande'] ?? ''
 
                         <dt class="col-sm-5">Date prestation</dt>
                         <dd class="col-sm-7">
-                            <?= !empty($commande['date_prestation'])
-                                ? date('d/m/Y', strtotime($commande['date_prestation']))
-                                : '—' ?>
+                            <?= sanitize(formatDateFr($commande['date_prestation'] ?? null)) ?>
                         </dd>
 
                         <dt class="col-sm-5">Adresse</dt>
@@ -46,14 +44,12 @@ $pageTitle = 'Suivi de commande #' . sanitize($commande['numero_commande'] ?? ''
 
                         <dt class="col-sm-5">Prix total</dt>
                         <dd class="col-sm-7">
-                            <span class="prix-tag"><?= number_format((float)($commande['prix_total'] ?? 0), 2, ',', ' ') ?> €</span>
+                            <span class="prix-tag"><?= sanitize(formatPrice($commande['prix_total'] ?? 0)) ?></span>
                         </dd>
 
                         <dt class="col-sm-5">Statut actuel</dt>
                         <dd class="col-sm-7">
-                            <span class="badge-statut statut-<?= sanitize($commande['statut'] ?? '') ?>">
-                                <?= sanitize(str_replace('_', ' ', $commande['statut'] ?? '')) ?>
-                            </span>
+                            <?= commandeStatusBadge($commande['statut'] ?? null) ?>
                         </dd>
                     </dl>
                 </div>
@@ -94,23 +90,19 @@ $pageTitle = 'Suivi de commande #' . sanitize($commande['numero_commande'] ?? ''
                                 <!-- Contenu -->
                                 <div class="pb-2">
                                     <div class="d-flex flex-wrap gap-2 align-items-center mb-1">
-                                        <span class="badge-statut statut-<?= sanitize($h['nouveau_statut'] ?? '') ?>">
-                                            <?= sanitize(str_replace('_', ' ', $h['nouveau_statut'] ?? '')) ?>
-                                        </span>
+                                        <?= commandeStatusBadge($h['nouveau_statut'] ?? null) ?>
                                         <?php if (!empty($h['ancien_statut'])): ?>
                                             <small class="text-muted">
-                                                (depuis : <?= sanitize(str_replace('_', ' ', $h['ancien_statut'])) ?>)
+                                                (depuis : <?= sanitize(commandeStatusLabel($h['ancien_statut'])) ?>)
                                             </small>
                                         <?php endif; ?>
                                     </div>
 
                                     <div class="small text-muted">
                                         <i class="bi bi-calendar3 me-1"></i>
-                                        <?= !empty($h['created_at'])
-                                            ? date('d/m/Y à H\hi', strtotime($h['created_at']))
-                                            : '—' ?>
+                                        <?= sanitize(formatDateTimeFr($h['created_at'] ?? null)) ?>
                                         <?php if (!empty($h['prenom']) || !empty($h['nom'])): ?>
-                                            — par <?= sanitize(trim(($h['prenom'] ?? '') . ' ' . ($h['nom'] ?? ''))) ?>
+                                            — par <?= sanitize(personFullName($h)) ?>
                                         <?php endif; ?>
                                     </div>
 

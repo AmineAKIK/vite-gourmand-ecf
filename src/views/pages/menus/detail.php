@@ -55,7 +55,7 @@
             <div class="row g-3 my-3">
                 <div class="col-6">
                     <div class="bg-creme rounded p-3 text-center">
-                        <div class="prix-tag"><?= number_format($menu['prix_par_personne'], 2) ?> €</div>
+                        <div class="prix-tag"><?= sanitize(formatPrice($menu['prix_par_personne'] ?? 0)) ?></div>
                         <small class="text-muted">par personne</small>
                     </div>
                 </div>
@@ -69,7 +69,7 @@
                 <div class="col-12">
                     <div class="alert alert-warning py-2 mb-0">
                         <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>Stock limité :</strong> il reste <?= $menu['quantite_restante'] ?> commande(s) disponible(s).
+                        <strong>Stock limité :</strong> il reste <?= (int)$menu['quantite_restante'] ?> commande(s) disponible(s).
                     </div>
                 </div>
                 <?php endif; ?>
@@ -85,7 +85,7 @@
 
             <!-- Bouton Commander -->
             <?php if (isAuth()): ?>
-                <a href="/commande?menu_id=<?= $menu['menu_id'] ?>" class="btn btn-vg btn-lg w-100 mt-3">
+                <a href="/commande?menu_id=<?= (int)$menu['menu_id'] ?>" class="btn btn-vg btn-lg w-100 mt-3">
                     <i class="bi bi-cart-plus me-2"></i>Commander ce menu
                 </a>
             <?php else: ?>

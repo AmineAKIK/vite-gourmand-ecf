@@ -1,7 +1,5 @@
 <?php
 // src/controllers/ContactController.php
-require_once __DIR__ . '/../services/MailService.php';
-
 class ContactController
 {
     public function index(): void

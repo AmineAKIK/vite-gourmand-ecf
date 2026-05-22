@@ -3,9 +3,9 @@
 $pageTitle = 'Espace Employé - Vite & Gourmand';
 
 $user        = currentUser();
-$nbAttente   = count(array_filter($commandes, fn($c) => $c['statut'] === 'en_attente'));
-$nbPrepa     = count(array_filter($commandes, fn($c) => $c['statut'] === 'en_preparation'));
-$nbLivraison = count(array_filter($commandes, fn($c) => $c['statut'] === 'en_cours_livraison'));
+$nbAttente   = commandeCountByStatus($commandes, commandeInitialStatus());
+$nbPrepa     = commandeCountByStatus($commandes, commandePreparingStatus());
+$nbLivraison = commandeCountByStatus($commandes, commandeDeliveryStatus());
 $dernieres   = array_slice($commandes, 0, 10);
 ?>
 <div class="container py-5">
@@ -18,50 +18,13 @@ $dernieres   = array_slice($commandes, 0, 10);
         <span class="text-muted small">Connecté en tant qu'employé</span>
     </div>
 
-    <!-- Navigation rapide -->
-    <nav class="mb-4" aria-label="Navigation employé">
-        <div class="d-flex flex-wrap gap-2">
-            <a href="/employe/commandes" class="btn btn-vg btn-sm">
-                <i class="bi bi-list-check me-1"></i>Commandes
-            </a>
-            <a href="/employe/menus" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-journal-text me-1"></i>Menus
-            </a>
-            <a href="/employe/avis" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-star me-1"></i>Avis
-            </a>
-            <a href="/employe/horaires" class="btn btn-outline-secondary btn-sm">
-                <i class="bi bi-clock me-1"></i>Horaires
-            </a>
-        </div>
-    </nav>
+    <?php partial('partials/workspace_nav'); ?>
 
     <!-- Cards de statistiques -->
     <div class="row g-3 mb-5">
-        <div class="col-sm-4">
-            <div class="card border-0 shadow-sm text-center p-3 h-100">
-                <div class="display-6 fw-bold text-warning"><?= $nbAttente ?></div>
-                <div class="small text-muted mt-1">
-                    <i class="bi bi-hourglass-split me-1"></i>En attente
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-4">
-            <div class="card border-0 shadow-sm text-center p-3 h-100">
-                <div class="display-6 fw-bold text-primary"><?= $nbPrepa ?></div>
-                <div class="small text-muted mt-1">
-                    <i class="bi bi-tools me-1"></i>En préparation
-                </div>
-            </div>
-        </div>
-        <div class="col-sm-4">
-            <div class="card border-0 shadow-sm text-center p-3 h-100">
-                <div class="display-6 fw-bold text-info"><?= $nbLivraison ?></div>
-                <div class="small text-muted mt-1">
-                    <i class="bi bi-truck me-1"></i>En cours de livraison
-                </div>
-            </div>
-        </div>
+        <?php partial('partials/stat_card', ['value' => $nbAttente, 'valueClass' => 'text-warning', 'icon' => 'bi-hourglass-split', 'label' => 'En attente']); ?>
+        <?php partial('partials/stat_card', ['value' => $nbPrepa, 'valueClass' => 'text-primary', 'icon' => 'bi-tools', 'label' => 'En préparation']); ?>
+        <?php partial('partials/stat_card', ['value' => $nbLivraison, 'valueClass' => 'text-info', 'icon' => 'bi-truck', 'label' => 'En cours de livraison']); ?>
     </div>
 
     <!-- Tableau des 10 dernières commandes -->
@@ -89,18 +52,12 @@ $dernieres   = array_slice($commandes, 0, 10);
                     <?php foreach ($dernieres as $cmd): ?>
                     <tr>
                         <td><small class="text-muted"><?= sanitize($cmd['numero_commande'] ?? '') ?></small></td>
-                        <td><?= sanitize(trim(($cmd['prenom'] ?? '') . ' ' . ($cmd['nom'] ?? ''))) ?></td>
+                        <td><?= sanitize(personFullName($cmd)) ?></td>
                         <td><?= sanitize($cmd['menu_titre'] ?? '') ?></td>
                         <td>
-                            <?= !empty($cmd['date_prestation'])
-                                ? date('d/m/Y', strtotime($cmd['date_prestation']))
-                                : '—' ?>
+                            <?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?>
                         </td>
-                        <td>
-                            <span class="badge-statut statut-<?= sanitize($cmd['statut'] ?? '') ?>">
-                                <?= sanitize(str_replace('_', ' ', $cmd['statut'] ?? '')) ?>
-                            </span>
-                        </td>
+                        <td><?= commandeStatusBadge($cmd['statut'] ?? null) ?></td>
                         <td>
                             <a href="/employe/commandes"
                                class="btn btn-sm btn-vg"

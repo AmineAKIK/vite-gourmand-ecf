@@ -24,21 +24,21 @@
                             <tr>
                                 <td><small><?= sanitize($cmd['numero_commande']) ?></small></td>
                                 <td><?= sanitize($cmd['menu_titre']) ?></td>
-                                <td><?= date('d/m/Y', strtotime($cmd['date_prestation'])) ?></td>
+                                <td><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></td>
                                 <td><?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?></td>
-                                <td><strong><?= number_format($cmd['prix_total'], 2) ?> €</strong></td>
-                                <td><span class="badge-statut statut-<?= sanitize($cmd['statut']) ?>"><?= sanitize(str_replace('_',' ',$cmd['statut'])) ?></span></td>
+                                <td><strong><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></strong></td>
+                                <td><?= commandeStatusBadge($cmd['statut'] ?? null) ?></td>
                                 <td>
-                                    <?php if ($cmd['statut'] === 'en_attente'): ?>
+                                    <?php if (commandeCanClientModify($cmd)): ?>
                                         <button class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal" data-bs-target="#modifModal<?= (int)$cmd['commande_id'] ?>">Modifier</button>
                                         <form method="POST" action="/commande/annuler" class="d-inline" onsubmit="return confirm('Confirmer l\'annulation ?')">
-                                            <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                                            <?= csrfField() ?>
                                             <input type="hidden" name="commande_id" value="<?= (int)$cmd['commande_id'] ?>">
                                             <button type="submit" class="btn btn-sm btn-outline-danger">Annuler</button>
                                         </form>
-                                    <?php elseif (in_array($cmd['statut'], ['accepte','en_preparation','en_cours_livraison','livre','en_attente_materiel'])): ?>
+                                    <?php elseif (commandeCanClientTrack($cmd['statut'] ?? null)): ?>
                                         <a href="/commande/suivi?id=<?= (int)$cmd['commande_id'] ?>" class="btn btn-sm btn-outline-info">Suivi</a>
-                                    <?php elseif ($cmd['statut'] === 'terminee'): ?>
+                                    <?php elseif (commandeCanReview($cmd['statut'] ?? null)): ?>
                                         <button class="btn btn-sm btn-or" data-bs-toggle="modal" data-bs-target="#avisModal<?= (int)$cmd['commande_id'] ?>">
                                             <i class="bi bi-star me-1"></i>Donner un avis
                                         </button>
@@ -57,7 +57,7 @@
             <div class="card border-0 shadow-sm p-4">
                 <h2 class="h5 mb-3">Mes informations</h2>
                 <form method="POST" action="/mon-compte/modifier">
-                    <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                    <?= csrfField() ?>
                     <div class="mb-2">
                         <label for="profil_prenom" class="form-label small">Prénom</label>
                         <input type="text" class="form-control form-control-sm" id="profil_prenom" name="prenom" value="<?= sanitize($userFull['prenom']) ?>" required>
@@ -84,11 +84,15 @@
                     </div>
                     <button type="submit" class="btn btn-vg btn-sm w-100 mt-2">Enregistrer</button>
                 </form>
+                <hr class="my-3">
+                <button class="btn btn-outline-danger btn-sm w-100" data-bs-toggle="modal" data-bs-target="#deleteAccountModal">
+                    <i class="bi bi-trash me-1"></i>Supprimer mon compte
+                </button>
             </div>
         </div>
     </div>
 
-    <?php foreach ($commandes as $cmd): if ($cmd['statut'] !== 'en_attente') continue; ?>
+    <?php foreach ($commandes as $cmd): if (!commandeCanClientModify($cmd)) continue; ?>
     <div class="modal fade" id="modifModal<?= (int)$cmd['commande_id'] ?>" tabindex="-1"
          aria-labelledby="modifModalLabel<?= (int)$cmd['commande_id'] ?>" aria-hidden="true">
         <div class="modal-dialog">
@@ -100,7 +104,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
                 <form method="POST" action="/commande/modifier">
-                    <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                    <?= csrfField() ?>
                     <input type="hidden" name="commande_id" value="<?= (int)$cmd['commande_id'] ?>">
                     <div class="modal-body">
                         <div class="mb-3">
@@ -161,8 +165,31 @@
     <?php endforeach; ?>
 </div>
 
+<!-- Modal suppression compte -->
+<div class="modal fade" id="deleteAccountModal" tabindex="-1" aria-labelledby="deleteAccountModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header border-danger">
+                <h5 class="modal-title text-danger" id="deleteAccountModalLabel">Supprimer mon compte</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+                <p>Cette action est <strong>irréversible</strong>. Toutes vos données personnelles seront supprimées définitivement.</p>
+                <p class="text-muted small">Vos commandes passées resteront dans notre système à des fins comptables.</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                <form method="POST" action="/mon-compte/supprimer">
+                    <?= csrfField() ?>
+                    <button type="submit" class="btn btn-danger">Confirmer la suppression</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Modals avis -->
-<?php foreach ($commandes as $cmd): if ($cmd['statut'] !== 'terminee') continue; ?>
+<?php foreach ($commandes as $cmd): if (!commandeCanReview($cmd['statut'] ?? null)) continue; ?>
 <div class="modal fade" id="avisModal<?= (int)$cmd['commande_id'] ?>" tabindex="-1" aria-labelledby="avisModalLabel<?= (int)$cmd['commande_id'] ?>" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -171,7 +198,7 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
             <form method="POST" action="/avis">
-                <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+                <?= csrfField() ?>
                 <input type="hidden" name="commande_id" value="<?= (int)$cmd['commande_id'] ?>">
                 <div class="modal-body">
                     <fieldset class="mb-3">

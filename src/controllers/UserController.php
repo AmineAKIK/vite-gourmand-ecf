@@ -1,8 +1,6 @@
 <?php
 // src/controllers/UserController.php
 
-require_once __DIR__ . '/../models/CommandeModel.php';
-
 class UserController {
 
     public function dashboard(): void {
@@ -37,5 +35,22 @@ class UserController {
 
         flash('success', 'Informations mises à jour.');
         redirect('/mon-compte');
+    }
+
+    public function deleteAccount(): void {
+        requireAuth();
+        verifyCsrf();
+        $user = currentUser();
+
+        if (!hasRole(ROLE_USER)) {
+            http_response_code(403);
+            view('pages/403');
+            exit;
+        }
+
+        \UserModel::delete($user['id']);
+
+        session_destroy();
+        redirect('/');
     }
 }

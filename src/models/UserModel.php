@@ -31,11 +31,12 @@ class UserModel {
         $db   = Database::getConnection();
         $stmt = $db->prepare("
             INSERT INTO utilisateur (email, password, prenom, nom, telephone, adresse, ville, code_postal, role_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute([
             $data['email'], $data['password'], $data['prenom'], $data['nom'],
-            $data['telephone'], $data['adresse'], $data['ville'], $data['code_postal']
+            $data['telephone'], $data['adresse'], $data['ville'], $data['code_postal'],
+            ROLE_ID_USER
         ]);
         return (int)$db->lastInsertId();
     }
@@ -44,9 +45,9 @@ class UserModel {
         $db   = Database::getConnection();
         $stmt = $db->prepare("
             INSERT INTO utilisateur (email, password, prenom, nom, role_id, actif)
-            VALUES (?, ?, ?, ?, 2, 1)
+            VALUES (?, ?, ?, ?, ?, 1)
         ");
-        $stmt->execute([$email, $password, $prenom, $nom]);
+        $stmt->execute([$email, $password, $prenom, $nom, ROLE_ID_EMPLOYE]);
         return (int)$db->lastInsertId();
     }
 
@@ -71,7 +72,9 @@ class UserModel {
 
     public static function getAllEmployes(): array {
         $db = Database::getConnection();
-        return $db->query("SELECT * FROM utilisateur WHERE role_id = 2")->fetchAll();
+        $stmt = $db->prepare("SELECT * FROM utilisateur WHERE role_id = ?");
+        $stmt->execute([ROLE_ID_EMPLOYE]);
+        return $stmt->fetchAll();
     }
 
     public static function saveResetToken(int $userId, string $token): void {
@@ -91,5 +94,11 @@ class UserModel {
     public static function invalidateResetToken(string $token): void {
         $db = Database::getConnection();
         $db->prepare("UPDATE password_reset SET used=1 WHERE token=?")->execute([$token]);
+    }
+
+    public static function delete(int $id): void {
+        $db = Database::getConnection();
+        $db->prepare("DELETE FROM password_reset WHERE utilisateur_id=?")->execute([$id]);
+        $db->prepare("DELETE FROM utilisateur WHERE utilisateur_id=?")->execute([$id]);
     }
 }

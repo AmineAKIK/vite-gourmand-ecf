@@ -3,7 +3,7 @@
     <div class="card border-0 shadow p-4">
         <h1 class="h3 text-center mb-4 fw-bold">Créer un compte</h1>
         <form method="POST" action="/inscription" novalidate>
-            <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+            <?= csrfField() ?>
             <div class="row g-3">
                 <div class="col-md-6">
                     <label for="prenom" class="form-label">Prénom <span class="text-danger" aria-label="obligatoire">*</span></label>
@@ -36,7 +36,7 @@
                 <div class="col-12">
                     <label for="password" class="form-label">Mot de passe <span class="text-danger">*</span></label>
                     <input type="password" class="form-control" id="password" name="password" required autocomplete="new-password">
-                    <div class="form-text">10 car. min · 1 maj · 1 min · 1 chiffre · 1 spécial</div>
+                    <div class="form-text"><?= sanitize(passwordPolicyMessage()) ?></div>
                 </div>
                 <div class="col-12 d-grid">
                     <button type="submit" class="btn btn-vg btn-lg">Créer mon compte</button>

@@ -1,64 +1,120 @@
-# Manuel d'utilisation - Vite & Gourmand
+# Manuel d'utilisation — Vite & Gourmand
 
 ## Présentation
 
-Vite & Gourmand est une application web de commande de menus traiteur. Elle permet aux visiteurs de consulter les menus, aux clients de commander, aux employés de suivre les commandes et à l'administrateur de gérer les comptes employés ainsi que les statistiques.
+Vite & Gourmand est une application web de commande de menus traiteur pour l'entreprise éponyme, basée à Bordeaux. Elle permet aux visiteurs de consulter les menus, aux clients authentifiés de passer et suivre des commandes, aux employés de gérer les commandes et les menus, et à l'administrateur de superviser l'ensemble.
 
-## Identifiant initial
+**URL de l'application :** `https://vite-gourmand-ecf-production-c7ac.up.railway.app`
+
+---
+
+## Comptes de test
 
 | Rôle | Email | Mot de passe |
 |---|---|---|
-| Administrateur | admin@vitegourmand.fr | Admin@2024! |
+| Administrateur | `admin@vitegourmand.fr` | `Admin@2024!` |
+| Employé | Créer depuis l'espace admin | Au choix (politique mot de passe) |
+| Client | Créer depuis la page Inscription | Au choix (politique mot de passe) |
 
-Les comptes employés sont créés depuis l'espace administrateur.
-Les comptes utilisateurs sont créés depuis la page d'inscription.
+> Le mot de passe doit contenir au minimum 10 caractères, une majuscule, une minuscule, un chiffre et un caractère spécial.
 
-## Parcours visiteur
+---
 
-1. Aller sur la page d'accueil.
-2. Consulter la présentation de l'entreprise et les avis validés.
-3. Ouvrir la page "Tous les menus".
-4. Filtrer les menus par prix, thème, régime ou nombre de personnes.
-5. Cliquer sur "Voir le détail" pour consulter la composition, les allergènes, les conditions et le stock.
-6. Utiliser la page Contact pour envoyer une demande à l'entreprise.
+## Parcours visiteur (sans compte)
+
+1. Ouvrir la page d'accueil — présentation de l'entreprise et avis clients validés.
+2. Cliquer sur **Tous les menus** dans la navigation.
+3. Utiliser les filtres (prix min/max, thème, régime, nombre de personnes) — les résultats se mettent à jour sans rechargement.
+4. Cliquer sur **Voir le détail** pour consulter la composition, les allergènes, les conditions et le stock disponible.
+5. Accéder à la page **Contact** pour envoyer un message à l'entreprise.
+6. Consulter les **Mentions légales** et les **CGV** depuis le pied de page.
+
+---
 
 ## Parcours client
 
-1. Créer un compte depuis "Inscription".
-2. Se connecter avec l'email et le mot de passe.
-3. Depuis un menu détaillé, cliquer sur "Commander ce menu".
-4. Renseigner l'adresse, la ville, la date, l'heure et le nombre de personnes.
-5. Vérifier le récapitulatif du prix avant validation.
-6. Retrouver la commande dans "Mon compte".
-7. Modifier ou annuler la commande tant qu'elle est en attente.
-8. Consulter le suivi lorsque la commande est acceptée.
-9. Donner un avis quand la commande est terminée.
+### Création de compte
+1. Cliquer sur **Connexion** puis **Créer un compte**.
+2. Renseigner : prénom, nom, email, téléphone, adresse, ville, code postal et mot de passe.
+3. Un email de bienvenue est envoyé à l'adresse renseignée.
+
+### Commander un menu
+1. Depuis la vue détaillée d'un menu, cliquer sur **Commander ce menu**.
+2. Les informations personnelles sont pré-remplies depuis le compte.
+3. Compléter : adresse de livraison, ville, code postal, date et heure de prestation.
+4. Sélectionner le nombre de personnes (minimum imposé par le menu).
+5. Le prix se met à jour automatiquement :
+   - Livraison **gratuite** à Bordeaux.
+   - Hors Bordeaux : **5 € + 0,59 €/km**.
+   - Réduction de **10 %** si le nombre de personnes dépasse de 5 ou plus le minimum.
+6. Vérifier le récapitulatif (prix menu + livraison + total) avant de valider.
+7. Un email de confirmation est envoyé après validation.
+
+### Gérer ses commandes (espace Mon compte)
+- **Modifier** une commande : possible tant que le statut est **En attente** (adresse, date, heure, nombre de personnes).
+- **Annuler** une commande : possible tant que le statut est **En attente**.
+- **Suivre** une commande : disponible dès que le statut passe à **Accepté** — l'historique complet des statuts est affiché.
+- **Donner un avis** : disponible quand la commande est **Terminée** (note de 1 à 5 + commentaire).
+- **Modifier ses informations** personnelles depuis la carte "Mes informations".
+- **Supprimer son compte** : bouton en bas de la carte "Mes informations", avec confirmation.
+
+---
 
 ## Parcours employé
 
-1. Se connecter avec le compte employé.
-2. Accéder à l'espace employé.
-3. Filtrer les commandes par statut ou par client.
-4. Mettre à jour le statut d'une commande.
-5. Annuler une commande uniquement avec un motif et un mode de contact.
-6. Gérer les menus, les plats, les images, les allergènes et les horaires.
-7. Valider ou refuser les avis clients.
+1. Se connecter avec le compte employé fourni par l'administrateur.
+2. Accéder à l'**Espace employé** depuis la navigation.
+
+### Gestion des commandes
+- Filtrer les commandes par **statut** ou par **nom de client**.
+- Cliquer sur une commande pour dérouler les détails et les actions.
+- Changer le statut selon la progression :
+  - `En attente` → `Accepté` → `En préparation` → `En cours de livraison` → `Livré` → `Terminée`
+  - `Livré` → `En attente du retour de matériel` → `Terminée`
+- **Annuler** une commande : obligatoire de renseigner un motif et un mode de contact (appel GSM ou mail).
+- Quand le statut passe à `En attente du retour de matériel`, le client reçoit automatiquement un email de relance.
+- Quand le statut passe à `Terminée`, le client reçoit un email l'invitant à donner son avis.
+
+### Gestion des menus et plats
+- Créer, modifier ou supprimer un menu (titre, description, thème, régime, conditions, prix, stock, images).
+- Créer, modifier ou supprimer un plat (titre, catégorie, allergènes, photo).
+- Un plat utilisé dans un menu ne peut pas être supprimé directement.
+
+### Modération des avis
+- Consulter les avis en attente de modération.
+- **Valider** un avis pour l'afficher sur la page d'accueil.
+- **Refuser** un avis pour ne pas l'afficher.
+
+### Horaires
+- Modifier les horaires d'ouverture (lundi au dimanche) affichés dans le pied de page.
+
+---
 
 ## Parcours administrateur
 
-1. Se connecter avec le compte administrateur.
-2. Accéder à l'espace administrateur.
-3. Créer un compte employé avec email et mot de passe.
-4. Désactiver ou réactiver un compte employé.
-5. Accéder aux mêmes fonctionnalités qu'un employé.
-6. Consulter les statistiques de commandes par menu et le chiffre d'affaires filtrable.
+L'administrateur accède à toutes les fonctionnalités employé, plus :
+
+### Gestion des employés
+1. Aller dans **Gérer les employés**.
+2. Créer un compte employé en renseignant email, prénom, nom et mot de passe.
+3. L'employé reçoit un email de notification (le mot de passe est communiqué manuellement).
+4. Désactiver ou réactiver un compte employé (départ ou retour de l'employé).
+
+### Statistiques
+- **Dashboard** : vue d'ensemble des commandes et graphique du nombre de commandes par menu (données MongoDB).
+- **Statistiques CA** : chiffre d'affaires par menu avec filtres par menu et par période.
+
+---
 
 ## Règles métier importantes
 
-- Un visiteur doit se connecter ou créer un compte avant de commander.
-- Le nombre de personnes doit respecter le minimum défini sur le menu.
-- Une réduction de 10% est appliquée à partir de 5 personnes au-dessus du minimum.
-- La livraison est gratuite à Bordeaux.
-- Hors Bordeaux, la livraison coûte 5 euros + 0,59 euro par kilomètre.
-- Les conditions du menu sont affichées avant la commande.
-- Une commande acceptée ne peut plus être modifiée par le client.
+| Règle | Détail |
+|---|---|
+| Minimum de personnes | Le nombre saisi doit être ≥ au minimum défini sur le menu |
+| Réduction | −10 % si nombre de personnes ≥ minimum + 5 |
+| Livraison Bordeaux | Gratuite |
+| Livraison hors Bordeaux | 5,00 € + 0,59 €/km depuis Bordeaux |
+| Modification commande | Uniquement si statut = En attente |
+| Annulation employé | Motif + mode de contact obligatoires |
+| Retour matériel | 10 jours ouvrés, pénalité 600 € sinon (cf. CGV) |
+| Compte admin | Impossible à créer depuis l'application |

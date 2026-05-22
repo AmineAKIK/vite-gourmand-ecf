@@ -11,7 +11,7 @@ $pageTitle = 'Mot de passe oublié - Vite & Gourmand';
         </div>
 
         <form method="POST" action="/mot-de-passe-oublie" novalidate>
-            <input type="hidden" name="csrf_token" value="<?= csrf() ?>">
+            <?= csrfField() ?>
 
             <div class="mb-3">
                 <label for="email" class="form-label">Adresse email</label>

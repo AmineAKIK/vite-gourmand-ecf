@@ -34,7 +34,7 @@ class CommandeModel {
                    ->execute([(int)$data['menu_id']]);
             }
 
-            self::addHistorique($id, null, 'en_attente', 'Commande passée', $data['utilisateur_id']);
+            self::addHistorique($id, null, commandeInitialStatus(), 'Commande passée', $data['utilisateur_id']);
             $db->commit();
             return $id;
         } catch (Throwable $e) {
@@ -86,9 +86,8 @@ class CommandeModel {
         }
         if (!empty($filters['client'])) {
             $sql .= " AND (u.nom LIKE ? OR u.prenom LIKE ? OR u.email LIKE ?)";
-            $params[] = '%'.$filters['client'].'%';
-            $params[] = '%'.$filters['client'].'%';
-            $params[] = '%'.$filters['client'].'%';
+            $clientLike = '%' . $filters['client'] . '%';
+            array_push($params, ...array_fill(0, 3, $clientLike));
         }
         $sql .= " ORDER BY c.date_commande DESC";
         $stmt = $db->prepare($sql);
@@ -103,12 +102,33 @@ class CommandeModel {
         self::addHistorique($id, $old['statut'], $statut, $commentaire, $modifiePar);
     }
 
+    public static function updateDetails(int $id, array $data): void {
+        $db   = Database::getConnection();
+        $stmt = $db->prepare("
+            UPDATE commande SET date_prestation=?, heure_livraison=?, adresse_livraison=?,
+            ville_livraison=?, code_postal_livraison=?, nombre_personne=?,
+            prix_menu=?, prix_livraison=?, prix_total=? WHERE commande_id=?
+        ");
+        $stmt->execute([
+            $data['date_prestation'],
+            $data['heure_livraison'],
+            $data['adresse_livraison'],
+            $data['ville_livraison'],
+            $data['code_postal_livraison'],
+            $data['nombre_personne'],
+            $data['prix_menu'],
+            $data['prix_livraison'],
+            $data['prix_total'],
+            $id,
+        ]);
+    }
+
     public static function cancel(int $id, string $motif, string $modeContact, int $modifiePar): void {
         $db   = Database::getConnection();
         $old  = self::getById($id);
-        $db->prepare("UPDATE commande SET statut='annulee', motif_annulation=?, mode_contact_annulation=? WHERE commande_id=?")
-           ->execute([$motif, $modeContact, $id]);
-        self::addHistorique($id, $old['statut'] ?? null, 'annulee', "Annulation ($modeContact) : $motif", $modifiePar);
+        $db->prepare("UPDATE commande SET statut=?, motif_annulation=?, mode_contact_annulation=? WHERE commande_id=?")
+           ->execute([commandeCancelledStatus(), $motif, $modeContact, $id]);
+        self::addHistorique($id, $old['statut'] ?? null, commandeCancelledStatus(), "Annulation ($modeContact) : $motif", $modifiePar);
     }
 
     public static function getHistorique(int $commandeId): array {
@@ -131,17 +151,47 @@ class CommandeModel {
     }
 
     public static function canModify(array $commande): bool {
-        return $commande['statut'] === 'en_attente';
+        return commandeCanClientModify($commande);
     }
 
     public static function getStatsByMenu(): array {
         $db = Database::getConnection();
-        return $db->query("
+        $stmt = $db->prepare("
             SELECT m.titre, COUNT(c.commande_id) AS nb_commandes, SUM(c.prix_total) AS ca_total
             FROM commande c
             JOIN menu m ON m.menu_id = c.menu_id
-            WHERE c.statut != 'annulee'
+            WHERE c.statut != ?
             GROUP BY c.menu_id
-        ")->fetchAll();
+        ");
+        $stmt->execute([commandeCancelledStatus()]);
+        return $stmt->fetchAll();
+    }
+
+    public static function getCaStatsByMenu(int $menuId = 0, string $dateDebut = '', string $dateFin = ''): array {
+        $sql = "
+            SELECT m.menu_id, m.titre, SUM(c.prix_total) AS ca, COUNT(c.commande_id) AS nb
+            FROM commande c
+            JOIN menu m ON m.menu_id = c.menu_id
+            WHERE c.statut != ?
+        ";
+        $params = [commandeCancelledStatus()];
+
+        if ($menuId) {
+            $sql .= " AND c.menu_id = ?";
+            $params[] = $menuId;
+        }
+        if ($dateDebut) {
+            $sql .= " AND c.date_commande >= ?";
+            $params[] = $dateDebut;
+        }
+        if ($dateFin) {
+            $sql .= " AND c.date_commande <= ?";
+            $params[] = $dateFin . ' 23:59:59';
+        }
+
+        $sql .= " GROUP BY c.menu_id ORDER BY ca DESC";
+        $stmt = Database::getConnection()->prepare($sql);
+        $stmt->execute($params);
+        return $stmt->fetchAll();
     }
 }
