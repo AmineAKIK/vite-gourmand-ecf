@@ -141,7 +141,7 @@ class MenuAdminService
         }
 
         $tmpName = $file['tmp_name'] ?? '';
-        if (!$tmpName || !is_uploaded_file($tmpName)) {
+        if (!$tmpName || !file_exists($tmpName)) {
             return null;
         }
 
@@ -154,18 +154,30 @@ class MenuAdminService
         $filename = $prefix . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
         $relativePath = 'uploads/' . $filename;
 
-        return move_uploaded_file($tmpName, self::publicPath($relativePath)) ? $relativePath : null;
+        $destination = self::publicPath($relativePath);
+        $moved = move_uploaded_file($tmpName, $destination);
+        if (!$moved) {
+            $moved = rename($tmpName, $destination);
+        }
+        return $moved ? $relativePath : null;
     }
 
     private static function imageMimeType(string $tmpName): ?string
     {
-        if (!class_exists(Finfo::class)) {
-            return null;
+        if (class_exists(Finfo::class)) {
+            $finfo = new Finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($tmpName);
+            if (is_string($mime)) {
+                return $mime;
+            }
         }
 
-        $finfo = new Finfo(FILEINFO_MIME_TYPE);
-        $mime = $finfo->file($tmpName);
-        return is_string($mime) ? $mime : null;
+        if (function_exists('mime_content_type')) {
+            $mime = mime_content_type($tmpName);
+            return is_string($mime) ? $mime : null;
+        }
+
+        return null;
     }
 
     private static function ensureUploadDirectory(): void
