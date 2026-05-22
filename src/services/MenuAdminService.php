@@ -49,8 +49,8 @@ class MenuAdminService
     {
         $payload = [
             'titre'        => sanitize($source['titre'] ?? ''),
-            'description'  => sanitize($source['description'] ?? ''),
             'categorie_id' => (int)($source['categorie_id'] ?? 0),
+            'allergenes'   => sanitize($source['allergenes'] ?? ''),
         ];
 
         if (!$payload['titre'] || !$payload['categorie_id']) {
@@ -94,16 +94,6 @@ class MenuAdminService
                 MenuModel::addMenuImage($menuId, $path, $order++);
             }
         }
-    }
-
-    public static function uploadPlatPhoto(int $platId, array $file): ?string
-    {
-        if (empty($file['tmp_name'])) {
-            return null;
-        }
-
-        self::ensureUploadDirectory();
-        return self::storeUploadedImage($file, 'plat_' . $platId);
     }
 
     public static function deleteMenuImageFile(int $imageId): void

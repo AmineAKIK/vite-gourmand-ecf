@@ -80,12 +80,11 @@ class EmployeController
         $themes      = MenuModel::getThemes();
         $regimes     = MenuModel::getRegimes();
         $plats       = MenuModel::getPlatsForAdmin();
-        $allergenes  = MenuModel::getAllergenes();
         $categories  = MenuModel::getCategories();
         $platsByMenu = MenuModel::getPlatsByMenu();
         $imagesByMenu = MenuModel::getImagesByMenuIds(array_column($menus, 'menu_id'));
 
-        view('pages/employe/menus', compact('menus', 'themes', 'regimes', 'plats', 'allergenes', 'categories', 'platsByMenu', 'imagesByMenu'));
+        view('pages/employe/menus', compact('menus', 'themes', 'regimes', 'plats', 'categories', 'platsByMenu', 'imagesByMenu'));
     }
 
     public function createMenu(): void
@@ -152,12 +151,6 @@ class EmployeController
         }
 
         $platId = MenuModel::createPlat($data);
-        MenuModel::addPlatAllergenes($platId, MenuAdminService::selectedIds($_POST, 'allergenes'));
-
-        $photoPath = MenuAdminService::uploadPlatPhoto($platId, $_FILES['photo'] ?? []);
-        if ($photoPath) {
-            MenuModel::updatePlatPhoto($platId, $photoPath);
-        }
 
         flash('success', 'Plat créé avec succès.');
         redirect('/employe/menus');
@@ -181,12 +174,6 @@ class EmployeController
         }
 
         MenuModel::updatePlat($id, $data);
-        MenuModel::replacePlatAllergenes($id, MenuAdminService::selectedIds($_POST, 'allergenes'));
-
-        $photoPath = MenuAdminService::uploadPlatPhoto($id, $_FILES['photo'] ?? []);
-        if ($photoPath) {
-            MenuModel::updatePlatPhoto($id, $photoPath);
-        }
 
         flash('success', 'Plat modifié.');
         redirect('/employe/menus');

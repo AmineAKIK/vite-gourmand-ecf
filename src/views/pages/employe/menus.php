@@ -100,7 +100,7 @@ foreach ($plats as $plat) {
                     <tr>
                         <th scope="col">Titre</th>
                         <th scope="col">Catégorie</th>
-                        <th scope="col">Description</th>
+                        <th scope="col">Allergènes</th>
                         <th scope="col">Actions</th>
                     </tr>
                 </thead>
@@ -109,7 +109,7 @@ foreach ($plats as $plat) {
                     <tr>
                         <td class="fw-semibold"><?= sanitize($plat['titre']) ?></td>
                         <td><?= sanitize($plat['categorie']) ?></td>
-                        <td><?= sanitize($plat['description'] ?? '') ?></td>
+                        <td><small class="text-muted"><?= sanitize($plat['allergenes'] ?? '—') ?></small></td>
                         <td>
                             <button class="btn btn-sm btn-outline-secondary me-1"
                                     data-bs-toggle="modal"
@@ -144,48 +144,35 @@ foreach ($plats as $plat) {
                     </h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
                 </div>
-                <form method="POST" action="/employe/plat/modifier" enctype="multipart/form-data">
+                <form method="POST" action="/employe/plat/modifier">
                     <?= csrfField() ?>
                     <input type="hidden" name="plat_id" value="<?= (int)$plat['plat_id'] ?>">
                     <div class="modal-body">
                         <div class="mb-3">
-                            <label for="titre_plat_<?= (int)$plat['plat_id'] ?>" class="form-label">Titre</label>
+                            <label for="titre_plat_<?= (int)$plat['plat_id'] ?>" class="form-label">Titre <span class="text-danger">*</span></label>
                             <input type="text" class="form-control"
                                    id="titre_plat_<?= (int)$plat['plat_id'] ?>"
                                    name="titre" value="<?= sanitize($plat['titre']) ?>" required>
                         </div>
                         <div class="mb-3">
-                            <label for="desc_plat_<?= (int)$plat['plat_id'] ?>" class="form-label">Description</label>
-                            <textarea class="form-control"
-                                      id="desc_plat_<?= (int)$plat['plat_id'] ?>"
-                                      name="description" rows="2"><?= sanitize($plat['description'] ?? '') ?></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label for="cat_plat_<?= (int)$plat['plat_id'] ?>" class="form-label">Catégorie</label>
-                            <select class="form-select"
-                                    id="cat_plat_<?= (int)$plat['plat_id'] ?>"
-                                    name="categorie_id" required>
+                            <label for="cat_plat_<?= (int)$plat['plat_id'] ?>" class="form-label">Catégorie <span class="text-danger">*</span></label>
+                            <select class="form-select" id="cat_plat_<?= (int)$plat['plat_id'] ?>" name="categorie_id" required>
                                 <?php foreach ($categories as $cat): ?>
-                                    <option value="<?= (int)$cat['categorie_id'] ?>"
-                                        <?= $cat['libelle'] === $plat['categorie'] ? 'selected' : '' ?>>
+                                    <option value="<?= (int)$cat['categorie_id'] ?>" <?= $cat['libelle'] === $plat['categorie'] ? 'selected' : '' ?>>
                                         <?= sanitize($cat['libelle']) ?>
                                     </option>
                                 <?php endforeach; ?>
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label for="photo_plat_<?= (int)$plat['plat_id'] ?>" class="form-label">Remplacer la photo</label>
-                            <input type="file" class="form-control"
-                                   id="photo_plat_<?= (int)$plat['plat_id'] ?>"
-                                   name="photo"
-                                   accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>">
+                            <label for="al_plat_<?= (int)$plat['plat_id'] ?>" class="form-label">Allergènes</label>
+                            <input type="text" class="form-control tag-input"
+                                   id="al_plat_<?= (int)$plat['plat_id'] ?>"
+                                   name="allergenes"
+                                   value="<?= sanitize($plat['allergenes'] ?? '') ?>"
+                                   placeholder="ex : Gluten, Lait, Œufs">
+                            <div class="form-text">Séparez les allergènes par des virgules.</div>
                         </div>
-                        <?php $allergenesPlat = array_filter(array_map('intval', explode(',', (string)($plat['allergene_ids'] ?? '')))); ?>
-                        <?php partial('partials/allergene_checkboxes', [
-                            'allergenes' => $allergenes,
-                            'selectedAllergeneIds' => $allergenesPlat,
-                            'idPrefix' => 'modif-al-' . (int)$plat['plat_id'],
-                        ]); ?>
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
@@ -303,7 +290,7 @@ foreach ($plats as $plat) {
                 </h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
-            <form method="POST" action="/employe/plat/creer" enctype="multipart/form-data" novalidate>
+            <form method="POST" action="/employe/plat/creer" novalidate>
                 <?= csrfField() ?>
                 <div class="modal-body">
                     <div class="mb-3">
@@ -312,14 +299,8 @@ foreach ($plats as $plat) {
                             required aria-required="true" maxlength="200">
                     </div>
                     <div class="mb-3">
-                        <label for="plat-description" class="form-label">Description</label>
-                        <textarea class="form-control" id="plat-description" name="description"
-                            rows="3" maxlength="500"></textarea>
-                    </div>
-                    <div class="mb-3">
                         <label for="plat-categorie" class="form-label">Catégorie <span class="text-danger" aria-hidden="true">*</span></label>
-                        <select class="form-select" id="plat-categorie" name="categorie_id"
-                            required aria-required="true">
+                        <select class="form-select" id="plat-categorie" name="categorie_id" required aria-required="true">
                             <option value="">— Choisir une catégorie —</option>
                             <?php foreach ($categories as $cat): ?>
                                 <option value="<?= (int)$cat['categorie_id'] ?>"><?= sanitize($cat['libelle']) ?></option>
@@ -327,16 +308,11 @@ foreach ($plats as $plat) {
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="plat-photo" class="form-label">Photo du plat</label>
-                        <input type="file" class="form-control" id="plat-photo" name="photo"
-                               accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>"
-                               aria-label="Photo du plat">
+                        <label for="plat-allergenes" class="form-label">Allergènes</label>
+                        <input type="text" class="form-control tag-input" id="plat-allergenes" name="allergenes"
+                               placeholder="ex : Gluten, Lait, Œufs">
+                        <div class="form-text">Séparez les allergènes par des virgules.</div>
                     </div>
-                    <?php partial('partials/allergene_checkboxes', [
-                        'allergenes' => $allergenes,
-                        'selectedAllergeneIds' => [],
-                        'idPrefix' => 'al',
-                    ]); ?>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>

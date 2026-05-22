@@ -90,15 +90,12 @@ class MenuModel {
     public static function getPlats(int $menuId): array {
         $db   = Database::getConnection();
         $stmt = $db->prepare("
-            SELECT p.*, cp.libelle AS categorie,
-                   GROUP_CONCAT(a.libelle SEPARATOR ', ') AS allergenes
+            SELECT p.plat_id, p.titre, p.allergenes, p.categorie_id, cp.libelle AS categorie
             FROM plat p
             JOIN menu_plat mp ON mp.plat_id = p.plat_id
             JOIN categorie_plat cp ON cp.categorie_id = p.categorie_id
-            LEFT JOIN plat_allergene pa ON pa.plat_id = p.plat_id
-            LEFT JOIN allergene a ON a.allergene_id = pa.allergene_id
             WHERE mp.menu_id = ?
-            GROUP BY p.plat_id, p.titre, p.description, p.categorie_id, p.photo_chemin, cp.libelle
+            ORDER BY cp.libelle, p.titre
         ");
         $stmt->execute([$menuId]);
         return $stmt->fetchAll();
@@ -153,18 +150,11 @@ class MenuModel {
 
     public static function getPlatsForAdmin(): array {
         return Database::getConnection()->query("
-            SELECT p.*, cp.libelle AS categorie,
-                   GROUP_CONCAT(pa.allergene_id) AS allergene_ids
+            SELECT p.plat_id, p.titre, p.allergenes, p.categorie_id, cp.libelle AS categorie
             FROM plat p
             JOIN categorie_plat cp ON cp.categorie_id = p.categorie_id
-            LEFT JOIN plat_allergene pa ON pa.plat_id = p.plat_id
-            GROUP BY p.plat_id, p.titre, p.description, p.categorie_id, p.photo_chemin, cp.libelle
             ORDER BY cp.libelle, p.titre
         ")->fetchAll();
-    }
-
-    public static function getAllergenes(): array {
-        return Database::getConnection()->query("SELECT * FROM allergene ORDER BY libelle")->fetchAll();
     }
 
     public static function getCategories(): array {
@@ -226,40 +216,15 @@ class MenuModel {
 
     public static function createPlat(array $data): int {
         $db = Database::getConnection();
-        $stmt = $db->prepare("INSERT INTO plat (titre, description, categorie_id) VALUES (?, ?, ?)");
-        $stmt->execute([$data['titre'], $data['description'], $data['categorie_id']]);
+        $stmt = $db->prepare("INSERT INTO plat (titre, categorie_id, allergenes) VALUES (?, ?, ?)");
+        $stmt->execute([$data['titre'], $data['categorie_id'], $data['allergenes'] ?? '']);
         return (int)$db->lastInsertId();
     }
 
     public static function updatePlat(int $id, array $data): void {
         Database::getConnection()
-            ->prepare("UPDATE plat SET titre=?, description=?, categorie_id=? WHERE plat_id=?")
-            ->execute([$data['titre'], $data['description'], $data['categorie_id'], $id]);
-    }
-
-    public static function updatePlatPhoto(int $id, string $path): void {
-        Database::getConnection()
-            ->prepare("UPDATE plat SET photo_chemin=? WHERE plat_id=?")
-            ->execute([$path, $id]);
-    }
-
-    public static function replacePlatAllergenes(int $platId, array $allergeneIds): void {
-        $db = Database::getConnection();
-        $db->prepare("DELETE FROM plat_allergene WHERE plat_id = ?")->execute([$platId]);
-
-        if (empty($allergeneIds)) {
-            return;
-        }
-
-        self::insertPlatAllergenes($db, $platId, $allergeneIds);
-    }
-
-    public static function addPlatAllergenes(int $platId, array $allergeneIds): void {
-        if (empty($allergeneIds)) {
-            return;
-        }
-
-        self::insertPlatAllergenes(Database::getConnection(), $platId, $allergeneIds);
+            ->prepare("UPDATE plat SET titre=?, categorie_id=?, allergenes=? WHERE plat_id=?")
+            ->execute([$data['titre'], $data['categorie_id'], $data['allergenes'] ?? '', $id]);
     }
 
     public static function platIsUsed(int $platId): bool {
@@ -281,10 +246,4 @@ class MenuModel {
         }
     }
 
-    private static function insertPlatAllergenes(PDO $db, int $platId, array $allergeneIds): void {
-        $stmt = $db->prepare("INSERT IGNORE INTO plat_allergene (plat_id, allergene_id) VALUES (?, ?)");
-        foreach ($allergeneIds as $allergeneId) {
-            $stmt->execute([$platId, $allergeneId]);
-        }
-    }
 }

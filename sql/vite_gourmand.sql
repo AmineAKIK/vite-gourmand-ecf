@@ -25,11 +25,6 @@ CREATE TABLE theme (
     libelle VARCHAR(50) NOT NULL UNIQUE
 );
 
-CREATE TABLE allergene (
-    allergene_id INT AUTO_INCREMENT PRIMARY KEY,
-    libelle VARCHAR(50) NOT NULL UNIQUE
-);
-
 CREATE TABLE horaire (
     horaire_id INT AUTO_INCREMENT PRIMARY KEY,
     jour VARCHAR(20) NOT NULL,
@@ -98,20 +93,9 @@ CREATE TABLE categorie_plat (
 CREATE TABLE plat (
     plat_id INT AUTO_INCREMENT PRIMARY KEY,
     titre VARCHAR(100) NOT NULL,
-    description TEXT,
-    photo LONGBLOB,
-    photo_chemin VARCHAR(255),
     categorie_id INT NOT NULL,
+    allergenes TEXT,
     FOREIGN KEY (categorie_id) REFERENCES categorie_plat(categorie_id)
-);
-
--- Relation plat <-> allergène (many-to-many)
-CREATE TABLE plat_allergene (
-    plat_id INT NOT NULL,
-    allergene_id INT NOT NULL,
-    PRIMARY KEY (plat_id, allergene_id),
-    FOREIGN KEY (plat_id) REFERENCES plat(plat_id) ON DELETE CASCADE,
-    FOREIGN KEY (allergene_id) REFERENCES allergene(allergene_id) ON DELETE CASCADE
 );
 
 -- Relation menu <-> plat (many-to-many)
@@ -202,11 +186,6 @@ INSERT INTO role (libelle) VALUES ('utilisateur'), ('employe'), ('administrateur
 INSERT INTO regime (libelle) VALUES ('classique'), ('vegetarien'), ('vegan'), ('sans_gluten'), ('halal');
 
 INSERT INTO theme (libelle) VALUES ('classique'), ('noel'), ('paques'), ('evenement'), ('saint_valentin');
-
-INSERT INTO allergene (libelle) VALUES 
-('Gluten'), ('Crustacés'), ('Œufs'), ('Poissons'), ('Arachides'),
-('Soja'), ('Lait'), ('Fruits à coque'), ('Céleri'), ('Moutarde'),
-('Graines de sésame'), ('Anhydride sulfureux'), ('Lupin'), ('Mollusques');
 
 INSERT INTO horaire (jour, heure_ouverture, heure_fermeture) VALUES
 ('Lundi', '09:00', '18:00'),
