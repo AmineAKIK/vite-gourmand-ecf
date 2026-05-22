@@ -29,10 +29,6 @@ foreach ($plats as $plat) {
         </div>
     </div>
 
-    <!-- DEBUG TEMPORAIRE -->
-    <?php if (!empty($_GET['debug'])): ?>
-    <pre style="font-size:11px;background:#fff;padding:10px;border:1px solid red;overflow:auto;max-height:300px"><?= htmlspecialchars(print_r($imagesByMenu, true)) ?></pre>
-    <?php endif; ?>
     <!-- Tableau des menus -->
     <?php if (empty($menus)): ?>
         <div class="alert alert-info">Aucun menu enregistré.</div>
