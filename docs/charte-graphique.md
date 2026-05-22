@@ -30,7 +30,7 @@ Les couleurs Bootstrap (bleu, vert, rouge standard) sont remappées vers cette c
 | Titres | Playfair Display (400, 700) | Google Fonts |
 | Corps de texte | Inter (300, 400, 500, 600) | Google Fonts |
 
-Chargées via `@import` Google Fonts dans la feuille de style principale.
+Chargées via `@import` Google Fonts dans la feuille de style principale (`public/css/style.css`).
 
 ---
 
@@ -39,21 +39,22 @@ Chargées via `@import` Google Fonts dans la feuille de style principale.
 **Boutons**
 - Principal (`btn-vg`) : fond bordeaux `#8B1A2B`, texte blanc, hover bordeaux foncé.
 - Contour (`btn-vg-outline`) : transparent, bordure bordeaux, hover fond bordeaux.
-- Accent (`btn-or`) : fond or `#D4A843`, texte charbon `#2C2C2C` (ratio contraste 6.3:1).
-- Secondaire : contour gris doux, hover bordeaux.
+- Accent (`btn-or`) : fond or `#D4A843`, texte charbon `#2C2C2C` (contraste 6.3:1).
+- Secondaire Bootstrap : contour gris doux, hover bordeaux.
 
 **Cartes menus**
-- Ombre légère, image en haut, titre en Playfair Display, badge prix en bordeaux.
+- Ombre légère, image en haut, titre Playfair Display, badge prix bordeaux.
+- Indicateur de stock coloré : vert (disponible), orange (≤ 3 places), rouge (épuisé).
 
 **Badges de statut commande**
 - `en_attente` : fond crème-or, texte sombre.
-- `accepte` : fond crème bordeaux clair, texte bordeaux.
-- `en_preparation` / `en_cours_livraison` : variantes crème.
+- `accepte` / `en_preparation` / `en_cours_livraison` : variantes crème bordeaux.
 - `terminee` : fond neutre clair.
 - `annulee` : fond rouge très désaturé.
 
 **Panneau de filtres**
-- Fond crème `#FDF6EC`, bordure subtile, coins arrondis.
+- Fond crème `#FDF6EC`, bordure subtile, coins arrondis 8px.
+- Bouton "Réinitialiser" en style `btn-vg-outline`, aligné à droite du titre.
 
 ---
 
@@ -95,7 +96,7 @@ Chargées via `@import` Google Fonts dans la feuille de style principale.
 |  25 ans d'expérience  |  Organisation maîtrisée  |  Qualité  |
 +--------------------------------------------------------------+
 |                   Ils nous font confiance                    |
-|   ★★★★★ "Avis 1"   |  ★★★★☆ "Avis 2"  |  ★★★★★ "Avis 3"  |
+|  ★★★★★ "Avis 1"    |  ★★★★☆ "Avis 2"   |  ★★★★★ "Avis 3"  |
 +--------------------------------------------------------------+
 |  Footer : Horaires | Liens | Mentions légales | CGV          |
 +--------------------------------------------------------------+
@@ -105,14 +106,14 @@ Chargées via `@import` Google Fonts dans la feuille de style principale.
 
 ```
 +--------------------------------------------------------------+
-|  [ Filtres : Prix min | Prix max | Thème | Régime | Pers. ]  |
-|                             [ Réinitialiser ]                |
+|  Filtrer les menus          [ Réinitialiser ]                |
+|  [ Prix min ] [ Prix max ] [ Thème ] [ Régime ] [ Pers. ]   |
 +--------------------+--------------------+--------------------+
 |  [Image menu]      |  [Image menu]      |  [Image menu]      |
 |  Titre             |  Titre             |  Titre             |
 |  Description...    |  Description...    |  Description...    |
 |  Min. X personnes  |  Min. X personnes  |  Min. X personnes  |
-|  X places dispo    |  X places dispo    |  Plus disponible   |
+|  ✅ X places dispo  |  ⚠ 2 places        |  ❌ Plus disponible |
 |  Prix : XX,XX €    |  Prix : XX,XX €    |  Prix : XX,XX €    |
 |  [ Voir le détail ]|  [ Voir le détail ]|  [ Voir le détail ]|
 +--------------------+--------------------+--------------------+
@@ -124,16 +125,16 @@ Chargées via `@import` Google Fonts dans la feuille de style principale.
 +--------------------------------------------------------------+
 |  Passer une commande                                         |
 +--------------------------------------------------------------+
-|  Prénom* | Nom*                                              |
-|  Email*  | Téléphone*                                        |
+|  Prénom* [auto]    | Nom* [auto]                             |
+|  Email* [auto]     | Téléphone* [auto]                       |
 |  Adresse de livraison*                                       |
-|  Ville*  | Code postal*                                      |
-|  Date de prestation* | Heure*                                |
-|  Menu sélectionné*                                           |
-|  ⚠ Conditions importantes du menu                            |
+|  Ville*            | Code postal*                            |
+|  Date de prestation*         | Heure*                        |
+|  Menu sélectionné* [pré-rempli si venu du détail]            |
+|  ⚠ Conditions importantes du menu (encadrées)                |
 |  Nombre de personnes* (min. X)                               |
-|  ───────────────────────────────                             |
-|  Prix menu : XX,XX €   Livraison : X,XX €   Total : XX,XX € |
+|  ───────────────────────────────────────────────             |
+|  Prix menu : XX,XX €  Livraison : X,XX €  Total : XX,XX €   |
 |                    [ Valider ma commande ]                   |
 +--------------------------------------------------------------+
 ```
@@ -142,11 +143,11 @@ Chargées via `@import` Google Fonts dans la feuille de style principale.
 
 ```
 +-------------------------+
-| ☰  Vite & Gourmand      |
+| ☰        Vite & Gourmand|
 +-------------------------+
 |  HERO                   |
 |  Traiteur à Bordeaux    |
-|  [ Nos menus ]          |
+|  [ Découvrir nos menus ]|
 +-------------------------+
 |  ✓ 25 ans d'expérience  |
 |  ✓ Organisation         |
@@ -155,7 +156,7 @@ Chargées via `@import` Google Fonts dans la feuille de style principale.
 |  ★★★★★ "Avis 1"         |
 |  ★★★★☆ "Avis 2"         |
 +-------------------------+
-|  Footer (condensé)      |
+|  Footer condensé        |
 +-------------------------+
 ```
 
@@ -170,7 +171,7 @@ Chargées via `@import` Google Fonts dans la feuille de style principale.
 |  [Image]                |
 |  Titre menu             |
 |  Min. X personnes       |
-|  X places dispo         |
+|  ✅ X places disponibles |
 |  Prix : XX,XX €         |
 |  [ Voir le détail ]     |
 +-------------------------+
@@ -186,14 +187,16 @@ Chargées via `@import` Google Fonts dans la feuille de style principale.
 |  Bonjour, Prénom !      |
 +-------------------------+
 |  Mes commandes          |
-|  N° | Menu | Date       |
-|  Statut [badge]         |
+|  N° commande            |
+|  Menu | Date            |
+|  [badge statut]         |
 |  [ Modifier ] [Annuler] |
 +-------------------------+
 |  Mes informations       |
 |  Prénom / Nom           |
 |  Téléphone / Adresse    |
 |  [ Enregistrer ]        |
+|  ─────────────────────  |
 |  [ Supprimer mon compte]|
 +-------------------------+
 ```

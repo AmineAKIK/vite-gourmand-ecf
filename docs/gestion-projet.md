@@ -8,13 +8,14 @@ La gestion du projet est organisée selon une méthode **agile légère**. Les f
 
 ## Outil de suivi
 
-**Trello** — tableau disponible à l'adresse : `https://trello.com/b/EGkFxUax/vite-gourmand-ecf`
+**Trello** — `https://trello.com/b/EGkFxUax/vite-gourmand-ecf`
 
 Colonnes utilisées :
-- **Backlog** — toutes les fonctionnalités identifiées au départ
+
+- **Backlog** — fonctionnalités identifiées au départ
 - **À faire** — sprint en cours
 - **En cours** — tâche active
-- **En test** — fonctionnalité développée, vérification en cours
+- **En test** — fonctionnalité développée, en vérification
 - **Terminé** — validé et mergé
 
 ---
@@ -31,8 +32,9 @@ Colonnes utilisées :
 | `feature/admin` | Gestion employés, stats CA, graphique MongoDB |
 | `feature/securite` | CSRF, bcrypt, PDO préparé, contrôle d'accès par rôle, RGPD, RGAA |
 | `feature/docs` | Charte graphique, manuel, doc technique, gestion projet |
+| `feature/audit-corrections` | Suppression compte client, affichage stock, filtres menus, nettoyage, mails |
 
-Chaque branche est issue de `develop`. Après validation, merge vers `develop` avec l'option `--no-ff` pour conserver l'historique. Une fois `develop` stable, merge vers `main` (release v1.0.0).
+Chaque branche est issue de `develop`. Après validation, merge vers `develop` avec `--no-ff`. Une fois `develop` stable, merge vers `main`.
 
 ---
 
@@ -57,8 +59,10 @@ merge: feature/auth → develop
 **URL :** `https://github.com/AmineAKIK/vite-gourmand-ecf`
 
 Branches présentes :
+
 - `main` — version stable déployée sur Railway
 - `develop` — branche d'intégration
+- `feature/audit-corrections` — corrections post-audit (visible sur GitHub)
 
 ---
 
@@ -68,22 +72,23 @@ Branches présentes :
 
 **URL de production :** `https://vite-gourmand-ecf-production-c7ac.up.railway.app`
 
-Services déployés sur Railway :
+Services Railway :
+
 - **vite-gourmand-ecf** — application PHP 8.2 via serveur built-in (`php -S`)
 - **MySQL** — base de données relationnelle Railway
 
-MongoDB utilisé via **MongoDB Atlas** (service cloud externe, configurable via variable `MONGO_URI`).
+MongoDB via **MongoDB Atlas** (service cloud externe, variable `MONGO_URI`).
 
 ---
 
 ## Risques identifiés et réponses apportées
 
-| Risque | Réponse |
+| Risque | Réponse apportée |
 |---|---|
 | Conflit MPM Apache sur Railway | Abandonné, remplacé par `php -S` (serveur built-in PHP) |
-| Extension MongoDB incompatible | `pecl install mongodb-2.1.0` + `mongodb/mongodb ^2.0` dans Composer |
-| MongoDB indisponible en prod | Dégradation gracieuse : app fonctionne sans MongoDB, stats vides |
-| Mails en spam | `AltBody` sur tous les mails, SMTP Gmail authentifié |
+| Extension MongoDB incompatible | `pecl install mongodb-2.1.0` + `mongodb/mongodb ^2.0` |
+| MongoDB indisponible en prod | Dégradation gracieuse : app fonctionne sans MongoDB |
+| Mails en spam | `AltBody` texte brut sur tous les mails, SMTP Gmail authentifié |
 | Port Railway dynamique | `CMD php -S 0.0.0.0:${PORT:-8080}` dans le Dockerfile |
 
 ---
@@ -99,3 +104,4 @@ MongoDB utilisé via **MongoDB Atlas** (service cloud externe, configurable via 
 - Les statistiques de commandes par menu sont lues depuis MongoDB.
 - Tous les formulaires POST sont protégés par un token CSRF.
 - Aucun compte administrateur ne peut être créé depuis l'application.
+- Un client peut supprimer son compte (droit à l'effacement RGPD).

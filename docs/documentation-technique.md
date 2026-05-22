@@ -4,17 +4,15 @@
 
 Le cahier des charges n'impose aucune technologie à l'exception d'une base relationnelle et d'une base non relationnelle. Le choix retenu est une application **PHP 8.2** avec une architecture **MVC maison** (sans framework), **PDO** pour MySQL et la librairie officielle `mongodb/mongodb` pour les statistiques.
 
-**Justification des choix :**
-
 | Choix | Justification |
 |---|---|
 | PHP 8.2 sans framework | Maîtrise totale de l'architecture, sans dépendance lourde, déploiement simplifié |
 | PDO + requêtes préparées | Sécurité SQL (injection), portabilité, standard PHP |
 | MySQL 8 | Base relationnelle solide, bien supportée par Railway |
-| MongoDB Atlas | Séparation des données analytiques des données métier, conformité NoSQL exigée |
-| PHPMailer | Bibliothèque de référence PHP pour SMTP, gère TLS, HTML/texte, encodage UTF-8 |
+| MongoDB Atlas | Séparation des données analytiques, conformité NoSQL exigée |
+| PHPMailer | Bibliothèque de référence PHP pour SMTP, gère TLS, HTML/texte, UTF-8 |
 | Bootstrap 5.3 | Responsive natif, composants prêts, personnalisable via variables CSS |
-| Chart.js | Légère, simple à intégrer, graphiques en canvas sans dépendance serveur |
+| Chart.js | Légère, graphiques canvas sans dépendance serveur |
 | Railway | Déploiement depuis GitHub, MySQL intégré, variables d'environnement, HTTPS auto |
 
 ---
@@ -27,7 +25,7 @@ Le cahier des charges n'impose aucune technologie à l'exception d'une base rela
 | Front-end | HTML5, CSS3, Bootstrap | 5.3.3 |
 | Icônes | Bootstrap Icons | 1.11.3 |
 | Graphiques | Chart.js | CDN |
-| Back-end | PHP 8.2, architecture MVC | — |
+| Back-end | PHP 8.2, architecture MVC maison | — |
 | Base relationnelle | MySQL 8 via PDO | — |
 | Base non relationnelle | MongoDB Atlas | ext-mongodb 2.x |
 | Emails | PHPMailer | ^6.9 |
@@ -43,27 +41,18 @@ Le cahier des charges n'impose aucune technologie à l'exception d'une base rela
 - PHP >= 8.2 avec extensions : `pdo_mysql`, `mbstring`, `zip`, `mongodb`
 - MySQL >= 8.0
 - Composer
-- (Optionnel) MongoDB local ou compte MongoDB Atlas
 
 ### Installation
 
 ```bash
-# 1. Installer les dépendances Composer
 composer install
-
-# 2. Copier et configurer les variables d'environnement
 cp .env.example .env
-# Éditer .env avec vos paramètres DB, SMTP et MongoDB
+# Éditer .env avec vos paramètres
 
-# 3. Créer la base de données et importer le schéma
 mysql -u root -p -e "CREATE DATABASE vite_gourmand CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;"
 mysql -u root -p vite_gourmand < sql/vite_gourmand.sql
-
-# 4. Lancer le serveur de développement
 php -S localhost:8080 -t public/
 ```
-
-Accès local : `http://localhost:8080`
 
 ### Variables d'environnement
 
@@ -117,8 +106,8 @@ Le routeur dans `index.php` dispatche les requêtes vers les controllers selon l
 | Injections SQL | PDO + requêtes préparées sur 100 % des requêtes |
 | XSS | `htmlspecialchars()` + `ENT_QUOTES` sur toutes les sorties |
 | Contrôle d'accès | `requireAuth()` / `requireRole()` dans le routeur |
-| Isolation commandes | `currentUserCommande()` vérifie que la commande appartient à l'utilisateur |
-| Suppression compte | Réservée au rôle `utilisateur` uniquement (`hasRole(ROLE_USER)`) |
+| Isolation commandes | `currentUserCommande()` vérifie l'appartenance à l'utilisateur |
+| Suppression compte | Réservée au rôle `utilisateur` uniquement |
 | Compte admin | Impossible à créer depuis l'application |
 
 ---
@@ -139,9 +128,9 @@ Le routeur dans `index.php` dispatche les requêtes vers les controllers selon l
 - Lien d'évitement `<a href="#main-content">` en haut du layout.
 - `<main id="main-content" tabindex="-1">` ciblable au clavier.
 - Labels associés à tous les champs via `for`/`id`.
-- Toutes les images ont un attribut `alt` (vide + `aria-hidden="true"` pour les images décoratives).
-- Contrastes WCAG AA respectés sur toutes les combinaisons texte/fond.
-- Rôles ARIA sur les composants interactifs (accordéons, modales, tableaux).
+- Toutes les images ont un `alt` (vide + `aria-hidden="true"` pour les décoratives).
+- Contrastes WCAG AA respectés (bordeaux/blanc : 9.21:1, texte/blanc : 13.97:1).
+- Rôles ARIA sur les composants interactifs.
 
 ---
 
@@ -284,14 +273,9 @@ sequenceDiagram
 
 ## Déploiement sur Railway
 
-### Prérequis Railway
-- Compte Railway connecté à GitHub
-- Service MySQL Railway ajouté au projet
-- (Optionnel) Compte MongoDB Atlas pour les statistiques
-
 ### Étapes
 
-1. Pousser le code sur GitHub (`main` ou `develop`).
+1. Pousser le code sur GitHub (`main`).
 2. Créer un projet Railway et connecter le dépôt GitHub.
 3. Railway détecte le `Dockerfile` et build l'image automatiquement.
 4. Ajouter un service MySQL Railway et le lier à l'application.
@@ -303,7 +287,7 @@ DB_HOST     = ${{MySQL.MYSQLHOST}}
 DB_NAME     = ${{MySQL.MYSQLDATABASE}}
 DB_USER     = ${{MySQL.MYSQLUSER}}
 DB_PASS     = ${{MySQL.MYSQLPASSWORD}}
-BASE_URL    = https://<votre-domaine>.up.railway.app
+BASE_URL    = https://<domaine>.up.railway.app
 MAIL_HOST   = smtp.gmail.com
 MAIL_PORT   = 587
 MAIL_USER   = votre@gmail.com
@@ -314,10 +298,9 @@ MONGO_DB    = vite_gourmand_stats
 ```
 
 7. Dans Railway → Settings → Networking : définir le port à **8080**.
-8. Générer un domaine Railway depuis l'onglet **Settings → Domains**.
-9. Vérifier les parcours : accueil, menus, commande, espaces employé et admin.
+8. Générer un domaine depuis Settings → Domains.
 
-### Dockerfile utilisé
+### Dockerfile
 
 ```dockerfile
 FROM php:8.2-cli
@@ -338,4 +321,4 @@ RUN composer install --no-dev --optimize-autoloader --no-interaction
 CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8080} -t public"]
 ```
 
-> Le serveur built-in PHP est suffisant pour le contexte ECF. En production réelle, un serveur Nginx + PHP-FPM serait préférable.
+> Le serveur built-in PHP est suffisant pour le contexte ECF. En production réelle, Nginx + PHP-FPM serait préférable.
