@@ -734,3 +734,115 @@ input[type="password"]::-webkit-caps-lock-indicator {
         transform: translateY(3px);
     }
 }
+
+/* ==========================================
+   CHARTE GLOBALE — Overrides Bootstrap
+   ========================================== */
+
+/* Modals */
+.modal-content {
+    background-color: var(--vg-creme);
+    border: none;
+    border-radius: 12px;
+}
+.modal-header {
+    background-color: var(--vg-creme);
+    border-bottom: 1px solid rgba(139,26,43,0.15);
+    border-radius: 12px 12px 0 0;
+}
+.modal-footer {
+    background-color: var(--vg-creme);
+    border-top: 1px solid rgba(139,26,43,0.15);
+    border-radius: 0 0 12px 12px;
+}
+.modal-body {
+    background-color: var(--vg-creme);
+}
+
+/* Inputs dans modals et partout */
+.form-control,
+.form-select {
+    background-color: #fff;
+    border-color: rgba(139,26,43,0.2);
+    color: var(--vg-text);
+}
+.form-control:focus,
+.form-select:focus {
+    border-color: var(--vg-bordeaux);
+    box-shadow: 0 0 0 0.2rem rgba(139,26,43,0.12);
+    background-color: #fff;
+}
+.form-label {
+    color: var(--vg-text);
+    font-weight: 500;
+}
+.form-text {
+    color: var(--vg-text-light);
+}
+
+/* Dropdown menus */
+.dropdown-menu {
+    background-color: var(--vg-creme);
+    border-color: rgba(139,26,43,0.15);
+}
+.dropdown-item:hover,
+.dropdown-item:focus {
+    background-color: rgba(139,26,43,0.08);
+    color: var(--vg-bordeaux);
+}
+.dropdown-divider {
+    border-color: rgba(139,26,43,0.15);
+}
+
+/* Tableaux */
+.table {
+    --bs-table-bg: transparent;
+    --bs-table-hover-bg: rgba(139,26,43,0.05);
+    --bs-table-border-color: rgba(139,26,43,0.12);
+    color: var(--vg-text);
+}
+.table thead th {
+    color: var(--vg-bordeaux);
+    font-weight: 600;
+    border-bottom: 2px solid rgba(139,26,43,0.2);
+    background-color: transparent;
+}
+
+/* Badges génériques */
+.badge.bg-light {
+    background-color: rgba(139,26,43,0.08) !important;
+    color: var(--vg-text) !important;
+    border: 1px solid rgba(139,26,43,0.15);
+}
+
+/* Alerts */
+.alert {
+    border-left: 4px solid var(--vg-bordeaux);
+    background-color: var(--vg-creme-soft);
+    color: var(--vg-text);
+    border-color: rgba(139,26,43,0.15);
+}
+.alert-info {
+    border-left-color: #0dcaf0;
+}
+.alert-success {
+    border-left-color: #198754;
+}
+.alert-danger {
+    border-left-color: var(--vg-bordeaux);
+}
+
+/* Pagination */
+.page-link {
+    color: var(--vg-bordeaux);
+    background-color: var(--vg-creme);
+    border-color: rgba(139,26,43,0.2);
+}
+.page-link:hover {
+    color: var(--vg-bordeaux-dark);
+    background-color: rgba(139,26,43,0.08);
+}
+.page-item.active .page-link {
+    background-color: var(--vg-bordeaux);
+    border-color: var(--vg-bordeaux);
+}
