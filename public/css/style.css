@@ -823,13 +823,22 @@ input[type="password"]::-webkit-caps-lock-indicator {
     border-color: rgba(139,26,43,0.15);
 }
 .alert-info {
-    border-left-color: #0dcaf0;
+    border-left-color: var(--vg-or);
+    background-color: var(--vg-creme-soft);
+    color: var(--vg-text);
+    border-color: rgba(212,168,67,0.3);
 }
 .alert-success {
-    border-left-color: #198754;
+    border-left-color: var(--vg-bordeaux);
+    background-color: var(--vg-creme-soft);
+    color: var(--vg-text);
+    border-color: rgba(139,26,43,0.15);
 }
 .alert-danger {
     border-left-color: var(--vg-bordeaux);
+    background-color: rgba(139,26,43,0.06);
+    color: var(--vg-bordeaux);
+    border-color: rgba(139,26,43,0.2);
 }
 
 /* Pagination */
