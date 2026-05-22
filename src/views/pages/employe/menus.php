@@ -97,7 +97,7 @@ foreach ($plats as $plat) {
         <div class="row g-2">
             <?php foreach ($plats as $plat): ?>
             <div class="col-12 col-md-6 col-lg-4">
-                <div class="card border-0 shadow-sm h-100">
+                <div class="card h-100" style="background-color:var(--vg-creme);border:1px solid rgba(139,26,43,0.12)!important;box-shadow:none!important;">
                     <div class="card-body d-flex align-items-start gap-3 py-3 px-3">
                         <div class="flex-grow-1 min-w-0">
                             <div class="fw-semibold text-truncate"><?= sanitize($plat['titre']) ?></div>
