@@ -1,7 +1,7 @@
 FROM php:8.2-fpm-alpine
 
 RUN apk add --no-cache \
-    nginx zip unzip curl \
+    nginx zip unzip curl gettext \
     libpng-dev openssl-dev pkgconfig \
     libzip-dev autoconf g++ make
 
