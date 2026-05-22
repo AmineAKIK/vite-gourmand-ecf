@@ -1,12 +1,10 @@
-FROM php:8.2-apache
+FROM php:8.2-fpm-alpine
 
-RUN apt-get update && apt-get install -y \
-    libzip-dev zip unzip curl libpng-dev libssl-dev pkg-config \
+RUN apk add --no-cache \
+    nginx zip unzip curl libpng-dev openssl-dev pkgconfig \
     && docker-php-ext-install pdo pdo_mysql zip \
     && pecl install mongodb-2.1.0 \
-    && docker-php-ext-enable mongodb \
-    && a2dismod mpm_event mpm_worker 2>/dev/null || true \
-    && a2enmod mpm_prefork rewrite headers
+    && docker-php-ext-enable mongodb
 
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
@@ -16,10 +14,9 @@ COPY . .
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' \
-    /etc/apache2/sites-available/000-default.conf && \
-    printf '<Directory /var/www/html/public>\n    AllowOverride All\n    Require all granted\n    Options -Indexes\n</Directory>\n' \
-    >> /etc/apache2/sites-available/000-default.conf
+COPY docker/nginx.conf /etc/nginx/nginx.conf
+COPY docker/start.sh /start.sh
+RUN chmod +x /start.sh
 
 EXPOSE 80
-CMD ["apache2-foreground"]
+CMD ["/start.sh"]
