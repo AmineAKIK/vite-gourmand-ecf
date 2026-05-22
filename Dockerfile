@@ -18,5 +18,4 @@ COPY . .
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-EXPOSE 8080
-CMD ["php", "-S", "0.0.0.0:8080", "-t", "public"]
+CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8080} -t public"]
