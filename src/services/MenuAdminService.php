@@ -132,28 +132,22 @@ class MenuAdminService
 
     private static function storeUploadedImage(array $file, string $prefix): ?string
     {
-        $error = $file['error'] ?? UPLOAD_ERR_NO_FILE;
-        if ($error !== UPLOAD_ERR_OK) {
-            error_log("[VG] upload error code: $error");
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
             return null;
         }
 
         if ((int)($file['size'] ?? 0) > self::UPLOAD_MAX_BYTES) {
-            error_log("[VG] upload too large: " . $file['size']);
             return null;
         }
 
         $tmpName = $file['tmp_name'] ?? '';
         if (!$tmpName || !file_exists($tmpName)) {
-            error_log("[VG] tmp file missing: $tmpName");
             return null;
         }
 
         $mime = self::imageMimeType($tmpName);
-        error_log("[VG] detected mime: $mime");
         $extension = self::ALLOWED_MIME_EXTENSIONS[$mime] ?? null;
         if (!$extension) {
-            error_log("[VG] mime not allowed: $mime");
             return null;
         }
 
@@ -161,13 +155,10 @@ class MenuAdminService
         $relativePath = 'uploads/' . $filename;
         $destination = self::publicPath($relativePath);
 
-        error_log("[VG] moving $tmpName -> $destination");
         $moved = move_uploaded_file($tmpName, $destination);
         if (!$moved) {
-            error_log("[VG] move_uploaded_file failed, trying rename");
             $moved = rename($tmpName, $destination);
         }
-        error_log("[VG] result: " . ($moved ? "OK path=$relativePath" : "FAILED"));
         return $moved ? $relativePath : null;
     }
 
