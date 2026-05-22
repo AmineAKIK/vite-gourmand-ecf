@@ -4,6 +4,11 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= $pageTitle ?? 'Vite & Gourmand' ?></title>
+    <link rel="icon" type="image/png" href="/favicon.png">
+    <meta property="og:title" content="Vite & Gourmand — Traiteur à Bordeaux">
+    <meta property="og:description" content="Traiteur bordelais depuis 25 ans. Découvrez nos menus et commandez en ligne pour tous vos événements.">
+    <meta property="og:image" content="/og/ogvg.png">
+    <meta property="og:type" content="website">
     <?php foreach (($preloadImages ?? []) as $image): ?>
         <link rel="preload" as="image" href="<?= sanitize($image) ?>">
     <?php endforeach; ?>
