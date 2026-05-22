@@ -3,7 +3,7 @@ FROM php:8.2-apache
 RUN apt-get update && apt-get install -y \
     libzip-dev zip unzip curl libpng-dev libssl-dev pkg-config \
     && docker-php-ext-install pdo pdo_mysql zip \
-    && pecl install mongodb \
+    && pecl install mongodb-2.1.0 \
     && docker-php-ext-enable mongodb \
     && a2enmod rewrite headers
 
@@ -12,6 +12,7 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 COPY . .
 
+ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 RUN sed -i 's|DocumentRoot /var/www/html|DocumentRoot /var/www/html/public|g' \
