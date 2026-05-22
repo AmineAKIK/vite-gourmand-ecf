@@ -1,0 +1,11 @@
+.env
+/vendor/
+/public/uploads/*
+!/public/uploads/.gitkeep
+*.log
+*.zip
+*.docx
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
