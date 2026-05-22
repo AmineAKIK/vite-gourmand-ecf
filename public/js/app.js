@@ -18,6 +18,30 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
+    /* Aperçu miniatures photos avant upload */
+    document.querySelectorAll('.image-picker').forEach(function (input) {
+        input.addEventListener('change', function () {
+            var container = input.nextElementSibling && input.nextElementSibling.nextElementSibling;
+            if (!container || !container.classList.contains('image-preview-container')) return;
+            container.innerHTML = '';
+            Array.from(input.files).forEach(function (file) {
+                if (!file.type.startsWith('image/')) return;
+                var reader = new FileReader();
+                reader.onload = function (e) {
+                    var wrap = document.createElement('div');
+                    wrap.style.cssText = 'position:relative;display:inline-block;';
+                    var img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.style.cssText = 'width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid rgba(139,26,43,0.2);';
+                    img.alt = file.name;
+                    wrap.appendChild(img);
+                    container.appendChild(wrap);
+                };
+                reader.readAsDataURL(file);
+            });
+        });
+    });
+
     /* Afficher/masquer les champs mot de passe */
     document.querySelectorAll('[data-password-toggle]').forEach(function (button) {
         button.addEventListener('click', function () {

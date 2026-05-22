@@ -241,10 +241,11 @@ foreach ($plats as $plat) {
                         </div>
                         <div class="col-12">
                             <label for="creer-images" class="form-label">Photos du menu (plusieurs possibles)</label>
-                            <input type="file" class="form-control" id="creer-images" name="images[]"
+                            <input type="file" class="form-control image-picker" id="creer-images" name="images[]"
                                    multiple accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>"
                                    aria-label="Galerie d'images du menu">
                             <div class="form-text"><?= sanitize(MenuAdminService::acceptedImageFormatsLabel()) ?></div>
+                            <div class="image-preview-container d-flex flex-wrap gap-2 mt-2"></div>
                         </div>
 
                         <?php partial('partials/menu_plat_checkboxes', [
@@ -405,10 +406,11 @@ foreach ($plats as $plat) {
                         </div>
                         <div class="col-12">
                             <label for="modif-images-<?= (int)$menu['menu_id'] ?>" class="form-label">Ajouter des photos</label>
-                            <input type="file" class="form-control" id="modif-images-<?= (int)$menu['menu_id'] ?>" name="images[]"
+                            <input type="file" class="form-control image-picker" id="modif-images-<?= (int)$menu['menu_id'] ?>" name="images[]"
                                    multiple accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>"
                                    aria-label="Galerie d'images du menu">
                             <div class="form-text"><?= sanitize(MenuAdminService::acceptedImageFormatsLabel()) ?></div>
+                            <div class="image-preview-container d-flex flex-wrap gap-2 mt-2"></div>
                             <?php $imagesMenu = $imagesByMenu[(int)$menu['menu_id']] ?? []; ?>
                             <?php if (!empty($imagesMenu)): ?>
                             <div class="d-flex flex-wrap gap-2 mt-2">

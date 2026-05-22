@@ -183,9 +183,9 @@ CREATE TABLE password_reset (
 
 INSERT INTO role (libelle) VALUES ('utilisateur'), ('employe'), ('administrateur');
 
-INSERT INTO regime (libelle) VALUES ('classique'), ('vegetarien'), ('vegan'), ('sans_gluten'), ('halal');
+INSERT INTO regime (libelle) VALUES ('Classique'), ('Végétarien'), ('Vegan'), ('Sans gluten'), ('Halal');
 
-INSERT INTO theme (libelle) VALUES ('classique'), ('noel'), ('paques'), ('evenement'), ('saint_valentin');
+INSERT INTO theme (libelle) VALUES ('Classique'), ('Noël'), ('Pâques'), ('Événement'), ('Saint-Valentin');
 
 INSERT INTO horaire (jour, heure_ouverture, heure_fermeture) VALUES
 ('Lundi', '09:00', '18:00'),
@@ -196,7 +196,7 @@ INSERT INTO horaire (jour, heure_ouverture, heure_fermeture) VALUES
 ('Samedi', '10:00', '20:00'),
 ('Dimanche', 'Fermé', NULL);
 
-INSERT INTO categorie_plat (libelle) VALUES ('entree'), ('plat'), ('dessert');
+INSERT INTO categorie_plat (libelle) VALUES ('Entrée'), ('Plat principal'), ('Dessert');
 
 -- Compte administrateur initial demandé pour José.
 -- Aucun compte administrateur ne peut être créé depuis l'application.
