@@ -18,11 +18,11 @@ foreach ($plats as $plat) {
             </h1>
         </div>
         <div class="d-flex gap-2">
-            <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalCreerPlat"
+            <button class="btn btn-vg-outline" data-bs-toggle="modal" data-bs-target="#modalCreerPlat"
                 aria-label="Ajouter un plat">
                 <i class="bi bi-plus-lg me-1"></i>Ajouter un plat
             </button>
-            <button class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#modalCreerMenu"
+            <button class="btn btn-vg-outline" data-bs-toggle="modal" data-bs-target="#modalCreerMenu"
                 aria-label="Ajouter un menu">
                 <i class="bi bi-plus-lg me-1"></i>Ajouter un menu
             </button>
@@ -173,7 +173,7 @@ foreach ($plats as $plat) {
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="button" class="btn btn-vg-outline" data-bs-dismiss="modal">Annuler</button>
                         <button type="submit" class="btn btn-vg">Enregistrer</button>
                     </div>
                 </form>
@@ -265,7 +265,7 @@ foreach ($plats as $plat) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-vg-outline" data-bs-dismiss="modal">Annuler</button>
                     <button type="submit" class="btn btn-vg">
                         <i class="bi bi-check-lg me-1"></i>Enregistrer
                     </button>
@@ -313,7 +313,7 @@ foreach ($plats as $plat) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-vg-outline" data-bs-dismiss="modal">Annuler</button>
                     <button type="submit" class="btn btn-vg">
                         <i class="bi bi-check-lg me-1"></i>Enregistrer le plat
                     </button>
@@ -451,7 +451,7 @@ foreach ($plats as $plat) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="button" class="btn btn-vg-outline" data-bs-dismiss="modal">Annuler</button>
                     <button type="submit" class="btn btn-vg">
                         <i class="bi bi-check-lg me-1"></i>Enregistrer
                     </button>
