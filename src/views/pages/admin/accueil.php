@@ -19,9 +19,9 @@ $defaultParagraphe = 'Depuis 25 ans, Vite & Gourmand accompagne les particuliers
         <div class="card-header fw-semibold">
             <i class="bi bi-type me-2 text-vg"></i>Textes du hero
         </div>
-        <div class="card-body row g-4">
+        <div class="card-body d-flex flex-column gap-4">
 
-            <div class="col-12 col-lg-6">
+            <div>
                 <label class="form-label fw-medium" for="hero_sous_titre">
                     Sous-titre <span class="text-danger">*</span>
                     <small class="text-muted fw-normal ms-1">— affiché en doré</small>
@@ -41,7 +41,7 @@ $defaultParagraphe = 'Depuis 25 ans, Vite & Gourmand accompagne les particuliers
                 </div>
             </div>
 
-            <div class="col-12 col-lg-6">
+            <div>
                 <label class="form-label fw-medium" for="hero_paragraphe">
                     Paragraphe d'introduction
                     <small class="text-muted fw-normal ms-1">— affiché en blanc</small>
