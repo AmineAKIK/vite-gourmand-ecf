@@ -865,9 +865,9 @@ input[type="password"]::-webkit-caps-lock-indicator {
 :root {
     --ws-sidebar-width: 240px;
     --ws-sidebar-bg: var(--vg-bordeaux);
-    --ws-sidebar-hover: rgba(255,255,255,.08);
-    --ws-sidebar-active: rgba(255,255,255,.15);
-    --ws-sidebar-active-border: var(--vg-or);
+    --ws-sidebar-hover: rgba(255,255,255,.1);
+    --ws-sidebar-active: rgba(0,0,0,.2);
+    --ws-sidebar-active-border: #fff;
     --ws-topbar-height: 56px;
 }
 
@@ -958,8 +958,8 @@ input[type="password"]::-webkit-caps-lock-indicator {
 
 .workspace-nav-item.active {
     background: var(--ws-sidebar-active);
-    color: var(--vg-or);
-    border-left-color: var(--vg-or);
+    color: #fff;
+    border-left-color: #fff;
     font-weight: 600;
 }
 
