@@ -14,63 +14,59 @@ $defaultParagraphe = 'Depuis 25 ans, Vite & Gourmand accompagne les particuliers
 <form method="POST" action="/admin/accueil/modifier" enctype="multipart/form-data" novalidate>
     <?= csrfField() ?>
 
-    <div class="row g-4">
+    <!-- TEXTES HERO — pleine largeur -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-header fw-semibold">
+            <i class="bi bi-type me-2 text-vg"></i>Textes du hero
+        </div>
+        <div class="card-body row g-4">
 
-        <!-- COL GAUCHE : textes -->
-        <div class="col-12 col-xl-6">
-            <div class="card shadow-sm">
-                <div class="card-header fw-semibold">
-                    <i class="bi bi-type me-2 text-vg"></i>Textes du hero
-                </div>
-                <div class="card-body">
-
-                    <div class="mb-3">
-                        <label class="form-label fw-medium" for="hero_sous_titre">
-                            Sous-titre <span class="text-danger">*</span>
-                            <small class="text-muted fw-normal ms-1">— affiché en doré</small>
-                        </label>
-                        <input
-                            type="text"
-                            id="hero_sous_titre"
-                            name="hero_sous_titre"
-                            class="form-control"
-                            maxlength="60"
-                            value="<?= $cfg('hero_sous_titre', 'Traiteur bordelais depuis 25 ans') ?>"
-                            required
-                        >
-                        <div class="d-flex justify-content-between">
-                            <div class="form-text">Accroche courte, mise en valeur en couleur dorée.</div>
-                            <small class="text-muted mt-1"><span id="count-sous-titre">0</span>/60</small>
-                        </div>
-                    </div>
-
-                    <div class="mb-1">
-                        <label class="form-label fw-medium" for="hero_paragraphe">
-                            Paragraphe d'introduction
-                            <small class="text-muted fw-normal ms-1">— affiché en blanc</small>
-                        </label>
-                        <textarea
-                            id="hero_paragraphe"
-                            name="hero_paragraphe"
-                            class="form-control"
-                            rows="4"
-                            maxlength="200"
-                        ><?= $cfg('hero_paragraphe', $defaultParagraphe) ?></textarea>
-                        <div class="d-flex justify-content-between">
-                            <div class="form-text">Description de l'entreprise visible sous le sous-titre.</div>
-                            <small class="text-muted mt-1"><span id="count-paragraphe">0</span>/200</small>
-                        </div>
-                    </div>
-
+            <div class="col-12 col-md-6">
+                <label class="form-label fw-medium" for="hero_sous_titre">
+                    Sous-titre <span class="text-danger">*</span>
+                    <small class="text-muted fw-normal ms-1">— affiché en doré</small>
+                </label>
+                <input
+                    type="text"
+                    id="hero_sous_titre"
+                    name="hero_sous_titre"
+                    class="form-control"
+                    maxlength="60"
+                    value="<?= $cfg('hero_sous_titre', 'Traiteur bordelais depuis 25 ans') ?>"
+                    required
+                >
+                <div class="d-flex justify-content-between">
+                    <div class="form-text">Accroche courte, mise en valeur en couleur dorée.</div>
+                    <small class="text-muted mt-1"><span id="count-sous-titre">0</span>/60</small>
                 </div>
             </div>
+
+            <div class="col-12 col-md-6">
+                <label class="form-label fw-medium" for="hero_paragraphe">
+                    Paragraphe d'introduction
+                    <small class="text-muted fw-normal ms-1">— affiché en blanc</small>
+                </label>
+                <textarea
+                    id="hero_paragraphe"
+                    name="hero_paragraphe"
+                    class="form-control"
+                    rows="3"
+                    maxlength="200"
+                ><?= $cfg('hero_paragraphe', $defaultParagraphe) ?></textarea>
+                <div class="d-flex justify-content-between">
+                    <div class="form-text">Description visible sous le sous-titre.</div>
+                    <small class="text-muted mt-1"><span id="count-paragraphe">0</span>/200</small>
+                </div>
+            </div>
+
         </div>
+    </div>
 
-        <!-- COL DROITE : images -->
-        <div class="col-12 col-xl-6">
+    <!-- IMAGES — côte à côte -->
+    <div class="row g-4 mb-4">
 
-            <!-- Image hero -->
-            <div class="card shadow-sm mb-4">
+        <div class="col-12 col-md-6">
+            <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold">
                     <i class="bi bi-card-image me-2 text-vg"></i>Image de fond (bannière)
                 </div>
@@ -89,9 +85,10 @@ $defaultParagraphe = 'Depuis 25 ans, Vite & Gourmand accompagne les particuliers
                     <div class="form-text"><?= sanitize(MenuAdminService::acceptedImageFormatsLabel()) ?> — Recommandé : 1920×600 px</div>
                 </div>
             </div>
+        </div>
 
-            <!-- Image préparation -->
-            <div class="card shadow-sm">
+        <div class="col-12 col-md-6">
+            <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold">
                     <i class="bi bi-camera me-2 text-vg"></i>Image section "Notre équipe"
                 </div>
@@ -110,12 +107,11 @@ $defaultParagraphe = 'Depuis 25 ans, Vite & Gourmand accompagne les particuliers
                     <div class="form-text"><?= sanitize(MenuAdminService::acceptedImageFormatsLabel()) ?> — Recommandé : 1000×700 px</div>
                 </div>
             </div>
-
         </div>
 
     </div>
 
-    <div class="mt-4 d-flex gap-2">
+    <div class="d-flex gap-2">
         <button type="submit" class="btn btn-vg">
             <i class="bi bi-save me-2"></i>Enregistrer tout
         </button>

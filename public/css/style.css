@@ -864,10 +864,10 @@ input[type="password"]::-webkit-caps-lock-indicator {
 
 :root {
     --ws-sidebar-width: 240px;
-    --ws-sidebar-bg: #1C0A0F;
-    --ws-sidebar-hover: rgba(255,255,255,.07);
-    --ws-sidebar-active: rgba(212,168,67,.15);
-    --ws-sidebar-active-border: var(--vg-or);
+    --ws-sidebar-bg: var(--vg-bordeaux);
+    --ws-sidebar-hover: rgba(253,246,236,.1);
+    --ws-sidebar-active: rgba(253,246,236,.18);
+    --ws-sidebar-active-border: var(--vg-creme);
     --ws-topbar-height: 56px;
 }
 
@@ -884,7 +884,7 @@ input[type="password"]::-webkit-caps-lock-indicator {
 /* --- SIDEBAR --- */
 .workspace-sidebar {
     width: var(--ws-sidebar-width);
-    background: var(--ws-sidebar-bg);
+    background: linear-gradient(180deg, var(--vg-bordeaux-dark), var(--vg-bordeaux) 50%, #7D1526);
     display: flex;
     flex-direction: column;
     position: fixed;
@@ -921,9 +921,9 @@ input[type="password"]::-webkit-caps-lock-indicator {
     font-weight: 600;
     letter-spacing: .08em;
     text-transform: uppercase;
-    color: var(--vg-or);
-    background: rgba(212,168,67,.12);
-    border: 1px solid rgba(212,168,67,.3);
+    color: var(--vg-creme);
+    background: rgba(253,246,236,.15);
+    border: 1px solid rgba(253,246,236,.3);
     border-radius: 4px;
     padding: .1rem .45rem;
     display: inline-block;
@@ -958,8 +958,8 @@ input[type="password"]::-webkit-caps-lock-indicator {
 
 .workspace-nav-item.active {
     background: var(--ws-sidebar-active);
-    color: var(--vg-or);
-    border-left-color: var(--ws-sidebar-active-border);
+    color: var(--vg-creme);
+    border-left-color: var(--vg-creme);
     font-weight: 600;
 }
 
@@ -1028,7 +1028,7 @@ input[type="password"]::-webkit-caps-lock-indicator {
 /* --- TOPBAR MOBILE --- */
 .workspace-topbar {
     height: var(--ws-topbar-height);
-    background: var(--ws-sidebar-bg);
+    background: var(--vg-bordeaux);
     display: flex;
     align-items: center;
     gap: 1rem;
