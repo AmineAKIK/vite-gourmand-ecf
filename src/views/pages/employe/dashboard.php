@@ -47,20 +47,20 @@
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-4">
             <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
-                <div class="fs-1 fw-bold text-vg lh-1"><?= count($commandesAujourdhui ?? []) ?></div>
-                <div class="text-muted small mt-1">Commandes aujourd'hui</div>
+                <div class="fw-bold text-vg lh-1 mb-1" style="font-size:clamp(1.5rem,6vw,2.5rem);"><?= count($commandesAujourdhui ?? []) ?></div>
+                <div class="text-muted small">Commandes aujourd'hui</div>
             </div>
         </div>
         <div class="col-6 col-md-4">
             <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
-                <div class="fs-1 fw-bold text-vg lh-1"><?= count($commandesSemaine ?? []) ?></div>
-                <div class="text-muted small mt-1">Commandes cette semaine</div>
+                <div class="fw-bold text-vg lh-1 mb-1" style="font-size:clamp(1.5rem,6vw,2.5rem);"><?= count($commandesSemaine ?? []) ?></div>
+                <div class="text-muted small">Commandes cette semaine</div>
             </div>
         </div>
         <div class="col-12 col-md-4">
             <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
-                <div class="fs-1 fw-bold text-vg lh-1"><?= $nbAttente ?></div>
-                <div class="text-muted small mt-1">En attente de traitement</div>
+                <div class="fw-bold text-vg lh-1 mb-1" style="font-size:clamp(1.5rem,6vw,2.5rem);"><?= $nbAttente ?></div>
+                <div class="text-muted small">En attente de traitement</div>
             </div>
         </div>
     </div>
@@ -76,18 +76,19 @@
             <?php else: ?>
             <ul class="list-group list-group-flush">
                 <?php foreach ($activiteRecente as $cmd): ?>
-                <li class="list-group-item d-flex align-items-center justify-content-between gap-3 py-3">
-                    <div class="d-flex align-items-center gap-3">
-                        <i class="bi bi-receipt text-vg"></i>
-                        <div>
-                            <div class="fw-medium"><?= sanitize($cmd['numero_commande'] ?? '') ?></div>
-                            <div class="text-muted small">
+                <li class="list-group-item py-3 px-3">
+                    <div class="d-flex align-items-start justify-content-between gap-2">
+                        <div style="min-width:0;">
+                            <div class="fw-medium text-truncate"><?= sanitize($cmd['numero_commande'] ?? '') ?></div>
+                            <div class="text-muted small text-truncate">
                                 <?= sanitize(personFullName($cmd)) ?> · <?= sanitize($cmd['menu_titre'] ?? '') ?>
                                 · <?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?>
                             </div>
                         </div>
+                        <div class="flex-shrink-0">
+                            <?= commandeStatusBadge($cmd['statut'] ?? null) ?>
+                        </div>
                     </div>
-                    <?= commandeStatusBadge($cmd['statut'] ?? null) ?>
                 </li>
                 <?php endforeach; ?>
             </ul>
