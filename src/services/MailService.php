@@ -1,8 +1,5 @@
 <?php
 // src/services/MailService.php
-// Nécessite : composer require phpmailer/phpmailer
-
-use PHPMailer\PHPMailer\PHPMailer;
 
 class MailService {
 
@@ -29,38 +26,57 @@ class MailService {
         </body></html>";
     }
 
-    private static function mailer(): PHPMailer {
-        if (!class_exists(PHPMailer::class)) {
-            throw new RuntimeException('PHPMailer est indisponible. Lancez composer install.');
+    private static function send(string $to, string $subject, string $html, string $text, ?string $replyTo = null): void {
+        $apiKey = BREVO_API_KEY;
+        if (!$apiKey) {
+            throw new RuntimeException('BREVO_API_KEY non configurée.');
         }
 
-        $mail = new PHPMailer(true);
-        $mail->isSMTP();
-        $mail->Host       = MAIL_HOST;
-        $mail->SMTPAuth   = true;
-        $mail->Username   = MAIL_USER;
-        $mail->Password   = MAIL_PASS;
-        $mail->SMTPSecure = MAIL_PORT === 465 ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
-        $mail->Port       = MAIL_PORT;
-        $mail->CharSet    = 'UTF-8';
-        $mail->Timeout    = 5;
-        $mail->setFrom(MAIL_FROM, MAIL_FROM_NAME);
-        return $mail;
+        $payload = [
+            'sender'      => ['name' => MAIL_FROM_NAME, 'email' => MAIL_FROM],
+            'to'          => [['email' => $to]],
+            'subject'     => $subject,
+            'htmlContent' => $html,
+            'textContent' => $text,
+        ];
+
+        if ($replyTo) {
+            $payload['replyTo'] = ['email' => $replyTo];
+        }
+
+        $ch = curl_init('https://api.brevo.com/v3/smtp/email');
+        curl_setopt_array($ch, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => json_encode($payload),
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_TIMEOUT        => 10,
+            CURLOPT_HTTPHEADER     => [
+                'accept: application/json',
+                'api-key: ' . $apiKey,
+                'content-type: application/json',
+            ],
+        ]);
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        curl_close($ch);
+
+        if ($httpCode < 200 || $httpCode >= 300) {
+            throw new RuntimeException("Brevo API $httpCode : $response");
+        }
     }
 
     public static function sendWelcome(string $email, string $prenom): void {
         try {
-            $mail = self::mailer();
-            $mail->addAddress($email);
-            $mail->Subject = 'Bienvenue chez Vite & Gourmand !';
-            $mail->isHTML(true);
-            $mail->Body    = self::wrap("Bienvenue $prenom !", "
-                <p>Bienvenue chez <strong>Vite &amp; Gourmand</strong> ! Votre compte a été créé avec succès.</p>
-                <p>Vous pouvez dès maintenant découvrir nos menus et passer commande.</p>
-                <p><a href='" . BASE_URL . "/menus' style='background:#8B1A2B;color:#fff;padding:10px 22px;border-radius:6px;text-decoration:none;display:inline-block;margin-top:8px'>Découvrir nos menus</a></p>
-            ");
-            $mail->AltBody = "Bonjour $prenom, bienvenue chez Vite & Gourmand ! Connectez-vous sur " . BASE_URL;
-            $mail->send();
+            self::send(
+                $email,
+                'Bienvenue chez Vite & Gourmand !',
+                self::wrap("Bienvenue $prenom !", "
+                    <p>Bienvenue chez <strong>Vite &amp; Gourmand</strong> ! Votre compte a été créé avec succès.</p>
+                    <p>Vous pouvez dès maintenant découvrir nos menus et passer commande.</p>
+                    <p><a href='" . BASE_URL . "/menus' style='background:#8B1A2B;color:#fff;padding:10px 22px;border-radius:6px;text-decoration:none;display:inline-block;margin-top:8px'>Découvrir nos menus</a></p>
+                "),
+                "Bonjour $prenom, bienvenue chez Vite & Gourmand ! Connectez-vous sur " . BASE_URL
+            );
         } catch (\Throwable $e) {
             error_log("Erreur mail bienvenu : " . $e->getMessage());
         }
@@ -68,48 +84,46 @@ class MailService {
 
     public static function sendPasswordReset(string $email, string $token): void {
         try {
-            $mail = self::mailer();
-            $mail->addAddress($email);
-            $mail->Subject = 'Réinitialisation de votre mot de passe';
-            $mail->isHTML(true);
             $link = BASE_URL . "/reinitialiser?token=$token";
-            $mail->Body    = self::wrap('Réinitialisation du mot de passe', "
-                <p>Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le bouton ci-dessous (lien valable <strong>1 heure</strong>) :</p>
-                <p style='text-align:center;margin:24px 0'><a href='$link' style='background:#8B1A2B;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;display:inline-block'>Réinitialiser mon mot de passe</a></p>
-                <p style='color:#5F6470;font-size:13px'>Si vous n'avez pas fait cette demande, ignorez cet email. Votre mot de passe ne sera pas modifié.</p>
-            ");
-            $mail->AltBody = "Réinitialisez votre mot de passe (valable 1h) : $link";
-            $mail->send();
+            self::send(
+                $email,
+                'Réinitialisation de votre mot de passe',
+                self::wrap('Réinitialisation du mot de passe', "
+                    <p>Vous avez demandé la réinitialisation de votre mot de passe. Cliquez sur le bouton ci-dessous (lien valable <strong>1 heure</strong>) :</p>
+                    <p style='text-align:center;margin:24px 0'><a href='$link' style='background:#8B1A2B;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;display:inline-block'>Réinitialiser mon mot de passe</a></p>
+                    <p style='color:#5F6470;font-size:13px'>Si vous n'avez pas fait cette demande, ignorez cet email. Votre mot de passe ne sera pas modifié.</p>
+                "),
+                "Réinitialisez votre mot de passe (valable 1h) : $link"
+            );
         } catch (\Throwable $e) {
-            error_log("Erreur mail reset : " . $e->getMessage() . " | host=" . MAIL_HOST . " port=" . MAIL_PORT . " user=" . MAIL_USER);
+            error_log("Erreur mail reset : " . $e->getMessage());
         }
     }
 
     public static function sendCommandeConfirmation(string $email, array $commande, array $menu): void {
         try {
-            $mail = self::mailer();
-            $mail->addAddress($email);
-            $mail->Subject = 'Confirmation de votre commande #' . $commande['numero_commande'];
-            $mail->isHTML(true);
-            $mail->Body    = self::wrap('Votre commande est confirmée !', "
-                <p>Bonjour,</p>
-                <p>Nous avons bien reçu votre commande. Voici le récapitulatif :</p>
-                <table style='width:100%;border-collapse:collapse;margin:16px 0'>
-                    <tr><td style='padding:6px 0;color:#5F6470'>Numéro</td><td style='padding:6px 0'><strong>{$commande['numero_commande']}</strong></td></tr>
-                    <tr style='background:#FDF6EC'><td style='padding:6px 8px;color:#5F6470'>Menu</td><td style='padding:6px 8px'><strong>" . htmlspecialchars($menu['titre']) . "</strong></td></tr>
-                    <tr><td style='padding:6px 0;color:#5F6470'>Date</td><td style='padding:6px 0'>" . htmlspecialchars($commande['date_prestation']) . " à " . htmlspecialchars($commande['heure_livraison']) . "</td></tr>
-                    <tr style='background:#FDF6EC'><td style='padding:6px 8px;color:#5F6470'>Adresse</td><td style='padding:6px 8px'>" . htmlspecialchars($commande['adresse_livraison'] . ', ' . $commande['ville_livraison']) . "</td></tr>
-                    <tr><td style='padding:6px 0;color:#5F6470'>Personnes</td><td style='padding:6px 0'>{$commande['nombre_personne']}</td></tr>
-                </table>
-                <table style='width:100%;border-collapse:collapse;border-top:2px solid #8B1A2B;margin-top:8px'>
-                    <tr><td style='padding:6px 0;color:#5F6470'>Prix menu</td><td style='padding:6px 0;text-align:right'>{$commande['prix_menu']} €</td></tr>
-                    <tr><td style='padding:6px 0;color:#5F6470'>Livraison</td><td style='padding:6px 0;text-align:right'>{$commande['prix_livraison']} €</td></tr>
-                    <tr style='font-size:1.1em'><td style='padding:10px 0'><strong>Total</strong></td><td style='padding:10px 0;text-align:right;color:#8B1A2B'><strong>{$commande['prix_total']} €</strong></td></tr>
-                </table>
-                <p>Merci pour votre confiance !<br>L'équipe Vite &amp; Gourmand</p>
-            ");
-            $mail->AltBody = "Commande #{$commande['numero_commande']} confirmée — Menu : {$menu['titre']} — Total : {$commande['prix_total']} €";
-            $mail->send();
+            self::send(
+                $email,
+                'Confirmation de votre commande #' . $commande['numero_commande'],
+                self::wrap('Votre commande est confirmée !', "
+                    <p>Bonjour,</p>
+                    <p>Nous avons bien reçu votre commande. Voici le récapitulatif :</p>
+                    <table style='width:100%;border-collapse:collapse;margin:16px 0'>
+                        <tr><td style='padding:6px 0;color:#5F6470'>Numéro</td><td style='padding:6px 0'><strong>{$commande['numero_commande']}</strong></td></tr>
+                        <tr style='background:#FDF6EC'><td style='padding:6px 8px;color:#5F6470'>Menu</td><td style='padding:6px 8px'><strong>" . htmlspecialchars($menu['titre']) . "</strong></td></tr>
+                        <tr><td style='padding:6px 0;color:#5F6470'>Date</td><td style='padding:6px 0'>" . htmlspecialchars($commande['date_prestation']) . " à " . htmlspecialchars($commande['heure_livraison']) . "</td></tr>
+                        <tr style='background:#FDF6EC'><td style='padding:6px 8px;color:#5F6470'>Adresse</td><td style='padding:6px 8px'>" . htmlspecialchars($commande['adresse_livraison'] . ', ' . $commande['ville_livraison']) . "</td></tr>
+                        <tr><td style='padding:6px 0;color:#5F6470'>Personnes</td><td style='padding:6px 0'>{$commande['nombre_personne']}</td></tr>
+                    </table>
+                    <table style='width:100%;border-collapse:collapse;border-top:2px solid #8B1A2B;margin-top:8px'>
+                        <tr><td style='padding:6px 0;color:#5F6470'>Prix menu</td><td style='padding:6px 0;text-align:right'>{$commande['prix_menu']} €</td></tr>
+                        <tr><td style='padding:6px 0;color:#5F6470'>Livraison</td><td style='padding:6px 0;text-align:right'>{$commande['prix_livraison']} €</td></tr>
+                        <tr style='font-size:1.1em'><td style='padding:10px 0'><strong>Total</strong></td><td style='padding:10px 0;text-align:right;color:#8B1A2B'><strong>{$commande['prix_total']} €</strong></td></tr>
+                    </table>
+                    <p>Merci pour votre confiance !<br>L'équipe Vite &amp; Gourmand</p>
+                "),
+                "Commande #{$commande['numero_commande']} confirmée — Menu : {$menu['titre']} — Total : {$commande['prix_total']} €"
+            );
         } catch (\Throwable $e) {
             error_log("Erreur mail commande : " . $e->getMessage());
         }
@@ -117,19 +131,18 @@ class MailService {
 
     public static function sendCommandeTerminee(string $email, int $commandeId): void {
         try {
-            $mail = self::mailer();
-            $mail->addAddress($email);
-            $mail->Subject = 'Votre avis nous intéresse !';
-            $mail->isHTML(true);
             $link = BASE_URL . "/mon-compte";
-            $mail->Body    = self::wrap('Votre prestation est terminée !', "
-                <p>Nous espérons que vous avez été pleinement satisfait de notre prestation.</p>
-                <p>Votre retour est précieux pour nous aider à nous améliorer. Connectez-vous à votre espace client pour laisser votre avis :</p>
-                <p style='text-align:center;margin:24px 0'><a href='$link' style='background:#8B1A2B;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;display:inline-block'>Donner mon avis</a></p>
-                <p>Merci de nous faire confiance,<br>L'équipe Vite &amp; Gourmand</p>
-            ");
-            $mail->AltBody = "Votre commande est terminée. Donnez votre avis sur $link";
-            $mail->send();
+            self::send(
+                $email,
+                'Votre avis nous intéresse !',
+                self::wrap('Votre prestation est terminée !', "
+                    <p>Nous espérons que vous avez été pleinement satisfait de notre prestation.</p>
+                    <p>Votre retour est précieux pour nous aider à nous améliorer. Connectez-vous à votre espace client pour laisser votre avis :</p>
+                    <p style='text-align:center;margin:24px 0'><a href='$link' style='background:#8B1A2B;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;display:inline-block'>Donner mon avis</a></p>
+                    <p>Merci de nous faire confiance,<br>L'équipe Vite &amp; Gourmand</p>
+                "),
+                "Votre commande est terminée. Donnez votre avis sur $link"
+            );
         } catch (\Throwable $e) {
             error_log("Erreur mail terminée : " . $e->getMessage());
         }
@@ -137,23 +150,22 @@ class MailService {
 
     public static function sendMaterielRelance(string $email, string $prenom): void {
         try {
-            $mail = self::mailer();
-            $mail->addAddress($email);
-            $mail->Subject = 'Retour de matériel - Vite & Gourmand';
-            $mail->isHTML(true);
-            $mail->Body    = self::wrap("Retour de matériel — Action requise", "
-                <p>Bonjour $prenom,</p>
-                <p>Votre prestation comprenait du matériel prêté par Vite &amp; Gourmand. Vous disposez de <strong>10 jours ouvrés</strong> à compter de la livraison pour le restituer.</p>
-                <div style='background:#FFF6DA;border-left:4px solid #D4A843;padding:12px 16px;margin:16px 0;border-radius:4px'>
-                    ⚠️ Passé ce délai, des frais de <strong>600 € TTC</strong> seront facturés conformément à nos CGV.
-                </div>
-                <p>Pour organiser le retour, contactez-nous :<br>
-                📧 <a href='mailto:contact@vitegourmand.fr'>contact@vitegourmand.fr</a><br>
-                📞 05 56 00 12 34</p>
-                <p>L'équipe Vite &amp; Gourmand</p>
-            ");
-            $mail->AltBody = "Bonjour $prenom, vous avez 10 jours ouvrés pour restituer le matériel prêté. Passé ce délai : 600 € de frais. Contact : contact@vitegourmand.fr";
-            $mail->send();
+            self::send(
+                $email,
+                'Retour de matériel - Vite & Gourmand',
+                self::wrap("Retour de matériel — Action requise", "
+                    <p>Bonjour $prenom,</p>
+                    <p>Votre prestation comprenait du matériel prêté par Vite &amp; Gourmand. Vous disposez de <strong>10 jours ouvrés</strong> à compter de la livraison pour le restituer.</p>
+                    <div style='background:#FFF6DA;border-left:4px solid #D4A843;padding:12px 16px;margin:16px 0;border-radius:4px'>
+                        ⚠️ Passé ce délai, des frais de <strong>600 € TTC</strong> seront facturés conformément à nos CGV.
+                    </div>
+                    <p>Pour organiser le retour, contactez-nous :<br>
+                    📧 <a href='mailto:contact@vitegourmand.fr'>contact@vitegourmand.fr</a><br>
+                    📞 05 56 00 12 34</p>
+                    <p>L'équipe Vite &amp; Gourmand</p>
+                "),
+                "Bonjour $prenom, vous avez 10 jours ouvrés pour restituer le matériel prêté. Passé ce délai : 600 € de frais. Contact : contact@vitegourmand.fr"
+            );
         } catch (\Throwable $e) {
             error_log("Erreur mail matériel : " . $e->getMessage());
         }
@@ -161,23 +173,22 @@ class MailService {
 
     public static function sendEmployeCreation(string $email): void {
         try {
-            $mail = self::mailer();
-            $mail->addAddress($email);
-            $mail->Subject = 'Votre compte employé Vite & Gourmand';
-            $mail->isHTML(true);
             $loginUrl = BASE_URL . "/connexion";
-            $mail->Body    = self::wrap('Votre compte employé a été créé', "
-                <p>Bonjour,</p>
-                <p>Un compte employé a été créé pour vous sur la plateforme <strong>Vite &amp; Gourmand</strong>.</p>
-                <table style='width:100%;border-collapse:collapse;margin:16px 0'>
-                    <tr style='background:#FDF6EC'><td style='padding:8px;color:#5F6470'>Identifiant</td><td style='padding:8px'><strong>" . htmlspecialchars($email) . "</strong></td></tr>
-                    <tr><td style='padding:8px;color:#5F6470'>Mot de passe</td><td style='padding:8px'>Communiqué directement par votre administrateur</td></tr>
-                </table>
-                <p style='text-align:center;margin:24px 0'><a href='$loginUrl' style='background:#8B1A2B;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;display:inline-block'>Se connecter</a></p>
-                <p>L'équipe Vite &amp; Gourmand</p>
-            ");
-            $mail->AltBody = "Votre compte employé a été créé. Identifiant : $email. Mot de passe communiqué par l'administrateur. Connexion : $loginUrl";
-            $mail->send();
+            self::send(
+                $email,
+                'Votre compte employé Vite & Gourmand',
+                self::wrap('Votre compte employé a été créé', "
+                    <p>Bonjour,</p>
+                    <p>Un compte employé a été créé pour vous sur la plateforme <strong>Vite &amp; Gourmand</strong>.</p>
+                    <table style='width:100%;border-collapse:collapse;margin:16px 0'>
+                        <tr style='background:#FDF6EC'><td style='padding:8px;color:#5F6470'>Identifiant</td><td style='padding:8px'><strong>" . htmlspecialchars($email) . "</strong></td></tr>
+                        <tr><td style='padding:8px;color:#5F6470'>Mot de passe</td><td style='padding:8px'>Communiqué directement par votre administrateur</td></tr>
+                    </table>
+                    <p style='text-align:center;margin:24px 0'><a href='$loginUrl' style='background:#8B1A2B;color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;display:inline-block'>Se connecter</a></p>
+                    <p>L'équipe Vite &amp; Gourmand</p>
+                "),
+                "Votre compte employé a été créé. Identifiant : $email. Mot de passe communiqué par l'administrateur. Connexion : $loginUrl"
+            );
         } catch (\Throwable $e) {
             error_log("Erreur mail employé : " . $e->getMessage());
         }
@@ -185,20 +196,19 @@ class MailService {
 
     public static function sendContact(string $titre, string $description, string $emailExp): void {
         try {
-            $mail = self::mailer();
-            $mail->addAddress(MAIL_FROM); // Envoi à l'entreprise
-            $mail->addReplyTo($emailExp);
-            $mail->Subject = "[Contact] $titre";
-            $mail->isHTML(true);
             $safeDesc = nl2br(htmlspecialchars($description));
-            $mail->Body    = self::wrap('Nouveau message de contact', "
-                <p><strong>De :</strong> " . htmlspecialchars($emailExp) . "</p>
-                <p><strong>Sujet :</strong> " . htmlspecialchars($titre) . "</p>
-                <hr style='border:none;border-top:1px solid #eee;margin:16px 0'>
-                <p>$safeDesc</p>
-            ");
-            $mail->AltBody = "Message de $emailExp — $titre : $description";
-            $mail->send();
+            self::send(
+                MAIL_FROM,
+                "[Contact] $titre",
+                self::wrap('Nouveau message de contact', "
+                    <p><strong>De :</strong> " . htmlspecialchars($emailExp) . "</p>
+                    <p><strong>Sujet :</strong> " . htmlspecialchars($titre) . "</p>
+                    <hr style='border:none;border-top:1px solid #eee;margin:16px 0'>
+                    <p>$safeDesc</p>
+                "),
+                "Message de $emailExp — $titre : $description",
+                $emailExp
+            );
         } catch (\Throwable $e) {
             error_log("Erreur mail contact : " . $e->getMessage());
         }
