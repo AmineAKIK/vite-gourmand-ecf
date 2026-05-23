@@ -13,6 +13,7 @@
     --vg-or-light: #E8C46A;
     --vg-creme: #FDF6EC;
     --vg-creme-soft: #FFF9F0;
+    --vg-card: #FEFCF7;
     --vg-text: #2C2C2C;
     --vg-muted: #5F6470;
     --vg-border: rgba(139, 26, 43, .14);
@@ -582,7 +583,7 @@ a:focus {
     box-shadow: var(--vg-shadow);
     transition: transform .2s, box-shadow .2s;
     overflow: hidden;
-    background-color: var(--bs-body-bg);
+    background-color: var(--vg-card);
 }
 .card-menu:hover {
     transform: translateY(-6px);
