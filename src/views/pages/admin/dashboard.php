@@ -19,8 +19,6 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
         <span class="text-muted small">Connecté en tant qu'administrateur</span>
     </div>
 
-    <?php partial('partials/workspace_nav'); ?>
-
     <!-- Cards de statistiques globales -->
     <div class="row g-3 mb-5">
         <?php partial('partials/stat_card', ['value' => $totalCommandes, 'valueClass' => 'text-vg', 'icon' => 'bi-receipt', 'label' => 'Commandes totales']); ?>

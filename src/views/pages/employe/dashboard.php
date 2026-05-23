@@ -18,8 +18,6 @@ $dernieres   = array_slice($commandes, 0, 10);
         <span class="text-muted small">Connecté en tant qu'employé</span>
     </div>
 
-    <?php partial('partials/workspace_nav'); ?>
-
     <!-- Cards de statistiques -->
     <div class="row g-3 mb-5">
         <?php partial('partials/stat_card', ['value' => $nbAttente, 'valueClass' => 'text-warning', 'icon' => 'bi-hourglass-split', 'label' => 'En attente']); ?>

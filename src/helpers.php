@@ -33,7 +33,11 @@ function isEmployeOrAdmin(): bool {
 }
 
 function view(string $template, array $data = []): void {
-    if (!array_key_exists('siteHoraires', $data) && class_exists('HoraireModel')) {
+    $isWorkspace = str_starts_with($template, 'pages/admin/')
+               || str_starts_with($template, 'pages/employe/')
+               || str_starts_with($template, 'pages/user/');
+
+    if (!$isWorkspace && !array_key_exists('siteHoraires', $data) && class_exists('HoraireModel')) {
         $data['siteHoraires'] = HoraireModel::getAll();
     }
     extract($data);
@@ -46,7 +50,8 @@ function view(string $template, array $data = []): void {
     ob_start();
     require $file;
     $content = ob_get_clean();
-    require __DIR__ . '/views/layouts/main.php';
+    $layout = $isWorkspace ? 'workspace' : 'main';
+    require __DIR__ . '/views/layouts/' . $layout . '.php';
 }
 
 function partial(string $template, array $data = []): void {

@@ -11,12 +11,9 @@ foreach ($plats as $plat) {
 <div class="container py-5">
 
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
-        <div class="d-flex align-items-center gap-3">
-            <?php partial('partials/dashboard_back_link'); ?>
-            <h1 class="h3 fw-bold mb-0">
-                <i class="bi bi-journal-text me-2 text-vg"></i>Gestion des menus
-            </h1>
-        </div>
+        <h1 class="h3 fw-bold mb-0">
+            <i class="bi bi-journal-text me-2 text-vg"></i>Gestion des menus
+        </h1>
         <div class="d-flex gap-2">
             <button class="btn btn-vg-outline" data-bs-toggle="modal" data-bs-target="#modalCreerPlat"
                 aria-label="Ajouter un plat">
