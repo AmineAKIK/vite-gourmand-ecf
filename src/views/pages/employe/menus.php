@@ -51,10 +51,10 @@ foreach ($plats as $plat) {
                             <td class="text-muted"><?= sanitize($menu['theme']  ?? '—') ?></td>
                             <td class="text-muted"><?= sanitize($menu['regime'] ?? '—') ?></td>
                             <td class="text-muted"><?= (int)($menu['nombre_personne_minimum'] ?? 0) ?></td>
-                            <td>
+                            <td class="text-nowrap">
                                 <span class="fw-semibold text-vg"><?= sanitize(formatPrice($menu['prix_par_personne'] ?? 0)) ?></span>
                             </td>
-                            <td>
+                            <td class="text-nowrap">
                                 <?php $stock = $menu['quantite_restante']; ?>
                                 <?php if ($stock === null): ?>
                                     <span class="badge bg-secondary">Illimité</span>
@@ -64,7 +64,7 @@ foreach ($plats as $plat) {
                                     </span>
                                 <?php endif; ?>
                             </td>
-                            <td class="pe-3">
+                            <td class="pe-3 text-nowrap">
                                 <button
                                     class="btn btn-sm btn-vg-outline me-1"
                                     data-bs-toggle="modal"

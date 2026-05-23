@@ -69,8 +69,8 @@ $pageTitle = 'Modération des avis - Vite & Gourmand';
                             </td>
                             <td class="fw-medium"><?= sanitize(trim(($a['prenom'] ?? '') . ' ' . ($a['nom'] ?? ''))) ?></td>
                             <td class="text-muted"><?= sanitize($a['menu_titre'] ?? '—') ?></td>
-                            <td><small class="text-muted"><?= !empty($a['created_at']) ? sanitize(formatDateTimeFr($a['created_at'])) : '—' ?></small></td>
-                            <td>
+                            <td class="text-nowrap"><small class="text-muted"><?= !empty($a['created_at']) ? sanitize(formatDateTimeFr($a['created_at'])) : '—' ?></small></td>
+                            <td class="text-nowrap">
                                 <?php if ($a['statut'] === 'valide'): ?>
                                     <span class="badge bg-success">Validé</span>
                                 <?php elseif ($a['statut'] === 'refuse'): ?>
@@ -79,7 +79,7 @@ $pageTitle = 'Modération des avis - Vite & Gourmand';
                                     <span class="badge bg-warning text-dark">En attente</span>
                                 <?php endif; ?>
                             </td>
-                            <td class="pe-3">
+                            <td class="pe-3 text-nowrap">
                                 <div class="d-flex gap-2 flex-wrap">
                                     <?php if ($a['statut'] !== 'valide'): ?>
                                     <form method="POST" action="/employe/avis/valider">

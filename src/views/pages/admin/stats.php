@@ -54,7 +54,7 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
                 <button type="submit" class="btn btn-vg btn-sm flex-grow-1" aria-label="Filtrer les statistiques">
                     <i class="bi bi-funnel me-1"></i>Filtrer
                 </button>
-                <a href="/admin/stats" class="btn btn-outline-secondary btn-sm btn-reset-filters">
+                <a href="/admin/stats" class="btn btn-outline-secondary btn-sm btn-reset-filters flex-grow-1">
                     <i class="bi bi-arrow-counterclockwise me-1"></i>Réinitialiser
                 </a>
             </div>
