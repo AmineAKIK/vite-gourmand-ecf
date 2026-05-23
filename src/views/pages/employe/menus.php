@@ -30,59 +30,61 @@ foreach ($plats as $plat) {
     <?php if (empty($menus)): ?>
         <div class="alert alert-info">Aucun menu enregistré.</div>
     <?php else: ?>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle" aria-label="Liste des menus">
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col">Titre</th>
-                        <th scope="col">Thème</th>
-                        <th scope="col">Régime</th>
-                        <th scope="col">Min pers.</th>
-                        <th scope="col">Prix / pers.</th>
-                        <th scope="col">Stock</th>
-                        <th scope="col">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($menus as $menu): ?>
-                    <tr>
-                        <td class="fw-semibold"><?= sanitize($menu['titre'] ?? '') ?></td>
-                        <td><?= sanitize($menu['theme']  ?? '—') ?></td>
-                        <td><?= sanitize($menu['regime'] ?? '—') ?></td>
-                        <td><?= (int)($menu['nombre_personne_minimum'] ?? 0) ?></td>
-                        <td>
-                            <span class="prix-tag"><?= sanitize(formatPrice($menu['prix_par_personne'] ?? 0)) ?></span>
-                        </td>
-                        <td>
-                            <?php $stock = $menu['quantite_restante']; ?>
-                            <?php if ($stock === null): ?>
-                                <span class="badge bg-secondary">Illimité</span>
-                            <?php else: ?>
-                                <span class="badge <?= (int)$stock > 0 ? 'bg-success' : 'bg-danger' ?>">
-                                    <?= (int)$stock ?>
-                                </span>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <button
-                                class="btn btn-sm btn-outline-primary me-1"
-                                data-bs-toggle="modal"
-                                data-bs-target="#modalModifierMenu<?= (int)$menu['menu_id'] ?>"
-                                aria-label="Modifier le menu <?= sanitize($menu['titre'] ?? '') ?>"
-                            ><i class="bi bi-pencil"></i></button>
-                            <form method="POST" action="/employe/menu/supprimer" class="d-inline form-confirm">
-                                <?= csrfField() ?>
-                                <input type="hidden" name="menu_id" value="<?= (int)$menu['menu_id'] ?>">
-                                <button type="submit" class="btn btn-sm btn-outline-danger"
-                                    aria-label="Supprimer le menu <?= sanitize($menu['titre'] ?? '') ?>">
-                                    <i class="bi bi-trash"></i>
-                                </button>
-                            </form>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+        <div class="card shadow-sm mb-0" style="border:1px solid rgba(0,0,0,.08);">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" aria-label="Liste des menus">
+                    <thead>
+                        <tr style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
+                            <th scope="col" class="ps-3 text-vg fw-semibold">Titre</th>
+                            <th scope="col" class="text-vg fw-semibold">Thème</th>
+                            <th scope="col" class="text-vg fw-semibold">Régime</th>
+                            <th scope="col" class="text-vg fw-semibold">Min pers.</th>
+                            <th scope="col" class="text-vg fw-semibold">Prix / pers.</th>
+                            <th scope="col" class="text-vg fw-semibold">Stock</th>
+                            <th scope="col" class="text-vg fw-semibold pe-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($menus as $menu): ?>
+                        <tr>
+                            <td class="fw-semibold ps-3"><?= sanitize($menu['titre'] ?? '') ?></td>
+                            <td class="text-muted"><?= sanitize($menu['theme']  ?? '—') ?></td>
+                            <td class="text-muted"><?= sanitize($menu['regime'] ?? '—') ?></td>
+                            <td class="text-muted"><?= (int)($menu['nombre_personne_minimum'] ?? 0) ?></td>
+                            <td>
+                                <span class="fw-semibold text-vg"><?= sanitize(formatPrice($menu['prix_par_personne'] ?? 0)) ?></span>
+                            </td>
+                            <td>
+                                <?php $stock = $menu['quantite_restante']; ?>
+                                <?php if ($stock === null): ?>
+                                    <span class="badge bg-secondary">Illimité</span>
+                                <?php else: ?>
+                                    <span class="badge <?= (int)$stock > 0 ? 'bg-success' : 'bg-danger' ?>">
+                                        <?= (int)$stock ?>
+                                    </span>
+                                <?php endif; ?>
+                            </td>
+                            <td class="pe-3">
+                                <button
+                                    class="btn btn-sm btn-vg-outline me-1"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalModifierMenu<?= (int)$menu['menu_id'] ?>"
+                                    aria-label="Modifier le menu <?= sanitize($menu['titre'] ?? '') ?>"
+                                ><i class="bi bi-pencil"></i></button>
+                                <form method="POST" action="/employe/menu/supprimer" class="d-inline form-confirm">
+                                    <?= csrfField() ?>
+                                    <input type="hidden" name="menu_id" value="<?= (int)$menu['menu_id'] ?>">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        aria-label="Supprimer le menu <?= sanitize($menu['titre'] ?? '') ?>">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     <?php endif; ?>
 
@@ -91,44 +93,42 @@ foreach ($plats as $plat) {
     <?php if (empty($plats)): ?>
         <div class="alert alert-info">Aucun plat enregistré.</div>
     <?php else: ?>
-        <div class="row g-4">
+        <div class="d-flex flex-column gap-3">
             <?php foreach ($platsByCategorie as $categorie => $platsGroupe): ?>
-            <div class="col-12">
-                <div class="card border-0 shadow-sm">
-                    <div class="card-header d-flex align-items-center justify-content-between">
-                        <span class="fw-semibold"><?= sanitize($categorie) ?></span>
-                        <span class="badge bg-secondary"><?= count($platsGroupe) ?> plat<?= count($platsGroupe) > 1 ? 's' : '' ?></span>
-                    </div>
-                    <ul class="list-group list-group-flush">
-                        <?php foreach ($platsGroupe as $plat): ?>
-                        <li class="list-group-item d-flex align-items-center justify-content-between gap-3 py-2">
-                            <div class="flex-grow-1">
-                                <div class="fw-medium"><?= sanitize($plat['titre']) ?></div>
-                                <?php if (!empty($plat['allergenes'])): ?>
-                                    <small class="text-muted">Allergènes : <?= sanitize($plat['allergenes']) ?></small>
-                                <?php endif; ?>
-                            </div>
-                            <div class="d-flex gap-1 flex-shrink-0">
-                                <button class="btn btn-sm btn-vg-outline"
-                                        data-bs-toggle="modal"
-                                        data-bs-target="#modalModifPlat<?= (int)$plat['plat_id'] ?>"
-                                        aria-label="Modifier <?= sanitize($plat['titre']) ?>">
-                                    <i class="bi bi-pencil"></i>
-                                </button>
-                                <form method="POST" action="/employe/plat/supprimer" class="d-inline">
-                                    <?= csrfField() ?>
-                                    <input type="hidden" name="plat_id" value="<?= (int)$plat['plat_id'] ?>">
-                                    <button type="submit" class="btn btn-sm btn-outline-danger"
-                                            data-confirm="Supprimer le plat « <?= sanitize($plat['titre']) ?> » ?"
-                                            aria-label="Supprimer <?= sanitize($plat['titre']) ?>">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </li>
-                        <?php endforeach; ?>
-                    </ul>
+            <div class="card shadow-sm" style="border:1px solid rgba(0,0,0,.08);">
+                <div class="card-header d-flex align-items-center justify-content-between py-2" style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
+                    <span class="fw-semibold text-vg"><?= sanitize($categorie) ?></span>
+                    <span class="badge bg-secondary fw-normal"><?= count($platsGroupe) ?> plat<?= count($platsGroupe) > 1 ? 's' : '' ?></span>
                 </div>
+                <ul class="list-group list-group-flush">
+                    <?php foreach ($platsGroupe as $plat): ?>
+                    <li class="list-group-item d-flex align-items-center justify-content-between gap-3 py-2 px-3">
+                        <div class="flex-grow-1">
+                            <div class="fw-medium"><?= sanitize($plat['titre']) ?></div>
+                            <?php if (!empty($plat['allergenes'])): ?>
+                                <small class="text-muted">Allergènes : <?= sanitize($plat['allergenes']) ?></small>
+                            <?php endif; ?>
+                        </div>
+                        <div class="d-flex gap-1 flex-shrink-0">
+                            <button class="btn btn-sm btn-vg-outline"
+                                    data-bs-toggle="modal"
+                                    data-bs-target="#modalModifPlat<?= (int)$plat['plat_id'] ?>"
+                                    aria-label="Modifier <?= sanitize($plat['titre']) ?>">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                            <form method="POST" action="/employe/plat/supprimer" class="d-inline">
+                                <?= csrfField() ?>
+                                <input type="hidden" name="plat_id" value="<?= (int)$plat['plat_id'] ?>">
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                        data-confirm="Supprimer le plat « <?= sanitize($plat['titre']) ?> » ?"
+                                        aria-label="Supprimer <?= sanitize($plat['titre']) ?>">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
             </div>
             <?php endforeach; ?>
         </div>
