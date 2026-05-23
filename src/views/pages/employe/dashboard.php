@@ -42,19 +42,19 @@
     <!-- MÉTRIQUES -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-md-4">
-            <div class="card border-0 shadow-sm p-3 text-center">
+            <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
                 <div class="fs-1 fw-bold text-vg lh-1"><?= count($commandesAujourdhui ?? []) ?></div>
                 <div class="text-muted small mt-1">Commandes aujourd'hui</div>
             </div>
         </div>
         <div class="col-6 col-md-4">
-            <div class="card border-0 shadow-sm p-3 text-center">
+            <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
                 <div class="fs-1 fw-bold text-vg lh-1"><?= count($commandesSemaine ?? []) ?></div>
                 <div class="text-muted small mt-1">Commandes cette semaine</div>
             </div>
         </div>
         <div class="col-12 col-md-4">
-            <div class="card border-0 shadow-sm p-3 text-center">
+            <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
                 <div class="fs-1 fw-bold text-vg lh-1"><?= $nbAttente ?></div>
                 <div class="text-muted small mt-1">En attente de traitement</div>
             </div>
@@ -62,7 +62,7 @@
     </div>
 
     <!-- FIL D'ACTIVITÉ -->
-    <div class="card border-0 shadow-sm">
+    <div class="card shadow-sm" style="border:1px solid rgba(0,0,0,.08);">
         <div class="card-header fw-semibold">
             <i class="bi bi-clock-history me-2 text-vg"></i>Activité récente
         </div>
