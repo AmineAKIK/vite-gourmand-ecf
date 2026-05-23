@@ -77,7 +77,7 @@ class AdminController {
 
         // Textes hero
         $sousTitre  = trim($_POST['hero_sous_titre'] ?? '');
-        $paragraphe = trim($_POST['hero_paragraphe'] ?? '');
+        $paragraphe = trim($_POST['hero_paragraphe'] ?? '', " \t\r");
 
         if (mb_strlen($sousTitre) > 60) {
             flash('error', 'Le sous-titre ne peut pas dépasser 60 caractères.');

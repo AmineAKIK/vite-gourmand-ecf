@@ -17,8 +17,8 @@ $pageTitle = 'Vite & Gourmand - Traiteur à Bordeaux';
         <h1 class="fw-bold mb-3">Vite &amp; Gourmand</h1>
         <p class="subtitle mb-4"><?= sanitize($heroSousTitre ?? 'Traiteur bordelais depuis 25 ans') ?></p>
         <?php if (!empty($heroParagraphe)): ?>
-        <p class="lead text-white-50 mb-5 col-md-8 mx-auto" style="white-space:pre-line;">
-            <?= sanitize($heroParagraphe) ?>
+        <p class="lead text-white-50 mb-5 col-md-8 mx-auto">
+            <?= nl2br(htmlspecialchars($heroParagraphe ?? '', ENT_QUOTES, 'UTF-8')) ?>
         </p>
         <?php endif; ?>
     </div>
