@@ -3,7 +3,7 @@ FROM php:8.2-cli
 RUN apt-get update && apt-get install -y \
     libzip-dev libpng-dev libssl-dev pkg-config libcurl4-openssl-dev \
     zip unzip curl autoconf g++ make \
-    && docker-php-ext-install pdo pdo_mysql zip curl fileinfo \
+    && docker-php-ext-install pdo pdo_mysql zip \
     && pecl install mongodb-2.1.0 \
     && docker-php-ext-enable mongodb \
     && apt-get remove -y autoconf g++ make \

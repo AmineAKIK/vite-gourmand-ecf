@@ -138,16 +138,19 @@ class MenuAdminService
 
     private static function cloudinaryEnabled(): bool
     {
-        if (self::env('CLOUDINARY_CLOUD_NAME') === ''
-            || self::env('CLOUDINARY_API_KEY') === ''
-            || self::env('CLOUDINARY_API_SECRET') === '') {
-            error_log('[Cloudinary] Variables manquantes — upload local utilisé');
+        $name   = self::env('CLOUDINARY_CLOUD_NAME');
+        $key    = self::env('CLOUDINARY_API_KEY');
+        $secret = self::env('CLOUDINARY_API_SECRET');
+
+        if ($name === '' || $key === '' || $secret === '') {
+            error_log('[Cloudinary] Variables manquantes: name=' . ($name ?: 'VIDE') . ' key=' . ($key ? 'OK' : 'VIDE') . ' secret=' . ($secret ? 'OK' : 'VIDE'));
             return false;
         }
         if (!class_exists('Cloudinary\Configuration\Configuration')) {
-            error_log('[Cloudinary] SDK non installé — upload local utilisé');
+            error_log('[Cloudinary] SDK non installé (class_exists=false)');
             return false;
         }
+        error_log('[Cloudinary] OK — upload vers Cloudinary cloud=' . $name);
         return true;
     }
 
