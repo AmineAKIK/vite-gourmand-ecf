@@ -54,7 +54,7 @@ $defaultParagraphe = 'Depuis 25 ans, Vite & Gourmand accompagne les particuliers
                     maxlength="200"
                 ><?= $cfg('hero_paragraphe', $defaultParagraphe) ?></textarea>
                 <div class="d-flex justify-content-between">
-                    <div class="form-text">Description visible sous le sous-titre.</div>
+                    <div class="form-text">Appuie sur Entrée pour créer un saut de ligne sur le site.</div>
                     <small class="text-muted mt-1"><span id="count-paragraphe">0</span>/200</small>
                 </div>
             </div>
