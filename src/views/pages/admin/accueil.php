@@ -5,6 +5,8 @@ $cspNonce  = $GLOBALS['csp_nonce'] ?? '';
 $cfg = function(string $cle, string $default = '') use ($config): string {
     return sanitize($config[$cle] ?? $default);
 };
+
+$defaultParagraphe = 'Depuis 25 ans, Vite & Gourmand accompagne les particuliers et les professionnels avec une cuisine traiteur généreuse, raffinée et préparée à Bordeaux.';
 ?>
 
 <?php partial('partials/page_title_bar', ['icon' => 'bi-brush', 'title' => "Personnaliser l'accueil"]); ?>
@@ -14,37 +16,8 @@ $cfg = function(string $cle, string $default = '') use ($config): string {
 
     <div class="row g-4">
 
-        <!-- COL GAUCHE : textes + preview -->
+        <!-- COL GAUCHE : textes -->
         <div class="col-12 col-xl-6">
-
-            <!-- Preview hero live -->
-            <div class="card shadow-sm mb-4 overflow-hidden">
-                <div class="card-header fw-semibold">
-                    <i class="bi bi-eye me-2 text-vg"></i>Aperçu en direct
-                </div>
-                <div class="hero-preview-wrap position-relative text-center" style="height:200px;overflow:hidden;background:#3a0a12;">
-                    <img id="preview-hero-bg"
-                         src="<?= sanitize(imageUrl($images['hero'] ?? null, 'images/hero-traiteur-bordeaux.webp')) ?>"
-                         alt=""
-                         aria-hidden="true"
-                         style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.45;">
-                    <div class="position-relative px-3 d-flex flex-column justify-content-center" style="z-index:1;height:200px;">
-                        <h2 class="fw-bold text-white mb-2" style="font-family:'Playfair Display',serif;font-size:clamp(1.4rem,4vw,2rem);">
-                            Vite &amp; Gourmand
-                        </h2>
-                        <p id="prev-sous-titre"
-                           style="color:var(--vg-or);font-weight:600;font-size:1rem;margin-bottom:.75rem;">
-                            <?= $cfg('hero_sous_titre', 'Traiteur bordelais depuis 25 ans') ?>
-                        </p>
-                        <p id="prev-paragraphe"
-                           style="color:rgba(255,255,255,.75);font-size:.9rem;max-width:480px;margin:0 auto;">
-                            <?= $cfg('hero_paragraphe', '') ?>
-                        </p>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Textes -->
             <div class="card shadow-sm">
                 <div class="card-header fw-semibold">
                     <i class="bi bi-type me-2 text-vg"></i>Textes du hero
@@ -80,9 +53,9 @@ $cfg = function(string $cle, string $default = '') use ($config): string {
                             id="hero_paragraphe"
                             name="hero_paragraphe"
                             class="form-control"
-                            rows="3"
+                            rows="4"
                             maxlength="200"
-                        ><?= $cfg('hero_paragraphe', '') ?></textarea>
+                        ><?= $cfg('hero_paragraphe', $defaultParagraphe) ?></textarea>
                         <div class="d-flex justify-content-between">
                             <div class="form-text">Description de l'entreprise visible sous le sous-titre.</div>
                             <small class="text-muted mt-1"><span id="count-paragraphe">0</span>/200</small>
@@ -91,7 +64,6 @@ $cfg = function(string $cle, string $default = '') use ($config): string {
 
                 </div>
             </div>
-
         </div>
 
         <!-- COL DROITE : images -->
@@ -113,8 +85,7 @@ $cfg = function(string $cle, string $default = '') use ($config): string {
                     <label for="hero" class="form-label fw-medium">Remplacer l'image</label>
                     <input type="file" class="form-control image-picker" id="hero" name="hero"
                            accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>"
-                           data-preview="preview-hero"
-                           data-preview-bg="preview-hero-bg">
+                           data-preview="preview-hero">
                     <div class="form-text"><?= sanitize(MenuAdminService::acceptedImageFormatsLabel()) ?> — Recommandé : 1920×600 px</div>
                 </div>
             </div>
@@ -155,32 +126,24 @@ $cfg = function(string $cle, string $default = '') use ($config): string {
 
 <script nonce="<?= $cspNonce ?>">
 (function () {
-    // Compteurs de caractères + preview texte live
-    function bindCounter(inputId, countId, previewId) {
-        var el   = document.getElementById(inputId);
-        var cnt  = document.getElementById(countId);
-        var prev = document.getElementById(previewId);
+    function bindCounter(inputId, countId) {
+        var el  = document.getElementById(inputId);
+        var cnt = document.getElementById(countId);
         if (!el || !cnt) return;
-        function update() {
-            cnt.textContent = el.value.length;
-            if (prev) prev.textContent = el.value;
-        }
+        function update() { cnt.textContent = el.value.length; }
         update();
         el.addEventListener('input', update);
     }
-    bindCounter('hero_sous_titre', 'count-sous-titre', 'prev-sous-titre');
-    bindCounter('hero_paragraphe', 'count-paragraphe', 'prev-paragraphe');
+    bindCounter('hero_sous_titre', 'count-sous-titre');
+    bindCounter('hero_paragraphe', 'count-paragraphe');
 
-    // Prévisualisation image (miniature + fond hero)
     document.querySelectorAll('input[data-preview]').forEach(function (input) {
         input.addEventListener('change', function () {
             if (!input.files[0]) return;
             var reader = new FileReader();
             reader.onload = function (e) {
                 var mini = document.getElementById(input.dataset.preview);
-                var bg   = document.getElementById(input.dataset.previewBg || '');
                 if (mini) mini.src = e.target.result;
-                if (bg)   bg.src  = e.target.result;
             };
             reader.readAsDataURL(input.files[0]);
         });
