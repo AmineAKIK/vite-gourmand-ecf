@@ -7,7 +7,7 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
     <?php partial('partials/page_title_bar', ['icon' => 'bi-list-check', 'title' => 'Gestion des commandes']); ?>
 
     <!-- Formulaire de filtres -->
-    <div class="filtres-panel card border-0 shadow-sm p-3 mb-4">
+    <div class="filtres-panel card shadow-sm p-3 mb-4" style="border:1px solid rgba(0,0,0,.08);">
         <form method="GET" action="/employe/commandes" class="row g-2 align-items-end" role="search" aria-label="Filtrer les commandes">
             <div class="col-md-4">
                 <label for="filtre-statut" class="form-label form-label-sm">Statut</label>
@@ -49,24 +49,27 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
     <?php else: ?>
         <div class="accordion" id="accordionCommandes">
             <?php foreach ($commandes as $idx => $cmd): ?>
-            <div class="accordion-item border-0 shadow-sm mb-2">
+            <div class="accordion-item mb-2" style="border:1px solid rgba(0,0,0,.08);box-shadow:0 1px 4px rgba(0,0,0,.06);border-radius:.5rem;">
                 <h2 class="accordion-header" id="heading<?= $cmd['commande_id'] ?>">
                     <button
-                        class="accordion-button collapsed py-2"
+                        class="accordion-button collapsed py-3"
                         type="button"
                         data-bs-toggle="collapse"
                         data-bs-target="#collapse<?= $cmd['commande_id'] ?>"
                         aria-expanded="false"
                         aria-controls="collapse<?= $cmd['commande_id'] ?>"
+                        style="border-radius:.5rem;"
                     >
-                        <div class="d-flex flex-wrap gap-3 align-items-center w-100 pe-3">
-                            <small class="text-muted"><?= sanitize($cmd['numero_commande'] ?? '') ?></small>
-                            <strong><?= sanitize(personFullName($cmd)) ?></strong>
-                            <span><?= sanitize($cmd['menu_titre'] ?? '') ?></span>
-                            <span class="ms-auto">
-                                <?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?>
-                            </span>
-                            <?= commandeStatusBadge($cmd['statut'] ?? null) ?>
+                        <div class="d-flex flex-wrap gap-2 align-items-center w-100 pe-3">
+                            <code class="text-muted small" style="font-size:.75rem;"><?= sanitize($cmd['numero_commande'] ?? '') ?></code>
+                            <span class="vr mx-1 opacity-25"></span>
+                            <strong class="fw-semibold"><?= sanitize(personFullName($cmd)) ?></strong>
+                            <span class="text-muted">·</span>
+                            <span class="text-muted"><?= sanitize($cmd['menu_titre'] ?? '') ?></span>
+                            <div class="ms-auto d-flex align-items-center gap-3">
+                                <span class="text-muted small"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></span>
+                                <?= commandeStatusBadge($cmd['statut'] ?? null) ?>
+                            </div>
                         </div>
                     </button>
                 </h2>
