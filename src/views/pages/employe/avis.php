@@ -79,7 +79,7 @@ $pageTitle = 'Modération des avis - Vite & Gourmand';
                             <?php endif; ?>
                         </td>
                         <td>
-                            <div class="d-flex gap-2">
+                            <div class="d-flex gap-2 flex-wrap">
                                 <?php if ($a['statut'] !== 'valide'): ?>
                                 <form method="POST" action="/employe/avis/valider">
                                     <?= csrfField() ?>
@@ -102,6 +102,14 @@ $pageTitle = 'Modération des avis - Vite & Gourmand';
                                     </button>
                                 </form>
                                 <?php endif; ?>
+                                <form method="POST" action="/employe/avis/supprimer" class="form-confirm">
+                                    <?= csrfField() ?>
+                                    <input type="hidden" name="avis_id" value="<?= (int)($a['avis_id'] ?? 0) ?>">
+                                    <input type="hidden" name="filtre" value="<?= sanitize($filtre) ?>">
+                                    <button type="submit" class="btn btn-danger btn-sm" aria-label="Supprimer définitivement cet avis">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
                             </div>
                         </td>
                     </tr>

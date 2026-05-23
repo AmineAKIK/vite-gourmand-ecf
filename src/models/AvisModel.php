@@ -77,4 +77,11 @@ class AvisModel
             ->prepare("UPDATE avis SET statut = ? WHERE commande_id = ?")
             ->execute([$status, $commandeId]);
     }
+
+    public static function delete(int $avisId): void
+    {
+        Database::getConnection()
+            ->prepare("DELETE FROM avis WHERE avis_id = ?")
+            ->execute([$avisId]);
+    }
 }

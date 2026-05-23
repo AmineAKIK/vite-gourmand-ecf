@@ -75,6 +75,7 @@ $routes = [
         '/employe/menu/modifier'     => ['EmployeController', 'updateMenu'],
         '/employe/menu/supprimer'    => ['EmployeController', 'deleteMenu'],
         '/employe/avis/valider'      => ['EmployeController', 'validerAvis'],
+        '/employe/avis/supprimer'    => ['EmployeController', 'supprimerAvis'],
         '/employe/horaires/modifier' => ['EmployeController', 'updateHoraires'],
         '/employe/plat/creer'           => ['EmployeController', 'createPlat'],
         '/employe/plat/modifier'        => ['EmployeController', 'updatePlat'],

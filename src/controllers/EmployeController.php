@@ -220,6 +220,19 @@ class EmployeController
         redirect('/employe/avis?filtre=' . urlencode($filtre));
     }
 
+    public function supprimerAvis(): void
+    {
+        verifyCsrf();
+        $avisId = (int)($_POST['avis_id'] ?? 0);
+        $filtre = sanitize($_POST['filtre'] ?? 'en_attente');
+
+        if ($avisId) {
+            AvisModel::delete($avisId);
+            flash('success', 'Avis supprimé définitivement.');
+        }
+        redirect('/employe/avis?filtre=' . urlencode($filtre));
+    }
+
     public function horaires(): void
     {
         $horaires = HoraireModel::getAll();
