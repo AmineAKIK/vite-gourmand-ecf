@@ -3,7 +3,7 @@
     <legend class="form-label fw-semibold fs-6">Plats composant ce menu</legend>
     <div class="row g-2">
         <?php foreach ($platsByCategorie as $categorie => $platsGroupe): ?>
-        <div class="col-md-4">
+        <div class="col-12 col-sm-6 col-lg-4">
             <p class="fw-semibold small text-vg mb-1"><?= sanitize($categorie) ?></p>
             <?php foreach ($platsGroupe as $plat): ?>
             <?php $inputId = ($idPrefix ?? 'plat') . '-' . (int)$plat['plat_id']; ?>

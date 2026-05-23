@@ -12,7 +12,7 @@
 
     <div class="row g-5">
         <!-- Galerie -->
-        <div class="col-md-5">
+        <div class="col-12 col-md-5">
             <?php if ($menu['images']): ?>
             <div id="galerieMenu" class="carousel slide rounded overflow-hidden shadow" data-bs-ride="carousel" aria-label="Galerie du menu">
                 <div class="carousel-inner">
@@ -44,7 +44,7 @@
         </div>
 
         <!-- Infos principales -->
-        <div class="col-md-7">
+        <div class="col-12 col-md-7">
             <div class="mb-2">
                 <?php if ($menu['theme']): ?><span class="badge-theme me-1"><?= sanitize($menu['theme']) ?></span><?php endif; ?>
                 <?php if ($menu['regime']): ?><span class="badge-regime"><?= sanitize($menu['regime']) ?></span><?php endif; ?>
@@ -110,7 +110,7 @@
             <h3 class="h5 text-vg border-bottom pb-2 mb-3"><?= $label ?></h3>
             <div class="row g-3">
                 <?php foreach ($plats as $plat): ?>
-                <div class="col-md-4">
+                <div class="col-12 col-sm-6 col-lg-4">
                     <div class="card border-0 bg-creme p-3 h-100">
                         <h4 class="h6 fw-bold"><?= sanitize($plat['titre']) ?></h4>
                         <?php if ($plat['description']): ?>
