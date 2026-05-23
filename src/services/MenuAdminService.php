@@ -185,6 +185,7 @@ class MenuAdminService
 
         try {
             self::cloudinaryConfig();
+            error_log('[Cloudinary] Uploading file: ' . $tmpName . ' size=' . $file['size'] . ' mime=' . $mime);
             $result = (new \Cloudinary\Api\Upload\UploadApi())->upload($tmpName, [
                 'folder'        => $folder,
                 'resource_type' => 'image',
@@ -194,10 +195,10 @@ class MenuAdminService
                 'crop'          => 'limit',
             ]);
             $url = $result['secure_url'] ?? null;
-            error_log('[Cloudinary] Upload OK : ' . ($url ?? 'null'));
+            error_log('[Cloudinary] Upload résultat secure_url=' . ($url ?? 'NULL') . ' public_id=' . ($result['public_id'] ?? 'NULL'));
             return $url;
         } catch (\Throwable $e) {
-            error_log('[Cloudinary] Upload FAILED : ' . get_class($e) . ' — ' . $e->getMessage());
+            error_log('[Cloudinary] Upload FAILED : ' . get_class($e) . ' — ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
             return null;
         }
     }
