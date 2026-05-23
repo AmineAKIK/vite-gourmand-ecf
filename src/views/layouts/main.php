@@ -34,7 +34,7 @@
 $workspaceActive = isAuth() && roleWorkspaceIsActive();
 $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
 ?>
-<nav class="navbar navbar-expand-md navbar-dark bg-vg sticky-top" role="navigation" aria-label="Navigation principale">
+<nav class="navbar navbar-expand-lg navbar-dark bg-vg sticky-top" role="navigation" aria-label="Navigation principale">
     <div class="container">
         <a class="navbar-brand fw-bold" href="/" aria-label="Retour à l'accueil Vite et Gourmand">
             Vite & Gourmand
