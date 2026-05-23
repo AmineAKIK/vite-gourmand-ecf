@@ -96,26 +96,18 @@ foreach ($plats as $plat) {
             <div class="col-12">
                 <div class="card border-0 shadow-sm">
                     <div class="card-header d-flex align-items-center justify-content-between">
-                        <span class="fw-semibold">
-                            <?php
-                            $icon = match($categorie) {
-                                'Entrée'          => 'bi-egg-fried',
-                                'Plat principal'  => 'bi-dish',
-                                'Dessert'         => 'bi-cake2',
-                                default           => 'bi-card-list',
-                            };
-                            ?>
-                            <i class="bi <?= $icon ?> me-2 text-vg"></i><?= sanitize($categorie) ?>
-                        </span>
+                        <span class="fw-semibold"><?= sanitize($categorie) ?></span>
                         <span class="badge bg-secondary"><?= count($platsGroupe) ?> plat<?= count($platsGroupe) > 1 ? 's' : '' ?></span>
                     </div>
                     <ul class="list-group list-group-flush">
                         <?php foreach ($platsGroupe as $plat): ?>
                         <li class="list-group-item d-flex align-items-center justify-content-between gap-3 py-2">
-                            <div class="fw-medium flex-grow-1"><?= sanitize($plat['titre']) ?></div>
-                            <?php if ($plat['allergenes']): ?>
-                                <small class="text-muted d-none d-md-block"><?= sanitize($plat['allergenes']) ?></small>
-                            <?php endif; ?>
+                            <div class="flex-grow-1">
+                                <div class="fw-medium"><?= sanitize($plat['titre']) ?></div>
+                                <?php if (!empty($plat['allergenes'])): ?>
+                                    <small class="text-muted">Allergènes : <?= sanitize($plat['allergenes']) ?></small>
+                                <?php endif; ?>
+                            </div>
                             <div class="d-flex gap-1 flex-shrink-0">
                                 <button class="btn btn-sm btn-vg-outline"
                                         data-bs-toggle="modal"
