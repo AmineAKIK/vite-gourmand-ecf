@@ -1039,19 +1039,77 @@ a:focus {
 }
 
 @media (max-width: 991px) {
+    .commandes-accordion .accordion-item {
+        overflow: hidden;
+    }
+
+    .commandes-accordion .accordion-button {
+        position: relative;
+        padding: 1rem 1rem !important;
+    }
+
+    .commandes-accordion .accordion-button::after {
+        position: absolute;
+        top: 50%;
+        right: 1rem;
+        margin: 0;
+        transform: translateY(-50%);
+    }
+
+    .commandes-accordion .accordion-button:not(.collapsed)::after {
+        transform: translateY(-50%) rotate(-180deg);
+    }
+
     .commande-row-summary {
         grid-template-columns: minmax(0, 1fr) auto;
+        grid-template-areas:
+            "numero status"
+            "client client"
+            "menu menu"
+            "date date";
         gap: .35rem .8rem;
+        padding-right: 2.4rem;
     }
 
-    .commandes-accordion .commande-numero,
+    .commandes-accordion .commande-numero {
+        grid-area: numero;
+        font-size: .76rem;
+        line-height: 1.2;
+    }
+
+    .commandes-accordion .commande-client {
+        grid-area: client;
+        font-size: 1rem;
+        line-height: 1.25;
+    }
+
     .commandes-accordion .commande-menu {
-        grid-column: 1 / -1;
+        grid-area: menu;
+        grid-column: auto;
+        font-size: .9rem;
     }
 
-    .commandes-accordion .commande-date,
-    .commandes-accordion .commande-status {
+    .commandes-accordion .commande-date {
+        grid-area: date;
+        font-size: .86rem;
         justify-self: start;
+    }
+
+    .commandes-accordion .commande-status {
+        grid-area: status;
+        align-self: start;
+        justify-self: end;
+    }
+
+    .commandes-accordion .badge-statut {
+        padding: .35em .7em;
+        font-size: .76rem;
+    }
+}
+
+@media (max-width: 767px) {
+    .commande-row-summary {
+        gap: .35rem .75rem;
     }
 }
 
