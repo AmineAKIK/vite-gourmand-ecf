@@ -4,6 +4,15 @@
     var ctx = document.getElementById(<?= json_encode($chartId ?? '') ?>);
     if (!ctx) return;
 
+    var valueFormat = <?= json_encode($valueFormat ?? 'number') ?>;
+    var formatter = new Intl.NumberFormat('fr-FR', valueFormat === 'currency'
+        ? { style: 'currency', currency: 'EUR', maximumFractionDigits: 2 }
+        : { maximumFractionDigits: 0 }
+    );
+    function formatValue(value) {
+        return formatter.format(Number(value) || 0);
+    }
+
     new Chart(ctx, {
         type: 'bar',
         data: {
@@ -27,7 +36,7 @@
                 tooltip: {
                     callbacks: {
                         label: function (ctx) {
-                            return ' ' + ctx.parsed.x + ' commande(s)';
+                            return ' ' + formatValue(ctx.parsed.x);
                         }
                     }
                 }
@@ -36,7 +45,7 @@
             scales: {
                 <?= !empty($horizontal) ? 'x' : 'y' ?>: {
                     beginAtZero: true,
-                    ticks: <?= !empty($horizontal) ? '{ callback: function (val) { return val.toFixed(0); } }' : '{ stepSize: 1 }' ?>
+                    ticks: <?= !empty($horizontal) ? '{ callback: function (val) { return formatValue(val); } }' : '{ stepSize: 1 }' ?>
                 }
             }
         }

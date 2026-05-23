@@ -224,11 +224,10 @@ class AdminController {
         $dateDebut  = sanitize($_GET['date_debut'] ?? '');
         $dateFin    = sanitize($_GET['date_fin'] ?? '');
         $caStats = CommandeModel::getCaStatsByMenu($menuFilter, $dateDebut, $dateFin);
-        $mongoStats = StatsService::getCommandesByMenu();
         $menus = \MenuModel::getAll();
         view('pages/admin/stats', compact(
             'caStats', 'menus',
-            'menuFilter', 'dateDebut', 'dateFin', 'mongoStats'
+            'menuFilter', 'dateDebut', 'dateFin'
         ));
     }
 

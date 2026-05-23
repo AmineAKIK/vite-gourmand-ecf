@@ -149,7 +149,7 @@ function workspaceNavItems(): array {
         $items[] = ['href' => '/admin/employes',   'label' => 'Employés',             'icon' => 'bi-people',   'match' => '/admin/employes*'];
         $items[] = ['href' => '/admin/stats',      'label' => 'Statistiques CA',      'icon' => 'bi-graph-up', 'match' => '/admin/stats*'];
         $items[] = ['href' => '/admin/accueil',    'label' => "Personnaliser l'accueil", 'icon' => 'bi-brush', 'match' => '/admin/accueil*'];
-        $items[] = ['href' => '/admin/parametres', 'label' => 'Paramètres',           'icon' => 'bi-sliders',  'match' => '/admin/parametres*'];
+        $items[] = ['href' => '/admin/parametres', 'label' => 'Paramètres de tarification', 'icon' => 'bi-sliders', 'match' => '/admin/parametres*'];
     }
 
     return $items;

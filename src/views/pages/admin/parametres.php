@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Paramètres — Vite & Gourmand';
+$pageTitle = 'Paramètres de tarification — Vite & Gourmand';
 $cspNonce  = $GLOBALS['csp_nonce'] ?? '';
 
 $cfg = function(string $cle, string $default = '') use ($config): string {
@@ -12,7 +12,7 @@ $reductionExampleTotal = max(120, $reductionSeuil);
 $reductionExampleAmount = $reductionExampleTotal * $reductionTaux / 100;
 ?>
 
-<?php partial('partials/page_title_bar', ['icon' => 'bi-sliders', 'title' => 'Paramètres']); ?>
+<?php partial('partials/page_title_bar', ['icon' => 'bi-sliders', 'title' => 'Paramètres de tarification']); ?>
 
 <div class="row g-4">
 

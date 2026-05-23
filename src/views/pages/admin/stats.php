@@ -2,25 +2,73 @@
 // src/views/pages/admin/stats.php
 $pageTitle = 'Statistiques CA - Vite & Gourmand';
 
-/* Calcule le total général */
-$totalCA = array_sum(array_column($caStats ?? [], 'ca'));
-$totalNb = array_sum(array_column($caStats ?? [], 'nb'));
+$totalCA = array_sum(array_map(fn($row) => (float)($row['ca'] ?? 0), $caStats ?? []));
+$totalNb = array_sum(array_map(fn($row) => (int)($row['nb'] ?? 0), $caStats ?? []));
+$panierMoyen = $totalNb > 0 ? $totalCA / $totalNb : 0;
+$topMenu = $caStats[0] ?? null;
+$topMenuShare = ($topMenu && $totalCA > 0) ? ((float)$topMenu['ca'] / $totalCA) * 100 : 0;
+$activeFilters = (int)($menuFilter ?? 0) > 0 || !empty($dateDebut) || !empty($dateFin);
 
-/* Prépare les données Chart.js (barres horizontales) */
-$chartLabels = array_map(fn($s) => $s['titre'] ?? '', $mongoStats ?? []);
-$chartData   = array_column($mongoStats ?? [], 'nb_commandes');
+$periodLabel = 'Toutes les commandes comptabilisées';
+if (!empty($dateDebut) && !empty($dateFin)) {
+    $periodLabel = 'Du ' . formatDateFr($dateDebut) . ' au ' . formatDateFr($dateFin);
+} elseif (!empty($dateDebut)) {
+    $periodLabel = 'Depuis le ' . formatDateFr($dateDebut);
+} elseif (!empty($dateFin)) {
+    $periodLabel = "Jusqu'au " . formatDateFr($dateFin);
+}
+
+$chartLabels = array_map(fn($row) => $row['titre'] ?? '', $caStats ?? []);
+$chartData = array_map(fn($row) => round((float)($row['ca'] ?? 0), 2), $caStats ?? []);
 ?>
-<div class="container py-5">
 
-    <?php partial('partials/page_title_bar', ['icon' => 'bi-graph-up', 'title' => "Statistiques — Chiffre d'affaires"]); ?>
+<div class="container py-4 stats-page">
 
-    <!-- Formulaire de filtres -->
-    <div class="filtres-panel card shadow-sm p-3 mb-4" style="border:1px solid rgba(0,0,0,.08);">
-        <form method="GET" action="/admin/stats" class="row g-2 align-items-end" role="search" aria-label="Filtrer les statistiques">
-            <div class="col-12 col-lg-3">
-                <label for="filtre-menu" class="form-label form-label-sm">Menu (optionnel)</label>
+    <div class="stats-heading mb-4">
+        <div>
+            <?php partial('partials/page_title_bar', ['icon' => 'bi-graph-up', 'title' => "Statistiques CA"]); ?>
+            <p class="stats-heading-subtitle mb-0">
+                Vue synthétique du chiffre d'affaires par menu et de la performance commerciale.
+            </p>
+        </div>
+        <div class="stats-period-badge">
+            <i class="bi bi-calendar3 me-1"></i><?= sanitize($periodLabel) ?>
+        </div>
+    </div>
+
+    <section class="stats-kpi-grid mb-4" aria-label="Indicateurs de synthèse">
+        <article class="stats-kpi-card">
+            <span class="stats-kpi-label">Chiffre d'affaires</span>
+            <strong class="stats-kpi-value"><?= sanitize(formatPrice($totalCA)) ?></strong>
+            <span class="stats-kpi-note">Hors commandes annulées</span>
+        </article>
+        <article class="stats-kpi-card">
+            <span class="stats-kpi-label">Commandes</span>
+            <strong class="stats-kpi-value"><?= sanitize(formatInteger($totalNb)) ?></strong>
+            <span class="stats-kpi-note">Sur la période affichée</span>
+        </article>
+        <article class="stats-kpi-card">
+            <span class="stats-kpi-label">Panier moyen</span>
+            <strong class="stats-kpi-value"><?= sanitize(formatPrice($panierMoyen)) ?></strong>
+            <span class="stats-kpi-note">CA divisé par commandes</span>
+        </article>
+        <article class="stats-kpi-card">
+            <span class="stats-kpi-label">Meilleur menu</span>
+            <strong class="stats-kpi-value stats-kpi-value--text">
+                <?= sanitize($topMenu['titre'] ?? 'Aucun') ?>
+            </strong>
+            <span class="stats-kpi-note">
+                <?= $topMenu ? sanitize(number_format($topMenuShare, 0, ',', ' ') . ' % du CA') : 'Aucune donnée' ?>
+            </span>
+        </article>
+    </section>
+
+    <section class="stats-filter-panel mb-4" aria-label="Filtres des statistiques">
+        <form method="GET" action="/admin/stats" class="row g-3 align-items-end" role="search">
+            <div class="col-12 col-xl-4">
+                <label for="filtre-menu" class="form-label form-label-sm">Menu</label>
                 <select class="form-select form-select-sm" id="filtre-menu" name="menu_id" aria-label="Filtrer par menu">
-                    <option value="">— Tous les menus —</option>
+                    <option value="">Tous les menus</option>
                     <?php foreach ($menus as $m): ?>
                         <option value="<?= (int)$m['menu_id'] ?>" <?= (int)($menuFilter ?? 0) === (int)$m['menu_id'] ? 'selected' : '' ?>>
                             <?= sanitize($m['titre'] ?? '') ?>
@@ -28,7 +76,7 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-12 col-lg-3">
+            <div class="col-12 col-md-6 col-xl-3">
                 <label for="filtre-debut" class="form-label form-label-sm">Date début</label>
                 <input
                     type="date"
@@ -39,7 +87,7 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
                     aria-label="Date de début de la période"
                 >
             </div>
-            <div class="col-12 col-lg-3">
+            <div class="col-12 col-md-6 col-xl-3">
                 <label for="filtre-fin" class="form-label form-label-sm">Date fin</label>
                 <input
                     type="date"
@@ -50,88 +98,132 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
                     aria-label="Date de fin de la période"
                 >
             </div>
-            <div class="col-12 col-lg-4 d-flex gap-2">
+            <div class="col-12 col-xl-2 d-flex gap-2">
                 <button type="submit" class="btn btn-vg btn-sm flex-grow-1" aria-label="Filtrer les statistiques">
                     <i class="bi bi-funnel me-1"></i>Filtrer
                 </button>
-                <a href="/admin/stats" class="btn btn-outline-secondary btn-sm btn-reset-filters flex-grow-1">
+                <a href="/admin/stats" class="btn btn-outline-secondary btn-sm btn-reset-filters <?= $activeFilters ? '' : 'disabled' ?>" <?= $activeFilters ? '' : 'aria-disabled="true" tabindex="-1"' ?>>
                     <i class="bi bi-arrow-counterclockwise me-1"></i>Réinitialiser
                 </a>
             </div>
         </form>
-    </div>
+    </section>
 
-    <div class="row g-4">
-
-        <!-- Tableau CA par menu -->
-        <div class="col-lg-6">
-            <?php if (empty($caStats)): ?>
-                <div class="alert alert-info">Aucune donnée pour cette période.</div>
-            <?php else: ?>
-                <div class="card shadow-sm" style="border:1px solid rgba(0,0,0,.08);">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" aria-label="Chiffre d'affaires par menu">
-                            <thead>
-                                <tr style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
-                                    <th scope="col" class="ps-3 text-vg fw-semibold">Menu</th>
-                                    <th scope="col" class="text-end text-vg fw-semibold text-nowrap">Nb commandes</th>
-                                    <th scope="col" class="text-end text-vg fw-semibold pe-3 text-nowrap">CA total</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($caStats as $row): ?>
-                                <tr>
-                                    <td class="ps-3"><?= sanitize($row['titre']) ?></td>
-                                    <td class="text-end text-muted"><?= sanitize(formatInteger($row['nb'] ?? 0)) ?></td>
-                                    <td class="text-end fw-semibold text-vg pe-3 text-nowrap">
-                                        <?= sanitize(formatPrice($row['ca'] ?? 0)) ?>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                            <tfoot style="background:rgba(0,0,0,.03); border-top:1px solid rgba(0,0,0,.08);">
-                                <tr>
-                                    <td class="fw-bold ps-3">TOTAL</td>
-                                    <td class="text-end fw-bold"><?= $totalNb ?></td>
-                                    <td class="text-end fw-bold text-vg pe-3 text-nowrap"><?= sanitize(formatPrice($totalCA)) ?></td>
-                                </tr>
-                            </tfoot>
-                        </table>
-                    </div>
-                </div>
-            <?php endif; ?>
+    <?php if (empty($caStats)): ?>
+        <div class="stats-empty-state">
+            <i class="bi bi-bar-chart"></i>
+            <strong>Aucune donnée pour cette sélection</strong>
+            <span>Essayez une période plus large ou retirez le filtre menu.</span>
         </div>
-
-        <!-- Graphique barres horizontales -->
-        <div class="col-lg-6">
-            <div class="card shadow-sm h-100" style="border:1px solid rgba(0,0,0,.08);">
-                <div class="card-header fw-semibold" style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
-                    <i class="bi bi-bar-chart-horizontal me-2 text-vg"></i>Commandes par menu (MongoDB)
-                </div>
-                <div class="card-body">
-                    <?php if (empty($mongoStats)): ?>
-                        <p class="text-muted small">Aucune donnée à afficher.</p>
-                    <?php else: ?>
-                        <div style="position:relative;height:260px">
-                            <canvas id="chartCA" aria-label="Graphique du chiffre d'affaires par menu" role="img"></canvas>
+    <?php else: ?>
+        <div class="row g-4 mb-4">
+            <div class="col-12 col-xl-8">
+                <section class="stats-panel h-100">
+                    <div class="stats-panel-header">
+                        <div>
+                            <h2>CA par menu</h2>
+                            <p>Classement par chiffre d'affaires généré.</p>
                         </div>
-                        <p class="text-muted small text-center mt-2 mb-0">
-                            <i class="bi bi-database me-1"></i>Données issues de MongoDB
-                        </p>
-                    <?php endif; ?>
-                </div>
+                    </div>
+                    <div class="stats-chart-wrap">
+                        <canvas id="chartCA" aria-label="Graphique du chiffre d'affaires par menu" role="img"></canvas>
+                    </div>
+                </section>
+            </div>
+
+            <div class="col-12 col-xl-4">
+                <section class="stats-panel h-100">
+                    <div class="stats-panel-header">
+                        <div>
+                            <h2>Lecture rapide</h2>
+                            <p>Menus qui tirent le plus l'activité.</p>
+                        </div>
+                    </div>
+                    <div class="stats-ranking">
+                        <?php foreach (array_slice($caStats, 0, 3) as $index => $row):
+                            $ca = (float)($row['ca'] ?? 0);
+                            $share = $totalCA > 0 ? ($ca / $totalCA) * 100 : 0;
+                        ?>
+                            <article class="stats-ranking-item">
+                                <div class="stats-ranking-main">
+                                    <span class="stats-rank"><?= $index + 1 ?></span>
+                                    <div>
+                                        <strong><?= sanitize($row['titre'] ?? '') ?></strong>
+                                        <span><?= sanitize(formatInteger($row['nb'] ?? 0)) ?> commande<?= (int)($row['nb'] ?? 0) > 1 ? 's' : '' ?></span>
+                                    </div>
+                                </div>
+                                <div class="stats-ranking-value">
+                                    <strong><?= sanitize(formatPrice($ca)) ?></strong>
+                                    <span><?= sanitize(number_format($share, 0, ',', ' ')) ?> %</span>
+                                </div>
+                                <div class="stats-share-track" aria-hidden="true">
+                                    <span style="width:<?= min(100, max(0, $share)) ?>%"></span>
+                                </div>
+                            </article>
+                        <?php endforeach; ?>
+                    </div>
+                </section>
             </div>
         </div>
 
-    </div><!-- /row -->
-
+        <section class="stats-panel">
+            <div class="stats-panel-header stats-panel-header--table">
+                <div>
+                    <h2>Détail par menu</h2>
+                    <p>CA, volume, panier moyen et part dans le total.</p>
+                </div>
+            </div>
+            <div class="table-responsive">
+                <table class="table stats-table align-middle mb-0" aria-label="Chiffre d'affaires détaillé par menu">
+                    <thead>
+                        <tr>
+                            <th scope="col">Menu</th>
+                            <th scope="col" class="text-end text-nowrap">Commandes</th>
+                            <th scope="col" class="text-end text-nowrap">Panier moyen</th>
+                            <th scope="col" class="text-end text-nowrap">Part CA</th>
+                            <th scope="col" class="text-end text-nowrap">CA total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($caStats as $row):
+                            $nb = (int)($row['nb'] ?? 0);
+                            $ca = (float)($row['ca'] ?? 0);
+                            $average = $nb > 0 ? $ca / $nb : 0;
+                            $share = $totalCA > 0 ? ($ca / $totalCA) * 100 : 0;
+                        ?>
+                        <tr>
+                            <td class="stats-table-title"><?= sanitize($row['titre'] ?? '') ?></td>
+                            <td class="text-end"><?= sanitize(formatInteger($nb)) ?></td>
+                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($average)) ?></td>
+                            <td class="text-end">
+                                <span class="stats-percent"><?= sanitize(number_format($share, 0, ',', ' ')) ?> %</span>
+                            </td>
+                            <td class="text-end fw-bold text-vg text-nowrap"><?= sanitize(formatPrice($ca)) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                    <tfoot>
+                        <tr>
+                            <td>Total</td>
+                            <td class="text-end"><?= sanitize(formatInteger($totalNb)) ?></td>
+                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($panierMoyen)) ?></td>
+                            <td class="text-end">100 %</td>
+                            <td class="text-end text-vg text-nowrap"><?= sanitize(formatPrice($totalCA)) ?></td>
+                        </tr>
+                    </tfoot>
+                </table>
+            </div>
+        </section>
+    <?php endif; ?>
 </div>
 
-<?php if (!empty($mongoStats)): ?>
+<?php if (!empty($caStats)): ?>
 <?php partial('partials/chart_bar', [
     'chartId' => 'chartCA',
     'chartLabels' => $chartLabels,
     'chartData' => $chartData,
+    'datasetLabel' => "Chiffre d'affaires",
+    'valueFormat' => 'currency',
     'horizontal' => true,
 ]); ?>
 <?php endif; ?>
