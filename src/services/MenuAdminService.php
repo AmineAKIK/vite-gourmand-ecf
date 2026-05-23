@@ -123,20 +123,27 @@ class MenuAdminService
         MenuModel::deleteMenuImage($imageId);
     }
 
+    private static function env(string $key): string
+    {
+        // Railway expose les variables dans $_SERVER et $_ENV
+        return (string)($_ENV[$key] ?? $_SERVER[$key] ?? getenv($key) ?? '');
+    }
+
     private static function cloudinaryEnabled(): bool
     {
-        return !empty($_ENV['CLOUDINARY_CLOUD_NAME'])
-            && !empty($_ENV['CLOUDINARY_API_KEY'])
-            && !empty($_ENV['CLOUDINARY_API_SECRET']);
+        return self::env('CLOUDINARY_CLOUD_NAME') !== ''
+            && self::env('CLOUDINARY_API_KEY') !== ''
+            && self::env('CLOUDINARY_API_SECRET') !== ''
+            && class_exists(\Cloudinary\Configuration\Configuration::class);
     }
 
     private static function cloudinaryConfig(): void
     {
         \Cloudinary\Configuration\Configuration::instance([
             'cloud' => [
-                'cloud_name' => $_ENV['CLOUDINARY_CLOUD_NAME'],
-                'api_key'    => $_ENV['CLOUDINARY_API_KEY'],
-                'api_secret' => $_ENV['CLOUDINARY_API_SECRET'],
+                'cloud_name' => self::env('CLOUDINARY_CLOUD_NAME'),
+                'api_key'    => self::env('CLOUDINARY_API_KEY'),
+                'api_secret' => self::env('CLOUDINARY_API_SECRET'),
             ],
             'url' => ['secure' => true],
         ]);
