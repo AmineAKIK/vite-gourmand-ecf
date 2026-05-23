@@ -81,7 +81,7 @@ class MailService {
             $mail->AltBody = "Réinitialisez votre mot de passe (valable 1h) : $link";
             $mail->send();
         } catch (\Throwable $e) {
-            error_log("Erreur mail reset : " . $e->getMessage());
+            error_log("Erreur mail reset : " . $e->getMessage() . " | host=" . MAIL_HOST . " port=" . MAIL_PORT . " user=" . MAIL_USER);
         }
     }
 

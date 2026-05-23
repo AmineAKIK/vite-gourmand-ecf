@@ -22,7 +22,7 @@ define('MONGO_URI', $_ENV['MONGO_URI'] ?? 'mongodb://localhost:27017');
 define('MONGO_DB',  $_ENV['MONGO_DB']  ?? 'vite_gourmand_stats');
 
 define('MAIL_HOST',     $_ENV['MAIL_HOST']     ?? 'smtp.mailtrap.io');
-define('MAIL_PORT',     $_ENV['MAIL_PORT']     ?? 2525);
+define('MAIL_PORT', (int)($_ENV['MAIL_PORT'] ?? 2525));
 define('MAIL_USER',     $_ENV['MAIL_USER']     ?? '');
 define('MAIL_PASS',     $_ENV['MAIL_PASS']     ?? '');
 define('MAIL_FROM',     $_ENV['MAIL_FROM']     ?? 'noreply@vitegourmand.fr');
