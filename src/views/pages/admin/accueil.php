@@ -22,13 +22,13 @@ $cfg = function(string $cle, string $default = '') use ($config): string {
                 <div class="card-header fw-semibold">
                     <i class="bi bi-eye me-2 text-vg"></i>Aperçu en direct
                 </div>
-                <div class="hero-preview-wrap position-relative text-center" style="min-height:220px;background:#3a0a12;">
+                <div class="hero-preview-wrap position-relative text-center" style="height:200px;overflow:hidden;background:#3a0a12;">
                     <img id="preview-hero-bg"
                          src="<?= sanitize(imageUrl($images['hero'] ?? null, 'images/hero-traiteur-bordeaux.webp')) ?>"
                          alt=""
                          aria-hidden="true"
                          style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.45;">
-                    <div class="position-relative py-5 px-3" style="z-index:1;">
+                    <div class="position-relative px-3 d-flex flex-column justify-content-center" style="z-index:1;height:200px;">
                         <h2 class="fw-bold text-white mb-2" style="font-family:'Playfair Display',serif;font-size:clamp(1.4rem,4vw,2rem);">
                             Vite &amp; Gourmand
                         </h2>
