@@ -2,8 +2,11 @@
 // src/controllers/HomeController.php
 class HomeController {
     public function index(): void {
-        $avisValides    = AvisModel::getValidated();
-        $preloadImages  = ['/images/hero-traiteur-bordeaux.webp'];
-        view('pages/home', compact('avisValides', 'preloadImages'));
+        $avisValides   = AvisModel::getValidated();
+        $siteImages    = SiteImageModel::getAll();
+        $heroUrl       = imageUrl($siteImages['hero']        ?? null, 'images/hero-traiteur-bordeaux.webp');
+        $preparationUrl = imageUrl($siteImages['preparation'] ?? null, 'images/preparation-traiteur.webp');
+        $preloadImages = [$heroUrl];
+        view('pages/home', compact('avisValides', 'preloadImages', 'heroUrl', 'preparationUrl'));
     }
 }

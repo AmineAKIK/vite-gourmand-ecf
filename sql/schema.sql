@@ -181,6 +181,20 @@ CREATE TABLE password_reset (
 );
 
 -- ============================================
+-- IMAGES DU SITE (hero, section accueil)
+-- ============================================
+
+CREATE TABLE site_image (
+    cle VARCHAR(50) PRIMARY KEY,  -- 'hero', 'preparation'
+    url VARCHAR(500) NOT NULL,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);
+
+INSERT INTO site_image (cle, url) VALUES
+('hero',        'images/hero-traiteur-bordeaux.webp'),
+('preparation', 'images/preparation-traiteur.webp');
+
+-- ============================================
 -- CACHE GÉOCODAGE
 -- ============================================
 

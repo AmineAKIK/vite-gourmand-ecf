@@ -1,13 +1,12 @@
 <?php
 // src/views/pages/home.php
-$pageTitle    = 'Vite & Gourmand - Traiteur à Bordeaux';
-$preloadImages = ['/images/hero-traiteur-bordeaux.webp'];
+$pageTitle = 'Vite & Gourmand - Traiteur à Bordeaux';
 ?>
 
 <!-- HERO -->
 <section class="hero hero-home text-center" aria-label="Présentation de l'entreprise">
     <img
-        src="/images/hero-traiteur-bordeaux.webp"
+        src="<?= sanitize($heroUrl ?? '/images/hero-traiteur-bordeaux.webp') ?>"
         class="hero-bg"
         alt=""
         aria-hidden="true"
@@ -30,7 +29,7 @@ $preloadImages = ['/images/hero-traiteur-bordeaux.webp'];
         <div class="row g-4 align-items-center">
             <div class="col-lg-5">
                 <img
-                    src="/images/preparation-traiteur.webp"
+                    src="<?= sanitize($preparationUrl ?? '/images/preparation-traiteur.webp') ?>"
                     class="img-fluid professional-img"
                     alt="Préparation de bouchées traiteur par l'équipe Vite et Gourmand"
                     loading="lazy"

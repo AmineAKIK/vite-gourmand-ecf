@@ -66,6 +66,33 @@ class AdminController {
         redirect('/admin/employes');
     }
 
+    public function images(): void {
+        $images = SiteImageModel::getAll();
+        view('pages/admin/images', compact('images'));
+    }
+
+    public function updateImages(): void {
+        verifyCsrf();
+
+        $cles = ['hero', 'preparation'];
+        foreach ($cles as $cle) {
+            $file = $_FILES[$cle] ?? null;
+            if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+            $url = MenuAdminService::uploadSiteImage($file, 'site/' . $cle);
+            if ($url) {
+                SiteImageModel::set($cle, $url);
+            } else {
+                flash('error', 'Erreur lors de l\'upload de l\'image "' . $cle . '".');
+                redirect('/admin/images');
+            }
+        }
+
+        flash('success', 'Images du site mises à jour.');
+        redirect('/admin/images');
+    }
+
     public function stats(): void {
         $menuFilter = (int)($_GET['menu_id'] ?? 0);
         $dateDebut  = sanitize($_GET['date_debut'] ?? '');

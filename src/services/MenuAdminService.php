@@ -71,6 +71,13 @@ class MenuAdminService
         return array_values(array_unique($ids));
     }
 
+    public static function uploadSiteImage(array $file, string $folder): ?string
+    {
+        return self::cloudinaryEnabled()
+            ? self::storeOnCloudinary($file, $folder)
+            : self::storeUploadedImage($file, str_replace('/', '_', $folder));
+    }
+
     public static function uploadMenuImages(int $menuId, array $files, int $startOrder): void
     {
         if (empty($files['name'][0])) {

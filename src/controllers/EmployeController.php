@@ -97,9 +97,14 @@ class EmployeController
             redirect('/employe/menus?open_modal=creer_menu&modal_error=' . urlencode($e->getMessage()));
         }
 
+        $images = $_FILES['images'] ?? [];
+        if (empty($images['name'][0]) || ($images['error'][0] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+            redirect('/employe/menus?open_modal=creer_menu&modal_error=' . urlencode('Au moins une photo est obligatoire.'));
+        }
+
         $menuId = MenuModel::create($data);
         MenuModel::addMenuPlats($menuId, MenuAdminService::selectedIds($_POST, 'plats'));
-        MenuAdminService::uploadMenuImages($menuId, $_FILES['images'] ?? [], 1);
+        MenuAdminService::uploadMenuImages($menuId, $images, 1);
 
         flash('success', 'Menu créé avec succès.');
         redirect('/employe/menus');
