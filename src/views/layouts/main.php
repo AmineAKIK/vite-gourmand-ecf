@@ -42,7 +42,7 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Ouvrir le menu">
             <span class="navbar-toggler-icon"></span>
         </button>
-        <div class="collapse navbar-collapse" id="navMain">
+        <div class="collapse navbar-collapse text-start" id="navMain">
             <ul class="navbar-nav me-auto mb-0">
                 <li class="nav-item">
                     <a class="nav-link <?= routeIsActive('/') ? 'active' : '' ?>" href="/" <?= routeIsActive('/') ? 'aria-current="page"' : '' ?>>Accueil</a>
