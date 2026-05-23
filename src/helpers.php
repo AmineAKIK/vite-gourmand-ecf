@@ -147,7 +147,9 @@ function csrfField(): string {
 
 function verifyCsrf(): void {
     if (!hash_equals($_SESSION['csrf_token'] ?? '', $_POST['csrf_token'] ?? '')) {
-        http_response_code(403); die('CSRF token invalide');
+        http_response_code(403);
+        view('pages/403');
+        exit;
     }
 }
 

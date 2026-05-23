@@ -39,9 +39,20 @@
                                     <?php elseif (commandeCanClientTrack($cmd['statut'] ?? null)): ?>
                                         <a href="/commande/suivi?id=<?= (int)$cmd['commande_id'] ?>" class="btn btn-sm btn-outline-info">Suivi</a>
                                     <?php elseif (commandeCanReview($cmd['statut'] ?? null)): ?>
-                                        <button class="btn btn-sm btn-or" data-bs-toggle="modal" data-bs-target="#avisModal<?= (int)$cmd['commande_id'] ?>">
-                                            <i class="bi bi-star me-1"></i>Donner un avis
-                                        </button>
+                                        <?php $avisCmd = $avisByCommande[(int)$cmd['commande_id']] ?? null; ?>
+                                        <?php if ($avisCmd): ?>
+                                            <?php if ($avisCmd['statut'] === 'valide'): ?>
+                                                <span class="badge bg-success"><i class="bi bi-star-fill me-1"></i>Avis publié</span>
+                                            <?php elseif ($avisCmd['statut'] === 'refuse'): ?>
+                                                <span class="badge bg-danger">Avis refusé</span>
+                                            <?php else: ?>
+                                                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass me-1"></i>Avis en attente</span>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <button class="btn btn-sm btn-or" data-bs-toggle="modal" data-bs-target="#avisModal<?= (int)$cmd['commande_id'] ?>">
+                                                <i class="bi bi-star me-1"></i>Donner un avis
+                                            </button>
+                                        <?php endif; ?>
                                     <?php endif; ?>
                                 </td>
                             </tr>
@@ -178,9 +189,9 @@
                 <p class="text-muted small">Vos commandes passées resteront dans notre système à des fins comptables.</p>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
-                <form method="POST" action="/mon-compte/supprimer">
+                <form method="POST" action="/mon-compte/supprimer" class="d-flex gap-2">
                     <?= csrfField() ?>
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Annuler</button>
                     <button type="submit" class="btn btn-danger">Confirmer la suppression</button>
                 </form>
             </div>

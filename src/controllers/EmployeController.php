@@ -203,9 +203,11 @@ class EmployeController
 
     public function avis(): void
     {
-        $avis = AvisModel::getPending();
+        $filtre  = in_array($_GET['filtre'] ?? '', ['en_attente', 'valide', 'refuse']) ? $_GET['filtre'] : 'en_attente';
+        $avis    = AvisModel::getAll($filtre);
+        $pending = AvisModel::getPending();
 
-        view('pages/employe/avis', compact('avis'));
+        view('pages/employe/avis', compact('avis', 'filtre', 'pending'));
     }
 
     public function validerAvis(): void
@@ -213,12 +215,13 @@ class EmployeController
         verifyCsrf();
         $commandeId = (int)($_POST['commande_id'] ?? 0);
         $action     = sanitize($_POST['action']   ?? '');
+        $filtre     = sanitize($_POST['filtre']   ?? 'en_attente');
         $statut     = ($action === 'valider') ? 'valide' : 'refuse';
 
         AvisModel::updateStatusByCommande($commandeId, $statut);
 
         flash('success', 'Avis ' . ($statut === 'valide' ? 'validé' : 'refusé') . '.');
-        redirect('/employe/avis');
+        redirect('/employe/avis?filtre=' . urlencode($filtre));
     }
 
     public function horaires(): void

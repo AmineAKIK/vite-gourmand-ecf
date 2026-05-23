@@ -35,8 +35,22 @@
                 </div>
                 <div class="col-12">
                     <label for="password" class="form-label">Mot de passe <span class="text-danger">*</span></label>
-                    <input type="password" class="form-control" id="password" name="password" required autocomplete="new-password">
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="password" name="password" required autocomplete="new-password">
+                        <button type="button" class="btn btn-outline-secondary" data-password-toggle="password" aria-label="Afficher/masquer le mot de passe">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
                     <div class="form-text"><?= sanitize(passwordPolicyMessage()) ?></div>
+                </div>
+                <div class="col-12">
+                    <label for="password_confirm" class="form-label">Confirmer le mot de passe <span class="text-danger">*</span></label>
+                    <div class="input-group">
+                        <input type="password" class="form-control" id="password_confirm" name="password_confirm" required autocomplete="new-password">
+                        <button type="button" class="btn btn-outline-secondary" data-password-toggle="password_confirm" aria-label="Afficher/masquer la confirmation">
+                            <i class="bi bi-eye"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="col-12 d-grid">
                     <button type="submit" class="btn btn-vg btn-lg">Créer mon compte</button>

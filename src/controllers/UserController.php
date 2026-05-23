@@ -7,7 +7,16 @@ class UserController {
         $user      = currentUser();
         $commandes = CommandeModel::getByUser($user['id']);
         $userFull  = \UserModel::findById($user['id']);
-        view('pages/user/dashboard', compact('commandes', 'userFull'));
+
+        $avisByCommande = [];
+        foreach ($commandes as $cmd) {
+            $avis = AvisModel::getByCommande((int)$cmd['commande_id']);
+            if ($avis) {
+                $avisByCommande[(int)$cmd['commande_id']] = $avis;
+            }
+        }
+
+        view('pages/user/dashboard', compact('commandes', 'userFull', 'avisByCommande'));
     }
 
     public function update(): void {
@@ -43,9 +52,8 @@ class UserController {
         $user = currentUser();
 
         if (!hasRole(ROLE_USER)) {
-            http_response_code(403);
-            view('pages/403');
-            exit;
+            flash('error', 'Seuls les clients peuvent supprimer leur compte.');
+            redirect('/mon-compte');
         }
 
         \UserModel::delete($user['id']);

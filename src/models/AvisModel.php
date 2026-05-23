@@ -16,6 +16,31 @@ class AvisModel
         ")->fetchAll();
     }
 
+    public static function getAll(?string $statut = null): array
+    {
+        $sql = "
+            SELECT a.*, u.prenom, u.nom, m.titre AS menu_titre
+            FROM avis a
+            JOIN utilisateur u ON u.utilisateur_id = a.utilisateur_id
+            JOIN commande c    ON c.commande_id    = a.commande_id
+            JOIN menu m        ON m.menu_id        = c.menu_id
+        ";
+        if ($statut !== null) {
+            $stmt = Database::getConnection()->prepare($sql . " WHERE a.statut = ? ORDER BY a.created_at DESC");
+            $stmt->execute([$statut]);
+        } else {
+            $stmt = Database::getConnection()->query($sql . " ORDER BY a.created_at DESC");
+        }
+        return $stmt->fetchAll();
+    }
+
+    public static function getByCommande(int $commandeId): ?array
+    {
+        $stmt = Database::getConnection()->prepare("SELECT * FROM avis WHERE commande_id = ?");
+        $stmt->execute([$commandeId]);
+        return $stmt->fetch() ?: null;
+    }
+
     public static function getValidated(int $limit = 6): array
     {
         $stmt = Database::getConnection()->prepare("

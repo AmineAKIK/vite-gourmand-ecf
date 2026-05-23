@@ -65,6 +65,9 @@ class AuthController {
         if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
             flash('error', 'Email invalide.'); redirect('/inscription');
         }
+        if ($data['password'] !== ($_POST['password_confirm'] ?? '')) {
+            flash('error', 'Les mots de passe ne correspondent pas.'); redirect('/inscription');
+        }
         if (!validatePassword($data['password'])) {
             flash('error', passwordPolicyMessage()); redirect('/inscription');
         }
