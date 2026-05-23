@@ -9,7 +9,7 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
     <!-- Formulaire de filtres -->
     <div class="filtres-panel card shadow-sm p-3 mb-4" style="border:1px solid rgba(0,0,0,.08);">
         <form method="GET" action="/employe/commandes" class="row g-2 align-items-end" role="search" aria-label="Filtrer les commandes">
-            <div class="col-12 col-lg-4">
+            <div class="col-12 col-lg-3">
                 <label for="filtre-statut" class="form-label form-label-sm">Statut</label>
                 <select class="form-select form-select-sm" id="filtre-statut" name="statut" aria-label="Filtrer par statut">
                     <option value="">— Tous les statuts —</option>
@@ -32,7 +32,7 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                     aria-label="Rechercher par nom de client"
                 >
             </div>
-            <div class="col-12 col-lg-3 d-flex gap-2">
+            <div class="col-12 col-lg-4 d-flex gap-2">
                 <button type="submit" class="btn btn-vg btn-sm flex-grow-1" aria-label="Appliquer les filtres">
                     <i class="bi bi-funnel me-1"></i>Filtrer
                 </button>

@@ -103,7 +103,7 @@ $pageTitle = 'Gestion des employés - Vite & Gourmand';
                             <thead>
                                 <tr style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
                                     <th scope="col" class="ps-3 text-vg fw-semibold">Prénom / Nom</th>
-                                    <th scope="col" class="text-vg fw-semibold">Email</th>
+                                    <th scope="col" class="text-vg fw-semibold d-none d-xl-table-cell">Email</th>
                                     <th scope="col" class="text-vg fw-semibold">Statut</th>
                                     <th scope="col" class="text-vg fw-semibold pe-3">Action</th>
                                 </tr>
@@ -112,7 +112,7 @@ $pageTitle = 'Gestion des employés - Vite & Gourmand';
                                 <?php foreach ($employes as $employe): ?>
                                 <tr>
                                     <td class="fw-medium ps-3"><?= sanitize(personFullName($employe)) ?></td>
-                                    <td class="text-muted" style="word-break:break-all;max-width:200px;"><?= sanitize($employe['email'] ?? '') ?></td>
+                                    <td class="text-muted d-none d-xl-table-cell" style="word-break:break-all;max-width:200px;"><?= sanitize($employe['email'] ?? '') ?></td>
                                     <td>
                                         <?php if ($employe['actif'] ?? false): ?>
                                             <span class="badge bg-success">Actif</span>
@@ -120,7 +120,7 @@ $pageTitle = 'Gestion des employés - Vite & Gourmand';
                                             <span class="badge bg-secondary">Inactif</span>
                                         <?php endif; ?>
                                     </td>
-                                    <td class="pe-3">
+                                    <td class="pe-3 text-nowrap">
                                         <div class="d-flex gap-2">
                                             <form method="POST" action="/admin/employe/desactiver" class="form-confirm">
                                                 <?= csrfField() ?>

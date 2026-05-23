@@ -17,7 +17,7 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
     <!-- Formulaire de filtres -->
     <div class="filtres-panel card shadow-sm p-3 mb-4" style="border:1px solid rgba(0,0,0,.08);">
         <form method="GET" action="/admin/stats" class="row g-2 align-items-end" role="search" aria-label="Filtrer les statistiques">
-            <div class="col-12 col-lg-4">
+            <div class="col-12 col-lg-3">
                 <label for="filtre-menu" class="form-label form-label-sm">Menu (optionnel)</label>
                 <select class="form-select form-select-sm" id="filtre-menu" name="menu_id" aria-label="Filtrer par menu">
                     <option value="">— Tous les menus —</option>
@@ -50,7 +50,7 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
                     aria-label="Date de fin de la période"
                 >
             </div>
-            <div class="col-12 col-lg-2 d-flex gap-2">
+            <div class="col-12 col-lg-4 d-flex gap-2">
                 <button type="submit" class="btn btn-vg btn-sm flex-grow-1" aria-label="Filtrer les statistiques">
                     <i class="bi bi-funnel me-1"></i>Filtrer
                 </button>
@@ -74,8 +74,8 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
                             <thead>
                                 <tr style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
                                     <th scope="col" class="ps-3 text-vg fw-semibold">Menu</th>
-                                    <th scope="col" class="text-end text-vg fw-semibold">Nb commandes</th>
-                                    <th scope="col" class="text-end text-vg fw-semibold pe-3">CA total</th>
+                                    <th scope="col" class="text-end text-vg fw-semibold text-nowrap">Nb commandes</th>
+                                    <th scope="col" class="text-end text-vg fw-semibold pe-3 text-nowrap">CA total</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -83,7 +83,7 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
                                 <tr>
                                     <td class="ps-3"><?= sanitize($row['titre']) ?></td>
                                     <td class="text-end text-muted"><?= sanitize(formatInteger($row['nb'] ?? 0)) ?></td>
-                                    <td class="text-end fw-semibold text-vg pe-3">
+                                    <td class="text-end fw-semibold text-vg pe-3 text-nowrap">
                                         <?= sanitize(formatPrice($row['ca'] ?? 0)) ?>
                                     </td>
                                 </tr>
@@ -93,7 +93,7 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
                                 <tr>
                                     <td class="fw-bold ps-3">TOTAL</td>
                                     <td class="text-end fw-bold"><?= $totalNb ?></td>
-                                    <td class="text-end fw-bold text-vg pe-3"><?= sanitize(formatPrice($totalCA)) ?></td>
+                                    <td class="text-end fw-bold text-vg pe-3 text-nowrap"><?= sanitize(formatPrice($totalCA)) ?></td>
                                 </tr>
                             </tfoot>
                         </table>
