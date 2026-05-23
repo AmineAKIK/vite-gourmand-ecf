@@ -951,10 +951,18 @@ input[type="password"]::-webkit-caps-lock-indicator {
     transition: background .15s, color .15s, border-color .15s;
 }
 
-.workspace-nav-item:hover,
-.workspace-nav-item:active {
-    background: var(--ws-sidebar-hover);
+.workspace-nav-item:hover {
     color: #fff;
+}
+
+.workspace-nav-item:focus {
+    color: rgba(255,255,255,.65);
+}
+
+.workspace-nav-item:focus-visible {
+    color: #fff;
+    outline: 2px solid rgba(253,246,236,.55);
+    outline-offset: -4px;
 }
 
 .workspace-nav-item.active {
