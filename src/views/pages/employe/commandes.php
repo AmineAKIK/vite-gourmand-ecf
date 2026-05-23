@@ -9,7 +9,7 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
     <!-- Formulaire de filtres -->
     <div class="filtres-panel card shadow-sm p-3 mb-4" style="border:1px solid rgba(0,0,0,.08);">
         <form method="GET" action="/employe/commandes" class="row g-2 align-items-end" role="search" aria-label="Filtrer les commandes">
-            <div class="col-md-4">
+            <div class="col-12 col-lg-4">
                 <label for="filtre-statut" class="form-label form-label-sm">Statut</label>
                 <select class="form-select form-select-sm" id="filtre-statut" name="statut" aria-label="Filtrer par statut">
                     <option value="">— Tous les statuts —</option>
@@ -20,7 +20,7 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-5">
+            <div class="col-12 col-lg-5">
                 <label for="filtre-client" class="form-label form-label-sm">Rechercher un client</label>
                 <input
                     type="text"
@@ -32,7 +32,7 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                     aria-label="Rechercher par nom de client"
                 >
             </div>
-            <div class="col-md-3 d-flex gap-2">
+            <div class="col-12 col-lg-3 d-flex gap-2">
                 <button type="submit" class="btn btn-vg btn-sm flex-grow-1" aria-label="Appliquer les filtres">
                     <i class="bi bi-funnel me-1"></i>Filtrer
                 </button>
@@ -78,7 +78,7 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                         <div class="row g-3">
 
                             <!-- Informations de la commande -->
-                            <div class="col-md-5">
+                            <div class="col-12 col-lg-5">
                                 <h3 class="h6 fw-bold">Détails</h3>
                                 <dl class="mb-0 small">
                                     <div class="d-flex gap-2 mb-1"><dt class="text-muted" style="min-width:80px;">Client</dt><dd class="mb-0 fw-medium"><?= sanitize(personFullName($cmd)) ?></dd></div>
@@ -92,7 +92,7 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                             </div>
 
                             <!-- Mise à jour du statut -->
-                            <div class="col-md-4">
+                            <div class="col-12 col-lg-4">
                                 <h3 class="h6 fw-bold">Mettre à jour le statut</h3>
                                 <form method="POST" action="/employe/commande/statut">
                                     <?= csrfField() ?>
@@ -135,7 +135,7 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
 
                             <!-- Annulation si la commande est encore modifiable -->
                             <?php if (commandeCanClientModify($cmd)): ?>
-                            <div class="col-md-3">
+                            <div class="col-12 col-lg-3">
                                 <h3 class="h6 fw-bold text-danger">Annuler la commande</h3>
                                 <form method="POST" action="/employe/commande/statut" class="form-confirm">
                                     <?= csrfField() ?>

@@ -21,7 +21,7 @@ $defaultParagraphe = 'Depuis 25 ans, Vite & Gourmand accompagne les particuliers
         </div>
         <div class="card-body row g-4">
 
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-lg-6">
                 <label class="form-label fw-medium" for="hero_sous_titre">
                     Sous-titre <span class="text-danger">*</span>
                     <small class="text-muted fw-normal ms-1">— affiché en doré</small>
@@ -41,7 +41,7 @@ $defaultParagraphe = 'Depuis 25 ans, Vite & Gourmand accompagne les particuliers
                 </div>
             </div>
 
-            <div class="col-12 col-md-6">
+            <div class="col-12 col-lg-6">
                 <label class="form-label fw-medium" for="hero_paragraphe">
                     Paragraphe d'introduction
                     <small class="text-muted fw-normal ms-1">— affiché en blanc</small>
@@ -65,7 +65,7 @@ $defaultParagraphe = 'Depuis 25 ans, Vite & Gourmand accompagne les particuliers
     <!-- IMAGES — côte à côte -->
     <div class="row g-4 mb-4">
 
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-lg-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold">
                     <i class="bi bi-card-image me-2 text-vg"></i>Image de fond (bannière)
@@ -87,7 +87,7 @@ $defaultParagraphe = 'Depuis 25 ans, Vite & Gourmand accompagne les particuliers
             </div>
         </div>
 
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-lg-6">
             <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold">
                     <i class="bi bi-camera me-2 text-vg"></i>Image section "Notre équipe"

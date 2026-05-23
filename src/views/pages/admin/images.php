@@ -11,7 +11,7 @@ $pageTitle = 'Images du site - Vite & Gourmand';
         <div class="row g-4">
 
             <!-- Hero -->
-            <div class="col-md-6">
+            <div class="col-12 col-lg-6">
                 <div class="card border-0 shadow-sm p-4" style="background:var(--vg-creme);">
                     <h2 class="h5 fw-bold mb-3">
                         <i class="bi bi-card-image me-2 text-vg"></i>Image hero (bannière d'accueil)
@@ -34,7 +34,7 @@ $pageTitle = 'Images du site - Vite & Gourmand';
             </div>
 
             <!-- Preparation -->
-            <div class="col-md-6">
+            <div class="col-12 col-lg-6">
                 <div class="card border-0 shadow-sm p-4" style="background:var(--vg-creme);">
                     <h2 class="h5 fw-bold mb-3">
                         <i class="bi bi-camera me-2 text-vg"></i>Image section "Notre équipe"

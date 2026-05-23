@@ -216,22 +216,22 @@ foreach ($plats as $plat) {
                             <textarea class="form-control" id="creer-description" name="description"
                                 rows="3" maxlength="1000"></textarea>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-6 col-lg-4">
                             <label for="creer-min-pers" class="form-label">Nb personnes minimum <span class="text-danger" aria-hidden="true">*</span></label>
                             <input type="number" class="form-control" id="creer-min-pers"
                                 name="nombre_personne_minimum" min="1" required aria-required="true">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-6 col-lg-4">
                             <label for="creer-prix" class="form-label">Prix / personne (€) <span class="text-danger" aria-hidden="true">*</span></label>
                             <input type="number" class="form-control" id="creer-prix"
                                 name="prix_par_personne" min="0" step="0.01" required aria-required="true">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-6 col-lg-4">
                             <label for="creer-stock" class="form-label">Quantité restante <small class="text-muted">(vide = illimité)</small></label>
                             <input type="number" class="form-control" id="creer-stock"
                                 name="quantite_restante" min="0">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-lg-6">
                             <label for="creer-theme" class="form-label">Thème</label>
                             <select class="form-select" id="creer-theme" name="theme_id">
                                 <option value="">— Aucun thème —</option>
@@ -240,7 +240,7 @@ foreach ($plats as $plat) {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-lg-6">
                             <label for="creer-regime" class="form-label">Régime alimentaire</label>
                             <select class="form-select" id="creer-regime" name="regime_id">
                                 <option value="">— Aucun régime —</option>
@@ -368,7 +368,7 @@ foreach ($plats as $plat) {
                                 name="description" rows="3" maxlength="1000"
                             ><?= sanitize($menu['description'] ?? '') ?></textarea>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-6 col-lg-4">
                             <label for="modif-min-<?= (int)$menu['menu_id'] ?>" class="form-label">Nb personnes minimum</label>
                             <input type="number" class="form-control"
                                 id="modif-min-<?= (int)$menu['menu_id'] ?>"
@@ -376,7 +376,7 @@ foreach ($plats as $plat) {
                                 value="<?= (int)($menu['nombre_personne_minimum'] ?? 1) ?>"
                                 required aria-required="true">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-6 col-lg-4">
                             <label for="modif-prix-<?= (int)$menu['menu_id'] ?>" class="form-label">Prix / personne (€)</label>
                             <input type="number" class="form-control"
                                 id="modif-prix-<?= (int)$menu['menu_id'] ?>"
@@ -384,14 +384,14 @@ foreach ($plats as $plat) {
                                 value="<?= sanitize(formatPriceInput($menu['prix_par_personne'] ?? 0)) ?>"
                                 required aria-required="true">
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-6 col-lg-4">
                             <label for="modif-stock-<?= (int)$menu['menu_id'] ?>" class="form-label">Quantité restante <small class="text-muted">(vide = illimité)</small></label>
                             <input type="number" class="form-control"
                                 id="modif-stock-<?= (int)$menu['menu_id'] ?>"
                                 name="quantite_restante" min="0"
                                 value="<?= $menu['quantite_restante'] !== null ? (int)$menu['quantite_restante'] : '' ?>">
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-lg-6">
                             <label for="modif-theme-<?= (int)$menu['menu_id'] ?>" class="form-label">Thème</label>
                             <select class="form-select" id="modif-theme-<?= (int)$menu['menu_id'] ?>" name="theme_id">
                                 <option value="">— Aucun thème —</option>
@@ -403,7 +403,7 @@ foreach ($plats as $plat) {
                                 <?php endforeach; ?>
                             </select>
                         </div>
-                        <div class="col-md-6">
+                        <div class="col-12 col-lg-6">
                             <label for="modif-regime-<?= (int)$menu['menu_id'] ?>" class="form-label">Régime alimentaire</label>
                             <select class="form-select" id="modif-regime-<?= (int)$menu['menu_id'] ?>" name="regime_id">
                                 <option value="">— Aucun régime —</option>

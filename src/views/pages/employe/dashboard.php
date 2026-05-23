@@ -11,7 +11,7 @@
     <?php if ($nbAttente > 0 || $nbAvis > 0): ?>
     <div class="row g-3 mb-4">
         <?php if ($nbAttente > 0): ?>
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-lg-6">
             <div class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0 shadow-sm">
                 <div>
                     <i class="bi bi-exclamation-circle me-2"></i>
@@ -24,7 +24,7 @@
         </div>
         <?php endif; ?>
         <?php if ($nbAvis > 0): ?>
-        <div class="col-12 col-md-6">
+        <div class="col-12 col-lg-6">
             <div class="alert alert-info d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0 shadow-sm">
                 <div>
                     <i class="bi bi-star me-2"></i>
@@ -45,19 +45,19 @@
 
     <!-- MÉTRIQUES -->
     <div class="row g-3 mb-4">
-        <div class="col-6 col-md-4">
+        <div class="col-6 col-lg-4">
             <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
                 <div class="fw-bold text-vg lh-1 mb-1" style="font-size:clamp(1.5rem,6vw,2.5rem);"><?= count($commandesAujourdhui ?? []) ?></div>
                 <div class="text-muted small">Commandes aujourd'hui</div>
             </div>
         </div>
-        <div class="col-6 col-md-4">
+        <div class="col-6 col-lg-4">
             <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
                 <div class="fw-bold text-vg lh-1 mb-1" style="font-size:clamp(1.5rem,6vw,2.5rem);"><?= count($commandesSemaine ?? []) ?></div>
                 <div class="text-muted small">Commandes cette semaine</div>
             </div>
         </div>
-        <div class="col-12 col-md-4">
+        <div class="col-12 col-lg-4">
             <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
                 <div class="fw-bold text-vg lh-1 mb-1" style="font-size:clamp(1.5rem,6vw,2.5rem);"><?= $nbAttente ?></div>
                 <div class="text-muted small">En attente de traitement</div>

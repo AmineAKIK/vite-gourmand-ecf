@@ -17,7 +17,7 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
     <!-- Formulaire de filtres -->
     <div class="filtres-panel card shadow-sm p-3 mb-4" style="border:1px solid rgba(0,0,0,.08);">
         <form method="GET" action="/admin/stats" class="row g-2 align-items-end" role="search" aria-label="Filtrer les statistiques">
-            <div class="col-md-4">
+            <div class="col-12 col-lg-4">
                 <label for="filtre-menu" class="form-label form-label-sm">Menu (optionnel)</label>
                 <select class="form-select form-select-sm" id="filtre-menu" name="menu_id" aria-label="Filtrer par menu">
                     <option value="">— Tous les menus —</option>
@@ -28,7 +28,7 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-md-3">
+            <div class="col-12 col-lg-3">
                 <label for="filtre-debut" class="form-label form-label-sm">Date début</label>
                 <input
                     type="date"
@@ -39,7 +39,7 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
                     aria-label="Date de début de la période"
                 >
             </div>
-            <div class="col-md-3">
+            <div class="col-12 col-lg-3">
                 <label for="filtre-fin" class="form-label form-label-sm">Date fin</label>
                 <input
                     type="date"
@@ -50,7 +50,7 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
                     aria-label="Date de fin de la période"
                 >
             </div>
-            <div class="col-md-4 col-xl-2 d-flex gap-2">
+            <div class="col-12 col-lg-2 d-flex gap-2">
                 <button type="submit" class="btn btn-vg btn-sm flex-grow-1" aria-label="Filtrer les statistiques">
                     <i class="bi bi-funnel me-1"></i>Filtrer
                 </button>
