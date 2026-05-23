@@ -116,7 +116,7 @@
                         <?php endforeach; ?>
                         <li><hr style="border-color:rgba(255,255,255,.2);margin:.25rem 0;"></li>
                         <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-box-arrow-up-right me-2"></i>Retour au site</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/deconnexion" style="opacity:.7;"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/deconnexion"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
                     </ul>
                 </div>
             </div>
