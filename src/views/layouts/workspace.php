@@ -13,7 +13,7 @@
     <script nonce="<?= $cspNonce ?>">(function(){var l=document.getElementById('fonts-preload');if(l){l.onload=function(){this.rel='stylesheet';};}}());</script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" nonce="<?= $cspNonce ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" nonce="<?= $cspNonce ?>">
-    <link rel="stylesheet" href="/css/style.css?v=20260523-42" nonce="<?= $cspNonce ?>">
+    <link rel="stylesheet" href="/css/style.css?v=20260523-43" nonce="<?= $cspNonce ?>">
 </head>
 <body class="workspace-body">
 
@@ -91,13 +91,36 @@
     <!-- CONTENU PRINCIPAL -->
     <main class="workspace-main" id="workspace-content" tabindex="-1">
 
-        <!-- Topbar mobile -->
-        <header class="workspace-topbar d-lg-none">
-            <button class="workspace-menu-toggle" id="sidebarToggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="workspaceSidebar">
-                <i class="bi bi-list"></i>
-            </button>
-            <span class="fw-semibold text-vg">Vite &amp; Gourmand</span>
-        </header>
+        <!-- Navbar mobile (< lg) -->
+        <nav class="d-lg-none navbar navbar-expand-lg navbar-dark bg-vg sticky-top" aria-label="Navigation back-office mobile">
+            <div class="container-fluid">
+                <span class="navbar-brand fw-bold mb-0">Vite &amp; Gourmand</span>
+                <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#workspaceMobileNav" aria-controls="workspaceMobileNav" aria-expanded="false" aria-label="Ouvrir le menu">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="workspaceMobileNav">
+                    <ul class="navbar-nav w-100 mt-1">
+                        <?php foreach (workspaceNavItems() as $item):
+                            if (!empty($item['separator'])): ?>
+                                <li><hr style="border-color:rgba(255,255,255,.2);margin:.25rem 0;"></li>
+                            <?php continue; endif;
+                            $isActive = !empty($item['exact'])
+                                ? ($_SERVER['REQUEST_URI'] === $item['href'])
+                                : routeIsActive($item['match'] ?? $item['href']);
+                        ?>
+                        <li class="nav-item">
+                            <a class="nav-link <?= $isActive ? 'active' : '' ?>" href="<?= sanitize($item['href']) ?>" <?= $isActive ? 'aria-current="page"' : '' ?>>
+                                <i class="bi <?= sanitize($item['icon']) ?> me-2"></i><?= sanitize($item['label']) ?>
+                            </a>
+                        </li>
+                        <?php endforeach; ?>
+                        <li><hr style="border-color:rgba(255,255,255,.2);margin:.25rem 0;"></li>
+                        <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-box-arrow-up-right me-2"></i>Retour au site</a></li>
+                        <li class="nav-item"><a class="nav-link text-danger-emphasis" href="/deconnexion"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
 
         <div class="workspace-content-inner">
             <?= $content ?? '' ?>
@@ -109,24 +132,5 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" nonce="<?= $cspNonce ?>"></script>
 <script src="/js/app.js" nonce="<?= $cspNonce ?>"></script>
-<script nonce="<?= $cspNonce ?>">
-// Toggle sidebar sur mobile
-(function () {
-    var toggle = document.getElementById('sidebarToggle');
-    var sidebar = document.querySelector('.workspace-sidebar');
-    if (!toggle || !sidebar) return;
-    toggle.addEventListener('click', function () {
-        var open = sidebar.classList.toggle('open');
-        toggle.setAttribute('aria-expanded', open);
-    });
-    // Fermer en cliquant ailleurs
-    document.addEventListener('click', function (e) {
-        if (!sidebar.contains(e.target) && !toggle.contains(e.target)) {
-            sidebar.classList.remove('open');
-            toggle.setAttribute('aria-expanded', 'false');
-        }
-    });
-}());
-</script>
 </body>
 </html>
