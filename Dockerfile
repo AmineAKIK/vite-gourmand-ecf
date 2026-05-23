@@ -1,7 +1,7 @@
 FROM php:8.2-cli
 
 RUN apt-get update && apt-get install -y \
-    libzip-dev libpng-dev libssl-dev pkg-config \
+    libzip-dev libpng-dev libssl-dev pkg-config libcurl4-openssl-dev \
     zip unzip curl autoconf g++ make \
     && docker-php-ext-install pdo pdo_mysql zip curl fileinfo \
     && pecl install mongodb-2.1.0 \
