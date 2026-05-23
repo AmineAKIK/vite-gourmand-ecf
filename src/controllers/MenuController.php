@@ -15,7 +15,11 @@ class MenuController {
         // Si requête AJAX, retourner JSON
         if (($_SERVER['HTTP_X_REQUESTED_WITH'] ?? '') === 'XMLHttpRequest') {
             header('Content-Type: application/json');
-            echo json_encode(MenuModel::getAll($filters));
+            $menus = array_map(fn($m) => array_merge($m, [
+                'description' => html_entity_decode($m['description'] ?? '', ENT_QUOTES, 'UTF-8'),
+                'titre'       => html_entity_decode($m['titre']       ?? '', ENT_QUOTES, 'UTF-8'),
+            ]), MenuModel::getAll($filters));
+            echo json_encode($menus);
             exit;
         }
 

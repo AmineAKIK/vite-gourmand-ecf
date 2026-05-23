@@ -65,7 +65,7 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
                 <div class="card-body d-flex flex-column">
                     <h3 class="card-title h5"><?= sanitize($menu['titre']) ?></h3>
                     <p class="card-text text-muted small flex-grow-1">
-                        <?= nl2br(sanitize(substr($menu['description'] ?? '', 0, 120))) ?>...
+                        <?= sanitize(substr(html_entity_decode($menu['description'] ?? '', ENT_QUOTES, 'UTF-8'), 0, 120)) ?>...
                     </p>
                     <div class="mt-3">
                         <p class="small mb-2">
