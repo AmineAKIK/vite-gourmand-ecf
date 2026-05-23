@@ -37,85 +37,87 @@ $pageTitle = 'Modération des avis - Vite & Gourmand';
         </div>
     <?php else: ?>
         <p class="text-muted mb-3"><?= count($avis) ?> avis.</p>
-        <div class="table-responsive">
-            <table class="table table-hover align-middle" aria-label="Liste des avis">
-                <thead class="table-light">
-                    <tr>
-                        <th scope="col">Note</th>
-                        <th scope="col">Commentaire</th>
-                        <th scope="col">Auteur</th>
-                        <th scope="col">Menu</th>
-                        <th scope="col">Date</th>
-                        <th scope="col">Statut</th>
-                        <th scope="col">Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($avis as $a): ?>
-                    <tr>
-                        <td>
-                            <span aria-label="Note : <?= (int)($a['note'] ?? 0) ?> étoiles sur 5">
-                                <?php $note = (int)($a['note'] ?? 0);
-                                for ($i = 1; $i <= 5; $i++): ?>
-                                    <i class="bi <?= $i <= $note ? 'bi-star-fill text-warning' : 'bi-star text-muted' ?>"></i>
-                                <?php endfor; ?>
-                            </span>
-                        </td>
-                        <td style="max-width:260px">
-                            <span class="text-truncate d-block" title="<?= sanitize($a['description'] ?? '') ?>">
-                                <?= !empty($a['description']) ? sanitize($a['description']) : '<em class="text-muted">Aucun commentaire</em>' ?>
-                            </span>
-                        </td>
-                        <td><?= sanitize(trim(($a['prenom'] ?? '') . ' ' . ($a['nom'] ?? ''))) ?></td>
-                        <td><?= sanitize($a['menu_titre'] ?? '—') ?></td>
-                        <td><small class="text-muted"><?= !empty($a['created_at']) ? sanitize(formatDateTimeFr($a['created_at'])) : '—' ?></small></td>
-                        <td>
-                            <?php if ($a['statut'] === 'valide'): ?>
-                                <span class="badge bg-success">Validé</span>
-                            <?php elseif ($a['statut'] === 'refuse'): ?>
-                                <span class="badge bg-danger">Refusé</span>
-                            <?php else: ?>
-                                <span class="badge bg-warning text-dark">En attente</span>
-                            <?php endif; ?>
-                        </td>
-                        <td>
-                            <div class="d-flex gap-2 flex-wrap">
-                                <?php if ($a['statut'] !== 'valide'): ?>
-                                <form method="POST" action="/employe/avis/valider">
-                                    <?= csrfField() ?>
-                                    <input type="hidden" name="commande_id" value="<?= (int)($a['commande_id'] ?? 0) ?>">
-                                    <input type="hidden" name="action" value="valider">
-                                    <input type="hidden" name="filtre" value="<?= sanitize($filtre) ?>">
-                                    <button type="submit" class="btn btn-success btn-sm">
-                                        <i class="bi bi-check-lg me-1"></i>Valider
-                                    </button>
-                                </form>
+        <div class="card shadow-sm" style="border:1px solid rgba(0,0,0,.08);">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0" aria-label="Liste des avis">
+                    <thead>
+                        <tr style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
+                            <th scope="col" class="ps-3 text-vg fw-semibold">Note</th>
+                            <th scope="col" class="text-vg fw-semibold">Commentaire</th>
+                            <th scope="col" class="text-vg fw-semibold">Auteur</th>
+                            <th scope="col" class="text-vg fw-semibold">Menu</th>
+                            <th scope="col" class="text-vg fw-semibold">Date</th>
+                            <th scope="col" class="text-vg fw-semibold">Statut</th>
+                            <th scope="col" class="text-vg fw-semibold pe-3">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($avis as $a): ?>
+                        <tr>
+                            <td class="ps-3">
+                                <span aria-label="Note : <?= (int)($a['note'] ?? 0) ?> étoiles sur 5">
+                                    <?php $note = (int)($a['note'] ?? 0);
+                                    for ($i = 1; $i <= 5; $i++): ?>
+                                        <i class="bi <?= $i <= $note ? 'bi-star-fill text-warning' : 'bi-star text-muted' ?>"></i>
+                                    <?php endfor; ?>
+                                </span>
+                            </td>
+                            <td style="max-width:260px">
+                                <span class="text-truncate d-block" title="<?= sanitize($a['description'] ?? '') ?>">
+                                    <?= !empty($a['description']) ? sanitize($a['description']) : '<em class="text-muted">Aucun commentaire</em>' ?>
+                                </span>
+                            </td>
+                            <td class="fw-medium"><?= sanitize(trim(($a['prenom'] ?? '') . ' ' . ($a['nom'] ?? ''))) ?></td>
+                            <td class="text-muted"><?= sanitize($a['menu_titre'] ?? '—') ?></td>
+                            <td><small class="text-muted"><?= !empty($a['created_at']) ? sanitize(formatDateTimeFr($a['created_at'])) : '—' ?></small></td>
+                            <td>
+                                <?php if ($a['statut'] === 'valide'): ?>
+                                    <span class="badge bg-success">Validé</span>
+                                <?php elseif ($a['statut'] === 'refuse'): ?>
+                                    <span class="badge bg-danger">Refusé</span>
+                                <?php else: ?>
+                                    <span class="badge bg-warning text-dark">En attente</span>
                                 <?php endif; ?>
-                                <?php if ($a['statut'] !== 'refuse'): ?>
-                                <form method="POST" action="/employe/avis/valider" class="form-confirm">
-                                    <?= csrfField() ?>
-                                    <input type="hidden" name="commande_id" value="<?= (int)($a['commande_id'] ?? 0) ?>">
-                                    <input type="hidden" name="action" value="refuser">
-                                    <input type="hidden" name="filtre" value="<?= sanitize($filtre) ?>">
-                                    <button type="submit" class="btn btn-outline-danger btn-sm">
-                                        <i class="bi bi-x-lg me-1"></i>Refuser
-                                    </button>
-                                </form>
-                                <?php endif; ?>
-                                <form method="POST" action="/employe/avis/supprimer" class="form-confirm">
-                                    <?= csrfField() ?>
-                                    <input type="hidden" name="avis_id" value="<?= (int)($a['avis_id'] ?? 0) ?>">
-                                    <input type="hidden" name="filtre" value="<?= sanitize($filtre) ?>">
-                                    <button type="submit" class="btn btn-danger btn-sm" aria-label="Supprimer définitivement cet avis">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                            </div>
-                        </td>
-                    </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
+                            </td>
+                            <td class="pe-3">
+                                <div class="d-flex gap-2 flex-wrap">
+                                    <?php if ($a['statut'] !== 'valide'): ?>
+                                    <form method="POST" action="/employe/avis/valider">
+                                        <?= csrfField() ?>
+                                        <input type="hidden" name="commande_id" value="<?= (int)($a['commande_id'] ?? 0) ?>">
+                                        <input type="hidden" name="action" value="valider">
+                                        <input type="hidden" name="filtre" value="<?= sanitize($filtre) ?>">
+                                        <button type="submit" class="btn btn-success btn-sm">
+                                            <i class="bi bi-check-lg me-1"></i>Valider
+                                        </button>
+                                    </form>
+                                    <?php endif; ?>
+                                    <?php if ($a['statut'] !== 'refuse'): ?>
+                                    <form method="POST" action="/employe/avis/valider" class="form-confirm">
+                                        <?= csrfField() ?>
+                                        <input type="hidden" name="commande_id" value="<?= (int)($a['commande_id'] ?? 0) ?>">
+                                        <input type="hidden" name="action" value="refuser">
+                                        <input type="hidden" name="filtre" value="<?= sanitize($filtre) ?>">
+                                        <button type="submit" class="btn btn-outline-danger btn-sm">
+                                            <i class="bi bi-x-lg me-1"></i>Refuser
+                                        </button>
+                                    </form>
+                                    <?php endif; ?>
+                                    <form method="POST" action="/employe/avis/supprimer" class="form-confirm">
+                                        <?= csrfField() ?>
+                                        <input type="hidden" name="avis_id" value="<?= (int)($a['avis_id'] ?? 0) ?>">
+                                        <input type="hidden" name="filtre" value="<?= sanitize($filtre) ?>">
+                                        <button type="submit" class="btn btn-danger btn-sm" aria-label="Supprimer définitivement cet avis">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         </div>
     <?php endif; ?>
 

@@ -15,7 +15,7 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
     <?php partial('partials/page_title_bar', ['icon' => 'bi-graph-up', 'title' => "Statistiques — Chiffre d'affaires"]); ?>
 
     <!-- Formulaire de filtres -->
-    <div class="filtres-panel card border-0 shadow-sm p-3 mb-4">
+    <div class="filtres-panel card shadow-sm p-3 mb-4" style="border:1px solid rgba(0,0,0,.08);">
         <form method="GET" action="/admin/stats" class="row g-2 align-items-end" role="search" aria-label="Filtrer les statistiques">
             <div class="col-md-4">
                 <label for="filtre-menu" class="form-label form-label-sm">Menu (optionnel)</label>
@@ -65,59 +65,61 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
 
         <!-- Tableau CA par menu -->
         <div class="col-lg-6">
-            <h2 class="h5 fw-bold mb-3">CA par menu</h2>
             <?php if (empty($caStats)): ?>
                 <div class="alert alert-info">Aucune donnée pour cette période.</div>
             <?php else: ?>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle" aria-label="Chiffre d'affaires par menu">
-                        <thead class="table-light">
-                            <tr>
-                                <th scope="col">Menu</th>
-                                <th scope="col" class="text-end">Nb commandes</th>
-                                <th scope="col" class="text-end">CA total</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php foreach ($caStats as $row): ?>
-                            <tr>
-                                <td><?= sanitize($row['titre']) ?></td>
-                                <td class="text-end"><?= sanitize(formatInteger($row['nb'] ?? 0)) ?></td>
-                                <td class="text-end fw-semibold">
-                                    <?= sanitize(formatPrice($row['ca'] ?? 0)) ?>
-                                </td>
-                            </tr>
-                            <?php endforeach; ?>
-                        </tbody>
-                        <!-- Ligne total -->
-                        <tfoot class="table-secondary fw-bold">
-                            <tr>
-                                <td>TOTAL</td>
-                                <td class="text-end"><?= $totalNb ?></td>
-                                <td class="text-end"><?= sanitize(formatPrice($totalCA)) ?></td>
-                            </tr>
-                        </tfoot>
-                    </table>
+                <div class="card shadow-sm" style="border:1px solid rgba(0,0,0,.08);">
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" aria-label="Chiffre d'affaires par menu">
+                            <thead>
+                                <tr style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
+                                    <th scope="col" class="ps-3 text-vg fw-semibold">Menu</th>
+                                    <th scope="col" class="text-end text-vg fw-semibold">Nb commandes</th>
+                                    <th scope="col" class="text-end text-vg fw-semibold pe-3">CA total</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($caStats as $row): ?>
+                                <tr>
+                                    <td class="ps-3"><?= sanitize($row['titre']) ?></td>
+                                    <td class="text-end text-muted"><?= sanitize(formatInteger($row['nb'] ?? 0)) ?></td>
+                                    <td class="text-end fw-semibold text-vg pe-3">
+                                        <?= sanitize(formatPrice($row['ca'] ?? 0)) ?>
+                                    </td>
+                                </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                            <tfoot style="background:rgba(0,0,0,.03); border-top:1px solid rgba(0,0,0,.08);">
+                                <tr>
+                                    <td class="fw-bold ps-3">TOTAL</td>
+                                    <td class="text-end fw-bold"><?= $totalNb ?></td>
+                                    <td class="text-end fw-bold text-vg pe-3"><?= sanitize(formatPrice($totalCA)) ?></td>
+                                </tr>
+                            </tfoot>
+                        </table>
+                    </div>
                 </div>
             <?php endif; ?>
         </div>
 
         <!-- Graphique barres horizontales -->
         <div class="col-lg-6">
-            <div class="card border-0 shadow-sm p-3 h-100" style="background:var(--vg-creme);">
-                <h2 class="h6 fw-bold mb-3">
+            <div class="card shadow-sm h-100" style="border:1px solid rgba(0,0,0,.08);">
+                <div class="card-header fw-semibold" style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
                     <i class="bi bi-bar-chart-horizontal me-2 text-vg"></i>Commandes par menu (MongoDB)
-                </h2>
-                <?php if (empty($mongoStats)): ?>
-                    <p class="text-muted small">Aucune donnée à afficher.</p>
-                <?php else: ?>
-                    <div style="position:relative;height:300px">
-                        <canvas id="chartCA" aria-label="Graphique du chiffre d'affaires par menu" role="img"></canvas>
-                    </div>
-                    <p class="text-muted small text-center mt-2">
-                        <i class="bi bi-database me-1"></i>Données issues de MongoDB
-                    </p>
-                <?php endif; ?>
+                </div>
+                <div class="card-body">
+                    <?php if (empty($mongoStats)): ?>
+                        <p class="text-muted small">Aucune donnée à afficher.</p>
+                    <?php else: ?>
+                        <div style="position:relative;height:260px">
+                            <canvas id="chartCA" aria-label="Graphique du chiffre d'affaires par menu" role="img"></canvas>
+                        </div>
+                        <p class="text-muted small text-center mt-2 mb-0">
+                            <i class="bi bi-database me-1"></i>Données issues de MongoDB
+                        </p>
+                    <?php endif; ?>
+                </div>
             </div>
         </div>
 
