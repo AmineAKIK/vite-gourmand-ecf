@@ -66,14 +66,32 @@ class AdminController {
         redirect('/admin/employes');
     }
 
-    public function images(): void {
+    public function accueil(): void {
         $images = SiteImageModel::getAll();
-        view('pages/admin/images', compact('images'));
+        $config = SiteConfigModel::getAll();
+        view('pages/admin/accueil', compact('images', 'config'));
     }
 
-    public function updateImages(): void {
+    public function updateAccueil(): void {
         verifyCsrf();
 
+        // Textes hero
+        $sousTitre  = trim($_POST['hero_sous_titre'] ?? '');
+        $paragraphe = trim($_POST['hero_paragraphe'] ?? '');
+
+        if (mb_strlen($sousTitre) > 60) {
+            flash('error', 'Le sous-titre ne peut pas dépasser 60 caractères.');
+            redirect('/admin/accueil');
+        }
+        if (mb_strlen($paragraphe) > 200) {
+            flash('error', 'Le paragraphe ne peut pas dépasser 200 caractères.');
+            redirect('/admin/accueil');
+        }
+
+        SiteConfigModel::set('hero_sous_titre', $sousTitre);
+        SiteConfigModel::set('hero_paragraphe', $paragraphe);
+
+        // Images
         $cles = ['hero', 'preparation'];
         foreach ($cles as $cle) {
             $file = $_FILES[$cle] ?? null;
@@ -85,12 +103,12 @@ class AdminController {
                 SiteImageModel::set($cle, $url);
             } else {
                 flash('error', 'Erreur lors de l\'upload de l\'image "' . $cle . '".');
-                redirect('/admin/images');
+                redirect('/admin/accueil');
             }
         }
 
-        flash('success', 'Images du site mises à jour.');
-        redirect('/admin/images');
+        flash('success', 'Page d\'accueil mise à jour.');
+        redirect('/admin/accueil');
     }
 
     public function parametres(): void {
@@ -102,7 +120,8 @@ class AdminController {
         verifyCsrf();
 
         $fields = [
-            'hero_sous_titre' => ['type' => 'string', 'max' => 120],
+            'hero_sous_titre' => ['type' => 'string', 'max' => 60],
+            'hero_paragraphe' => ['type' => 'string', 'max' => 200],
             'livraison_base'  => ['type' => 'decimal'],
             'livraison_km'    => ['type' => 'decimal'],
             'reduction_seuil' => ['type' => 'decimal'],

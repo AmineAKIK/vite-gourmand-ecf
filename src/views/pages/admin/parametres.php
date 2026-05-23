@@ -11,42 +11,6 @@ $cfg = function(string $cle, string $default = '') use ($config): string {
 
 <div class="row g-4">
 
-    <!-- Contenu du site -->
-    <div class="col-12 col-lg-6">
-        <div class="card shadow-sm h-100">
-            <div class="card-header fw-semibold">
-                <i class="bi bi-text-left me-2 text-vg"></i>Contenu du site
-            </div>
-            <div class="card-body">
-                <form method="post" action="/admin/parametres/modifier">
-                    <?= csrfField() ?>
-                    <input type="hidden" name="livraison_base"   value="<?= $cfg('livraison_base',   '5.00') ?>">
-                    <input type="hidden" name="livraison_km"     value="<?= $cfg('livraison_km',     '0.50') ?>">
-                    <input type="hidden" name="reduction_seuil"  value="<?= $cfg('reduction_seuil',  '100.00') ?>">
-                    <input type="hidden" name="reduction_taux"   value="<?= $cfg('reduction_taux',   '10') ?>">
-
-                    <div class="mb-3">
-                        <label class="form-label fw-medium" for="hero_sous_titre">Sous-titre de l'accueil</label>
-                        <input
-                            type="text"
-                            id="hero_sous_titre"
-                            name="hero_sous_titre"
-                            class="form-control"
-                            maxlength="120"
-                            value="<?= $cfg('hero_sous_titre', 'Traiteur bordelais depuis 25 ans') ?>"
-                            required
-                        >
-                        <div class="form-text">Affiché sous le titre principal de la page d'accueil. 120 caractères max.</div>
-                    </div>
-
-                    <button type="submit" class="btn btn-vg">
-                        <i class="bi bi-save me-1"></i>Enregistrer
-                    </button>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- Frais de livraison -->
     <div class="col-12 col-lg-6">
         <div class="card shadow-sm h-100">
@@ -57,8 +21,9 @@ $cfg = function(string $cle, string $default = '') use ($config): string {
                 <form method="post" action="/admin/parametres/modifier">
                     <?= csrfField() ?>
                     <input type="hidden" name="hero_sous_titre"  value="<?= $cfg('hero_sous_titre') ?>">
-                    <input type="hidden" name="reduction_seuil"  value="<?= $cfg('reduction_seuil',  '100.00') ?>">
-                    <input type="hidden" name="reduction_taux"   value="<?= $cfg('reduction_taux',   '10') ?>">
+                    <input type="hidden" name="hero_paragraphe"  value="<?= $cfg('hero_paragraphe') ?>">
+                    <input type="hidden" name="reduction_seuil"  value="<?= $cfg('reduction_seuil', '100.00') ?>">
+                    <input type="hidden" name="reduction_taux"   value="<?= $cfg('reduction_taux',  '10') ?>">
 
                     <div class="mb-3">
                         <label class="form-label fw-medium" for="livraison_base">Frais fixes (€)</label>
@@ -114,8 +79,9 @@ $cfg = function(string $cle, string $default = '') use ($config): string {
                 <form method="post" action="/admin/parametres/modifier">
                     <?= csrfField() ?>
                     <input type="hidden" name="hero_sous_titre"  value="<?= $cfg('hero_sous_titre') ?>">
-                    <input type="hidden" name="livraison_base"   value="<?= $cfg('livraison_base',   '5.00') ?>">
-                    <input type="hidden" name="livraison_km"     value="<?= $cfg('livraison_km',     '0.50') ?>">
+                    <input type="hidden" name="hero_paragraphe"  value="<?= $cfg('hero_paragraphe') ?>">
+                    <input type="hidden" name="livraison_base"   value="<?= $cfg('livraison_base',  '5.00') ?>">
+                    <input type="hidden" name="livraison_km"     value="<?= $cfg('livraison_km',    '0.50') ?>">
 
                     <div class="mb-3">
                         <label class="form-label fw-medium" for="reduction_seuil">Seuil de déclenchement (€)</label>
