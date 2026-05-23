@@ -17,7 +17,9 @@
                     <i class="bi bi-exclamation-circle me-2"></i>
                     <strong><?= $nbAttente ?> commande<?= $nbAttente > 1 ? 's' : '' ?></strong> en attente de confirmation
                 </div>
-                <a href="/employe/commandes?statut=en_attente" class="btn btn-sm btn-warning ms-3 text-dark fw-semibold">Traiter →</a>
+                <a href="/employe/commandes?statut=en_attente" class="btn btn-sm btn-vg ms-3">
+                    <i class="bi bi-arrow-right me-1"></i>Traiter
+                </a>
             </div>
         </div>
         <?php endif; ?>
@@ -28,7 +30,9 @@
                     <i class="bi bi-star me-2"></i>
                     <strong><?= $nbAvis ?> avis</strong> en attente de validation
                 </div>
-                <a href="/employe/avis" class="btn btn-sm btn-vg ms-3">Valider →</a>
+                <a href="/employe/avis" class="btn btn-sm btn-vg ms-3">
+                    <i class="bi bi-arrow-right me-1"></i>Valider
+                </a>
             </div>
         </div>
         <?php endif; ?>

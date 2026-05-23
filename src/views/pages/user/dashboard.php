@@ -49,7 +49,7 @@
                                                 <span class="badge bg-warning text-dark"><i class="bi bi-hourglass me-1"></i>Avis en attente</span>
                                             <?php endif; ?>
                                         <?php else: ?>
-                                            <button class="btn btn-sm btn-or" data-bs-toggle="modal" data-bs-target="#avisModal<?= (int)$cmd['commande_id'] ?>">
+                                            <button class="btn btn-sm btn-vg" data-bs-toggle="modal" data-bs-target="#avisModal<?= (int)$cmd['commande_id'] ?>">
                                                 <i class="bi bi-star me-1"></i>Donner un avis
                                             </button>
                                         <?php endif; ?>

@@ -58,28 +58,27 @@ class EmployeController
             redirect('/employe/commandes');
         }
 
-        if (!commandeCanTransition($commande['statut'] ?? null, $statut)) {
-            flash('error', 'Transition de statut non autorisée.');
-            redirect('/employe/commandes');
-        }
+        $ancienStatut = $commande['statut'] ?? null;
 
         if ($action === 'annuler' || $statut === commandeCancelledStatus()) {
-            $motif       = sanitize($_POST['commentaire']  ?? '');
+            $motif       = $commentaire;
             $modeContact = sanitize($_POST['mode_contact'] ?? '');
-            if (!$motif || !$modeContact) {
+            if ($action === 'annuler' && (!$motif || !$modeContact)) {
                 flash('error', 'Le motif et le mode de contact sont obligatoires pour une annulation.');
                 redirect('/employe/commandes');
             }
+            $motif = $motif ?: 'Annulation enregistrée depuis le back-office.';
+            $modeContact = $modeContact ?: 'interne';
             CommandeModel::cancel($commandeId, $motif, $modeContact, $user['id']);
         } else {
             CommandeModel::updateStatut($commandeId, $statut, $commentaire ?: null, $user['id']);
         }
 
         $userCommande = \UserModel::findById($commande['utilisateur_id']);
-        if ($statut === commandeCompletedStatus() && $userCommande) {
+        if ($ancienStatut !== $statut && $statut === commandeCompletedStatus() && $userCommande) {
             MailService::sendCommandeTerminee($userCommande['email'], $commandeId);
         }
-        if ($statut === commandeAwaitingMaterialStatus() && $userCommande) {
+        if ($ancienStatut !== $statut && $statut === commandeAwaitingMaterialStatus() && $userCommande) {
             MailService::sendMaterielRelance($userCommande['email'], $userCommande['prenom']);
         }
 
