@@ -578,7 +578,7 @@ a:focus {
 
 /* Cards menu */
 .card-menu {
-    border: none;
+    border: 1px solid rgba(139, 26, 43, .10);
     border-radius: 8px;
     box-shadow: var(--vg-shadow);
     transition: transform .2s, box-shadow .2s;
