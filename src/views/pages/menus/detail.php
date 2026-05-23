@@ -50,7 +50,7 @@
                 <?php if ($menu['regime']): ?><span class="badge-regime"><?= sanitize($menu['regime']) ?></span><?php endif; ?>
             </div>
             <h1 class="fw-bold"><?= sanitize($menu['titre']) ?></h1>
-            <p class="lead text-muted"><?= nl2br(sanitize($menu['description'])) ?></p>
+            <p class="lead text-muted"><?= nl2br(htmlspecialchars($menu['description'] ?? '', ENT_QUOTES, 'UTF-8')) ?></p>
 
             <div class="row g-3 my-3">
                 <div class="col-6">
@@ -101,7 +101,7 @@
     <section class="mt-5" aria-labelledby="composition-titre">
         <h2 id="composition-titre" class="mb-4">Composition du menu</h2>
         <?php
-        $categories = ['entree' => 'Entrées', 'plat' => 'Plats', 'dessert' => 'Desserts'];
+        $categories = ['Entrée' => 'Entrées', 'Plat principal' => 'Plats', 'Dessert' => 'Desserts'];
         foreach ($categories as $cat => $label):
             $plats = array_filter($menu['plats'], fn($p) => $p['categorie'] === $cat);
             if (!$plats) continue;
