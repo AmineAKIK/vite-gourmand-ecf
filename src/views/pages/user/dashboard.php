@@ -118,6 +118,7 @@
                     <?= csrfField() ?>
                     <input type="hidden" name="commande_id" value="<?= (int)$cmd['commande_id'] ?>">
                     <div class="modal-body">
+                        <div id="modif_<?= (int)$cmd['commande_id'] ?>-error" class="alert alert-danger d-none" role="alert"></div>
                         <div class="mb-3">
                             <label for="adresse_<?= (int)$cmd['commande_id'] ?>" class="form-label">Adresse de livraison</label>
                             <input type="text" class="form-control"
@@ -212,6 +213,7 @@
                 <?= csrfField() ?>
                 <input type="hidden" name="commande_id" value="<?= (int)$cmd['commande_id'] ?>">
                 <div class="modal-body">
+                    <div id="avis_<?= (int)$cmd['commande_id'] ?>-error" class="alert alert-danger d-none" role="alert"></div>
                     <fieldset class="mb-3">
                         <legend class="form-label fs-6">Note (1 à 5)</legend>
                         <div class="d-flex gap-2">

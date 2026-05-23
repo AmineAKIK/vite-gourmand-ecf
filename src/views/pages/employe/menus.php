@@ -136,6 +136,7 @@ foreach ($plats as $plat) {
                     <?= csrfField() ?>
                     <input type="hidden" name="plat_id" value="<?= (int)$plat['plat_id'] ?>">
                     <div class="modal-body">
+                        <div id="modifier_plat_<?= (int)$plat['plat_id'] ?>-error" class="alert alert-danger d-none" role="alert"></div>
                         <div class="mb-3">
                             <label for="titre_plat_<?= (int)$plat['plat_id'] ?>" class="form-label">Titre <span class="text-danger">*</span></label>
                             <input type="text" class="form-control"
@@ -190,6 +191,7 @@ foreach ($plats as $plat) {
             <form method="POST" action="/employe/menu/creer" enctype="multipart/form-data" novalidate>
                 <?= csrfField() ?>
                 <div class="modal-body">
+                    <div id="creer_menu-error" class="alert alert-danger d-none" role="alert"></div>
                     <div class="row g-3">
                         <div class="col-12">
                             <label for="creer-titre" class="form-label">Titre <span class="text-danger" aria-hidden="true">*</span></label>
@@ -282,6 +284,7 @@ foreach ($plats as $plat) {
             <form method="POST" action="/employe/plat/creer" novalidate>
                 <?= csrfField() ?>
                 <div class="modal-body">
+                    <div id="creer_plat-error" class="alert alert-danger d-none" role="alert"></div>
                     <div class="mb-3">
                         <label for="plat-titre" class="form-label">Titre du plat <span class="text-danger" aria-hidden="true">*</span></label>
                         <input type="text" class="form-control" id="plat-titre" name="titre"
@@ -334,6 +337,7 @@ foreach ($plats as $plat) {
                 <?= csrfField() ?>
                 <input type="hidden" name="menu_id" value="<?= (int)$menu['menu_id'] ?>">
                 <div class="modal-body">
+                    <div id="modifier_menu_<?= (int)$menu['menu_id'] ?>-error" class="alert alert-danger d-none" role="alert"></div>
                     <div class="row g-3">
                         <div class="col-12">
                             <label for="modif-titre-<?= (int)$menu['menu_id'] ?>" class="form-label">Titre <span class="text-danger" aria-hidden="true">*</span></label>

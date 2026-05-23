@@ -92,8 +92,7 @@ class CommandeController {
         try {
             $payload = CommandeService::payloadFromRequest($_POST, $menu);
         } catch (InvalidArgumentException $e) {
-            flash('error', $e->getMessage());
-            redirect('/mon-compte');
+            redirect('/mon-compte?open_modal=modif_' . (int)$commande['commande_id'] . '&modal_error=' . urlencode($e->getMessage()));
         }
 
         CommandeModel::updateDetails((int)$commande['commande_id'], $payload);

@@ -1,6 +1,42 @@
 // public/js/app.js
 
 document.addEventListener('DOMContentLoaded', function () {
+    /* Réouverture automatique d'un modal après erreur de validation côté serveur
+       Le serveur redirige avec ?open_modal=xxx&modal_error=message
+       On retrouve le modal par l'id "modalId" = "modalCreerMenu", "modalModifierMenu5", etc.
+       Convention : open_modal=creer_menu  → modal id #modalCreerMenu
+                    open_modal=modifier_menu_3 → #modalModifierMenu3
+                    open_modal=creer_plat  → #modalCreerPlat
+                    open_modal=modifier_plat_7 → #modalModifPlat7
+                    open_modal=modif_2 → #modifModal2
+    */
+    var params = new URLSearchParams(window.location.search);
+    var openModal = params.get('open_modal');
+    var modalError = params.get('modal_error');
+    if (openModal) {
+        var modalId = openModal
+            .replace(/^creer_menu$/, 'modalCreerMenu')
+            .replace(/^creer_plat$/, 'modalCreerPlat')
+            .replace(/^modifier_menu_(\d+)$/, 'modalModifierMenu$1')
+            .replace(/^modifier_plat_(\d+)$/, 'modalModifPlat$1')
+            .replace(/^modif_(\d+)$/, 'modifModal$1')
+            .replace(/^avis_(\d+)$/, 'avisModal$1');
+        var el = document.getElementById(modalId);
+        if (el) {
+            if (modalError) {
+                var errBox = document.getElementById(openModal + '-error');
+                if (errBox) {
+                    errBox.textContent = decodeURIComponent(modalError);
+                    errBox.classList.remove('d-none');
+                }
+            }
+            bootstrap.Modal.getOrCreateInstance(el).show();
+            // Nettoyer l'URL sans recharger
+            var cleanUrl = window.location.pathname;
+            window.history.replaceState({}, '', cleanUrl);
+        }
+    }
+
     /* Auto-dismiss des alertes Bootstrap après 4 secondes */
     document.querySelectorAll('.alert.alert-dismissible').forEach(function (alert) {
         setTimeout(function () {

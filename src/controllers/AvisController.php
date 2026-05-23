@@ -13,8 +13,7 @@ class AvisController
         $commentaire = sanitize($_POST['commentaire'] ?? '');
 
         if ($note < 1 || $note > 5) {
-            flash('error', 'Note invalide.');
-            redirect('/mon-compte');
+            redirect('/mon-compte?open_modal=avis_' . $commandeId . '&modal_error=' . urlencode('Veuillez sélectionner une note entre 1 et 5.'));
         }
 
         $commande = CommandeModel::getById($commandeId);

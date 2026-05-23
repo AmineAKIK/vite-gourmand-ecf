@@ -94,8 +94,7 @@ class EmployeController
         try {
             $data = MenuAdminService::menuPayloadFromRequest($_POST);
         } catch (InvalidArgumentException $e) {
-            flash('error', $e->getMessage());
-            redirect('/employe/menus');
+            redirect('/employe/menus?open_modal=creer_menu&modal_error=' . urlencode($e->getMessage()));
         }
 
         $menuId = MenuModel::create($data);
@@ -119,8 +118,7 @@ class EmployeController
         try {
             $data = MenuAdminService::menuPayloadFromRequest($_POST);
         } catch (InvalidArgumentException $e) {
-            flash('error', $e->getMessage());
-            redirect('/employe/menus');
+            redirect('/employe/menus?open_modal=modifier_menu_' . $id . '&modal_error=' . urlencode($e->getMessage()));
         }
 
         MenuModel::update($id, $data);
@@ -146,11 +144,10 @@ class EmployeController
         try {
             $data = MenuAdminService::platPayloadFromRequest($_POST);
         } catch (InvalidArgumentException $e) {
-            flash('error', $e->getMessage());
-            redirect('/employe/menus');
+            redirect('/employe/menus?open_modal=creer_plat&modal_error=' . urlencode($e->getMessage()));
         }
 
-        $platId = MenuModel::createPlat($data);
+        MenuModel::createPlat($data);
 
         flash('success', 'Plat créé avec succès.');
         redirect('/employe/menus');
@@ -169,8 +166,7 @@ class EmployeController
         try {
             $data = MenuAdminService::platPayloadFromRequest($_POST);
         } catch (InvalidArgumentException $e) {
-            flash('error', $e->getMessage());
-            redirect('/employe/menus');
+            redirect('/employe/menus?open_modal=modifier_plat_' . $id . '&modal_error=' . urlencode($e->getMessage()));
         }
 
         MenuModel::updatePlat($id, $data);
