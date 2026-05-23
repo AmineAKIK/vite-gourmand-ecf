@@ -64,15 +64,17 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
                             data-bs-toggle="dropdown"
                             <?= $roleHomeIsCurrent ? 'aria-current="page"' : '' ?>
                         >
-                            <?= sanitize(currentUser()['prenom']) ?>
+                            <?= sanitize(roleHomeLabel()) ?>
                         </a>
                         <ul class="dropdown-menu dropdown-menu-end">
+                            <?php if (!hasRole(ROLE_ADMIN) && !hasRole(ROLE_EMPLOYE)): ?>
                             <li>
-                                <a class="dropdown-item <?= $roleHomeIsCurrent ? 'active' : '' ?>" href="<?= sanitize(roleHomePath()) ?>">
-                                    <?= sanitize(roleHomeLabel()) ?>
+                                <a class="dropdown-item <?= routeIsActive('/mon-compte') ? 'active' : '' ?>" href="/mon-compte">
+                                    Mon compte
                                 </a>
                             </li>
                             <li><hr class="dropdown-divider"></li>
+                            <?php endif; ?>
                             <li><a class="dropdown-item text-danger" href="/deconnexion">Déconnexion</a></li>
                         </ul>
                     </li>
