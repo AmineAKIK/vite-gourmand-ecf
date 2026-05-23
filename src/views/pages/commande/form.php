@@ -10,11 +10,11 @@
             <div class="card-body">
                 <h2 class="h5 mb-3"><span class="badge bg-vg me-2">1</span>Informations client</h2>
                 <div class="row g-3">
-                    <div class="col-md-6">
+                    <div class="col-12 col-lg-6">
                         <label for="client_prenom" class="form-label">Prénom</label>
                         <input type="text" class="form-control" id="client_prenom" value="<?= sanitize($user['prenom']) ?>" disabled>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-lg-6">
                         <label for="client_nom" class="form-label">Nom</label>
                         <input type="text" class="form-control" id="client_nom" value="<?= sanitize($user['nom']) ?>" disabled>
                     </div>
@@ -41,20 +41,20 @@
                         <label for="adresse_livraison" class="form-label">Adresse <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="adresse_livraison" name="adresse_livraison" required>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-lg-6">
                         <label for="ville_livraison" class="form-label">Ville <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="ville_livraison" name="ville_livraison" required>
                         <div class="form-text"><?= sanitize(deliveryPricingLabel()) ?></div>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-lg-6">
                         <label for="code_postal_livraison" class="form-label">Code postal <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="code_postal_livraison" name="code_postal_livraison" required>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-lg-6">
                         <label for="date_prestation" class="form-label">Date <span class="text-danger">*</span></label>
                         <input type="date" class="form-control" id="date_prestation" name="date_prestation" min="<?= sanitize(tomorrowDateInput()) ?>" required>
                     </div>
-                    <div class="col-md-6">
+                    <div class="col-12 col-lg-6">
                         <label for="heure_livraison" class="form-label">Heure souhaitée <span class="text-danger">*</span></label>
                         <input type="time" class="form-control" id="heure_livraison" name="heure_livraison" min="07:00" max="22:00" required>
                     </div>

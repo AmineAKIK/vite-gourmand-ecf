@@ -76,7 +76,7 @@ $chartData = array_map(fn($row) => round((float)($row['ca'] ?? 0), 2), $caStats 
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-lg-6">
                 <label for="filtre-debut" class="form-label form-label-sm">Date début</label>
                 <input
                     type="date"
@@ -87,7 +87,7 @@ $chartData = array_map(fn($row) => round((float)($row['ca'] ?? 0), 2), $caStats 
                     aria-label="Date de début de la période"
                 >
             </div>
-            <div class="col-12 col-md-6 col-xl-3">
+            <div class="col-12 col-lg-6">
                 <label for="filtre-fin" class="form-label form-label-sm">Date fin</label>
                 <input
                     type="date"

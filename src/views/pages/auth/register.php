@@ -5,11 +5,11 @@
         <form method="POST" action="/inscription" novalidate>
             <?= csrfField() ?>
             <div class="row g-3">
-                <div class="col-md-6">
+                <div class="col-12 col-lg-6">
                     <label for="prenom" class="form-label">Prénom <span class="text-danger" aria-label="obligatoire">*</span></label>
                     <input type="text" class="form-control" id="prenom" name="prenom" required autocomplete="given-name">
                 </div>
-                <div class="col-md-6">
+                <div class="col-12 col-lg-6">
                     <label for="nom" class="form-label">Nom <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" id="nom" name="nom" required autocomplete="family-name">
                 </div>
@@ -17,11 +17,11 @@
                     <label for="email" class="form-label">Email <span class="text-danger">*</span></label>
                     <input type="email" class="form-control" id="email" name="email" required autocomplete="email">
                 </div>
-                <div class="col-md-6">
+                <div class="col-12 col-lg-6">
                     <label for="telephone" class="form-label">Téléphone <span class="text-danger">*</span></label>
                     <input type="tel" class="form-control" id="telephone" name="telephone" required autocomplete="tel">
                 </div>
-                <div class="col-md-6">
+                <div class="col-12 col-lg-6">
                     <label for="code_postal" class="form-label">Code postal</label>
                     <input type="text" class="form-control" id="code_postal" name="code_postal" required autocomplete="postal-code">
                 </div>

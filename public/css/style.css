@@ -1428,7 +1428,7 @@ input[type="password"]::-webkit-caps-lock-indicator {
 }
 
 /* --- RESPONSIVE --- */
-@media (max-width: 767px) {
+@media (max-width: 991px) {
     .workspace-sidebar {
         transform: translateX(-100%);
     }
@@ -1448,7 +1448,7 @@ input[type="password"]::-webkit-caps-lock-indicator {
     }
 }
 
-@media (min-width: 768px) {
+@media (min-width: 992px) {
     .workspace-topbar {
         display: none !important;
     }

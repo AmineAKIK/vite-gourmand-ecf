@@ -92,7 +92,7 @@
     <main class="workspace-main" id="workspace-content" tabindex="-1">
 
         <!-- Topbar mobile -->
-        <header class="workspace-topbar d-md-none">
+        <header class="workspace-topbar d-lg-none">
             <button class="workspace-menu-toggle" id="sidebarToggle" aria-label="Ouvrir le menu" aria-expanded="false" aria-controls="workspaceSidebar">
                 <i class="bi bi-list"></i>
             </button>

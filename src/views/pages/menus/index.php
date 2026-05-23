@@ -53,7 +53,7 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
     <!-- RÉSULTATS -->
     <div id="menus-container" class="row g-4" role="list" aria-live="polite" aria-label="Liste des menus">
         <?php foreach ($menus as $menu): ?>
-        <div class="col-12 col-sm-6 col-lg-4" role="listitem">
+        <div class="col-12 col-lg-4" role="listitem">
             <article class="card card-menu h-100">
                 <img
                     src="<?= sanitize(imageUrl($menu['image_principale'] ?: null)) ?>"
@@ -148,7 +148,7 @@ function fetchMenus() {
             return;
         }
         container.innerHTML = menus.map(m => `
-            <div class="col-12 col-sm-6 col-lg-4" role="listitem">
+            <div class="col-12 col-lg-4" role="listitem">
                 <article class="card card-menu h-100">
                     <img
                         src="${(m.image_principale && (m.image_principale.startsWith('http://') || m.image_principale.startsWith('https://'))) ? esc(m.image_principale) : '/' + esc(m.image_principale || 'images/menu-placeholder.webp')}"

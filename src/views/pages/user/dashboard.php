@@ -16,16 +16,16 @@
                     <table class="table table-hover align-middle" aria-label="Mes commandes">
                         <thead class="table-light">
                             <tr>
-                                <th class="d-none d-sm-table-cell">N°</th><th>Menu</th><th>Date</th><th class="d-none d-md-table-cell">Adresse</th><th>Total</th><th>Statut</th><th>Actions</th>
+                                <th class="d-none d-lg-table-cell">N°</th><th>Menu</th><th>Date</th><th class="d-none d-lg-table-cell">Adresse</th><th>Total</th><th>Statut</th><th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                         <?php foreach ($commandes as $cmd): ?>
                             <tr>
-                                <td class="d-none d-sm-table-cell"><small class="text-muted" style="font-size:.7rem;"><?= sanitize($cmd['numero_commande']) ?></small></td>
+                                <td class="d-none d-lg-table-cell"><small class="text-muted" style="font-size:.7rem;"><?= sanitize($cmd['numero_commande']) ?></small></td>
                                 <td><?= sanitize($cmd['menu_titre']) ?></td>
                                 <td class="text-nowrap small"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></td>
-                                <td class="d-none d-md-table-cell" style="max-width:160px;"><span class="text-truncate d-block" title="<?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?>"><?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?></span></td>
+                                <td class="d-none d-lg-table-cell" style="max-width:160px;"><span class="text-truncate d-block" title="<?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?>"><?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?></span></td>
                                 <td class="text-nowrap"><strong><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></strong></td>
                                 <td><?= commandeStatusBadge($cmd['statut'] ?? null) ?></td>
                                 <td>

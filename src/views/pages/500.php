@@ -4,7 +4,7 @@ $pageTitle = 'Erreur serveur - Vite & Gourmand';
 ?>
 <div class="container py-5 text-center">
     <div class="row justify-content-center">
-        <div class="col-md-6">
+        <div class="col-12 col-lg-6">
 
             <div class="display-1 fw-bold text-vg mb-2" aria-hidden="true">500</div>
             <i class="bi bi-exclamation-triangle display-3 text-muted mb-3 d-block" aria-hidden="true"></i>
