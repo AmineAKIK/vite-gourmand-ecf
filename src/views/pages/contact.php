@@ -12,7 +12,7 @@ $pageTitle = 'Contact - Vite & Gourmand';
                 <p class="text-muted">Une question, une demande particulière ? Nous vous répondons sous 48h.</p>
             </div>
 
-            <div class="card border-0 shadow p-4">
+            <div class="card shadow-sm p-4" style="border:1px solid rgba(0,0,0,.08);">
                 <form method="POST" action="/contact" novalidate>
                     <?= csrfField() ?>
 

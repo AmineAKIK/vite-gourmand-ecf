@@ -3,7 +3,7 @@
 $pageTitle = 'Réinitialisation du mot de passe - Vite & Gourmand';
 ?>
 <div class="container py-5" style="max-width:500px">
-    <div class="card border-0 shadow p-4">
+    <div class="card shadow-sm p-4" style="border:1px solid rgba(0,0,0,.08);">
         <div class="text-center mb-4">
             <i class="bi bi-shield-lock display-4 text-vg"></i>
             <h1 class="h3 fw-bold mt-2">Nouveau mot de passe</h1>

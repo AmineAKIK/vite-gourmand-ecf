@@ -3,7 +3,7 @@
 $pageTitle = 'Mot de passe oublié - Vite & Gourmand';
 ?>
 <div class="container py-5" style="max-width:480px">
-    <div class="card border-0 shadow p-4">
+    <div class="card shadow-sm p-4" style="border:1px solid rgba(0,0,0,.08);">
         <div class="text-center mb-4">
             <i class="bi bi-key display-4 text-vg"></i>
             <h1 class="h3 fw-bold mt-2">Mot de passe oublié</h1>

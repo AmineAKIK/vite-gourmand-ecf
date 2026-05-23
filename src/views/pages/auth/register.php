@@ -1,6 +1,6 @@
 <?php $pageTitle = 'Inscription - Vite & Gourmand'; ?>
 <div class="container py-5" style="max-width:600px">
-    <div class="card border-0 shadow p-4">
+    <div class="card shadow-sm p-4" style="border:1px solid rgba(0,0,0,.08);">
         <h1 class="h3 text-center mb-4 fw-bold">Créer un compte</h1>
         <form method="POST" action="/inscription" novalidate>
             <?= csrfField() ?>
