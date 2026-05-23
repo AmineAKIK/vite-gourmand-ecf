@@ -60,14 +60,17 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                         aria-controls="collapse<?= $cmd['commande_id'] ?>"
                         style="border-radius:.5rem;"
                     >
-                        <div class="d-flex flex-wrap gap-2 align-items-center w-100 pe-2">
-                            <code class="commande-numero text-muted" style="font-size:.75rem;"><?= sanitize($cmd['numero_commande'] ?? '') ?></code>
-                            <strong class="commande-client"><?= sanitize(personFullName($cmd)) ?></strong>
-                            <span class="text-muted d-none d-sm-inline">·</span>
-                            <span class="commande-menu text-muted d-none d-sm-inline"><?= sanitize($cmd['menu_titre'] ?? '') ?></span>
-                            <div class="ms-auto d-flex align-items-center gap-2 flex-shrink-0">
-                                <span class="commande-date text-muted small"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></span>
-                                <?= commandeStatusBadge($cmd['statut'] ?? null) ?>
+                        <div class="d-flex flex-column gap-1 w-100 pe-2">
+                            <div class="d-flex align-items-center gap-2">
+                                <code class="commande-numero text-muted" style="font-size:.75rem;"><?= sanitize($cmd['numero_commande'] ?? '') ?></code>
+                                <strong class="commande-client"><?= sanitize(personFullName($cmd)) ?></strong>
+                            </div>
+                            <div class="d-flex align-items-center justify-content-between gap-2">
+                                <span class="commande-menu text-muted small text-truncate"><?= sanitize($cmd['menu_titre'] ?? '') ?></span>
+                                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                                    <span class="commande-date text-muted small text-nowrap"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></span>
+                                    <?= commandeStatusBadge($cmd['statut'] ?? null) ?>
+                                </div>
                             </div>
                         </div>
                     </button>
