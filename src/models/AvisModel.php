@@ -41,6 +41,23 @@ class AvisModel
         return $stmt->fetch() ?: null;
     }
 
+    /** Charge tous les avis pour un ensemble de commandes en une seule requête (évite N+1). */
+    public static function getByCommandes(array $commandeIds): array
+    {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $commandeIds))));
+        if (empty($ids)) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = Database::getConnection()->prepare("SELECT * FROM avis WHERE commande_id IN ($placeholders)");
+        $stmt->execute($ids);
+        $result = [];
+        foreach ($stmt->fetchAll() as $avis) {
+            $result[(int)$avis['commande_id']] = $avis;
+        }
+        return $result;
+    }
+
     public static function getValidated(int $limit = 6): array
     {
         $stmt = Database::getConnection()->prepare("

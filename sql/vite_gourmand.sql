@@ -178,6 +178,20 @@ CREATE TABLE password_reset (
 );
 
 -- ============================================
+-- INDEX DE PERFORMANCE
+-- ============================================
+
+CREATE INDEX idx_commande_statut       ON commande(statut);
+CREATE INDEX idx_commande_utilisateur  ON commande(utilisateur_id);
+CREATE INDEX idx_commande_menu_statut  ON commande(menu_id, statut);
+CREATE INDEX idx_commande_date         ON commande(date_prestation);
+CREATE INDEX idx_avis_statut           ON avis(statut);
+CREATE INDEX idx_avis_utilisateur      ON avis(utilisateur_id);
+CREATE INDEX idx_menu_actif            ON menu(actif);
+CREATE INDEX idx_menu_image_menu       ON menu_image(menu_id, ordre);
+CREATE INDEX idx_historique_commande   ON commande_historique(commande_id);
+
+-- ============================================
 -- DONNÉES INITIALES NÉCESSAIRES AU FONCTIONNEMENT
 -- ============================================
 

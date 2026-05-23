@@ -8,13 +8,7 @@ class UserController {
         $commandes = CommandeModel::getByUser($user['id']);
         $userFull  = \UserModel::findById($user['id']);
 
-        $avisByCommande = [];
-        foreach ($commandes as $cmd) {
-            $avis = AvisModel::getByCommande((int)$cmd['commande_id']);
-            if ($avis) {
-                $avisByCommande[(int)$cmd['commande_id']] = $avis;
-            }
-        }
+        $avisByCommande = AvisModel::getByCommandes(array_column($commandes, 'commande_id'));
 
         view('pages/user/dashboard', compact('commandes', 'userFull', 'avisByCommande'));
     }

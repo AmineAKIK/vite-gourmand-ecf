@@ -54,15 +54,20 @@ class StatsService
         return $stats;
     }
 
+    private static ?\MongoDB\Collection $collection = null;
+
     private static function collection(): mixed
     {
+        if (self::$collection !== null) {
+            return self::$collection;
+        }
         $mongoUri = defined('MONGO_URI') ? MONGO_URI : ($_ENV['MONGO_URI'] ?? null);
         if (!$mongoUri || !class_exists(\MongoDB\Client::class)) {
             return null;
         }
-
         $client = new \MongoDB\Client($mongoUri);
-        return $client->selectCollection(MONGO_DB, self::COLLECTION);
+        self::$collection = $client->selectCollection(MONGO_DB, self::COLLECTION);
+        return self::$collection;
     }
 
     private static function syncFromMysql(mixed $collection): void

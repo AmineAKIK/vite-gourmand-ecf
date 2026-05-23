@@ -55,12 +55,12 @@ class CommandeService
             throw new InvalidArgumentException('La date de prestation ne peut pas dépasser 1 an à l\'avance.');
         }
 
-        // Validation heure (format HH:MM, plage 07:00–22:00)
-        if (!preg_match('/^\d{2}:\d{2}$/', $payload['heure_livraison'])) {
+        // Validation heure (format HH:MM strict, plage 07:00–22:00)
+        $heureObj = \DateTime::createFromFormat('H:i', $payload['heure_livraison']);
+        if (!$heureObj || $heureObj->format('H:i') !== $payload['heure_livraison']) {
             throw new InvalidArgumentException('Format d\'heure invalide (HH:MM).');
         }
-        [$h, $m] = explode(':', $payload['heure_livraison']);
-        if ((int)$h < 7 || (int)$h > 22 || (int)$m > 59) {
+        if ((int)$heureObj->format('H') < 7 || (int)$heureObj->format('H') > 22) {
             throw new InvalidArgumentException('L\'heure de livraison doit être entre 07:00 et 22:00.');
         }
 

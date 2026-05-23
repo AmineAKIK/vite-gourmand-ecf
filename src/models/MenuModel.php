@@ -240,10 +240,15 @@ class MenuModel {
     }
 
     private static function insertMenuPlats(PDO $db, int $menuId, array $platIds): void {
-        $stmt = $db->prepare("INSERT IGNORE INTO menu_plat (menu_id, plat_id) VALUES (?, ?)");
+        $platIds = array_values(array_unique(array_map('intval', $platIds)));
+        if (empty($platIds)) return;
+        $placeholders = implode(',', array_fill(0, count($platIds), '(?, ?)'));
+        $params = [];
         foreach ($platIds as $platId) {
-            $stmt->execute([$menuId, $platId]);
+            $params[] = $menuId;
+            $params[] = $platId;
         }
+        $db->prepare("INSERT IGNORE INTO menu_plat (menu_id, plat_id) VALUES $placeholders")->execute($params);
     }
 
 }

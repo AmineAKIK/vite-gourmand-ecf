@@ -29,6 +29,18 @@ define('MAIL_FROM',     $_ENV['MAIL_FROM']     ?? 'noreply@vitegourmand.fr');
 define('MAIL_FROM_NAME','Vite & Gourmand');
 
 define('BASE_URL', $_ENV['BASE_URL'] ?? 'http://localhost:8080');
+define('APP_ENV', $_ENV['APP_ENV'] ?? 'production');
+
+if (APP_ENV !== 'development') {
+    ini_set('display_errors', '0');
+    ini_set('display_startup_errors', '0');
+    error_reporting(E_ALL);
+    ini_set('log_errors', '1');
+} else {
+    ini_set('display_errors', '1');
+    ini_set('display_startup_errors', '1');
+    error_reporting(E_ALL);
+}
 define('ROLE_USER', 'utilisateur');
 define('ROLE_EMPLOYE', 'employe');
 define('ROLE_ADMIN', 'administrateur');

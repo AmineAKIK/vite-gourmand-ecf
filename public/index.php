@@ -3,6 +3,12 @@
 
 session_start();
 require_once __DIR__ . '/../src/config/config.php';
+
+// Headers de sécurité
+header('X-Content-Type-Options: nosniff');
+header('X-Frame-Options: SAMEORIGIN');
+header('Referrer-Policy: strict-origin-when-cross-origin');
+header('X-XSS-Protection: 1; mode=block');
 require_once __DIR__ . '/../src/config/Database.php';
 require_once __DIR__ . '/../src/helpers.php';
 
@@ -116,8 +122,14 @@ function resolveRoute($routes, $method, $uri): ?array {
 $route = resolveRoute($routes, $method, $uri);
 if ($route) {
     [$controllerClass, $action] = $route;
-    $controller = new $controllerClass();
-    $controller->$action();
+    try {
+        $controller = new $controllerClass();
+        $controller->$action();
+    } catch (Throwable $e) {
+        error_log('[' . date('Y-m-d H:i:s') . '] ' . get_class($e) . ': ' . $e->getMessage() . ' in ' . $e->getFile() . ':' . $e->getLine());
+        http_response_code(500);
+        view('pages/500');
+    }
 } else {
     http_response_code(404);
     view('pages/404');

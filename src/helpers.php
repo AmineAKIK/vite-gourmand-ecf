@@ -38,7 +38,11 @@ function view(string $template, array $data = []): void {
     }
     extract($data);
     $file = __DIR__ . '/views/' . $template . '.php';
-    if (!file_exists($file)) { die("Vue introuvable : $template"); }
+    if (!file_exists($file)) {
+        http_response_code(500);
+        error_log("Vue introuvable : $template");
+        exit;
+    }
     ob_start();
     require $file;
     $content = ob_get_clean();
@@ -48,11 +52,18 @@ function view(string $template, array $data = []): void {
 function partial(string $template, array $data = []): void {
     extract($data);
     $file = __DIR__ . '/views/' . $template . '.php';
-    if (!file_exists($file)) { die("Partial introuvable : $template"); }
+    if (!file_exists($file)) {
+        error_log("Partial introuvable : $template");
+        return;
+    }
     require $file;
 }
 
 function redirect(string $url): void {
+    // Interdit les redirections ouvertes vers des domaines externes
+    if (!str_starts_with($url, '/') && !preg_match('#^https?://' . preg_quote($_SERVER['HTTP_HOST'] ?? '', '#') . '#', $url)) {
+        $url = '/';
+    }
     header("Location: $url"); exit;
 }
 
@@ -164,7 +175,7 @@ function getFlash(string $key): ?string {
 }
 
 function generateNumeroCommande(): string {
-    return 'VG-' . strtoupper(substr(uniqid(), -6)) . '-' . date('Ymd');
+    return 'VG-' . strtoupper(bin2hex(random_bytes(4))) . '-' . date('Ymd');
 }
 
 function commandeStatusDefinitions(): array {
