@@ -62,7 +62,7 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link text-danger" href="/deconnexion">Déconnexion</a>
+                        <a class="nav-link" href="/deconnexion" style="opacity:.7;">Déconnexion</a>
                     </li>
                 <?php else: ?>
                     <li class="nav-item">
