@@ -438,15 +438,13 @@ foreach ($plats as $plat) {
                                          width="50" height="50"
                                          style="object-fit:cover;border-radius:4px"
                                          alt="Image menu">
-                                    <form method="POST" action="/employe/menu/image/supprimer" class="d-inline">
-                                        <?= csrfField() ?>
-                                        <input type="hidden" name="image_id" value="<?= (int)$img['image_id'] ?>">
-                                        <button type="submit" class="btn btn-sm btn-outline-danger p-0 px-1"
-                                                aria-label="Supprimer cette image"
-                                                data-confirm="Supprimer cette image ?">
-                                            <i class="bi bi-x"></i>
-                                        </button>
-                                    </form>
+                                    <button type="submit"
+                                            form="form-del-img-<?= (int)$img['image_id'] ?>"
+                                            class="btn btn-sm btn-outline-danger p-0 px-1"
+                                            aria-label="Supprimer cette image"
+                                            data-confirm="Supprimer cette image ?">
+                                        <i class="bi bi-x"></i>
+                                    </button>
                                 </div>
                                 <?php endforeach; ?>
                             </div>
@@ -467,6 +465,13 @@ foreach ($plats as $plat) {
                     </button>
                 </div>
             </form>
+            <?php foreach ($imagesByMenu[(int)$menu['menu_id']] ?? [] as $img): ?>
+            <form id="form-del-img-<?= (int)$img['image_id'] ?>"
+                  method="POST" action="/employe/menu/image/supprimer" class="d-none">
+                <?= csrfField() ?>
+                <input type="hidden" name="image_id" value="<?= (int)$img['image_id'] ?>">
+            </form>
+            <?php endforeach; ?>
         </div>
     </div>
 </div>
