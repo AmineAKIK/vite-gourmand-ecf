@@ -86,32 +86,56 @@ foreach ($plats as $plat) {
         </div>
     <?php endif; ?>
 
-    <!-- Tableau des plats -->
+    <!-- Plats groupés par catégorie -->
     <h2 class="h4 fw-bold mt-5 mb-3">Gestion des plats</h2>
     <?php if (empty($plats)): ?>
         <div class="alert alert-info">Aucun plat enregistré.</div>
     <?php else: ?>
-        <div class="rounded overflow-hidden" style="border:2px solid rgba(139,26,43,0.18);">
-            <?php foreach ($plats as $plat): ?>
-            <div class="d-flex align-items-center gap-3 px-3 py-2" style="background:var(--vg-creme);border-bottom:2px solid rgba(139,26,43,0.18);">
-                <div class="fw-semibold flex-grow-1"><?= sanitize($plat['titre']) ?></div>
-                <span class="badge text-dark" style="background:rgba(139,26,43,0.1);min-width:70px;text-align:center;"><?= sanitize($plat['categorie']) ?></span>
-                <small class="text-muted d-none d-md-block" style="min-width:160px;"><?= sanitize($plat['allergenes'] ?: '—') ?></small>
-                <div class="d-flex gap-1 flex-shrink-0">
-                    <button class="btn btn-sm btn-vg-outline"
-                            data-bs-toggle="modal"
-                            data-bs-target="#modalModifPlat<?= (int)$plat['plat_id'] ?>"
-                            aria-label="Modifier <?= sanitize($plat['titre']) ?>">
-                        <i class="bi bi-pencil"></i>
-                    </button>
-                    <form method="POST" action="/employe/plat/supprimer" class="d-inline form-confirm">
-                        <?= csrfField() ?>
-                        <input type="hidden" name="plat_id" value="<?= (int)$plat['plat_id'] ?>">
-                        <button type="submit" class="btn btn-sm btn-outline-danger"
-                                aria-label="Supprimer <?= sanitize($plat['titre']) ?>">
-                            <i class="bi bi-trash"></i>
-                        </button>
-                    </form>
+        <div class="row g-4">
+            <?php foreach ($platsByCategorie as $categorie => $platsGroupe): ?>
+            <div class="col-12">
+                <div class="card border-0 shadow-sm">
+                    <div class="card-header d-flex align-items-center justify-content-between">
+                        <span class="fw-semibold">
+                            <?php
+                            $icon = match($categorie) {
+                                'Entrée'          => 'bi-egg-fried',
+                                'Plat principal'  => 'bi-dish',
+                                'Dessert'         => 'bi-cake2',
+                                default           => 'bi-card-list',
+                            };
+                            ?>
+                            <i class="bi <?= $icon ?> me-2 text-vg"></i><?= sanitize($categorie) ?>
+                        </span>
+                        <span class="badge bg-secondary"><?= count($platsGroupe) ?> plat<?= count($platsGroupe) > 1 ? 's' : '' ?></span>
+                    </div>
+                    <ul class="list-group list-group-flush">
+                        <?php foreach ($platsGroupe as $plat): ?>
+                        <li class="list-group-item d-flex align-items-center justify-content-between gap-3 py-2">
+                            <div class="fw-medium flex-grow-1"><?= sanitize($plat['titre']) ?></div>
+                            <?php if ($plat['allergenes']): ?>
+                                <small class="text-muted d-none d-md-block"><?= sanitize($plat['allergenes']) ?></small>
+                            <?php endif; ?>
+                            <div class="d-flex gap-1 flex-shrink-0">
+                                <button class="btn btn-sm btn-vg-outline"
+                                        data-bs-toggle="modal"
+                                        data-bs-target="#modalModifPlat<?= (int)$plat['plat_id'] ?>"
+                                        aria-label="Modifier <?= sanitize($plat['titre']) ?>">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <form method="POST" action="/employe/plat/supprimer" class="d-inline">
+                                    <?= csrfField() ?>
+                                    <input type="hidden" name="plat_id" value="<?= (int)$plat['plat_id'] ?>">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                            data-confirm="Supprimer le plat « <?= sanitize($plat['titre']) ?> » ?"
+                                            aria-label="Supprimer <?= sanitize($plat['titre']) ?>">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </li>
+                        <?php endforeach; ?>
+                    </ul>
                 </div>
             </div>
             <?php endforeach; ?>
