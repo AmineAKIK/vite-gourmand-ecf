@@ -81,23 +81,30 @@ class MenuAdminService
     public static function uploadMenuImages(int $menuId, array $files, int $startOrder): void
     {
         if (empty($files['name'][0])) {
+            error_log('[Upload] Aucun fichier reçu pour menu_id=' . $menuId);
             return;
         }
 
         $order = $startOrder;
 
         foreach (($files['tmp_name'] ?? []) as $index => $tmpName) {
+            $error = $files['error'][$index] ?? UPLOAD_ERR_NO_FILE;
+            $size  = $files['size'][$index]  ?? 0;
+            error_log('[Upload] Fichier #' . $index . ' tmp=' . $tmpName . ' error=' . $error . ' size=' . $size . ' exists=' . (file_exists($tmpName) ? 'oui' : 'non'));
+
             $file = [
                 'name'     => $files['name'][$index]  ?? '',
                 'type'     => $files['type'][$index]   ?? '',
                 'tmp_name' => $tmpName,
-                'error'    => $files['error'][$index]  ?? UPLOAD_ERR_NO_FILE,
-                'size'     => $files['size'][$index]   ?? 0,
+                'error'    => $error,
+                'size'     => $size,
             ];
 
             $path = self::cloudinaryEnabled()
                 ? self::storeOnCloudinary($file, 'menus/menu_' . $menuId)
                 : self::storeUploadedImage($file, 'menu_' . $menuId);
+
+            error_log('[Upload] Résultat path=' . ($path ?? 'NULL'));
 
             if ($path) {
                 MenuModel::addMenuImage($menuId, $path, $order++);
