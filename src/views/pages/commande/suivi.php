@@ -17,7 +17,7 @@ $pageTitle = 'Suivi de commande #' . sanitize($commande['numero_commande'] ?? ''
 
         <!-- Récapitulatif commande -->
         <div class="col-lg-5">
-            <div class="card border-0 shadow-sm h-100">
+            <div class="card border-0 shadow-sm h-100" style="background:var(--vg-creme);">
                 <div class="card-header bg-creme fw-bold">
                     <i class="bi bi-receipt me-2"></i>Récapitulatif
                 </div>
@@ -58,7 +58,7 @@ $pageTitle = 'Suivi de commande #' . sanitize($commande['numero_commande'] ?? ''
 
         <!-- Timeline historique -->
         <div class="col-lg-7">
-            <div class="card border-0 shadow-sm">
+            <div class="card border-0 shadow-sm" style="background:var(--vg-creme);">
                 <div class="card-header bg-creme fw-bold">
                     <i class="bi bi-clock-history me-2"></i>Historique des statuts
                 </div>

@@ -10,7 +10,7 @@ $pageTitle = 'Gestion des employés - Vite & Gourmand';
 
         <!-- Formulaire création employé -->
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm p-4">
+            <div class="card border-0 shadow-sm p-4" style="background:var(--vg-creme);">
                 <h2 class="h5 fw-bold mb-3">
                     <i class="bi bi-person-plus me-2 text-vg"></i>Ajouter un employé
                 </h2>

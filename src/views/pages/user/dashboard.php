@@ -54,7 +54,7 @@
 
         <!-- Mes infos -->
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm p-4">
+            <div class="card border-0 shadow-sm p-4" style="background:var(--vg-creme);">
                 <h2 class="h5 mb-3">Mes informations</h2>
                 <form method="POST" action="/mon-compte/modifier">
                     <?= csrfField() ?>

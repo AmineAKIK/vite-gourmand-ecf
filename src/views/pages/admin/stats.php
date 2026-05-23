@@ -104,7 +104,7 @@ $chartData   = array_column($mongoStats ?? [], 'nb_commandes');
 
         <!-- Graphique barres horizontales -->
         <div class="col-lg-6">
-            <div class="card border-0 shadow-sm p-3 h-100">
+            <div class="card border-0 shadow-sm p-3 h-100" style="background:var(--vg-creme);">
                 <h2 class="h6 fw-bold mb-3">
                     <i class="bi bi-bar-chart-horizontal me-2 text-vg"></i>Commandes par menu (MongoDB)
                 </h2>

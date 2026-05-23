@@ -6,7 +6,7 @@
         <?= csrfField() ?>
 
         <!-- Étape 1 : Infos client (pré-remplies) -->
-        <div class="card border-0 shadow-sm mb-4">
+        <div class="card border-0 shadow-sm mb-4" style="background:var(--vg-creme);">
             <div class="card-body">
                 <h2 class="h5 mb-3"><span class="badge bg-vg me-2">1</span>Informations client</h2>
                 <div class="row g-3">
@@ -33,7 +33,7 @@
         </div>
 
         <!-- Étape 2 : Lieu et date -->
-        <div class="card border-0 shadow-sm mb-4">
+        <div class="card border-0 shadow-sm mb-4" style="background:var(--vg-creme);">
             <div class="card-body">
                 <h2 class="h5 mb-3"><span class="badge bg-vg me-2">2</span>Lieu et date de la prestation</h2>
                 <div class="row g-3">
@@ -63,7 +63,7 @@
         </div>
 
         <!-- Étape 3 : Menu et personnes -->
-        <div class="card border-0 shadow-sm mb-4">
+        <div class="card border-0 shadow-sm mb-4" style="background:var(--vg-creme);">
             <div class="card-body">
                 <h2 class="h5 mb-3"><span class="badge bg-vg me-2">3</span>Menu et nombre de personnes</h2>
                 <div class="mb-3">
