@@ -97,7 +97,11 @@ class CommandeController {
 
         CommandeModel::updateDetails((int)$commande['commande_id'], $payload);
 
-        flash('success', 'Commande modifiée.');
+        $msg = 'Commande modifiée. Nouveau total : ' . formatPrice($payload['prix_total']);
+        if (abs($payload['prix_total'] - (float)$commande['prix_total']) > 0.01) {
+            $msg .= ' (ancien total : ' . formatPrice($commande['prix_total']) . ')';
+        }
+        flash('success', $msg);
         redirect('/mon-compte');
     }
 
