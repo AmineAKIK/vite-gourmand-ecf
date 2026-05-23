@@ -79,9 +79,9 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
                             <?php if ((int)$menu['quantite_restante'] <= 0): ?>
                                 <p class="small text-danger fw-semibold mt-2 mb-0"><i class="bi bi-x-circle me-1"></i>Plus disponible</p>
                             <?php elseif ((int)$menu['quantite_restante'] <= 3): ?>
-                                <p class="small text-warning fw-semibold mt-2 mb-0"><i class="bi bi-exclamation-circle me-1"></i>Plus que <?= (int)$menu['quantite_restante'] ?> place(s)</p>
+                                <p class="small text-warning fw-semibold mt-2 mb-0"><i class="bi bi-exclamation-circle me-1"></i>Plus que <?= (int)$menu['quantite_restante'] ?> date(s) disponible(s)</p>
                             <?php else: ?>
-                                <p class="small text-success mt-2 mb-0"><i class="bi bi-check-circle me-1"></i><?= (int)$menu['quantite_restante'] ?> places disponibles</p>
+                                <p class="small text-success mt-2 mb-0"><i class="bi bi-check-circle me-1"></i><?= (int)$menu['quantite_restante'] ?> dates disponibles</p>
                             <?php endif; ?>
                         <?php endif; ?>
                         <a href="/menus/detail?id=<?= (int)$menu['menu_id'] ?>" class="btn btn-vg btn-sm mt-3">

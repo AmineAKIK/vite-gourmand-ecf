@@ -69,7 +69,7 @@
                 <div class="col-12">
                     <div class="alert alert-warning py-2 mb-0">
                         <i class="bi bi-exclamation-triangle me-2"></i>
-                        <strong>Stock limité :</strong> il reste <?= (int)$menu['quantite_restante'] ?> commande(s) disponible(s).
+                        <strong>Disponibilité limitée :</strong> il reste <?= (int)$menu['quantite_restante'] ?> date(s) de prestation disponible(s).
                     </div>
                 </div>
                 <?php endif; ?>
