@@ -63,14 +63,12 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                         <div class="d-flex flex-column gap-1 w-100 pe-2">
                             <div class="d-flex align-items-center gap-2">
                                 <code class="commande-numero text-muted" style="font-size:.75rem;"><?= sanitize($cmd['numero_commande'] ?? '') ?></code>
-                                <strong class="commande-client"><?= sanitize(personFullName($cmd)) ?></strong>
+                                <strong class="commande-client text-truncate"><?= sanitize(personFullName($cmd)) ?></strong>
                             </div>
-                            <div class="d-flex align-items-center justify-content-between gap-2">
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
                                 <span class="commande-menu text-muted small text-truncate"><?= sanitize($cmd['menu_titre'] ?? '') ?></span>
-                                <div class="d-flex align-items-center gap-2 flex-shrink-0">
-                                    <span class="commande-date text-muted small text-nowrap"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></span>
-                                    <?= commandeStatusBadge($cmd['statut'] ?? null) ?>
-                                </div>
+                                <span class="commande-date text-muted small text-nowrap ms-auto"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></span>
+                                <?= commandeStatusBadge($cmd['statut'] ?? null) ?>
                             </div>
                         </div>
                     </button>
