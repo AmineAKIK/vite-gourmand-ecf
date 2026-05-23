@@ -34,8 +34,7 @@ function isEmployeOrAdmin(): bool {
 
 function view(string $template, array $data = []): void {
     $isWorkspace = str_starts_with($template, 'pages/admin/')
-               || str_starts_with($template, 'pages/employe/')
-               || str_starts_with($template, 'pages/user/');
+               || str_starts_with($template, 'pages/employe/');
 
     if (!$isWorkspace && !array_key_exists('siteHoraires', $data) && class_exists('HoraireModel')) {
         $data['siteHoraires'] = HoraireModel::getAll();
@@ -118,7 +117,7 @@ function roleWorkspaceIsActive(?string $role = null): bool {
     return match ($role) {
         ROLE_ADMIN => routeIsActive(['/admin*', '/employe*']),
         ROLE_EMPLOYE => routeIsActive('/employe*'),
-        default => routeIsActive(['/mon-compte*', '/commande*']),
+        default => false,
     };
 }
 
