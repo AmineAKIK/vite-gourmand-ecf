@@ -51,7 +51,12 @@
         <!-- Nav items -->
         <nav class="workspace-nav-list">
             <?php foreach (workspaceNavItems() as $item):
-                $isActive = routeIsActive($item['match'] ?? $item['href']);
+                if (!empty($item['separator'])): ?>
+                    <hr style="border-color:rgba(255,255,255,.1);margin:.5rem 1.25rem;">
+                <?php continue; endif;
+                $isActive = !empty($item['exact'])
+                    ? ($_SERVER['REQUEST_URI'] === $item['href'])
+                    : routeIsActive($item['match'] ?? $item['href']);
             ?>
             <a href="<?= sanitize($item['href']) ?>"
                class="workspace-nav-item <?= $isActive ? 'active' : '' ?>"

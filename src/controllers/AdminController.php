@@ -4,10 +4,30 @@
 class AdminController {
 
     public function dashboard(): void {
-        $commandes = CommandeModel::getAll();
-        $stats     = CommandeModel::getStatsByMenu();
-        $mongoStats = StatsService::getCommandesByMenu();
-        view('pages/admin/dashboard', compact('commandes', 'stats', 'mongoStats'));
+        $toutesCommandes   = CommandeModel::getAll();
+        $commandesEnAttente = CommandeModel::getAll(['statut' => 'en_attente']);
+        $avisEnAttente     = AvisModel::getPending();
+        $stats             = CommandeModel::getStatsByMenu();
+        $mongoStats        = StatsService::getCommandesByMenu();
+
+        // Métriques période
+        $today      = date('Y-m-d');
+        $lundiSemaine = date('Y-m-d', strtotime('monday this week'));
+        $commandesAujourdhui = array_filter($toutesCommandes, fn($c) => str_starts_with($c['date_commande'] ?? '', $today));
+        $commandesSemaine    = array_filter($toutesCommandes, fn($c) => ($c['date_commande'] ?? '') >= $lundiSemaine);
+        $caSemaine = array_sum(array_map(
+            fn($c) => in_array($c['statut'], ['confirmee', 'en_preparation', 'livree', 'terminee']) ? (float)($c['prix_total'] ?? 0) : 0,
+            $commandesSemaine
+        ));
+
+        // Fil d'activité : 5 dernières commandes
+        $activiteRecente = array_slice($toutesCommandes, 0, 5);
+
+        view('pages/admin/dashboard', compact(
+            'commandesEnAttente', 'avisEnAttente',
+            'commandesAujourdhui', 'commandesSemaine', 'caSemaine',
+            'activiteRecente', 'stats', 'mongoStats'
+        ));
     }
 
     public function employes(): void {

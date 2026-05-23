@@ -9,8 +9,21 @@ class EmployeController
             redirect('/admin');
         }
 
-        $commandes = CommandeModel::getAll();
-        view('pages/employe/dashboard', compact('commandes'));
+        $toutesCommandes     = CommandeModel::getAll();
+        $commandesEnAttente  = CommandeModel::getAll(['statut' => 'en_attente']);
+        $avisEnAttente       = AvisModel::getPending();
+        $activiteRecente     = array_slice($toutesCommandes, 0, 5);
+
+        $today           = date('Y-m-d');
+        $lundiSemaine    = date('Y-m-d', strtotime('monday this week'));
+        $commandesAujourdhui = array_filter($toutesCommandes, fn($c) => str_starts_with($c['date_commande'] ?? '', $today));
+        $commandesSemaine    = array_filter($toutesCommandes, fn($c) => ($c['date_commande'] ?? '') >= $lundiSemaine);
+
+        view('pages/employe/dashboard', compact(
+            'commandesEnAttente', 'avisEnAttente',
+            'commandesAujourdhui', 'commandesSemaine',
+            'activiteRecente'
+        ));
     }
 
     public function commandes(): void

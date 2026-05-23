@@ -122,29 +122,31 @@ function roleWorkspaceIsActive(?string $role = null): bool {
 }
 
 function workspaceNavItems(): array {
-    if (hasRole(ROLE_ADMIN)) {
-        return [
-            ['href' => '/admin/employes', 'label' => 'Gérer les employés', 'icon' => 'bi-people', 'match' => '/admin/employes*'],
-            ['href' => '/admin/stats', 'label' => 'Statistiques CA', 'icon' => 'bi-graph-up', 'match' => '/admin/stats*'],
-            ['href' => '/admin/accueil', 'label' => "Personnaliser l'accueil", 'icon' => 'bi-brush', 'match' => '/admin/accueil*'],
-            ['href' => '/admin/parametres', 'label' => 'Paramètres', 'icon' => 'bi-sliders', 'match' => '/admin/parametres*'],
-            ['href' => '/employe/commandes', 'label' => 'Toutes les commandes', 'icon' => 'bi-list-check', 'match' => '/employe/commandes*'],
-            ['href' => '/employe/menus', 'label' => 'Menus et plats', 'icon' => 'bi-journal-text', 'match' => '/employe/menus*'],
-            ['href' => '/employe/avis', 'label' => 'Avis', 'icon' => 'bi-star', 'match' => '/employe/avis*'],
-            ['href' => '/employe/horaires', 'label' => 'Horaires', 'icon' => 'bi-clock', 'match' => '/employe/horaires*'],
-        ];
+    $isAdmin = hasRole(ROLE_ADMIN);
+
+    $items = [];
+
+    // Dashboard — toujours en premier
+    $dashHref  = $isAdmin ? '/admin' : '/employe';
+    $dashMatch = $isAdmin ? '/admin' : '/employe';
+    $items[] = ['href' => $dashHref, 'label' => 'Tableau de bord', 'icon' => 'bi-speedometer2', 'match' => $dashMatch, 'exact' => true];
+
+    // Opérationnel — commun aux deux rôles
+    $items[] = ['href' => '/employe/commandes', 'label' => 'Commandes',     'icon' => 'bi-list-check',   'match' => '/employe/commandes*'];
+    $items[] = ['href' => '/employe/menus',     'label' => 'Menus et plats','icon' => 'bi-journal-text', 'match' => '/employe/menus*'];
+    $items[] = ['href' => '/employe/avis',      'label' => 'Avis clients',  'icon' => 'bi-star',         'match' => '/employe/avis*'];
+    $items[] = ['href' => '/employe/horaires',  'label' => 'Horaires',      'icon' => 'bi-clock',        'match' => '/employe/horaires*'];
+
+    // Admin uniquement
+    if ($isAdmin) {
+        $items[] = ['separator' => true];
+        $items[] = ['href' => '/admin/employes',   'label' => 'Employés',             'icon' => 'bi-people',   'match' => '/admin/employes*'];
+        $items[] = ['href' => '/admin/stats',      'label' => 'Statistiques CA',      'icon' => 'bi-graph-up', 'match' => '/admin/stats*'];
+        $items[] = ['href' => '/admin/accueil',    'label' => "Personnaliser l'accueil", 'icon' => 'bi-brush', 'match' => '/admin/accueil*'];
+        $items[] = ['href' => '/admin/parametres', 'label' => 'Paramètres',           'icon' => 'bi-sliders',  'match' => '/admin/parametres*'];
     }
 
-    if (hasRole(ROLE_EMPLOYE)) {
-        return [
-            ['href' => '/employe/commandes', 'label' => 'Commandes', 'icon' => 'bi-list-check', 'match' => '/employe/commandes*'],
-            ['href' => '/employe/menus', 'label' => 'Menus', 'icon' => 'bi-journal-text', 'match' => '/employe/menus*'],
-            ['href' => '/employe/avis', 'label' => 'Avis', 'icon' => 'bi-star', 'match' => '/employe/avis*'],
-            ['href' => '/employe/horaires', 'label' => 'Horaires', 'icon' => 'bi-clock', 'match' => '/employe/horaires*'],
-        ];
-    }
-
-    return [];
+    return $items;
 }
 
 function cspNonce(): string {
