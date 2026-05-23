@@ -47,25 +47,25 @@
     <div class="row g-3 mb-4">
         <div class="col-6 col-lg-3">
             <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
-                <div class="fw-bold text-vg lh-1 mb-1" style="font-size:clamp(1.5rem,6vw,2.5rem);"><?= count($commandesAujourdhui ?? []) ?></div>
+                <div class="fw-bold text-vg lh-1 mb-1 fs-3"><?= count($commandesAujourdhui ?? []) ?></div>
                 <div class="text-muted small">Commandes aujourd'hui</div>
             </div>
         </div>
         <div class="col-6 col-lg-3">
             <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
-                <div class="fw-bold text-vg lh-1 mb-1" style="font-size:clamp(1.5rem,6vw,2.5rem);"><?= count($commandesSemaine ?? []) ?></div>
+                <div class="fw-bold text-vg lh-1 mb-1 fs-3"><?= count($commandesSemaine ?? []) ?></div>
                 <div class="text-muted small">Commandes cette semaine</div>
             </div>
         </div>
         <div class="col-6 col-lg-3">
             <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
-                <div class="fw-bold text-vg lh-1 mb-1" style="font-size:clamp(1.1rem,4vw,2rem);"><?= formatPrice($caSemaine ?? 0) ?></div>
+                <div class="fw-bold text-vg lh-1 mb-1 fs-4"><?= formatPrice($caSemaine ?? 0) ?></div>
                 <div class="text-muted small">CA cette semaine</div>
             </div>
         </div>
         <div class="col-6 col-lg-3">
             <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
-                <div class="fw-bold text-vg lh-1 mb-1" style="font-size:clamp(1.5rem,6vw,2.5rem);"><?= count($stats ?? []) ?></div>
+                <div class="fw-bold text-vg lh-1 mb-1 fs-3"><?= count($stats ?? []) ?></div>
                 <div class="text-muted small">Menus actifs</div>
             </div>
         </div>

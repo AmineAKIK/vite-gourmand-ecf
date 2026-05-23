@@ -47,19 +47,19 @@
     <div class="row g-3 mb-4">
         <div class="col-6 col-lg-4">
             <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
-                <div class="fw-bold text-vg lh-1 mb-1" style="font-size:clamp(1.5rem,6vw,2.5rem);"><?= count($commandesAujourdhui ?? []) ?></div>
+                <div class="fw-bold text-vg lh-1 mb-1 fs-3"><?= count($commandesAujourdhui ?? []) ?></div>
                 <div class="text-muted small">Commandes aujourd'hui</div>
             </div>
         </div>
         <div class="col-6 col-lg-4">
             <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
-                <div class="fw-bold text-vg lh-1 mb-1" style="font-size:clamp(1.5rem,6vw,2.5rem);"><?= count($commandesSemaine ?? []) ?></div>
+                <div class="fw-bold text-vg lh-1 mb-1 fs-3"><?= count($commandesSemaine ?? []) ?></div>
                 <div class="text-muted small">Commandes cette semaine</div>
             </div>
         </div>
         <div class="col-12 col-lg-4">
             <div class="card shadow-sm p-3 text-center" style="border:1px solid rgba(0,0,0,.08);">
-                <div class="fw-bold text-vg lh-1 mb-1" style="font-size:clamp(1.5rem,6vw,2.5rem);"><?= $nbAttente ?></div>
+                <div class="fw-bold text-vg lh-1 mb-1 fs-3"><?= $nbAttente ?></div>
                 <div class="text-muted small">En attente de traitement</div>
             </div>
         </div>
