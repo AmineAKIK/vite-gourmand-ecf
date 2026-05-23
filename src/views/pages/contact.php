@@ -70,7 +70,7 @@ $pageTitle = 'Contact - Vite & Gourmand';
         </div>
 
         <!-- Infos pratiques -->
-        <div class="col-lg-4 mt-4 mt-lg-0">
+        <div class="col-lg-4 mt-4 mt-lg-0 align-self-center">
             <div class="card border-0 bg-creme p-4 h-100">
                 <h2 class="h5 fw-bold mb-3"><i class="bi bi-geo-alt me-2 text-vg"></i>Nous trouver</h2>
                 <address class="small">
