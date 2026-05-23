@@ -120,29 +120,32 @@ $pageTitle = 'Gestion des employés - Vite & Gourmand';
                                     <?php endif; ?>
                                 </td>
                                 <td>
-                                    <form method="POST" action="/admin/employe/desactiver" class="form-confirm">
-                                        <?= csrfField() ?>
-                                        <input type="hidden" name="employe_id" value="<?= (int)($employe['utilisateur_id'] ?? 0) ?>">
-                                        <input type="hidden" name="actif" value="<?= ($employe['actif'] ?? false) ? '0' : '1' ?>">
-
-                                        <?php if ($employe['actif'] ?? false): ?>
-                                            <button
-                                                type="submit"
-                                                class="btn btn-sm btn-outline-danger"
-                                                aria-label="Désactiver le compte de <?= sanitize(personFullName($employe)) ?>"
-                                            >
-                                                <i class="bi bi-person-x me-1"></i>Désactiver
+                                    <div class="d-flex gap-2">
+                                        <form method="POST" action="/admin/employe/desactiver" class="form-confirm">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="employe_id" value="<?= (int)($employe['utilisateur_id'] ?? 0) ?>">
+                                            <input type="hidden" name="actif" value="<?= ($employe['actif'] ?? false) ? '0' : '1' ?>">
+                                            <?php if ($employe['actif'] ?? false): ?>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                    aria-label="Désactiver le compte de <?= sanitize(personFullName($employe)) ?>">
+                                                    <i class="bi bi-person-x me-1"></i>Désactiver
+                                                </button>
+                                            <?php else: ?>
+                                                <button type="submit" class="btn btn-sm btn-outline-success"
+                                                    aria-label="Réactiver le compte de <?= sanitize(personFullName($employe)) ?>">
+                                                    <i class="bi bi-person-check me-1"></i>Réactiver
+                                                </button>
+                                            <?php endif; ?>
+                                        </form>
+                                        <form method="POST" action="/admin/employe/supprimer" class="form-confirm">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="employe_id" value="<?= (int)($employe['utilisateur_id'] ?? 0) ?>">
+                                            <button type="submit" class="btn btn-sm btn-danger"
+                                                aria-label="Supprimer définitivement le compte de <?= sanitize(personFullName($employe)) ?>">
+                                                <i class="bi bi-trash"></i>
                                             </button>
-                                        <?php else: ?>
-                                            <button
-                                                type="submit"
-                                                class="btn btn-sm btn-outline-success"
-                                                aria-label="Réactiver le compte de <?= sanitize(personFullName($employe)) ?>"
-                                            >
-                                                <i class="bi bi-person-check me-1"></i>Réactiver
-                                            </button>
-                                        <?php endif; ?>
-                                    </form>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                             <?php endforeach; ?>

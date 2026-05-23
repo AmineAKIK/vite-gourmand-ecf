@@ -96,6 +96,14 @@ class UserModel {
         $db->prepare("UPDATE password_reset SET used=1 WHERE token=?")->execute([$token]);
     }
 
+    public static function deleteEmploye(int $id): void {
+        $db = Database::getConnection();
+        // Détache l'employé de l'historique avant suppression (contrainte FK sans ON DELETE)
+        $db->prepare("UPDATE commande_historique SET modifie_par = NULL WHERE modifie_par = ?")->execute([$id]);
+        $db->prepare("DELETE FROM password_reset WHERE utilisateur_id = ?")->execute([$id]);
+        $db->prepare("DELETE FROM utilisateur WHERE utilisateur_id = ?")->execute([$id]);
+    }
+
     public static function delete(int $id): void {
         $db = Database::getConnection();
         $db->prepare("DELETE FROM password_reset WHERE utilisateur_id=?")->execute([$id]);

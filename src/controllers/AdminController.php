@@ -53,6 +53,19 @@ class AdminController {
         redirect('/admin/employes');
     }
 
+    public function deleteEmploye(): void {
+        verifyCsrf();
+        $id = (int)($_POST['employe_id'] ?? 0);
+        $employe = \UserModel::findById($id);
+        if (!$employe || $employe['role_libelle'] !== ROLE_EMPLOYE) {
+            flash('error', 'Employé introuvable.');
+            redirect('/admin/employes');
+        }
+        \UserModel::deleteEmploye($id);
+        flash('success', 'Compte employé supprimé définitivement.');
+        redirect('/admin/employes');
+    }
+
     public function stats(): void {
         $menuFilter = (int)($_GET['menu_id'] ?? 0);
         $dateDebut  = sanitize($_GET['date_debut'] ?? '');

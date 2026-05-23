@@ -85,6 +85,7 @@ $routes = [
     'POST_ADMIN' => [
         '/admin/employe/creer'      => ['AdminController', 'createEmploye'],
         '/admin/employe/desactiver' => ['AdminController', 'disableEmploye'],
+        '/admin/employe/supprimer'  => ['AdminController', 'deleteEmploye'],
     ],
 ];
 
