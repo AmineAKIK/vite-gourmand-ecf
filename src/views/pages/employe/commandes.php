@@ -66,6 +66,7 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                             <span class="commande-menu"><?= sanitize($cmd['menu_titre'] ?? '') ?></span>
                             <span class="commande-date"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></span>
                             <span class="commande-status"><?= commandeStatusBadge($cmd['statut'] ?? null) ?></span>
+                            <span class="commande-mobile-toggle" aria-hidden="true"><i class="bi bi-chevron-down"></i></span>
                         </div>
                     </button>
                 </h2>
