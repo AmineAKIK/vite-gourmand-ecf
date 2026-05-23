@@ -983,22 +983,36 @@ a:focus {
     font-family: 'Inter', sans-serif;
     color: var(--vg-text);
     line-height: 1.35;
-    align-items: flex-start;
+    align-items: center;
 }
 .commandes-accordion .accordion-button::after {
-    margin-top: .35rem;
     flex-shrink: 0;
+}
+
+.commande-row-summary {
+    display: grid;
+    grid-template-columns: minmax(150px, .9fr) minmax(170px, 1fr) minmax(180px, 1.2fr) minmax(90px, auto) minmax(110px, auto);
+    align-items: center;
+    gap: 1rem;
+    width: 100%;
+    min-width: 0;
+    padding-right: 1rem;
 }
 
 .commandes-accordion .commande-numero {
     color: #4B5563;
     font-size: .8rem;
     font-weight: 600;
+    white-space: nowrap;
 }
 
 .commandes-accordion .commande-client {
     color: var(--vg-text);
     font-weight: 700;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .commandes-accordion .commande-menu,
@@ -1007,8 +1021,38 @@ a:focus {
     font-size: .88rem;
 }
 
+.commandes-accordion .commande-menu {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.commandes-accordion .commande-date,
+.commandes-accordion .commande-status {
+    justify-self: end;
+    white-space: nowrap;
+}
+
 .commandes-accordion .badge-statut {
     font-family: 'Inter', sans-serif;
+}
+
+@media (max-width: 991px) {
+    .commande-row-summary {
+        grid-template-columns: minmax(0, 1fr) auto;
+        gap: .35rem .8rem;
+    }
+
+    .commandes-accordion .commande-numero,
+    .commandes-accordion .commande-menu {
+        grid-column: 1 / -1;
+    }
+
+    .commandes-accordion .commande-date,
+    .commandes-accordion .commande-status {
+        justify-self: start;
+    }
 }
 
 /* Formulaires */
