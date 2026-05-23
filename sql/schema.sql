@@ -196,7 +196,7 @@ INSERT INTO site_image (cle, url) VALUES
 
 CREATE TABLE site_config (
     cle        VARCHAR(80) NOT NULL PRIMARY KEY,
-    valeur     TEXT        NOT NULL DEFAULT '',
+    valeur     VARCHAR(500) NOT NULL DEFAULT '',
     updated_at DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
