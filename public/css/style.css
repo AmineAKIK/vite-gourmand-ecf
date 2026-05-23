@@ -843,12 +843,14 @@ a:focus {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 30px;
-    height: 30px;
-    flex: 0 0 30px;
-    color: #fff;
-    background: var(--vg-bordeaux);
-    border-radius: 8px;
+    width: 26px;
+    height: 26px;
+    flex: 0 0 26px;
+    color: var(--vg-bordeaux-dark);
+    background: rgba(139, 26, 43, .06);
+    border: 1px solid rgba(139, 26, 43, .14);
+    border-radius: 999px;
+    font-size: .78rem;
     font-weight: 800;
 }
 
