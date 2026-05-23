@@ -329,6 +329,14 @@ a:focus {
     background-color: var(--vg-card);
 }
 
+.card-hover {
+    transition: transform .15s ease, box-shadow .15s ease;
+}
+.card-hover:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(44,44,44,.12);
+}
+
 .table-light th,
 .table-light td {
     background-color: var(--vg-creme);

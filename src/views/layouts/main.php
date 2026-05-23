@@ -21,7 +21,7 @@
     <script nonce="<?= $cspNonce ?>">(function(){var l=document.getElementById('fonts-preload');if(l){l.onload=function(){this.rel='stylesheet';};}}());</script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" nonce="<?= $cspNonce ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" nonce="<?= $cspNonce ?>">
-    <link rel="stylesheet" href="/css/style.css?v=20260523-27" nonce="<?= $cspNonce ?>">
+    <link rel="stylesheet" href="/css/style.css?v=20260523-29" nonce="<?= $cspNonce ?>">
 </head>
 <body>
 
