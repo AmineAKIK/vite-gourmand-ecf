@@ -11,8 +11,8 @@
             datasets: [{
                 label: <?= json_encode($datasetLabel ?? 'Nb commandes') ?>,
                 data: <?= json_encode($chartData ?? []) ?>,
-                backgroundColor: 'rgba(114,47,55,0.75)',
-                borderColor: 'rgba(114,47,55,1)',
+                backgroundColor: 'rgba(212,168,67,0.75)',
+                borderColor: 'rgba(212,168,67,1)',
                 borderWidth: 1,
                 borderRadius: 4
             }]
