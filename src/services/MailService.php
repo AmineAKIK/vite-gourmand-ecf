@@ -40,7 +40,7 @@ class MailService {
         $mail->SMTPAuth   = true;
         $mail->Username   = MAIL_USER;
         $mail->Password   = MAIL_PASS;
-        $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
+        $mail->SMTPSecure = MAIL_PORT === 465 ? PHPMailer::ENCRYPTION_SMTPS : PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = MAIL_PORT;
         $mail->CharSet    = 'UTF-8';
         $mail->Timeout    = 5;
