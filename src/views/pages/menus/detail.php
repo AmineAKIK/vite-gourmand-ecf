@@ -50,7 +50,7 @@
                 <?php if ($menu['regime']): ?><span class="badge-regime"><?= sanitize($menu['regime']) ?></span><?php endif; ?>
             </div>
             <h1 class="fw-bold"><?= sanitize($menu['titre']) ?></h1>
-            <p class="lead text-muted"><?= nl2br(htmlspecialchars($menu['description'] ?? '', ENT_QUOTES, 'UTF-8')) ?></p>
+            <p class="lead text-muted"><?= nl2br(sanitize($menu['description'] ?? '')) ?></p>
 
             <div class="row g-3 my-3">
                 <div class="col-6">

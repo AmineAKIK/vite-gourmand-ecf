@@ -23,12 +23,12 @@ class MenuAdminService
     public static function menuPayloadFromRequest(array $source): array
     {
         $payload = [
-            'titre'                   => sanitize($source['titre'] ?? ''),
-            'description'             => sanitize($source['description'] ?? ''),
+            'titre'                   => trim($source['titre'] ?? ''),
+            'description'             => trim($source['description'] ?? ''),
             'nombre_personne_minimum' => (int)($source['nombre_personne_minimum'] ?? 2),
             'prix_par_personne'       => (float)($source['prix_par_personne'] ?? 0),
             'quantite_restante'       => self::nullableNaturalInteger($source['quantite_restante'] ?? null),
-            'conditions'              => sanitize($source['conditions'] ?? ''),
+            'conditions'              => trim($source['conditions'] ?? ''),
             'theme_id'                => self::nullablePositiveId($source['theme_id'] ?? null),
             'regime_id'               => self::nullablePositiveId($source['regime_id'] ?? null),
         ];
