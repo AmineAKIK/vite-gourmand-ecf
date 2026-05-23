@@ -983,6 +983,11 @@ a:focus {
     font-family: 'Inter', sans-serif;
     color: var(--vg-text);
     line-height: 1.35;
+    align-items: flex-start;
+}
+.commandes-accordion .accordion-button::after {
+    margin-top: .35rem;
+    flex-shrink: 0;
 }
 
 .commandes-accordion .commande-numero {
