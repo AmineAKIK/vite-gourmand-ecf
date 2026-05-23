@@ -15,7 +15,7 @@ $pageTitle = 'Vite & Gourmand - Traiteur à Bordeaux';
     >
     <div class="container hero-content">
         <h1 class="fw-bold mb-3">Vite &amp; Gourmand</h1>
-        <p class="subtitle mb-4">Traiteur à Bordeaux depuis 25 ans · Julie &amp; José</p>
+        <p class="subtitle mb-4"><?= sanitize($heroSousTitre ?? 'Traiteur bordelais depuis 25 ans') ?></p>
         <p class="lead text-white-50 mb-5 col-md-8 mx-auto">
             Depuis 25 ans, Vite &amp; Gourmand accompagne les particuliers et les professionnels
             avec une cuisine traiteur généreuse, raffinée et préparée à Bordeaux.

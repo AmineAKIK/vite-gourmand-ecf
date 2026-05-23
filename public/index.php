@@ -119,6 +119,7 @@ $routes = [
         '/admin/employes'      => ['AdminController',   'employes'],
         '/admin/stats'         => ['AdminController',   'stats'],
         '/admin/images'        => ['AdminController',   'images'],
+        '/admin/parametres'    => ['AdminController',   'parametres'],
     ],
     'POST_EMPLOYE' => [
         '/employe/commande/statut'   => ['EmployeController', 'updateStatut'],
@@ -137,7 +138,8 @@ $routes = [
         '/admin/employe/creer'      => ['AdminController', 'createEmploye'],
         '/admin/employe/desactiver' => ['AdminController', 'disableEmploye'],
         '/admin/employe/supprimer'  => ['AdminController', 'deleteEmploye'],
-        '/admin/images/modifier'    => ['AdminController', 'updateImages'],
+        '/admin/images/modifier'       => ['AdminController', 'updateImages'],
+        '/admin/parametres/modifier'   => ['AdminController', 'updateParametres'],
     ],
 ];
 

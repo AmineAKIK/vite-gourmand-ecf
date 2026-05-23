@@ -93,6 +93,57 @@ class AdminController {
         redirect('/admin/images');
     }
 
+    public function parametres(): void {
+        $config = SiteConfigModel::getAll();
+        view('pages/admin/parametres', compact('config'));
+    }
+
+    public function updateParametres(): void {
+        verifyCsrf();
+
+        $fields = [
+            'hero_sous_titre' => ['type' => 'string', 'max' => 120],
+            'livraison_base'  => ['type' => 'decimal'],
+            'livraison_km'    => ['type' => 'decimal'],
+            'reduction_seuil' => ['type' => 'decimal'],
+            'reduction_taux'  => ['type' => 'int', 'min' => 0, 'max' => 100],
+        ];
+
+        foreach ($fields as $cle => $rules) {
+            $raw = trim($_POST[$cle] ?? '');
+
+            if ($rules['type'] === 'string') {
+                if (strlen($raw) > $rules['max']) {
+                    flash('error', 'Le sous-titre ne peut pas dépasser ' . $rules['max'] . ' caractères.');
+                    redirect('/admin/parametres');
+                }
+                SiteConfigModel::set($cle, $raw);
+                continue;
+            }
+
+            if ($rules['type'] === 'decimal') {
+                if (!is_numeric($raw) || (float)$raw < 0) {
+                    flash('error', 'Valeur invalide pour "' . $cle . '".');
+                    redirect('/admin/parametres');
+                }
+                SiteConfigModel::set($cle, number_format((float)$raw, 2, '.', ''));
+                continue;
+            }
+
+            if ($rules['type'] === 'int') {
+                $val = (int)$raw;
+                if ($val < ($rules['min'] ?? 0) || $val > ($rules['max'] ?? PHP_INT_MAX)) {
+                    flash('error', 'Le taux de réduction doit être entre 0 et 100.');
+                    redirect('/admin/parametres');
+                }
+                SiteConfigModel::set($cle, (string)$val);
+            }
+        }
+
+        flash('success', 'Paramètres mis à jour.');
+        redirect('/admin/parametres');
+    }
+
     public function stats(): void {
         $menuFilter = (int)($_GET['menu_id'] ?? 0);
         $dateDebut  = sanitize($_GET['date_debut'] ?? '');

@@ -128,6 +128,7 @@ function workspaceNavItems(): array {
             ['href' => '/admin/employes', 'label' => 'Gérer les employés', 'icon' => 'bi-people', 'match' => '/admin/employes*'],
             ['href' => '/admin/stats', 'label' => 'Statistiques CA', 'icon' => 'bi-graph-up', 'match' => '/admin/stats*'],
             ['href' => '/admin/images', 'label' => 'Images du site', 'icon' => 'bi-image', 'match' => '/admin/images*'],
+            ['href' => '/admin/parametres', 'label' => 'Paramètres', 'icon' => 'bi-sliders', 'match' => '/admin/parametres*'],
             ['href' => '/employe/commandes', 'label' => 'Toutes les commandes', 'icon' => 'bi-list-check', 'match' => '/employe/commandes*'],
             ['href' => '/employe/menus', 'label' => 'Menus et plats', 'icon' => 'bi-journal-text', 'match' => '/employe/menus*'],
             ['href' => '/employe/avis', 'label' => 'Avis', 'icon' => 'bi-star', 'match' => '/employe/avis*'],
