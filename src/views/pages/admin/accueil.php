@@ -112,16 +112,42 @@ $defaultParagraphe = 'Depuis 25 ans, Vite & Gourmand accompagne les particuliers
     </div>
 
     <div class="d-flex gap-2">
-        <button type="submit" class="btn btn-vg">
+        <button type="submit" class="btn btn-vg" id="btn-submit">
             <i class="bi bi-save me-2"></i>Enregistrer tout
         </button>
-        <a href="/admin" class="btn btn-vg-outline">Annuler</a>
+        <a href="/admin/accueil" class="btn btn-vg-outline" id="btn-annuler">Annuler</a>
     </div>
 
 </form>
 
 <script nonce="<?= $cspNonce ?>">
 (function () {
+    var form    = document.querySelector('form');
+    var isDirty = false;
+    var submitted = false;
+
+    function markDirty() { isDirty = true; }
+
+    form.querySelectorAll('input, textarea').forEach(function (el) {
+        el.addEventListener('input', markDirty);
+        el.addEventListener('change', markDirty);
+    });
+
+    form.addEventListener('submit', function () { submitted = true; });
+
+    window.addEventListener('beforeunload', function (e) {
+        if (isDirty && !submitted) {
+            e.preventDefault();
+            e.returnValue = '';
+        }
+    });
+
+    document.getElementById('btn-annuler').addEventListener('click', function (e) {
+        if (isDirty && !confirm('Des modifications non enregistrées seront perdues. Continuer ?')) {
+            e.preventDefault();
+        }
+    });
+
     function bindCounter(inputId, countId) {
         var el  = document.getElementById(inputId);
         var cnt = document.getElementById(countId);
