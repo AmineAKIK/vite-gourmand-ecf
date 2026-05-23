@@ -951,7 +951,8 @@ input[type="password"]::-webkit-caps-lock-indicator {
     transition: background .15s, color .15s, border-color .15s;
 }
 
-.workspace-nav-item:hover {
+.workspace-nav-item:hover,
+.workspace-nav-item:active {
     background: var(--ws-sidebar-hover);
     color: #fff;
 }
