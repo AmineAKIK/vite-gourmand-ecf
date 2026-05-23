@@ -13,7 +13,7 @@
     <script nonce="<?= $cspNonce ?>">(function(){var l=document.getElementById('fonts-preload');if(l){l.onload=function(){this.rel='stylesheet';};}}());</script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" nonce="<?= $cspNonce ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" nonce="<?= $cspNonce ?>">
-    <link rel="stylesheet" href="/css/style.css?v=20260523-23" nonce="<?= $cspNonce ?>">
+    <link rel="stylesheet" href="/css/style.css?v=20260523-24" nonce="<?= $cspNonce ?>">
 </head>
 <body class="workspace-body">
 
@@ -60,6 +60,17 @@
                 <span><?= sanitize($item['label']) ?></span>
             </a>
             <?php endforeach; ?>
+
+            <hr style="border-color:rgba(255,255,255,.1);margin:.5rem 1.25rem;">
+
+            <a href="/" class="workspace-nav-item">
+                <i class="bi bi-box-arrow-up-right workspace-nav-icon"></i>
+                <span>Retour au site</span>
+            </a>
+            <a href="/deconnexion" class="workspace-nav-item workspace-nav-item--danger">
+                <i class="bi bi-box-arrow-right workspace-nav-icon"></i>
+                <span>Déconnexion</span>
+            </a>
         </nav>
 
         <!-- Footer sidebar -->
@@ -67,14 +78,6 @@
             <div class="workspace-user">
                 <i class="bi bi-person-circle workspace-nav-icon"></i>
                 <span><?= sanitize(currentUser()['prenom'] ?? '') ?> <?= sanitize(currentUser()['nom'] ?? '') ?></span>
-            </div>
-            <div class="d-flex gap-2 mt-2">
-                <a href="/" class="workspace-footer-link" title="Voir le site">
-                    <i class="bi bi-box-arrow-up-right"></i> Site
-                </a>
-                <a href="/deconnexion" class="workspace-footer-link text-danger" title="Déconnexion">
-                    <i class="bi bi-box-arrow-right"></i> Quitter
-                </a>
             </div>
         </div>
 
@@ -89,9 +92,6 @@
                 <i class="bi bi-list"></i>
             </button>
             <span class="fw-semibold text-vg">Vite &amp; Gourmand</span>
-            <a href="/deconnexion" class="btn btn-sm btn-outline-danger ms-auto">
-                <i class="bi bi-box-arrow-right"></i>
-            </a>
         </header>
 
         <div class="workspace-content-inner">
