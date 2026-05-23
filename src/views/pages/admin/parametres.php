@@ -5,6 +5,11 @@ $cspNonce  = $GLOBALS['csp_nonce'] ?? '';
 $cfg = function(string $cle, string $default = '') use ($config): string {
     return sanitize($config[$cle] ?? $default);
 };
+
+$reductionSeuil = (float)($config['reduction_seuil'] ?? 100);
+$reductionTaux = (float)($config['reduction_taux'] ?? 10);
+$reductionExampleTotal = max(120, $reductionSeuil);
+$reductionExampleAmount = $reductionExampleTotal * $reductionTaux / 100;
 ?>
 
 <?php partial('partials/page_title_bar', ['icon' => 'bi-sliders', 'title' => 'Paramètres']); ?>
@@ -13,7 +18,7 @@ $cfg = function(string $cle, string $default = '') use ($config): string {
 
     <!-- Frais de livraison -->
     <div class="col-12 col-lg-6">
-        <div class="card shadow-sm h-100">
+        <div class="card shadow-sm">
             <div class="card-header fw-semibold">
                 <i class="bi bi-truck me-2 text-vg"></i>Frais de livraison
             </div>
@@ -71,7 +76,7 @@ $cfg = function(string $cle, string $default = '') use ($config): string {
 
     <!-- Réduction -->
     <div class="col-12 col-lg-6">
-        <div class="card shadow-sm h-100">
+        <div class="card shadow-sm">
             <div class="card-header fw-semibold">
                 <i class="bi bi-percent me-2 text-vg"></i>Réduction automatique
             </div>
@@ -125,8 +130,9 @@ $cfg = function(string $cle, string $default = '') use ($config): string {
                             <i class="bi bi-info-circle me-1 text-vg"></i>
                             Exemple : avec un seuil à <strong id="prev-seuil"><?= $cfg('reduction_seuil', '100.00') ?> €</strong>
                             et un taux de <strong id="prev-taux"><?= $cfg('reduction_taux', '10') ?>%</strong>,
-                            une commande de 120 € bénéficiera d'une réduction de
-                            <strong id="prev-montant"><?= number_format((float)($config['reduction_seuil'] ?? 100) * (float)($config['reduction_taux'] ?? 10) / 100, 2) ?> €</strong>.
+                            une commande de <strong id="prev-commande"><?= number_format($reductionExampleTotal, 2) ?> €</strong>
+                            bénéficiera d'une réduction de
+                            <strong id="prev-montant"><?= number_format($reductionExampleAmount, 2) ?> €</strong>.
                         </small>
                     </div>
 
@@ -146,14 +152,17 @@ $cfg = function(string $cle, string $default = '') use ($config): string {
     var taux  = document.getElementById('reduction_taux');
     var pSeuil   = document.getElementById('prev-seuil');
     var pTaux    = document.getElementById('prev-taux');
+    var pCommande = document.getElementById('prev-commande');
     var pMontant = document.getElementById('prev-montant');
     if (!seuil || !taux || !pSeuil) return;
     function update() {
         var s = parseFloat(seuil.value) || 0;
         var t = parseFloat(taux.value)  || 0;
+        var total = Math.max(120, s);
         pSeuil.textContent   = s.toFixed(2) + ' €';
         pTaux.textContent    = t.toFixed(0) + '%';
-        pMontant.textContent = (s * t / 100).toFixed(2) + ' €';
+        if (pCommande) pCommande.textContent = total.toFixed(2) + ' €';
+        pMontant.textContent = (total * t / 100).toFixed(2) + ' €';
     }
     seuil.addEventListener('input', update);
     taux.addEventListener('input', update);

@@ -347,9 +347,9 @@ function hashPassword(string $password): string {
 
 function deliveryPricingLabel(): string {
     return 'Livraison gratuite à Bordeaux. '
-        . formatPrice(LIVRAISON_BASE)
+        . formatPrice(livraisonBase())
         . ' + '
-        . number_format(LIVRAISON_KM, 2, ',', ' ')
+        . number_format(livraisonKm(), 2, ',', ' ')
         . ' €/km au-delà.';
 }
 
@@ -458,15 +458,49 @@ function distanceKmDepuisBordeaux(string $ville): float {
 function calculPrixLivraison(string $ville): float {
     if (strtolower(trim($ville)) === 'bordeaux') return 0.0;
     $distanceKm = distanceKmDepuisBordeaux($ville);
-    return round(LIVRAISON_BASE + (LIVRAISON_KM * $distanceKm), 2);
+    return round(livraisonBase() + (livraisonKm() * $distanceKm), 2);
 }
 
 function calculPrixMenu(float $prixParPersonne, int $nbPersonnes, int $nbMinimum): float {
     $prix = $prixParPersonne * $nbPersonnes;
-    if (($nbPersonnes - $nbMinimum) >= REDUCTION_SEUIL) {
-        $prix *= (1 - REDUCTION_TAUX);
+    if ($prix >= reductionSeuilMontant()) {
+        $prix *= (1 - (reductionTauxPourcentage() / 100));
     }
     return round($prix, 2);
+}
+
+function siteConfigValue(string $key, string|float|int $default): string {
+    static $config = null;
+
+    if ($config === null) {
+        $config = [];
+        if (class_exists('SiteConfigModel')) {
+            try {
+                $config = SiteConfigModel::getAll();
+            } catch (Throwable $e) {
+                error_log('Configuration site indisponible : ' . $e->getMessage());
+            }
+        }
+    }
+
+    return (string)($config[$key] ?? $default);
+}
+
+function livraisonBase(): float {
+    return max(0.0, (float)siteConfigValue('livraison_base', LIVRAISON_BASE));
+}
+
+function livraisonKm(): float {
+    return max(0.0, (float)siteConfigValue('livraison_km', LIVRAISON_KM));
+}
+
+function reductionSeuilMontant(): float {
+    return max(0.0, (float)siteConfigValue('reduction_seuil', '100.00'));
+}
+
+function reductionTauxPourcentage(): float {
+    $taux = (float)siteConfigValue('reduction_taux', REDUCTION_TAUX * 100);
+    return min(100.0, max(0.0, $taux));
 }
 
 function validatePassword(string $password): bool {

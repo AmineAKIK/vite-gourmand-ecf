@@ -60,7 +60,8 @@ class CommandeService
         if (!$heureObj || $heureObj->format('H:i') !== $payload['heure_livraison']) {
             throw new InvalidArgumentException('Format d\'heure invalide (HH:MM).');
         }
-        if ((int)$heureObj->format('H') < 7 || (int)$heureObj->format('H') > 22) {
+        $minutes = ((int)$heureObj->format('H') * 60) + (int)$heureObj->format('i');
+        if ($minutes < 7 * 60 || $minutes > 22 * 60) {
             throw new InvalidArgumentException('L\'heure de livraison doit être entre 07:00 et 22:00.');
         }
 

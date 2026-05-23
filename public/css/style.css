@@ -637,6 +637,10 @@ a:focus {
     border: 1px solid var(--vg-border);
 }
 
+.btn-reset-filters {
+    white-space: nowrap;
+}
+
 /* Statuts commande */
 .badge-statut {
     padding: .4em .8em;
@@ -652,6 +656,33 @@ a:focus {
 .statut-en_attente_materiel{ background: var(--vg-status-warning-bg); color: var(--vg-status-warning-text); }
 .statut-terminee         { background: var(--vg-status-neutral-bg); color: var(--vg-muted); }
 .statut-annulee          { background: var(--vg-status-danger-bg); color: var(--vg-bordeaux-dark); }
+
+.commandes-accordion .accordion-button {
+    font-family: 'Inter', sans-serif;
+    color: var(--vg-text);
+    line-height: 1.35;
+}
+
+.commandes-accordion .commande-numero {
+    color: #4B5563;
+    font-size: .8rem;
+    font-weight: 600;
+}
+
+.commandes-accordion .commande-client {
+    color: var(--vg-text);
+    font-weight: 700;
+}
+
+.commandes-accordion .commande-menu,
+.commandes-accordion .commande-date {
+    color: var(--vg-muted);
+    font-size: .88rem;
+}
+
+.commandes-accordion .badge-statut {
+    font-family: 'Inter', sans-serif;
+}
 
 /* Formulaires */
 .form-control:focus, .form-select:focus {
@@ -1027,7 +1058,10 @@ input[type="password"]::-webkit-caps-lock-indicator {
 
 /* --- FLASH --- */
 .workspace-flash {
-    margin-left: var(--ws-sidebar-width);
+    margin-left: var(--ws-sidebar-width) !important;
+    width: calc(100% - var(--ws-sidebar-width));
+    position: relative;
+    z-index: 1030;
 }
 
 /* --- TOPBAR MOBILE --- */
@@ -1066,7 +1100,8 @@ input[type="password"]::-webkit-caps-lock-indicator {
         margin-left: 0;
     }
     .workspace-flash {
-        margin-left: 0;
+        margin-left: 0 !important;
+        width: 100%;
     }
     .workspace-content-inner {
         padding: 1.25rem;

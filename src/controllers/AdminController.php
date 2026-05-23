@@ -16,7 +16,7 @@ class AdminController {
         $commandesAujourdhui = array_filter($toutesCommandes, fn($c) => str_starts_with($c['date_commande'] ?? '', $today));
         $commandesSemaine    = array_filter($toutesCommandes, fn($c) => ($c['date_commande'] ?? '') >= $lundiSemaine);
         $caSemaine = array_sum(array_map(
-            fn($c) => in_array($c['statut'], ['confirmee', 'en_preparation', 'livree', 'terminee']) ? (float)($c['prix_total'] ?? 0) : 0,
+            fn($c) => in_array($c['statut'], ['accepte', 'en_preparation', 'en_cours_livraison', 'livre', 'en_attente_materiel', 'terminee'], true) ? (float)($c['prix_total'] ?? 0) : 0,
             $commandesSemaine
         ));
 
@@ -92,6 +92,11 @@ class AdminController {
         view('pages/admin/accueil', compact('images', 'config'));
     }
 
+    public function images(): void {
+        $images = SiteImageModel::getAll();
+        view('pages/admin/images', compact('images'));
+    }
+
     public function updateAccueil(): void {
         verifyCsrf();
 
@@ -131,6 +136,28 @@ class AdminController {
         redirect('/admin/accueil');
     }
 
+    public function updateImages(): void {
+        verifyCsrf();
+
+        foreach (['hero', 'preparation'] as $cle) {
+            $file = $_FILES[$cle] ?? null;
+            if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
+                continue;
+            }
+
+            $url = MenuAdminService::uploadSiteImage($file, 'site/' . $cle);
+            if (!$url) {
+                flash('error', 'Erreur lors de l\'upload de l\'image "' . $cle . '".');
+                redirect('/admin/images');
+            }
+
+            SiteImageModel::set($cle, $url);
+        }
+
+        flash('success', 'Images du site mises à jour.');
+        redirect('/admin/images');
+    }
+
     public function parametres(): void {
         $config = SiteConfigModel::getAll();
         view('pages/admin/parametres', compact('config'));
@@ -150,10 +177,19 @@ class AdminController {
 
         foreach ($fields as $cle => $rules) {
             $raw = trim($_POST[$cle] ?? '');
+            $label = match ($cle) {
+                'hero_sous_titre' => 'Le sous-titre',
+                'hero_paragraphe' => 'Le paragraphe',
+                'livraison_base' => 'Les frais fixes de livraison',
+                'livraison_km' => 'Le tarif au km',
+                'reduction_seuil' => 'Le seuil de réduction',
+                'reduction_taux' => 'Le taux de réduction',
+                default => 'La valeur',
+            };
 
             if ($rules['type'] === 'string') {
-                if (strlen($raw) > $rules['max']) {
-                    flash('error', 'Le sous-titre ne peut pas dépasser ' . $rules['max'] . ' caractères.');
+                if (mb_strlen($raw) > $rules['max']) {
+                    flash('error', $label . ' ne peut pas dépasser ' . $rules['max'] . ' caractères.');
                     redirect('/admin/parametres');
                 }
                 SiteConfigModel::set($cle, $raw);
@@ -162,7 +198,7 @@ class AdminController {
 
             if ($rules['type'] === 'decimal') {
                 if (!is_numeric($raw) || (float)$raw < 0) {
-                    flash('error', 'Valeur invalide pour "' . $cle . '".');
+                    flash('error', $label . ' est invalide.');
                     redirect('/admin/parametres');
                 }
                 SiteConfigModel::set($cle, number_format((float)$raw, 2, '.', ''));

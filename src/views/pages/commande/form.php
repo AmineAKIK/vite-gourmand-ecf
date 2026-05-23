@@ -56,7 +56,7 @@
                     </div>
                     <div class="col-md-6">
                         <label for="heure_livraison" class="form-label">Heure souhaitée <span class="text-danger">*</span></label>
-                        <input type="time" class="form-control" id="heure_livraison" name="heure_livraison" required>
+                        <input type="time" class="form-control" id="heure_livraison" name="heure_livraison" min="07:00" max="22:00" required>
                     </div>
                 </div>
             </div>
@@ -124,8 +124,8 @@ const conditionsTexte = document.getElementById('conditions-texte');
 const hintMin       = document.getElementById('hint-min');
 const recapDiv      = document.getElementById('recap-prix');
 const submitBtn     = document.querySelector('#form-commande button[type="submit"]');
-const reductionSeuil = <?= (int)REDUCTION_SEUIL ?>;
-const reductionTaux = <?= json_encode((float)REDUCTION_TAUX) ?>;
+const reductionSeuil = <?= json_encode(reductionSeuilMontant()) ?>;
+const reductionTaux = <?= json_encode(reductionTauxPourcentage() / 100) ?>;
 let recapRequestId  = 0;
 
 async function updateRecap() {
@@ -159,7 +159,7 @@ async function updateRecap() {
     }
 
     let prixMenu = prixParPers * nb;
-    if ((nb - min) >= reductionSeuil) prixMenu *= (1 - reductionTaux);
+    if (prixMenu >= reductionSeuil) prixMenu *= (1 - reductionTaux);
 
     const ville = villeInput.value.trim().toLowerCase();
     recapDiv.style.removeProperty('display');
