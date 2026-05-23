@@ -93,7 +93,7 @@
 
         <!-- Navbar mobile (< lg) -->
         <nav class="d-lg-none navbar navbar-expand-lg navbar-dark bg-vg sticky-top" aria-label="Navigation back-office mobile">
-            <div class="container-fluid">
+            <div class="container">
                 <span class="navbar-brand fw-bold mb-0">Vite &amp; Gourmand</span>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#workspaceMobileNav" aria-controls="workspaceMobileNav" aria-expanded="false" aria-label="Ouvrir le menu">
                     <span class="navbar-toggler-icon"></span>
