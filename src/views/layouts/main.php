@@ -56,27 +56,13 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
             </ul>
             <ul class="navbar-nav ms-auto">
                 <?php if (isAuth()): ?>
-                    <li class="nav-item dropdown">
-                        <a
-                            class="nav-link dropdown-toggle <?= $workspaceActive ? 'active' : '' ?>"
-                            href="#"
-                            role="button"
-                            data-bs-toggle="dropdown"
-                            <?= $roleHomeIsCurrent ? 'aria-current="page"' : '' ?>
-                        >
+                    <li class="nav-item">
+                        <a class="nav-link <?= $workspaceActive ? 'active' : '' ?>" href="<?= sanitize(roleHomePath()) ?>" <?= $roleHomeIsCurrent ? 'aria-current="page"' : '' ?>>
                             <?= sanitize(roleHomeLabel()) ?>
                         </a>
-                        <ul class="dropdown-menu dropdown-menu-end">
-                            <?php if (!hasRole(ROLE_ADMIN) && !hasRole(ROLE_EMPLOYE)): ?>
-                            <li>
-                                <a class="dropdown-item <?= routeIsActive('/mon-compte') ? 'active' : '' ?>" href="/mon-compte">
-                                    Mon compte
-                                </a>
-                            </li>
-                            <li><hr class="dropdown-divider"></li>
-                            <?php endif; ?>
-                            <li><a class="dropdown-item text-danger" href="/deconnexion">Déconnexion</a></li>
-                        </ul>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-danger" href="/deconnexion">Déconnexion</a>
                     </li>
                 <?php else: ?>
                     <li class="nav-item">
