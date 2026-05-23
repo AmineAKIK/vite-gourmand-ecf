@@ -131,10 +131,17 @@ class MenuAdminService
 
     private static function cloudinaryEnabled(): bool
     {
-        return self::env('CLOUDINARY_CLOUD_NAME') !== ''
-            && self::env('CLOUDINARY_API_KEY') !== ''
-            && self::env('CLOUDINARY_API_SECRET') !== ''
-            && class_exists(\Cloudinary\Configuration\Configuration::class);
+        if (self::env('CLOUDINARY_CLOUD_NAME') === ''
+            || self::env('CLOUDINARY_API_KEY') === ''
+            || self::env('CLOUDINARY_API_SECRET') === '') {
+            error_log('[Cloudinary] Variables manquantes — upload local utilisé');
+            return false;
+        }
+        if (!class_exists('Cloudinary\Configuration\Configuration')) {
+            error_log('[Cloudinary] SDK non installé — upload local utilisé');
+            return false;
+        }
+        return true;
     }
 
     private static function cloudinaryConfig(): void
@@ -176,9 +183,11 @@ class MenuAdminService
                 'width'         => 1200,
                 'crop'          => 'limit',
             ]);
-            return $result['secure_url'] ?? null;
+            $url = $result['secure_url'] ?? null;
+            error_log('[Cloudinary] Upload OK : ' . ($url ?? 'null'));
+            return $url;
         } catch (\Throwable $e) {
-            error_log('[Cloudinary] Upload failed: ' . $e->getMessage());
+            error_log('[Cloudinary] Upload FAILED : ' . get_class($e) . ' — ' . $e->getMessage());
             return null;
         }
     }
