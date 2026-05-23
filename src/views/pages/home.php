@@ -81,7 +81,7 @@ $preloadImages = ['/images/hero-traiteur-bordeaux.webp'];
         <div class="row g-4">
             <?php foreach ($avisValides as $avis): ?>
             <div class="col-md-4">
-                <article class="card h-100 border-0 shadow-sm p-3">
+                <article class="card h-100 border-0 shadow-sm p-3" style="background:var(--vg-creme);">
                     <div class="card-body">
                         <div class="stars mb-2" aria-label="Note : <?= (int)$avis['note'] ?> sur 5">
                             <?= str_repeat('★', (int)$avis['note']) . str_repeat('☆', 5 - (int)$avis['note']) ?>
