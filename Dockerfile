@@ -18,4 +18,4 @@ COPY . .
 ENV COMPOSER_ALLOW_SUPERUSER=1
 RUN composer install --no-dev --optimize-autoloader --no-interaction
 
-CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8080} -t public"]
+CMD ["sh", "-c", "php -d upload_max_filesize=20M -d post_max_size=25M -d memory_limit=128M -S 0.0.0.0:${PORT:-8080} -t public"]
