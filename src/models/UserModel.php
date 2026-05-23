@@ -99,6 +99,19 @@ class UserModel {
     public static function delete(int $id): void {
         $db = Database::getConnection();
         $db->prepare("DELETE FROM password_reset WHERE utilisateur_id=?")->execute([$id]);
-        $db->prepare("DELETE FROM utilisateur WHERE utilisateur_id=?")->execute([$id]);
+
+        $stmt = $db->prepare("SELECT 1 FROM commande WHERE utilisateur_id=? LIMIT 1");
+        $stmt->execute([$id]);
+        if ($stmt->fetch()) {
+            // Le client a des commandes : anonymise les données personnelles (contrainte FK + comptabilité)
+            $db->prepare("
+                UPDATE utilisateur
+                SET email=?, password='*', prenom='Compte', nom='supprimé',
+                    telephone=NULL, adresse=NULL, ville=NULL, code_postal=NULL, actif=0
+                WHERE utilisateur_id=?
+            ")->execute(['compte-supprime-' . $id . '@supprime.invalid', $id]);
+        } else {
+            $db->prepare("DELETE FROM utilisateur WHERE utilisateur_id=?")->execute([$id]);
+        }
     }
 }
