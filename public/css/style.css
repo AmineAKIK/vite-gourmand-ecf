@@ -866,7 +866,7 @@ input[type="password"]::-webkit-caps-lock-indicator {
     --ws-sidebar-width: 240px;
     --ws-sidebar-bg: var(--vg-bordeaux);
     --ws-sidebar-hover: rgba(255,255,255,.1);
-    --ws-sidebar-active: rgba(0,0,0,.2);
+    --ws-sidebar-active: rgba(255,255,255,.1);
     --ws-sidebar-active-border: #fff;
     --ws-topbar-height: 56px;
 }
