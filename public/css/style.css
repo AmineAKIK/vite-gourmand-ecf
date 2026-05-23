@@ -36,8 +36,9 @@
     --bs-warning-rgb: 212, 168, 67;
     --bs-danger: var(--vg-bordeaux-dark);
     --bs-danger-rgb: 107, 18, 33;
+    --vg-input-bg: #FEFAF3;
     --bs-body-color: var(--vg-text);
-    --bs-body-bg: #fff;
+    --bs-body-bg: var(--vg-creme-soft);
     --bs-link-color: var(--vg-bordeaux);
     --bs-link-hover-color: var(--vg-bordeaux-dark);
 }
@@ -326,6 +327,7 @@ a:focus {
 .card {
     border-color: var(--vg-border);
     box-shadow: var(--vg-shadow);
+    background-color: var(--vg-card);
 }
 
 .table-light th,
@@ -763,7 +765,7 @@ input[type="password"]::-webkit-caps-lock-indicator {
 /* Inputs dans modals et partout */
 .form-control,
 .form-select {
-    background-color: #fff;
+    background-color: var(--vg-input-bg);
     border-color: rgba(139,26,43,0.2);
     color: var(--vg-text);
 }
@@ -771,7 +773,7 @@ input[type="password"]::-webkit-caps-lock-indicator {
 .form-select:focus {
     border-color: var(--vg-bordeaux);
     box-shadow: 0 0 0 0.2rem rgba(139,26,43,0.12);
-    background-color: #fff;
+    background-color: var(--vg-input-bg);
 }
 .form-label {
     color: var(--vg-text);
