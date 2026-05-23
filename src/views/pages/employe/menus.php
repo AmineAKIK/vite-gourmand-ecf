@@ -420,7 +420,7 @@ foreach ($plats as $plat) {
                             <div class="d-flex flex-wrap gap-2 mt-2">
                                 <?php foreach ($imagesMenu as $img): ?>
                                 <div class="d-flex align-items-center gap-1">
-                                    <img src="/<?= sanitize($img['chemin']) ?>"
+                                    <img src="<?= sanitize(imageUrl($img['chemin'])) ?>"
                                          width="50" height="50"
                                          style="object-fit:cover;border-radius:4px"
                                          alt="Image menu">
@@ -429,7 +429,7 @@ foreach ($plats as $plat) {
                                         <input type="hidden" name="image_id" value="<?= (int)$img['image_id'] ?>">
                                         <button type="submit" class="btn btn-sm btn-outline-danger p-0 px-1"
                                                 aria-label="Supprimer cette image"
-                                                onclick="return confirm('Supprimer cette image ?')">
+                                                data-confirm="Supprimer cette image ?">
                                             <i class="bi bi-x"></i>
                                         </button>
                                     </form>

@@ -31,7 +31,7 @@
                                 <td>
                                     <?php if (commandeCanClientModify($cmd)): ?>
                                         <button class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal" data-bs-target="#modifModal<?= (int)$cmd['commande_id'] ?>">Modifier</button>
-                                        <form method="POST" action="/commande/annuler" class="d-inline" onsubmit="return confirm('Confirmer l\'annulation ?')">
+                                        <form method="POST" action="/commande/annuler" class="d-inline" data-confirm="Confirmer l'annulation ?">
                                             <?= csrfField() ?>
                                             <input type="hidden" name="commande_id" value="<?= (int)$cmd['commande_id'] ?>">
                                             <button type="submit" class="btn btn-sm btn-outline-danger">Annuler</button>

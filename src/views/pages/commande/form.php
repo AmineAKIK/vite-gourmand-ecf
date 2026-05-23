@@ -115,7 +115,7 @@
     </form>
 </div>
 
-<script>
+<script nonce="<?= cspNonce() ?>">
 const menuSelect    = document.getElementById('menu_id');
 const nbPersonnes   = document.getElementById('nombre_personne');
 const villeInput    = document.getElementById('ville_livraison');

@@ -77,19 +77,21 @@ class MenuAdminService
             return;
         }
 
-        self::ensureUploadDirectory();
         $order = $startOrder;
 
         foreach (($files['tmp_name'] ?? []) as $index => $tmpName) {
             $file = [
-                'name' => $files['name'][$index] ?? '',
-                'type' => $files['type'][$index] ?? '',
+                'name'     => $files['name'][$index]  ?? '',
+                'type'     => $files['type'][$index]   ?? '',
                 'tmp_name' => $tmpName,
-                'error' => $files['error'][$index] ?? UPLOAD_ERR_NO_FILE,
-                'size' => $files['size'][$index] ?? 0,
+                'error'    => $files['error'][$index]  ?? UPLOAD_ERR_NO_FILE,
+                'size'     => $files['size'][$index]   ?? 0,
             ];
 
-            $path = self::storeUploadedImage($file, 'menu_' . $menuId);
+            $path = self::cloudinaryEnabled()
+                ? self::storeOnCloudinary($file, 'menus/menu_' . $menuId)
+                : self::storeUploadedImage($file, 'menu_' . $menuId);
+
             if ($path) {
                 MenuModel::addMenuImage($menuId, $path, $order++);
             }
@@ -98,16 +100,94 @@ class MenuAdminService
 
     public static function deleteMenuImageFile(int $imageId): void
     {
-        $relativePath = MenuModel::getMenuImagePath($imageId);
-        if ($relativePath) {
-            if (!str_starts_with($relativePath, 'uploads/')) {
-                return;
-            }
-            $absolutePath = self::publicPath($relativePath);
+        $path = MenuModel::getMenuImagePath($imageId);
+        if (!$path) {
+            return;
+        }
+
+        // URL Cloudinary : supprimer via l'API
+        if (str_starts_with($path, 'https://res.cloudinary.com/')) {
+            self::deleteFromCloudinary($path);
+            MenuModel::deleteMenuImage($imageId);
+            return;
+        }
+
+        // Fichier local
+        if (str_starts_with($path, 'uploads/')) {
+            $absolutePath = self::publicPath($path);
             if (is_file($absolutePath)) {
                 unlink($absolutePath);
             }
-            MenuModel::deleteMenuImage($imageId);
+        }
+
+        MenuModel::deleteMenuImage($imageId);
+    }
+
+    private static function cloudinaryEnabled(): bool
+    {
+        return !empty($_ENV['CLOUDINARY_CLOUD_NAME'])
+            && !empty($_ENV['CLOUDINARY_API_KEY'])
+            && !empty($_ENV['CLOUDINARY_API_SECRET']);
+    }
+
+    private static function cloudinaryConfig(): void
+    {
+        \Cloudinary\Configuration\Configuration::instance([
+            'cloud' => [
+                'cloud_name' => $_ENV['CLOUDINARY_CLOUD_NAME'],
+                'api_key'    => $_ENV['CLOUDINARY_API_KEY'],
+                'api_secret' => $_ENV['CLOUDINARY_API_SECRET'],
+            ],
+            'url' => ['secure' => true],
+        ]);
+    }
+
+    private static function storeOnCloudinary(array $file, string $folder): ?string
+    {
+        if (($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK) {
+            return null;
+        }
+        if ((int)($file['size'] ?? 0) > self::UPLOAD_MAX_BYTES) {
+            return null;
+        }
+        $tmpName = $file['tmp_name'] ?? '';
+        if (!$tmpName || !file_exists($tmpName)) {
+            return null;
+        }
+        $mime = self::imageMimeType($tmpName);
+        if (!isset(self::ALLOWED_MIME_EXTENSIONS[$mime])) {
+            return null;
+        }
+
+        try {
+            self::cloudinaryConfig();
+            $result = (new \Cloudinary\Api\Upload\UploadApi())->upload($tmpName, [
+                'folder'        => $folder,
+                'resource_type' => 'image',
+                'format'        => 'webp',
+                'quality'       => 'auto',
+                'width'         => 1200,
+                'crop'          => 'limit',
+            ]);
+            return $result['secure_url'] ?? null;
+        } catch (\Throwable $e) {
+            error_log('[Cloudinary] Upload failed: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    private static function deleteFromCloudinary(string $url): void
+    {
+        // Extraire le public_id depuis l'URL Cloudinary
+        // Format : https://res.cloudinary.com/{cloud}/image/upload/v{version}/{folder}/{public_id}.{ext}
+        if (!preg_match('#/upload/(?:v\d+/)?(.+)\.[a-z]+$#i', $url, $m)) {
+            return;
+        }
+        try {
+            self::cloudinaryConfig();
+            (new \Cloudinary\Api\Upload\UploadApi())->destroy($m[1]);
+        } catch (\Throwable $e) {
+            error_log('[Cloudinary] Delete failed: ' . $e->getMessage());
         }
     }
 
@@ -150,6 +230,8 @@ class MenuAdminService
         if (!$extension) {
             return null;
         }
+
+        self::ensureUploadDirectory();
 
         $filename = $prefix . '_' . bin2hex(random_bytes(8)) . '.' . $extension;
         $relativePath = 'uploads/' . $filename;

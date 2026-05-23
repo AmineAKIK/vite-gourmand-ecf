@@ -9,3 +9,6 @@
 .vscode/
 .DS_Store
 Thumbs.db
+
+# Données sensibles — ne jamais commiter
+sql/seed_admin.sql

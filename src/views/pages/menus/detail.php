@@ -18,7 +18,7 @@
                 <div class="carousel-inner">
                     <?php foreach ($menu['images'] as $i => $img): ?>
                         <div class="carousel-item <?= $i === 0 ? 'active' : '' ?>">
-                            <img src="/<?= sanitize($img['chemin']) ?>" class="d-block w-100" style="height:350px;object-fit:cover" alt="Photo du menu <?= sanitize($menu['titre']) ?>">
+                            <img src="<?= sanitize(imageUrl($img['chemin'])) ?>" class="d-block w-100" style="height:350px;object-fit:cover" alt="Photo du menu <?= sanitize($menu['titre']) ?>">
                         </div>
                     <?php endforeach; ?>
                 </div>

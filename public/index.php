@@ -1,14 +1,45 @@
 <?php
 // public/index.php - Point d'entrée unique
 
-session_start();
 require_once __DIR__ . '/../src/config/config.php';
+
+session_set_cookie_params([
+    'lifetime' => 0,
+    'path'     => '/',
+    'domain'   => '',
+    'secure'   => (APP_ENV !== 'development'),
+    'httponly' => true,
+    'samesite' => 'Lax',
+]);
+session_start();
+
+// Timeout d'inactivité 30 minutes
+$_maxIdle = 1800;
+if (isset($_SESSION['last_activity']) && (time() - $_SESSION['last_activity']) > $_maxIdle) {
+    session_unset();
+    session_destroy();
+    session_start();
+}
+$_SESSION['last_activity'] = time();
+unset($_maxIdle);
+
+// Nonce CSP — généré par requête, transmis aux vues via $GLOBALS
+$GLOBALS['csp_nonce'] = base64_encode(random_bytes(16));
 
 // Headers de sécurité
 header('X-Content-Type-Options: nosniff');
 header('X-Frame-Options: SAMEORIGIN');
 header('Referrer-Policy: strict-origin-when-cross-origin');
 header('X-XSS-Protection: 1; mode=block');
+header("Content-Security-Policy: "
+    . "default-src 'self'; "
+    . "script-src 'self' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com 'nonce-" . $GLOBALS['csp_nonce'] . "'; "
+    . "style-src 'self' https://cdn.jsdelivr.net https://fonts.googleapis.com 'nonce-" . $GLOBALS['csp_nonce'] . "'; "
+    . "font-src 'self' https://fonts.gstatic.com https://cdn.jsdelivr.net data:; "
+    . "img-src 'self' data: https:; "
+    . "connect-src 'self'; "
+    . "frame-ancestors 'none';"
+);
 require_once __DIR__ . '/../src/config/Database.php';
 require_once __DIR__ . '/../src/helpers.php';
 
@@ -26,6 +57,19 @@ spl_autoload_register(function($class) {
 
 $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri    = rtrim($uri, '/') ?: '/';
+
+// Healthcheck — réponse avant tout dispatch applicatif
+if ($uri === '/health') {
+    header('Content-Type: application/json; charset=UTF-8');
+    try {
+        Database::getConnection()->query('SELECT 1');
+        echo json_encode(['status' => 'ok', 'db' => 'ok', 'ts' => time()]);
+    } catch (\Throwable) {
+        http_response_code(503);
+        echo json_encode(['status' => 'error', 'db' => 'down', 'ts' => time()]);
+    }
+    exit;
+}
 $method = $_SERVER['REQUEST_METHOD'];
 
 $routes = [

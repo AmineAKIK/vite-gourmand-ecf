@@ -1,5 +1,5 @@
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" crossorigin="anonymous"></script>
-<script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" crossorigin="anonymous" nonce="<?= cspNonce() ?>"></script>
+<script nonce="<?= cspNonce() ?>">
 (function () {
     var ctx = document.getElementById(<?= json_encode($chartId ?? '') ?>);
     if (!ctx) return;

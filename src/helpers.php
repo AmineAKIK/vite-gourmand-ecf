@@ -141,6 +141,21 @@ function workspaceNavItems(): array {
     return [];
 }
 
+function cspNonce(): string {
+    return $GLOBALS['csp_nonce'] ?? '';
+}
+
+function imageUrl(?string $path, string $fallback = 'images/menu-placeholder.webp'): string {
+    if (!$path) {
+        return '/' . $fallback;
+    }
+    // URL Cloudinary ou externe : retourner telle quelle
+    if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
+        return $path;
+    }
+    return '/' . ltrim($path, '/');
+}
+
 function sanitize(?string $val): string {
     return htmlspecialchars(trim($val ?? ''), ENT_QUOTES, 'UTF-8');
 }

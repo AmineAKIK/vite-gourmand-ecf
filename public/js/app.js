@@ -45,8 +45,17 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 4000);
     });
 
-    /* Confirmation avant soumission des formulaires sensibles */
-    document.querySelectorAll('form.form-confirm').forEach(function (form) {
+    /* Confirmation avant soumission — via data-confirm sur <form> ou <button>/<a> */
+    document.querySelectorAll('[data-confirm]').forEach(function (el) {
+        var event = (el.tagName === 'FORM') ? 'submit' : 'click';
+        el.addEventListener(event, function (e) {
+            if (!confirm(el.dataset.confirm || 'Êtes-vous sûr ?')) {
+                e.preventDefault();
+            }
+        });
+    });
+    // Rétro-compatibilité : class form-confirm sans message personnalisé
+    document.querySelectorAll('form.form-confirm:not([data-confirm])').forEach(function (form) {
         form.addEventListener('submit', function (e) {
             if (!confirm('Êtes-vous sûr de vouloir effectuer cette action ?')) {
                 e.preventDefault();

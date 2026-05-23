@@ -56,7 +56,7 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
         <div class="col-md-4" role="listitem">
             <article class="card card-menu h-100">
                 <img
-                    src="/<?= sanitize($menu['image_principale'] ?: 'images/menu-placeholder.webp') ?>"
+                    src="<?= sanitize(imageUrl($menu['image_principale'] ?: null)) ?>"
                     class="card-img-top"
                     alt="Illustration du menu <?= sanitize($menu['titre']) ?>"
                     loading="lazy"
@@ -101,7 +101,7 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
     </div>
 </div>
 
-<script>
+<script nonce="<?= cspNonce() ?>">
 // Filtres dynamiques sans rechargement de page
 function esc(str) {
     const d = document.createElement('div');
@@ -151,7 +151,7 @@ function fetchMenus() {
             <div class="col-md-4" role="listitem">
                 <article class="card card-menu h-100">
                     <img
-                        src="/${esc(m.image_principale || 'images/menu-placeholder.webp')}"
+                        src="${(m.image_principale && (m.image_principale.startsWith('http://') || m.image_principale.startsWith('https://'))) ? esc(m.image_principale) : '/' + esc(m.image_principale || 'images/menu-placeholder.webp')}"
                         class="card-img-top"
                         alt="Illustration du menu ${esc(m.titre)}"
                         loading="lazy"

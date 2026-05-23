@@ -27,6 +27,7 @@ class AuthController {
             redirect('/connexion');
         }
 
+        session_regenerate_id(true);
         $_SESSION['user'] = [
             'id'     => $user['utilisateur_id'],
             'email'  => $user['email'],
@@ -34,6 +35,7 @@ class AuthController {
             'nom'    => $user['nom'],
             'role'   => $user['role_libelle'],
         ];
+        $_SESSION['last_activity'] = time();
 
         $redirect = $_SESSION['redirect_after_login'] ?? roleHomePath($user['role_libelle']);
         unset($_SESSION['redirect_after_login']);

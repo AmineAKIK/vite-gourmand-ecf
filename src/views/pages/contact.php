@@ -88,7 +88,7 @@ $pageTitle = 'Contact - Vite & Gourmand';
     </div>
 </div>
 
-<script>
+<script nonce="<?= cspNonce() ?>">
 /* Compteur de caractères textarea */
 const textarea  = document.getElementById('description');
 const compteur  = document.getElementById('compteur');
