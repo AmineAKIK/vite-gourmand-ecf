@@ -265,4 +265,33 @@ class EmployeController
         flash('success', 'Horaires mis à jour.');
         redirect('/employe/horaires');
     }
+
+    public function changePasswordForm(): void
+    {
+        view('pages/employe/change_password');
+    }
+
+    public function changePassword(): void
+    {
+        verifyCsrf();
+        $user     = currentUser();
+        $password = $_POST['password'] ?? '';
+        $confirm  = $_POST['password_confirm'] ?? '';
+
+        if ($password !== $confirm) {
+            flash('error', 'Les mots de passe ne correspondent pas.');
+            redirect('/employe/changer-mot-de-passe');
+        }
+        if (!validatePassword($password)) {
+            flash('error', passwordPolicyMessage());
+            redirect('/employe/changer-mot-de-passe');
+        }
+
+        UserModel::updatePassword($user['id'], hashPassword($password));
+        UserModel::clearMustChangePassword($user['id']);
+        $_SESSION['user']['must_change_password'] = false;
+
+        flash('success', 'Mot de passe mis à jour. Bienvenue !');
+        redirect('/employe');
+    }
 }

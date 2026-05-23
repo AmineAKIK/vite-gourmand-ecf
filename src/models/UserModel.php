@@ -44,11 +44,16 @@ class UserModel {
     public static function createEmploye(string $email, string $password, string $prenom, string $nom): int {
         $db   = Database::getConnection();
         $stmt = $db->prepare("
-            INSERT INTO utilisateur (email, password, prenom, nom, role_id, actif)
-            VALUES (?, ?, ?, ?, ?, 1)
+            INSERT INTO utilisateur (email, password, prenom, nom, role_id, actif, must_change_password)
+            VALUES (?, ?, ?, ?, ?, 1, 1)
         ");
         $stmt->execute([$email, $password, $prenom, $nom, ROLE_ID_EMPLOYE]);
         return (int)$db->lastInsertId();
+    }
+
+    public static function clearMustChangePassword(int $id): void {
+        $db = Database::getConnection();
+        $db->prepare("UPDATE utilisateur SET must_change_password=0 WHERE utilisateur_id=?")->execute([$id]);
     }
 
     public static function update(int $id, array $data): void {

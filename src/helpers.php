@@ -14,6 +14,11 @@ function requireRole(array $roles): void {
         http_response_code(403);
         die(view('pages/403'));
     }
+    if (!empty($_SESSION['user']['must_change_password'])
+        && $_SERVER['REQUEST_URI'] !== '/employe/changer-mot-de-passe'
+    ) {
+        redirect('/employe/changer-mot-de-passe');
+    }
 }
 
 function isAuth(): bool {
@@ -33,8 +38,9 @@ function isEmployeOrAdmin(): bool {
 }
 
 function view(string $template, array $data = []): void {
-    $isWorkspace = str_starts_with($template, 'pages/admin/')
-               || str_starts_with($template, 'pages/employe/');
+    $isWorkspace = (str_starts_with($template, 'pages/admin/')
+               || str_starts_with($template, 'pages/employe/'))
+               && $template !== 'pages/employe/change_password';
 
     if (!$isWorkspace && !array_key_exists('siteHoraires', $data) && class_exists('HoraireModel')) {
         $data['siteHoraires'] = HoraireModel::getAll();

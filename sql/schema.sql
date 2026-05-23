@@ -52,6 +52,7 @@ CREATE TABLE utilisateur (
     pays VARCHAR(100) DEFAULT 'France',
     role_id INT NOT NULL DEFAULT 1,
     actif BOOLEAN DEFAULT TRUE,
+    must_change_password TINYINT(1) NOT NULL DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (role_id) REFERENCES role(role_id)
 );

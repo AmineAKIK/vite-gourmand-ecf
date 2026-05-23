@@ -29,13 +29,18 @@ class AuthController {
 
         session_regenerate_id(true);
         $_SESSION['user'] = [
-            'id'     => $user['utilisateur_id'],
-            'email'  => $user['email'],
-            'prenom' => $user['prenom'],
-            'nom'    => $user['nom'],
-            'role'   => $user['role_libelle'],
+            'id'                  => $user['utilisateur_id'],
+            'email'               => $user['email'],
+            'prenom'              => $user['prenom'],
+            'nom'                 => $user['nom'],
+            'role'                => $user['role_libelle'],
+            'must_change_password'=> !empty($user['must_change_password']),
         ];
         $_SESSION['last_activity'] = time();
+
+        if (!empty($user['must_change_password'])) {
+            redirect('/employe/changer-mot-de-passe');
+        }
 
         $redirect = $_SESSION['redirect_after_login'] ?? roleHomePath($user['role_libelle']);
         unset($_SESSION['redirect_after_login']);
