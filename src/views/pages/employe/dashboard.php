@@ -12,12 +12,12 @@
     <div class="row g-3 mb-4">
         <?php if ($nbAttente > 0): ?>
         <div class="col-12 col-md-6">
-            <div class="alert alert-warning d-flex align-items-center justify-content-between mb-0 shadow-sm">
+            <div class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0 shadow-sm">
                 <div>
                     <i class="bi bi-exclamation-circle me-2"></i>
                     <strong><?= $nbAttente ?> commande<?= $nbAttente > 1 ? 's' : '' ?></strong> en attente de confirmation
                 </div>
-                <a href="/employe/commandes?statut=en_attente" class="btn btn-sm btn-vg ms-3">
+                <a href="/employe/commandes?statut=en_attente" class="btn btn-sm btn-vg">
                     <i class="bi bi-arrow-right me-1"></i>Traiter
                 </a>
             </div>
@@ -25,12 +25,12 @@
         <?php endif; ?>
         <?php if ($nbAvis > 0): ?>
         <div class="col-12 col-md-6">
-            <div class="alert alert-info d-flex align-items-center justify-content-between mb-0 shadow-sm">
+            <div class="alert alert-info d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0 shadow-sm">
                 <div>
                     <i class="bi bi-star me-2"></i>
                     <strong><?= $nbAvis ?> avis</strong> en attente de validation
                 </div>
-                <a href="/employe/avis" class="btn btn-sm btn-vg ms-3">
+                <a href="/employe/avis" class="btn btn-sm btn-vg">
                     <i class="bi bi-arrow-right me-1"></i>Valider
                 </a>
             </div>

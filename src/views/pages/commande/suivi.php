@@ -22,35 +22,13 @@ $pageTitle = 'Suivi de commande #' . sanitize($commande['numero_commande'] ?? ''
                     <i class="bi bi-receipt me-2"></i>Récapitulatif
                 </div>
                 <div class="card-body">
-                    <dl class="row mb-0">
-                        <dt class="col-sm-5">Menu</dt>
-                        <dd class="col-sm-7"><?= sanitize($commande['menu_titre'] ?? '') ?></dd>
-
-                        <dt class="col-sm-5">Date prestation</dt>
-                        <dd class="col-sm-7">
-                            <?= sanitize(formatDateFr($commande['date_prestation'] ?? null)) ?>
-                        </dd>
-
-                        <dt class="col-sm-5">Adresse</dt>
-                        <dd class="col-sm-7">
-                            <?= sanitize($commande['adresse_livraison'] ?? '') ?>
-                            <?php if (!empty($commande['ville_livraison'])): ?>
-                                — <?= sanitize($commande['ville_livraison']) ?>
-                            <?php endif; ?>
-                        </dd>
-
-                        <dt class="col-sm-5">Personnes</dt>
-                        <dd class="col-sm-7"><?= (int)($commande['nombre_personne'] ?? 0) ?></dd>
-
-                        <dt class="col-sm-5">Prix total</dt>
-                        <dd class="col-sm-7">
-                            <span class="prix-tag"><?= sanitize(formatPrice($commande['prix_total'] ?? 0)) ?></span>
-                        </dd>
-
-                        <dt class="col-sm-5">Statut actuel</dt>
-                        <dd class="col-sm-7">
-                            <?= commandeStatusBadge($commande['statut'] ?? null) ?>
-                        </dd>
+                    <dl class="mb-0 small">
+                        <div class="d-flex gap-2 mb-2"><dt class="text-muted fw-normal" style="min-width:110px;flex-shrink:0;">Menu</dt><dd class="mb-0 fw-medium"><?= sanitize($commande['menu_titre'] ?? '') ?></dd></div>
+                        <div class="d-flex gap-2 mb-2"><dt class="text-muted fw-normal" style="min-width:110px;flex-shrink:0;">Date prestation</dt><dd class="mb-0"><?= sanitize(formatDateFr($commande['date_prestation'] ?? null)) ?></dd></div>
+                        <div class="d-flex gap-2 mb-2"><dt class="text-muted fw-normal" style="min-width:110px;flex-shrink:0;">Adresse</dt><dd class="mb-0"><?= sanitize($commande['adresse_livraison'] ?? '') ?><?php if (!empty($commande['ville_livraison'])): ?> — <?= sanitize($commande['ville_livraison']) ?><?php endif; ?></dd></div>
+                        <div class="d-flex gap-2 mb-2"><dt class="text-muted fw-normal" style="min-width:110px;flex-shrink:0;">Personnes</dt><dd class="mb-0"><?= (int)($commande['nombre_personne'] ?? 0) ?></dd></div>
+                        <div class="d-flex gap-2 mb-2"><dt class="text-muted fw-normal" style="min-width:110px;flex-shrink:0;">Prix total</dt><dd class="mb-0"><span class="prix-tag"><?= sanitize(formatPrice($commande['prix_total'] ?? 0)) ?></span></dd></div>
+                        <div class="d-flex gap-2 mb-0"><dt class="text-muted fw-normal" style="min-width:110px;flex-shrink:0;">Statut actuel</dt><dd class="mb-0"><?= commandeStatusBadge($commande['statut'] ?? null) ?></dd></div>
                     </dl>
                 </div>
             </div>

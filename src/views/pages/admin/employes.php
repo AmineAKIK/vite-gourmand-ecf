@@ -112,7 +112,7 @@ $pageTitle = 'Gestion des employés - Vite & Gourmand';
                                 <?php foreach ($employes as $employe): ?>
                                 <tr>
                                     <td class="fw-medium ps-3"><?= sanitize(personFullName($employe)) ?></td>
-                                    <td class="text-muted"><?= sanitize($employe['email'] ?? '') ?></td>
+                                    <td class="text-muted" style="word-break:break-all;max-width:200px;"><?= sanitize($employe['email'] ?? '') ?></td>
                                     <td>
                                         <?php if ($employe['actif'] ?? false): ?>
                                             <span class="badge bg-success">Actif</span>

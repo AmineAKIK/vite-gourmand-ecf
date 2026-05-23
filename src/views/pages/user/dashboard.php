@@ -16,28 +16,30 @@
                     <table class="table table-hover align-middle" aria-label="Mes commandes">
                         <thead class="table-light">
                             <tr>
-                                <th>N°</th><th>Menu</th><th>Date prestation</th><th>Adresse</th><th>Total</th><th>Statut</th><th>Actions</th>
+                                <th class="d-none d-sm-table-cell">N°</th><th>Menu</th><th>Date</th><th class="d-none d-md-table-cell">Adresse</th><th>Total</th><th>Statut</th><th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
                         <?php foreach ($commandes as $cmd): ?>
                             <tr>
-                                <td><small><?= sanitize($cmd['numero_commande']) ?></small></td>
+                                <td class="d-none d-sm-table-cell"><small class="text-muted" style="font-size:.7rem;"><?= sanitize($cmd['numero_commande']) ?></small></td>
                                 <td><?= sanitize($cmd['menu_titre']) ?></td>
-                                <td><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></td>
-                                <td><?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?></td>
-                                <td><strong><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></strong></td>
+                                <td class="text-nowrap small"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></td>
+                                <td class="d-none d-md-table-cell" style="max-width:160px;"><span class="text-truncate d-block" title="<?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?>"><?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?></span></td>
+                                <td class="text-nowrap"><strong><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></strong></td>
                                 <td><?= commandeStatusBadge($cmd['statut'] ?? null) ?></td>
                                 <td>
                                     <?php if (commandeCanClientModify($cmd)): ?>
-                                        <button class="btn btn-sm btn-outline-primary me-1" data-bs-toggle="modal" data-bs-target="#modifModal<?= (int)$cmd['commande_id'] ?>">Modifier</button>
+                                        <div class="d-flex flex-wrap gap-1">
+                                        <button class="btn btn-sm btn-vg-outline" data-bs-toggle="modal" data-bs-target="#modifModal<?= (int)$cmd['commande_id'] ?>">Modifier</button>
                                         <form method="POST" action="/commande/annuler" class="d-inline" data-confirm="Confirmer l'annulation ?">
                                             <?= csrfField() ?>
                                             <input type="hidden" name="commande_id" value="<?= (int)$cmd['commande_id'] ?>">
                                             <button type="submit" class="btn btn-sm btn-outline-danger">Annuler</button>
                                         </form>
+                                        </div>
                                     <?php elseif (commandeCanClientTrack($cmd['statut'] ?? null)): ?>
-                                        <a href="/commande/suivi?id=<?= (int)$cmd['commande_id'] ?>" class="btn btn-sm btn-outline-info">Suivi</a>
+                                        <a href="/commande/suivi?id=<?= (int)$cmd['commande_id'] ?>" class="btn btn-sm btn-vg-outline">Suivi</a>
                                     <?php elseif (commandeCanReview($cmd['statut'] ?? null)): ?>
                                         <?php $avisCmd = $avisByCommande[(int)$cmd['commande_id']] ?? null; ?>
                                         <?php if ($avisCmd): ?>

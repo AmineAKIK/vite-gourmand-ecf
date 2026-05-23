@@ -62,7 +62,7 @@ $pageTitle = 'Modération des avis - Vite & Gourmand';
                                     <?php endfor; ?>
                                 </span>
                             </td>
-                            <td style="max-width:260px">
+                            <td style="max-width:min(260px,40vw);">
                                 <span class="text-truncate d-block" title="<?= sanitize($a['description'] ?? '') ?>">
                                     <?= !empty($a['description']) ? sanitize($a['description']) : '<em class="text-muted">Aucun commentaire</em>' ?>
                                 </span>

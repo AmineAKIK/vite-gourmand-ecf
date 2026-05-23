@@ -60,14 +60,13 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                         aria-controls="collapse<?= $cmd['commande_id'] ?>"
                         style="border-radius:.5rem;"
                     >
-                        <div class="d-flex flex-wrap gap-2 align-items-center w-100 pe-3">
-                            <code class="commande-numero"><?= sanitize($cmd['numero_commande'] ?? '') ?></code>
-                            <span class="vr mx-1 opacity-25"></span>
+                        <div class="d-flex flex-wrap gap-2 align-items-center w-100 pe-2">
+                            <code class="commande-numero text-muted" style="font-size:.75rem;"><?= sanitize($cmd['numero_commande'] ?? '') ?></code>
                             <strong class="commande-client"><?= sanitize(personFullName($cmd)) ?></strong>
-                            <span class="text-muted">·</span>
-                            <span class="commande-menu"><?= sanitize($cmd['menu_titre'] ?? '') ?></span>
-                            <div class="ms-auto d-flex align-items-center gap-3">
-                                <span class="commande-date"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></span>
+                            <span class="text-muted d-none d-sm-inline">·</span>
+                            <span class="commande-menu text-muted d-none d-sm-inline"><?= sanitize($cmd['menu_titre'] ?? '') ?></span>
+                            <div class="ms-auto d-flex align-items-center gap-2 flex-shrink-0">
+                                <span class="commande-date text-muted small"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></span>
                                 <?= commandeStatusBadge($cmd['statut'] ?? null) ?>
                             </div>
                         </div>
@@ -81,21 +80,14 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                             <!-- Informations de la commande -->
                             <div class="col-md-5">
                                 <h3 class="h6 fw-bold">Détails</h3>
-                                <dl class="row small mb-0">
-                                    <dt class="col-5">Client</dt>
-                                    <dd class="col-7"><?= sanitize(personFullName($cmd)) ?></dd>
-                                    <dt class="col-5">Email</dt>
-                                    <dd class="col-7"><?= sanitize($cmd['email'] ?? '') ?></dd>
-                                    <dt class="col-5">Téléphone</dt>
-                                    <dd class="col-7"><?= sanitize($cmd['telephone'] ?? '—') ?></dd>
-                                    <dt class="col-5">Menu</dt>
-                                    <dd class="col-7"><?= sanitize($cmd['menu_titre'] ?? '') ?></dd>
-                                    <dt class="col-5">Personnes</dt>
-                                    <dd class="col-7"><?= (int)($cmd['nombre_personne'] ?? 0) ?></dd>
-                                    <dt class="col-5">Adresse</dt>
-                                    <dd class="col-7"><?= sanitize(($cmd['adresse_livraison'] ?? '') . ' ' . ($cmd['ville_livraison'] ?? '')) ?></dd>
-                                    <dt class="col-5">Prix total</dt>
-                                    <dd class="col-7 fw-bold"><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></dd>
+                                <dl class="mb-0 small">
+                                    <div class="d-flex gap-2 mb-1"><dt class="text-muted" style="min-width:80px;">Client</dt><dd class="mb-0 fw-medium"><?= sanitize(personFullName($cmd)) ?></dd></div>
+                                    <div class="d-flex gap-2 mb-1"><dt class="text-muted" style="min-width:80px;">Email</dt><dd class="mb-0" style="word-break:break-all;"><?= sanitize($cmd['email'] ?? '') ?></dd></div>
+                                    <div class="d-flex gap-2 mb-1"><dt class="text-muted" style="min-width:80px;">Téléphone</dt><dd class="mb-0"><?= sanitize($cmd['telephone'] ?? '—') ?></dd></div>
+                                    <div class="d-flex gap-2 mb-1"><dt class="text-muted" style="min-width:80px;">Menu</dt><dd class="mb-0"><?= sanitize($cmd['menu_titre'] ?? '') ?></dd></div>
+                                    <div class="d-flex gap-2 mb-1"><dt class="text-muted" style="min-width:80px;">Personnes</dt><dd class="mb-0"><?= (int)($cmd['nombre_personne'] ?? 0) ?></dd></div>
+                                    <div class="d-flex gap-2 mb-1"><dt class="text-muted" style="min-width:80px;">Adresse</dt><dd class="mb-0"><?= sanitize(($cmd['adresse_livraison'] ?? '') . ', ' . ($cmd['ville_livraison'] ?? '')) ?></dd></div>
+                                    <div class="d-flex gap-2 mb-0"><dt class="text-muted" style="min-width:80px;">Total</dt><dd class="mb-0 fw-bold text-vg"><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></dd></div>
                                 </dl>
                             </div>
 

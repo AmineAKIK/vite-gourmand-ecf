@@ -14,12 +14,12 @@ foreach ($plats as $plat) {
         <h1 class="h3 fw-bold mb-0">
             <i class="bi bi-journal-text me-2 text-vg"></i>Gestion des menus
         </h1>
-        <div class="d-flex gap-2">
-            <button class="btn btn-vg-outline" data-bs-toggle="modal" data-bs-target="#modalCreerPlat"
+        <div class="d-flex flex-wrap gap-2">
+            <button class="btn btn-vg-outline btn-sm" data-bs-toggle="modal" data-bs-target="#modalCreerPlat"
                 aria-label="Ajouter un plat">
                 <i class="bi bi-plus-lg me-1"></i>Ajouter un plat
             </button>
-            <button class="btn btn-vg-outline" data-bs-toggle="modal" data-bs-target="#modalCreerMenu"
+            <button class="btn btn-vg-outline btn-sm" data-bs-toggle="modal" data-bs-target="#modalCreerMenu"
                 aria-label="Ajouter un menu">
                 <i class="bi bi-plus-lg me-1"></i>Ajouter un menu
             </button>

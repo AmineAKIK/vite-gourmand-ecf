@@ -764,19 +764,28 @@ input[type="password"]::-webkit-caps-lock-indicator {
 }
 .skip-link:focus { top: 0; }
 
-/* Responsive */
-@media (max-width: 768px) {
+/* Responsive — tablette portrait */
+@media (max-width: 991px) {
+    .hero h1 { font-size: 2.6rem; }
+    .hero { padding: 80px 0; }
+    .professional-img { height: 320px; }
+}
+
+/* Responsive — mobile */
+@media (max-width: 767px) {
     .hero h1 { font-size: 2rem; }
-    .hero { padding: 60px 0; }
-    .professional-img { height: 280px; }
+    .hero { padding: 52px 0; }
+    .hero .subtitle { font-size: 1rem; }
+    .professional-img { height: 220px; }
+    .card-menu .card-img-top { height: 180px; }
     .navbar {
-        min-height: 64px;
+        min-height: 56px;
     }
     .navbar .container {
-        min-height: 64px;
+        min-height: 56px;
     }
     .navbar-brand {
-        height: 64px;
+        height: 56px;
     }
     .navbar-toggler {
         border-color: rgba(255,255,255,.65);
@@ -818,6 +827,15 @@ input[type="password"]::-webkit-caps-lock-indicator {
     }
     .footer-links {
         font-size: .9rem;
+    }
+    /* Workspace content padding réduit */
+    .workspace-content-inner {
+        padding: 1rem;
+    }
+    /* Alertes dashboard wrap sur mobile */
+    .alert.d-flex {
+        flex-wrap: wrap;
+        gap: .5rem;
     }
 }
 
