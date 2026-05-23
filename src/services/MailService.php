@@ -43,6 +43,7 @@ class MailService {
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $mail->Port       = MAIL_PORT;
         $mail->CharSet    = 'UTF-8';
+        $mail->Timeout    = 5;
         $mail->setFrom(MAIL_FROM, MAIL_FROM_NAME);
         return $mail;
     }
