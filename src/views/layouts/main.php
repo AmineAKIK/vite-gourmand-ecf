@@ -56,7 +56,6 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
             </ul>
             <ul class="navbar-nav ms-auto align-items-lg-center">
                 <?php if (isAuth()): ?>
-                    <?php if (!hasRole(ROLE_ADMIN) && !hasRole(ROLE_EMPLOYE)): ?>
                     <li class="nav-item me-1">
                         <?php $panierCount = count($_SESSION['panier'] ?? []); ?>
                         <a class="nav-link position-relative" href="/panier" aria-label="Votre panier (<?= $panierCount ?> article<?= $panierCount > 1 ? 's' : '' ?>)">
@@ -66,7 +65,6 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
                             <?php endif; ?>
                         </a>
                     </li>
-                    <?php endif; ?>
                     <li class="nav-item">
                         <?php
                             $navHref  = hasRole(ROLE_ADMIN) || hasRole(ROLE_EMPLOYE) ? roleHomePath() : '/mon-compte';
