@@ -924,8 +924,10 @@ a:focus {
     border-radius: 999px;
 }
 .prix-tag {
+    display: inline-block;
     font-size: 1.4rem;
     font-weight: 700;
+    line-height: 1;
     color: var(--vg-bordeaux);
 }
 
