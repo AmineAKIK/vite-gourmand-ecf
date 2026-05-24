@@ -134,7 +134,7 @@
 
         <!-- Colonne droite : récapitulatif -->
         <div class="col-12 col-lg-5">
-            <div class="card border-0 shadow-sm sticky-lg-top" style="background:var(--vg-creme); top:80px">
+            <div class="card border-0 shadow-sm sticky-lg-top" style="background:var(--vg-creme); top:76px">
                 <div class="card-body">
                     <h2 class="h5 mb-3">Récapitulatif</h2>
 

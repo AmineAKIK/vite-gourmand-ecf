@@ -172,6 +172,17 @@ a:focus {
     transform: none;
     transition: none;
 }
+/* Lien panier — espace suffisant pour le badge Bootstrap translate-middle */
+.nav-panier {
+    overflow: visible !important;
+    padding-top: 6px !important;
+    padding-bottom: 6px !important;
+}
+.nav-panier .badge {
+    font-size: .6rem;
+    min-width: 1.1em;
+    line-height: 1.1em;
+}
 .navbar-dark .navbar-nav .dropdown-toggle:hover::after,
 .navbar-dark .navbar-nav .dropdown-toggle:focus::after {
     transform: none;

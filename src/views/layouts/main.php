@@ -58,7 +58,7 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
                 <?php if (isAuth()): ?>
                     <li class="nav-item me-1">
                         <?php $panierCount = count($_SESSION['panier'] ?? []); ?>
-                        <a class="nav-link position-relative" href="/panier" aria-label="Votre panier (<?= $panierCount ?> article<?= $panierCount > 1 ? 's' : '' ?>)">
+                        <a class="nav-link nav-panier position-relative" href="/panier" aria-label="Votre panier (<?= $panierCount ?> article<?= $panierCount > 1 ? 's' : '' ?>)">
                             <i class="bi bi-cart3 fs-5"></i>
                             <?php if ($panierCount > 0): ?>
                                 <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill" style="background:var(--vg-or);color:#2C2C2C;font-size:.65rem;"><?= $panierCount ?></span>
