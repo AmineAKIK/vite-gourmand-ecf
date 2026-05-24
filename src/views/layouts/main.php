@@ -21,7 +21,7 @@
     <script nonce="<?= $cspNonce ?>">(function(){var l=document.getElementById('fonts-preload');if(l){l.onload=function(){this.rel='stylesheet';};}}());</script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" nonce="<?= $cspNonce ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" nonce="<?= $cspNonce ?>">
-    <link rel="stylesheet" href="/css/style.css?v=20260524-58" nonce="<?= $cspNonce ?>">
+    <link rel="stylesheet" href="/css/style.css?v=20260524-59" nonce="<?= $cspNonce ?>">
 </head>
 <body>
 
@@ -34,10 +34,11 @@
 $workspaceActive = isAuth() && roleWorkspaceIsActive();
 $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
 ?>
-<nav class="navbar navbar-expand-lg navbar-dark bg-vg sticky-top" role="navigation" aria-label="Navigation principale">
+<nav class="navbar navbar-expand-lg navbar-dark bg-vg sticky-top site-navbar" role="navigation" aria-label="Navigation principale">
     <div class="container">
         <a class="navbar-brand fw-bold" href="/" aria-label="Retour à l'accueil Vite et Gourmand">
-            Vite & Gourmand
+            <span class="site-brand-name">Vite &amp; Gourmand</span>
+            <span class="site-brand-kicker d-none d-xl-block">Traiteur à Bordeaux</span>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Ouvrir le menu">
             <span class="navbar-toggler-icon"></span>
