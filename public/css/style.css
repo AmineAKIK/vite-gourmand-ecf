@@ -213,42 +213,44 @@ a:focus {
 
 @media (min-width: 992px) {
     .site-navbar {
-        min-height: 78px;
-        padding: .65rem 0;
+        min-height: 72px;
+        padding: 0;
         background:
-            linear-gradient(180deg, rgba(255,255,255,.08), rgba(255,255,255,0) 48%),
-            linear-gradient(90deg, #5F101D 0%, var(--vg-bordeaux-dark) 28%, var(--vg-bordeaux) 62%, #721322 100%) !important;
-        border-bottom: 1px solid rgba(232,196,106,.5);
-        box-shadow: 0 16px 34px rgba(38,14,18,.22);
+            linear-gradient(180deg, rgba(255,255,255,.06), rgba(255,255,255,0) 58%),
+            linear-gradient(90deg, #5E101D 0%, #7B1627 46%, #8B1A2B 100%) !important;
+        border-bottom: 2px solid rgba(212,168,67,.72);
+        box-shadow: 0 12px 28px rgba(38,14,18,.2);
     }
 
     .site-navbar .container {
-        min-height: 56px;
-        gap: 1.25rem;
+        min-height: 72px;
+        gap: 2rem;
     }
 
     .site-navbar .navbar-brand {
+        flex-direction: column;
         align-items: flex-start;
         justify-content: center;
-        height: 56px;
-        min-width: 210px;
+        height: 72px;
+        min-width: 245px;
         padding: 0;
         color: #fff;
+        text-shadow: 0 1px 0 rgba(0,0,0,.18);
     }
 
     .site-brand-name {
-        font-size: 1.45rem;
+        font-size: 1.5rem;
         line-height: 1;
     }
 
     .site-brand-kicker {
-        margin-top: .28rem;
+        margin-top: .34rem;
         color: var(--vg-or-light);
         font-family: 'Inter', sans-serif;
-        font-size: .68rem;
-        font-weight: 800;
+        font-size: .72rem;
+        font-weight: 700;
         line-height: 1;
-        text-transform: uppercase;
+        letter-spacing: .04em;
     }
 
     .site-navbar .navbar-collapse {
@@ -257,68 +259,83 @@ a:focus {
     }
 
     .site-navbar .main-nav-list {
-        padding: .28rem;
-        background: rgba(255,255,255,.08);
-        border: 1px solid rgba(255,255,255,.12);
-        border-radius: 999px;
-        box-shadow: inset 0 1px 0 rgba(255,255,255,.08);
+        padding: 0;
+        background: transparent;
+        border: 0;
+        border-radius: 0;
+        box-shadow: none;
     }
 
     .site-navbar .navbar-nav {
-        gap: .15rem;
+        gap: .85rem;
     }
 
     .site-navbar .navbar-dark .navbar-nav .nav-link,
     .site-navbar .navbar-nav .nav-link {
-        height: 40px;
-        padding: 0 .98rem;
-        border-radius: 999px;
-        color: rgba(255,255,255,.82);
+        height: 72px;
+        padding: 0 .12rem;
+        border-radius: 0;
+        color: rgba(255,255,255,.8);
         font-size: .94rem;
         font-weight: 700;
         transform: none !important;
         transition: background-color .18s ease, color .18s ease, transform .18s ease;
     }
 
-    .site-navbar .navbar-nav .nav-link::after,
+    .site-navbar .main-nav-list .nav-link::after {
+        display: block;
+        left: 0;
+        right: 0;
+        bottom: 18px;
+        height: 2px;
+        background: var(--vg-or-light);
+        opacity: .95;
+    }
+
     .site-navbar .navbar-nav .dropdown-toggle.nav-link::before {
         display: none;
     }
 
     .site-navbar .main-nav-list .nav-link:hover,
     .site-navbar .main-nav-list .nav-link:focus {
-        background: rgba(255,255,255,.1);
+        background: transparent;
         color: #fff;
     }
 
     .site-navbar .main-nav-list .nav-link.active,
     .site-navbar .main-nav-list .nav-link[aria-current="page"] {
-        background: var(--vg-creme-soft);
-        color: var(--vg-bordeaux-dark);
-        box-shadow: 0 8px 18px rgba(38,14,18,.16);
+        background: transparent;
+        color: #fff;
+        box-shadow: none;
     }
 
     .site-navbar .account-nav-list {
-        gap: .45rem;
+        gap: .55rem;
     }
 
     .site-navbar .account-nav-list .nav-link {
-        border: 1px solid rgba(255,255,255,.16);
-        background: rgba(255,255,255,.06);
+        height: 40px;
+        padding: 0 .92rem;
+        border: 1px solid rgba(232,196,106,.36);
+        border-radius: 8px;
+        background: rgba(255,249,240,.07);
+        color: rgba(255,255,255,.86);
     }
 
     .site-navbar .account-nav-list .nav-link:hover,
     .site-navbar .account-nav-list .nav-link:focus,
     .site-navbar .account-nav-list .nav-link.active,
     .site-navbar .account-nav-list .nav-link[aria-current="page"] {
-        background: rgba(255,255,255,.14);
+        background: rgba(255,249,240,.13);
+        border-color: rgba(232,196,106,.55);
         color: #fff;
     }
 
     .site-navbar .nav-link-cart {
-        width: 42px;
+        width: 40px;
         justify-content: center;
         padding: 0;
+        border-color: rgba(232,196,106,.42);
     }
 
     .site-navbar .nav-link-cart .nav-link-icon {
@@ -326,15 +343,16 @@ a:focus {
     }
 
     .site-navbar .nav-link-logout {
-        color: rgba(255,255,255,.62);
+        color: rgba(255,255,255,.68);
         background: transparent;
-        border-color: transparent;
+        border-color: rgba(255,255,255,.16);
     }
 
     .site-navbar .nav-link-logout:hover,
     .site-navbar .nav-link-logout:focus {
         color: #fff;
-        background: rgba(255,255,255,.08);
+        background: rgba(255,255,255,.07);
+        border-color: rgba(255,255,255,.28);
     }
 }
 .text-vg { color: var(--vg-bordeaux) !important; }
