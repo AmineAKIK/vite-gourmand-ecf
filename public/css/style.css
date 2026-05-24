@@ -804,21 +804,8 @@ a:focus {
 }
 
 /* Tableaux de bord back-office */
-.dashboard-alert {
-    display: grid !important;
-    grid-template-columns: minmax(0, 1fr) auto;
-    align-items: center !important;
-    gap: .75rem !important;
-}
-
 .dashboard-alert > div {
     min-width: 0;
-}
-
-.dashboard-alert .btn {
-    flex-shrink: 0;
-    min-height: 36px;
-    padding: .42rem .8rem;
 }
 
 .dashboard-activity-row {
@@ -1633,12 +1620,8 @@ input[type="password"]::-webkit-caps-lock-indicator {
         padding: 0;
     }
     .navbar-collapse {
-        margin: .2rem 0 .85rem;
-        padding: .8rem;
-        background: var(--vg-creme-soft);
-        border: 1px solid rgba(212,168,67,.45);
-        border-radius: 8px;
-        box-shadow: 0 14px 28px rgba(38, 14, 18, .18);
+        padding: .55rem 0 1rem;
+        border-top: 1px solid rgba(255,255,255,.14);
     }
     .navbar-nav {
         align-items: flex-start;
@@ -1646,15 +1629,15 @@ input[type="password"]::-webkit-caps-lock-indicator {
         gap: .25rem;
     }
     .account-nav-list {
-        margin-top: .85rem;
-        padding-top: .85rem;
-        border-top: 1px solid rgba(139,26,43,.14);
+        margin-top: .45rem;
+        padding-top: .55rem;
+        border-top: 1px solid rgba(255,255,255,.14);
     }
     .nav-section-title {
         width: 100%;
-        margin: .1rem 0 .25rem;
-        padding: 0 .25rem;
-        color: var(--vg-muted);
+        margin: .2rem 0 .25rem;
+        padding: 0 .85rem;
+        color: rgba(255,255,255,.58);
         font-size: .72rem;
         font-weight: 700;
         line-height: 1.2;
@@ -1672,20 +1655,20 @@ input[type="password"]::-webkit-caps-lock-indicator {
         height: auto;
         padding: .65rem .8rem;
         border-radius: 8px;
-        color: var(--vg-text);
+        color: rgba(255,255,255,.82);
         font-weight: 700;
         line-height: 1.2;
         transform: none;
     }
     .navbar-dark .navbar-nav .nav-link:hover,
     .navbar-dark .navbar-nav .nav-link:focus {
-        background: rgba(139,26,43,.08);
-        color: var(--vg-bordeaux);
+        background: rgba(255,255,255,.08);
+        color: #fff;
     }
     .navbar-dark .navbar-nav .nav-link.active,
     .navbar-dark .navbar-nav .nav-link[aria-current="page"] {
-        background: rgba(139,26,43,.11);
-        color: var(--vg-bordeaux-dark);
+        background: rgba(255,255,255,.1);
+        color: #fff;
     }
     .navbar-dark .navbar-nav .nav-link::after,
     .navbar-dark .navbar-nav .dropdown-toggle.nav-link::before {
@@ -1710,22 +1693,22 @@ input[type="password"]::-webkit-caps-lock-indicator {
         width: 2rem;
         height: 2rem;
         border-radius: 8px;
-        background: rgba(139,26,43,.09);
-        color: var(--vg-bordeaux);
+        background: rgba(255,255,255,.1);
+        color: #fff;
         font-size: 1rem !important;
     }
     .navbar-dark .navbar-nav .nav-link-logout {
         margin-top: .15rem;
-        color: var(--vg-bordeaux-dark);
+        color: rgba(255,255,255,.74);
     }
     .navbar-dark .navbar-nav .nav-link-logout:hover,
     .navbar-dark .navbar-nav .nav-link-logout:focus {
-        background: rgba(107,18,33,.1);
-        color: var(--vg-bordeaux-dark);
+        background: rgba(255,255,255,.08);
+        color: #fff;
     }
     .navbar-dark .navbar-nav .nav-link-logout .nav-link-icon {
-        background: rgba(107,18,33,.12);
-        color: var(--vg-bordeaux-dark);
+        background: rgba(255,255,255,.1);
+        color: #fff;
     }
     .navbar-dark .navbar-nav .cart-count-badge {
         display: none !important;
@@ -1763,8 +1746,10 @@ input[type="password"]::-webkit-caps-lock-indicator {
     }
 
     .dashboard-alert {
-        grid-template-columns: minmax(0, 1fr) auto;
-        padding: .85rem !important;
+        align-items: flex-start !important;
+        flex-direction: column;
+        gap: .7rem !important;
+        padding: 1rem !important;
     }
 
     .dashboard-alert > div {
@@ -1780,10 +1765,10 @@ input[type="password"]::-webkit-caps-lock-indicator {
     }
 
     .dashboard-alert .btn {
-        align-self: center;
-        min-height: 34px;
-        padding: .38rem .72rem;
-        font-size: .88rem;
+        align-self: flex-start;
+        min-height: 38px;
+        padding: .42rem .85rem;
+        font-size: .92rem;
     }
 
     .dashboard-activity-item {
