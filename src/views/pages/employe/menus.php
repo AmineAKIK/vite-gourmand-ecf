@@ -36,11 +36,11 @@ foreach ($plats as $plat) {
                     <thead>
                         <tr style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
                             <th scope="col" class="ps-3 text-vg fw-semibold">Titre</th>
-                            <th scope="col" class="text-vg fw-semibold">Thème</th>
-                            <th scope="col" class="text-vg fw-semibold">Régime</th>
-                            <th scope="col" class="text-vg fw-semibold">Min pers.</th>
+                            <th scope="col" class="text-vg fw-semibold d-none d-lg-table-cell">Thème</th>
+                            <th scope="col" class="text-vg fw-semibold d-none d-lg-table-cell">Régime</th>
+                            <th scope="col" class="text-vg fw-semibold d-none d-lg-table-cell">Min pers.</th>
                             <th scope="col" class="text-vg fw-semibold">Prix / pers.</th>
-                            <th scope="col" class="text-vg fw-semibold">Stock</th>
+                            <th scope="col" class="text-vg fw-semibold d-none d-lg-table-cell">Stock</th>
                             <th scope="col" class="text-vg fw-semibold pe-3">Actions</th>
                         </tr>
                     </thead>
@@ -48,13 +48,13 @@ foreach ($plats as $plat) {
                         <?php foreach ($menus as $menu): ?>
                         <tr>
                             <td class="fw-semibold ps-3"><?= sanitize($menu['titre'] ?? '') ?></td>
-                            <td class="text-muted"><?= sanitize($menu['theme']  ?? '—') ?></td>
-                            <td class="text-muted"><?= sanitize($menu['regime'] ?? '—') ?></td>
-                            <td class="text-muted"><?= (int)($menu['nombre_personne_minimum'] ?? 0) ?></td>
+                            <td class="text-muted d-none d-lg-table-cell"><?= sanitize($menu['theme']  ?? '—') ?></td>
+                            <td class="text-muted d-none d-lg-table-cell"><?= sanitize($menu['regime'] ?? '—') ?></td>
+                            <td class="text-muted d-none d-lg-table-cell"><?= (int)($menu['nombre_personne_minimum'] ?? 0) ?></td>
                             <td class="text-nowrap">
                                 <span class="fw-semibold text-vg"><?= sanitize(formatPrice($menu['prix_par_personne'] ?? 0)) ?></span>
                             </td>
-                            <td class="text-nowrap">
+                            <td class="text-nowrap d-none d-lg-table-cell">
                                 <?php $stock = $menu['quantite_restante']; ?>
                                 <?php if ($stock === null): ?>
                                     <span class="badge bg-secondary">Illimité</span>

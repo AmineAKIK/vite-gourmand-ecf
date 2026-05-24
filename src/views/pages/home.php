@@ -45,7 +45,7 @@ $pageTitle = 'Vite & Gourmand - Traiteur à Bordeaux';
                      Règle de parité non applicable. Saut 1→3 col volontaire :
                      col-md-6 produirait un orphelin structurel garanti.
                      Palier intermédiaire inexistant pour ce contenu. -->
-                <div class="row g-4">
+                <div class="row g-4 text-center text-lg-start">
                     <div class="col-12 col-lg-4">
                         <div class="p-3">
                             <i class="bi bi-award display-5 text-vg mb-3"></i>
