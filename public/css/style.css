@@ -203,6 +203,14 @@ a:focus {
 .text-vg { color: var(--vg-bordeaux) !important; }
 .text-vg-light { color: var(--vg-or-light) !important; }
 
+@media (min-width: 992px) {
+    .panier-recap-sticky {
+        position: sticky;
+        top: calc(64px + 1.5rem);
+        z-index: 1;
+    }
+}
+
 /* Boutons */
 .btn {
     display: inline-flex;
