@@ -40,7 +40,7 @@ $pageTitle = 'Vite & Gourmand - Traiteur à Bordeaux';
                 >
             </div>
             <div class="col-lg-7">
-                <h2 id="atouts-titre" class="mb-4">Une équipe professionnelle à votre service</h2>
+                <h2 id="atouts-titre" class="mb-4 text-center text-lg-start">Une équipe professionnelle à votre service</h2>
                 <!-- 3 atouts fixes — contenu naturellement impair.
                      Règle de parité non applicable. Saut 1→3 col volontaire :
                      col-md-6 produirait un orphelin structurel garanti.

@@ -62,9 +62,10 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
                             <span class="position-relative d-inline-block">
                                 <i class="bi bi-cart3 fs-5"></i>
                                 <?php if ($panierCount > 0): ?>
-                                    <span class="position-absolute badge rounded-pill" style="background:var(--vg-or);color:#2C2C2C;font-size:.6rem;top:-6px;left:100%;transform:translateX(-40%);min-width:1.1em;line-height:1.3;"><?= $panierCount ?></span>
+                                    <span class="position-absolute badge rounded-pill d-none d-lg-inline-block" style="background:var(--vg-or);color:#2C2C2C;font-size:.6rem;top:-6px;left:100%;transform:translateX(-40%);min-width:1.1em;line-height:1.3;"><?= $panierCount ?></span>
                                 <?php endif; ?>
                             </span>
+                            <span class="d-lg-none ms-2">Votre panier<?= $panierCount > 0 ? ' (' . $panierCount . ')' : '' ?></span>
                         </a>
                     </li>
                     <li class="nav-item">
