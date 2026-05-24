@@ -105,7 +105,7 @@ function roleHomePath(?string $role = null): string {
     return match ($role) {
         ROLE_ADMIN => '/admin',
         ROLE_EMPLOYE => '/employe',
-        default => '/mon-compte',
+        default => '/',
     };
 }
 

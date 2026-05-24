@@ -57,7 +57,11 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
             <ul class="navbar-nav ms-auto">
                 <?php if (isAuth()): ?>
                     <li class="nav-item">
-                        <a class="nav-link <?= $workspaceActive ? 'active' : '' ?>" href="<?= sanitize(roleHomePath()) ?>" <?= $roleHomeIsCurrent ? 'aria-current="page"' : '' ?>>
+                        <?php
+                            $navHref  = hasRole(ROLE_ADMIN) || hasRole(ROLE_EMPLOYE) ? roleHomePath() : '/mon-compte';
+                            $navActive = hasRole(ROLE_ADMIN) || hasRole(ROLE_EMPLOYE) ? $workspaceActive : routeIsActive('/mon-compte');
+                        ?>
+                        <a class="nav-link <?= $navActive ? 'active' : '' ?>" href="<?= sanitize($navHref) ?>" <?= $navActive ? 'aria-current="page"' : '' ?>>
                             <?= sanitize(roleHomeLabel()) ?>
                         </a>
                     </li>
