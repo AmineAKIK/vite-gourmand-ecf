@@ -4,6 +4,22 @@
    Police : Playfair Display (titres) + Inter (corps)
    ========================================== */
 
+/* ==========================================
+   PALIERS DE GRILLE — alignés sur Bootstrap 5
+   Ces tokens nomment les breakpoints Bootstrap, ils ne les remplacent pas.
+   Les classes col-* Bootstrap restent la source de vérité pour le layout.
+
+   2 col  → mobile (défaut Bootstrap)
+   4 col  → --bp-4col  / Bootstrap sm  (576px)
+   6 col  → --bp-6col  / Bootstrap md  (768px)
+   8 col  → --bp-8col  / Bootstrap lg  (992px)
+   12 col → --bp-12col / Bootstrap xl  (1200px)
+
+   Note : les custom properties ne peuvent pas être utilisées dans les
+   media queries CSS natif. Ces tokens servent de vocabulaire partagé
+   et de référence pour les grilles custom (CSS Grid isolées).
+   ========================================== */
+
 /* Fonts chargées de façon non-bloquante via le layout HTML (preload) */
 :root {
     --vg-bordeaux: #8B1A2B;
@@ -730,7 +746,10 @@ a:focus {
 
 .stats-kpi-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    /* auto-fit : étire les items restants, élimine les colonnes vides.
+       minmax calé sur --grid-unit-4col : 4 cards à 200px+ tiennent jusqu'à ~880px,
+       puis auto-fit passe à 2, puis à 1 — les breakpoints 991px et 575px sont absorbés. */
+    grid-template-columns: repeat(auto-fit, minmax(var(--grid-unit-4col), 1fr));
     gap: 1rem;
 }
 
@@ -939,18 +958,8 @@ a:focus {
         flex-direction: column;
     }
 
-    .stats-kpi-grid {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-    }
-
     .stats-period-badge {
         white-space: normal;
-    }
-}
-
-@media (max-width: 575px) {
-    .stats-kpi-grid {
-        grid-template-columns: 1fr;
     }
 
     .stats-chart-wrap {
@@ -1062,7 +1071,7 @@ a:focus {
             "client client client"
             "menu menu menu"
             "date date date";
-        column-gap: .55rem;
+        column-gap: .45rem;
         row-gap: .28rem;
         padding-right: 0;
     }
@@ -1117,12 +1126,6 @@ a:focus {
 
     .commandes-accordion .accordion-button:not(.collapsed) .commande-mobile-toggle {
         transform: rotate(-180deg);
-    }
-}
-
-@media (max-width: 767px) {
-    .commande-row-summary {
-        gap: .35rem .75rem;
     }
 }
 
@@ -1368,6 +1371,17 @@ input[type="password"]::-webkit-caps-lock-indicator {
     --ws-sidebar-active: rgba(255,255,255,.1);
     --ws-sidebar-active-border: #fff;
     --ws-topbar-height: 56px;
+
+    /* Paliers de grille (= breakpoints Bootstrap 5) */
+    --bp-4col:  576px;
+    --bp-6col:  768px;
+    --bp-8col:  992px;
+    --bp-12col: 1200px;
+
+    /* Unités de colonne — base Inter 16px, densité standard */
+    --grid-unit-4col: 200px;  /* card standard minimale lisible */
+    --grid-unit-6col: 280px;
+    --grid-unit-8col: 360px;
 }
 
 .workspace-body {
