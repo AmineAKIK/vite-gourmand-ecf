@@ -6,12 +6,14 @@ class AvisModel
     public static function getPending(): array
     {
         return Database::getConnection()->query("
-            SELECT a.*, u.prenom, u.nom, m.titre AS menu_titre
+            SELECT a.*, u.prenom, u.nom,
+                   GROUP_CONCAT(m.titre ORDER BY cl.ligne_id SEPARATOR ', ') AS menu_titre
             FROM avis a
-            JOIN utilisateur u ON u.utilisateur_id = a.utilisateur_id
-            JOIN commande c    ON c.commande_id    = a.commande_id
-            JOIN menu m        ON m.menu_id        = c.menu_id
+            JOIN utilisateur u    ON u.utilisateur_id = a.utilisateur_id
+            JOIN commande_ligne cl ON cl.commande_id  = a.commande_id
+            JOIN menu m            ON m.menu_id       = cl.menu_id
             WHERE a.statut = 'en_attente'
+            GROUP BY a.avis_id
             ORDER BY a.created_at ASC
         ")->fetchAll();
     }
@@ -19,17 +21,18 @@ class AvisModel
     public static function getAll(?string $statut = null): array
     {
         $sql = "
-            SELECT a.*, u.prenom, u.nom, m.titre AS menu_titre
+            SELECT a.*, u.prenom, u.nom,
+                   GROUP_CONCAT(m.titre ORDER BY cl.ligne_id SEPARATOR ', ') AS menu_titre
             FROM avis a
-            JOIN utilisateur u ON u.utilisateur_id = a.utilisateur_id
-            JOIN commande c    ON c.commande_id    = a.commande_id
-            JOIN menu m        ON m.menu_id        = c.menu_id
+            JOIN utilisateur u    ON u.utilisateur_id = a.utilisateur_id
+            JOIN commande_ligne cl ON cl.commande_id  = a.commande_id
+            JOIN menu m            ON m.menu_id       = cl.menu_id
         ";
         if ($statut !== null) {
-            $stmt = Database::getConnection()->prepare($sql . " WHERE a.statut = ? ORDER BY a.created_at DESC");
+            $stmt = Database::getConnection()->prepare($sql . " WHERE a.statut = ? GROUP BY a.avis_id ORDER BY a.created_at DESC");
             $stmt->execute([$statut]);
         } else {
-            $stmt = Database::getConnection()->query($sql . " ORDER BY a.created_at DESC");
+            $stmt = Database::getConnection()->query($sql . " GROUP BY a.avis_id ORDER BY a.created_at DESC");
         }
         return $stmt->fetchAll();
     }
@@ -61,12 +64,14 @@ class AvisModel
     public static function getValidated(int $limit = 6): array
     {
         $stmt = Database::getConnection()->prepare("
-            SELECT a.*, u.prenom, u.nom, m.titre AS menu_titre
+            SELECT a.*, u.prenom, u.nom,
+                   GROUP_CONCAT(m.titre ORDER BY cl.ligne_id SEPARATOR ', ') AS menu_titre
             FROM avis a
-            JOIN utilisateur u ON u.utilisateur_id = a.utilisateur_id
-            JOIN commande c ON c.commande_id = a.commande_id
-            JOIN menu m ON m.menu_id = c.menu_id
+            JOIN utilisateur u    ON u.utilisateur_id = a.utilisateur_id
+            JOIN commande_ligne cl ON cl.commande_id  = a.commande_id
+            JOIN menu m            ON m.menu_id       = cl.menu_id
             WHERE a.statut = 'valide'
+            GROUP BY a.avis_id
             ORDER BY a.created_at DESC
             LIMIT ?
         ");
