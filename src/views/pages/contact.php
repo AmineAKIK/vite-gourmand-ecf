@@ -2,7 +2,7 @@
 // src/views/pages/contact.php
 $pageTitle = 'Contact - Vite & Gourmand';
 ?>
-<div class="container py-5">
+<div class="container py-5 contact-page">
     <div class="row justify-content-center">
         <div class="col-lg-7">
 
@@ -12,7 +12,7 @@ $pageTitle = 'Contact - Vite & Gourmand';
                 <p class="text-muted">Une question, une demande particulière ? Nous vous répondons sous 48h.</p>
             </div>
 
-            <div class="card shadow-sm p-4" style="border:1px solid rgba(0,0,0,.08);">
+            <div class="card contact-panel p-4">
                 <form method="POST" action="/contact" novalidate>
                     <?= csrfField() ?>
 
@@ -71,7 +71,7 @@ $pageTitle = 'Contact - Vite & Gourmand';
 
         <!-- Infos pratiques -->
         <div class="col-lg-4 mt-4 mt-lg-0 align-self-center">
-            <div class="card border-0 bg-creme p-4 h-100">
+            <div class="card contact-panel p-4 h-100">
                 <h2 class="h5 fw-bold mb-3"><i class="bi bi-geo-alt me-2 text-vg"></i>Nous trouver</h2>
                 <address class="small">
                     <strong>Vite &amp; Gourmand</strong><br>

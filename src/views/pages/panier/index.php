@@ -1,5 +1,5 @@
 <?php $pageTitle = 'Votre panier - Vite & Gourmand'; ?>
-<div class="container py-5" style="max-width:900px">
+<div class="container py-5 panier-page" style="max-width:900px">
 
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
         <h1 class="mb-0">Votre panier</h1>
@@ -9,7 +9,7 @@
     </div>
 
     <?php if (empty($panier)): ?>
-        <div class="card border-0 shadow-sm p-5 text-center" style="background:var(--vg-creme);">
+        <div class="card panier-panel p-5 text-center">
             <i class="bi bi-cart display-4 text-muted mb-3"></i>
             <h2 class="h5 mb-2">Votre panier est vide</h2>
             <p class="text-muted mb-4">Ajoutez des menus pour composer votre prestation.</p>
@@ -23,7 +23,7 @@
         <div class="col-12 col-lg-7">
 
             <!-- Liste des menus -->
-            <div class="card border-0 shadow-sm mb-4" style="background:var(--vg-creme);">
+            <div class="card panier-panel mb-4">
                 <div class="card-body p-0">
                     <?php foreach ($panier as $i => $item): ?>
                     <div class="d-flex align-items-start gap-3 p-3 <?= $i > 0 ? 'border-top' : '' ?>" style="border-color:var(--vg-border)!important">
@@ -52,7 +52,7 @@
             <!-- Vider le panier -->
             <form method="POST" action="/panier/vider" class="mb-4">
                 <?= csrfField() ?>
-                <button type="submit" class="btn btn-sm btn-vg-outline text-danger border-danger"
+                <button type="submit" class="btn btn-sm btn-vg-outline"
                         data-confirm="Vider tout le panier ?">
                     <i class="bi bi-x-circle me-1"></i>Vider le panier
                 </button>
@@ -62,7 +62,7 @@
             <form method="POST" action="/commande" id="form-panier" novalidate>
                 <?= csrfField() ?>
 
-                <div class="card border-0 shadow-sm mb-4" style="background:var(--vg-creme);">
+                <div class="card panier-panel mb-4">
                     <div class="card-body">
                         <h2 class="h5 mb-3">
                             <span class="badge bg-vg me-2" style="background:var(--vg-bordeaux)!important">1</span>
@@ -90,7 +90,7 @@
                     </div>
                 </div>
 
-                <div class="card border-0 shadow-sm mb-4" style="background:var(--vg-creme);">
+                <div class="card panier-panel mb-4">
                     <div class="card-body">
                         <h2 class="h5 mb-3">
                             <span class="badge me-2" style="background:var(--vg-bordeaux)!important">2</span>
@@ -134,7 +134,7 @@
 
         <!-- Colonne droite : récapitulatif -->
         <div class="col-12 col-lg-5">
-            <div class="card border-0 shadow-sm panier-recap-sticky" style="background:var(--vg-creme);">
+            <div class="card panier-panel panier-recap-sticky">
                 <div class="card-body">
                     <h2 class="h5 mb-3">Récapitulatif</h2>
 

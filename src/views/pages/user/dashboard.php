@@ -1,73 +1,75 @@
 <?php $pageTitle = 'Mon compte - Vite & Gourmand'; ?>
-<div class="container py-5">
+<div class="container py-5 account-page">
     <h1 class="mb-4">Bonjour, <?= sanitize($userFull['prenom']) ?> !</h1>
 
     <div class="row g-4">
         <!-- Mes commandes -->
         <div class="col-lg-8">
-            <h2 class="h4 mb-3">Mes commandes</h2>
-            <?php if (empty($commandes)): ?>
-                <div class="alert alert-info">
-                    Vous n'avez pas encore de commande.
-                    <a href="/menus" class="alert-link">Découvrir nos menus</a>
-                </div>
-            <?php else: ?>
-                <div class="table-responsive">
-                    <table class="table table-hover align-middle" aria-label="Mes commandes">
-                        <thead class="table-light">
-                            <tr>
-                                <th class="d-none d-lg-table-cell">N°</th><th>Menu</th><th>Date</th><th class="d-none d-lg-table-cell">Adresse</th><th>Total</th><th>Statut</th><th>Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                        <?php foreach ($commandes as $cmd): ?>
-                            <tr>
-                                <td class="d-none d-lg-table-cell"><small class="text-muted" style="font-size:.7rem;"><?= sanitize($cmd['numero_commande']) ?></small></td>
-                                <td class="small"><?= sanitize($cmd['menu_titre']) ?></td>
-                                <td class="text-nowrap small"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></td>
-                                <td class="d-none d-lg-table-cell" style="max-width:160px;"><span class="text-truncate d-block" title="<?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?>"><?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?></span></td>
-                                <td class="text-nowrap"><strong><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></strong></td>
-                                <td><?= commandeStatusBadge($cmd['statut'] ?? null) ?></td>
-                                <td>
-                                    <?php if (commandeCanClientModify($cmd)): ?>
-                                        <div class="d-flex flex-wrap gap-1">
-                                        <button class="btn btn-sm btn-vg-outline" data-bs-toggle="modal" data-bs-target="#modifModal<?= (int)$cmd['commande_id'] ?>">Modifier</button>
-                                        <form method="POST" action="/commande/annuler" class="d-inline" data-confirm="Confirmer l'annulation ?">
-                                            <?= csrfField() ?>
-                                            <input type="hidden" name="commande_id" value="<?= (int)$cmd['commande_id'] ?>">
-                                            <button type="submit" class="btn btn-sm btn-outline-danger">Annuler</button>
-                                        </form>
-                                        </div>
-                                    <?php elseif (commandeCanClientTrack($cmd['statut'] ?? null)): ?>
-                                        <a href="/commande/suivi?id=<?= (int)$cmd['commande_id'] ?>" class="btn btn-sm btn-vg-outline">Suivi</a>
-                                    <?php elseif (commandeCanReview($cmd['statut'] ?? null)): ?>
-                                        <?php $avisCmd = $avisByCommande[(int)$cmd['commande_id']] ?? null; ?>
-                                        <?php if ($avisCmd): ?>
-                                            <?php if ($avisCmd['statut'] === 'valide'): ?>
-                                                <span class="badge bg-success"><i class="bi bi-star-fill me-1"></i>Avis publié</span>
-                                            <?php elseif ($avisCmd['statut'] === 'refuse'): ?>
-                                                <span class="badge bg-danger">Avis refusé</span>
+            <section class="account-panel p-4 h-100">
+                <h2 class="h4 mb-3">Mes commandes</h2>
+                <?php if (empty($commandes)): ?>
+                    <div class="alert alert-info mb-0">
+                        Vous n'avez pas encore de commande.
+                        <a href="/menus" class="alert-link">Découvrir nos menus</a>
+                    </div>
+                <?php else: ?>
+                    <div class="table-responsive">
+                        <table class="table table-hover align-middle mb-0" aria-label="Mes commandes">
+                            <thead class="table-light">
+                                <tr>
+                                    <th class="d-none d-lg-table-cell">N°</th><th>Menu</th><th>Date</th><th class="d-none d-lg-table-cell">Adresse</th><th>Total</th><th>Statut</th><th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                            <?php foreach ($commandes as $cmd): ?>
+                                <tr>
+                                    <td class="d-none d-lg-table-cell"><small class="text-muted" style="font-size:.7rem;"><?= sanitize($cmd['numero_commande']) ?></small></td>
+                                    <td class="small"><?= sanitize($cmd['menu_titre']) ?></td>
+                                    <td class="text-nowrap small"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></td>
+                                    <td class="d-none d-lg-table-cell" style="max-width:160px;"><span class="text-truncate d-block" title="<?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?>"><?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?></span></td>
+                                    <td class="text-nowrap"><strong><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></strong></td>
+                                    <td><?= commandeStatusBadge($cmd['statut'] ?? null) ?></td>
+                                    <td>
+                                        <?php if (commandeCanClientModify($cmd)): ?>
+                                            <div class="d-flex flex-wrap gap-1">
+                                            <button class="btn btn-sm btn-vg-outline" data-bs-toggle="modal" data-bs-target="#modifModal<?= (int)$cmd['commande_id'] ?>">Modifier</button>
+                                            <form method="POST" action="/commande/annuler" class="d-inline" data-confirm="Confirmer l'annulation ?">
+                                                <?= csrfField() ?>
+                                                <input type="hidden" name="commande_id" value="<?= (int)$cmd['commande_id'] ?>">
+                                                <button type="submit" class="btn btn-sm btn-outline-danger">Annuler</button>
+                                            </form>
+                                            </div>
+                                        <?php elseif (commandeCanClientTrack($cmd['statut'] ?? null)): ?>
+                                            <a href="/commande/suivi?id=<?= (int)$cmd['commande_id'] ?>" class="btn btn-sm btn-vg-outline">Suivi</a>
+                                        <?php elseif (commandeCanReview($cmd['statut'] ?? null)): ?>
+                                            <?php $avisCmd = $avisByCommande[(int)$cmd['commande_id']] ?? null; ?>
+                                            <?php if ($avisCmd): ?>
+                                                <?php if ($avisCmd['statut'] === 'valide'): ?>
+                                                    <span class="badge bg-success"><i class="bi bi-star-fill me-1"></i>Avis publié</span>
+                                                <?php elseif ($avisCmd['statut'] === 'refuse'): ?>
+                                                    <span class="badge bg-danger">Avis refusé</span>
+                                                <?php else: ?>
+                                                    <span class="badge bg-warning text-dark"><i class="bi bi-hourglass me-1"></i>Avis en attente</span>
+                                                <?php endif; ?>
                                             <?php else: ?>
-                                                <span class="badge bg-warning text-dark"><i class="bi bi-hourglass me-1"></i>Avis en attente</span>
+                                                <button class="btn btn-sm btn-vg" data-bs-toggle="modal" data-bs-target="#avisModal<?= (int)$cmd['commande_id'] ?>">
+                                                    <i class="bi bi-star me-1"></i>Donner un avis
+                                                </button>
                                             <?php endif; ?>
-                                        <?php else: ?>
-                                            <button class="btn btn-sm btn-vg" data-bs-toggle="modal" data-bs-target="#avisModal<?= (int)$cmd['commande_id'] ?>">
-                                                <i class="bi bi-star me-1"></i>Donner un avis
-                                            </button>
                                         <?php endif; ?>
-                                    <?php endif; ?>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                        </tbody>
-                    </table>
-                </div>
-            <?php endif; ?>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                            </tbody>
+                        </table>
+                    </div>
+                <?php endif; ?>
+            </section>
         </div>
 
         <!-- Mes infos -->
         <div class="col-lg-4">
-            <div class="card border-0 shadow-sm p-4" style="background:var(--vg-creme);">
+            <div class="card account-panel p-4">
                 <h2 class="h5 mb-3">Mes informations</h2>
                 <form method="POST" action="/mon-compte/modifier">
                     <?= csrfField() ?>

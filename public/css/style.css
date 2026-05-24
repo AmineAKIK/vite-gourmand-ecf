@@ -677,6 +677,55 @@ a:focus {
     height: 220px;
     object-fit: cover;
 }
+
+/* Contact */
+.contact-page {
+    --contact-panel-bg: rgba(254, 248, 239, .82);
+    --contact-panel-border: rgba(139, 26, 43, .16);
+}
+
+.contact-panel {
+    background: var(--contact-panel-bg);
+    border: 1px solid var(--contact-panel-border);
+    border-radius: 8px;
+    box-shadow: 0 10px 26px rgba(44, 44, 44, .06);
+}
+
+.contact-panel hr {
+    border-color: var(--contact-panel-border);
+    opacity: 1;
+}
+
+/* Panier et compte client */
+.panier-page,
+.account-page {
+    --client-panel-bg: rgba(254, 248, 239, .82);
+    --client-panel-border: rgba(139, 26, 43, .16);
+}
+
+.panier-panel,
+.account-panel {
+    background: var(--client-panel-bg);
+    border: 1px solid var(--client-panel-border);
+    border-radius: 8px;
+    box-shadow: 0 10px 26px rgba(44, 44, 44, .06);
+}
+
+.panier-panel .table,
+.account-panel .table {
+    --bs-table-bg: transparent;
+    --bs-table-border-color: var(--client-panel-border);
+}
+
+.account-panel .table-light {
+    --bs-table-bg: rgba(253, 246, 236, .7);
+}
+
+.account-panel hr {
+    border-color: var(--client-panel-border);
+    opacity: 1;
+}
+
 .card-menu .badge-theme {
     background: var(--vg-or);
     color: var(--vg-text);
