@@ -41,7 +41,7 @@ $pageTitle = 'Mot de passe oublié - Vite & Gourmand';
         <hr>
         <p class="text-center small mb-0">
             <a href="/connexion" class="text-muted text-decoration-none">
-                <i class="bi bi-arrow-left me-1"></i>Retour à la connexion
+                Retour à la connexion
             </a>
         </p>
     </div>

@@ -18,7 +18,7 @@
                     <strong><?= $nbAttente ?> commande<?= $nbAttente > 1 ? 's' : '' ?></strong> en attente de confirmation
                 </div>
                 <a href="/employe/commandes?statut=en_attente" class="btn btn-sm btn-vg">
-                    <i class="bi bi-arrow-right me-1"></i>Traiter
+                    Traiter
                 </a>
             </div>
         </div>
@@ -31,7 +31,7 @@
                     <strong><?= $nbAvis ?> avis</strong> en attente de validation
                 </div>
                 <a href="/employe/avis" class="btn btn-sm btn-vg">
-                    <i class="bi bi-arrow-right me-1"></i>Valider
+                    Valider
                 </a>
             </div>
         </div>

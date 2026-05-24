@@ -1,7 +1,7 @@
 <?php
 $pageTitle = 'Nos Menus - Vite & Gourmand';
 ?>
-<div class="container py-5">
+<div class="container py-5 menus-page">
     <h1 class="text-center mb-5">Tous les menus</h1>
 
     <!-- FILTRES -->
@@ -9,7 +9,7 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
             <h2 class="h6 mb-0 fw-semibold"><i class="bi bi-funnel me-2"></i>Filtrer les menus</h2>
             <button id="reset-filtres" class="btn btn-sm btn-vg-outline">
-                <i class="bi bi-arrow-counterclockwise me-1"></i>Réinitialiser
+                Réinitialiser
             </button>
         </div>
         <div class="row g-3">

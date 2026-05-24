@@ -6,7 +6,7 @@ $pageTitle = 'Suivi de commande #' . sanitize($commande['numero_commande'] ?? ''
 
     <div class="d-flex align-items-center gap-3 mb-4">
         <a href="/mon-compte" class="btn btn-outline-secondary btn-sm" aria-label="Retour à mon compte">
-            <i class="bi bi-arrow-left me-1"></i>Mon compte
+            Mon compte
         </a>
         <h1 class="h3 fw-bold mb-0">
             Suivi — <span class="text-vg"><?= sanitize($commande['numero_commande'] ?? '') ?></span>
@@ -56,7 +56,7 @@ $pageTitle = 'Suivi de commande #' . sanitize($commande['numero_commande'] ?? ''
                                         <?php if ($i === 0): ?>
                                             <i class="bi bi-flag-fill"></i>
                                         <?php else: ?>
-                                            <i class="bi bi-arrow-right"></i>
+                                            <i class="bi bi-check-lg"></i>
                                         <?php endif; ?>
                                     </div>
                                     <?php if ($i < count($historique) - 1): ?>

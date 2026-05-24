@@ -103,7 +103,7 @@ $chartData = array_map(fn($row) => round((float)($row['ca'] ?? 0), 2), $caStats 
                     <i class="bi bi-funnel me-1"></i>Filtrer
                 </button>
                 <a href="/admin/stats" class="btn btn-outline-secondary btn-sm btn-reset-filters <?= $activeFilters ? '' : 'disabled' ?>" <?= $activeFilters ? '' : 'aria-disabled="true" tabindex="-1"' ?>>
-                    <i class="bi bi-arrow-counterclockwise me-1"></i>Réinitialiser
+                    Réinitialiser
                 </a>
             </div>
         </form>

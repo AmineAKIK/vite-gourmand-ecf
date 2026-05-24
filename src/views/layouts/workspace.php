@@ -13,7 +13,7 @@
     <script nonce="<?= $cspNonce ?>">(function(){var l=document.getElementById('fonts-preload');if(l){l.onload=function(){this.rel='stylesheet';};}}());</script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" nonce="<?= $cspNonce ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" nonce="<?= $cspNonce ?>">
-    <link rel="stylesheet" href="/css/style.css?v=20260523-47" nonce="<?= $cspNonce ?>">
+    <link rel="stylesheet" href="/css/style.css?v=20260524-52" nonce="<?= $cspNonce ?>">
 </head>
 <body class="workspace-body">
 
@@ -69,11 +69,9 @@
             <hr style="border-color:rgba(255,255,255,.1);margin:.5rem 1.25rem;">
 
             <a href="/" class="workspace-nav-item">
-                <i class="bi bi-box-arrow-up-right workspace-nav-icon"></i>
                 <span>Retour au site</span>
             </a>
             <a href="/deconnexion" class="workspace-nav-item workspace-nav-item--danger">
-                <i class="bi bi-box-arrow-right workspace-nav-icon"></i>
                 <span>Déconnexion</span>
             </a>
         </nav>
@@ -115,8 +113,8 @@
                         </li>
                         <?php endforeach; ?>
                         <li><hr style="border-color:rgba(255,255,255,.2);margin:.25rem 0;"></li>
-                        <li class="nav-item"><a class="nav-link" href="/"><i class="bi bi-box-arrow-up-right me-2"></i>Retour au site</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/deconnexion"><i class="bi bi-box-arrow-right me-2"></i>Déconnexion</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/">Retour au site</a></li>
+                        <li class="nav-item"><a class="nav-link" href="/deconnexion">Déconnexion</a></li>
                     </ul>
                 </div>
             </div>

@@ -1,6 +1,6 @@
 <?php $pageTitle = sanitize($menu['titre']) . ' - Vite & Gourmand'; ?>
 
-<div class="container py-5">
+<div class="container py-5 menus-page menu-detail-page">
     <!-- Fil d'ariane -->
     <nav aria-label="Fil d'Ariane" class="mb-4">
         <ol class="breadcrumb">
@@ -54,13 +54,13 @@
 
             <div class="row g-3 my-3">
                 <div class="col-6">
-                    <div class="bg-creme rounded p-3 text-center">
+                    <div class="menu-panel rounded p-3 text-center">
                         <div class="prix-tag"><?= sanitize(formatPrice($menu['prix_par_personne'] ?? 0)) ?></div>
                         <small class="text-muted">par personne</small>
                     </div>
                 </div>
                 <div class="col-6">
-                    <div class="bg-creme rounded p-3 text-center">
+                    <div class="menu-panel rounded p-3 text-center">
                         <div class="h4 fw-bold text-vg"><?= $menu['nombre_personne_minimum'] ?>+</div>
                         <small class="text-muted">personnes minimum</small>
                     </div>
@@ -124,7 +124,7 @@
             <div class="row g-3">
                 <?php foreach ($plats as $plat): ?>
                 <div class="col-12 col-lg-4">
-                    <div class="card border-0 bg-creme p-3 h-100">
+                    <div class="card menu-panel p-3 h-100">
                         <h4 class="h6 fw-bold"><?= sanitize($plat['titre']) ?></h4>
                         <?php if ($plat['description']): ?>
                             <p class="small text-muted mb-2"><?= sanitize($plat['description']) ?></p>

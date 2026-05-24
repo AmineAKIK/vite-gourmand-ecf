@@ -4,7 +4,7 @@
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
         <h1 class="mb-0">Votre panier</h1>
         <a href="/menus" class="btn btn-vg-outline btn-sm">
-            <i class="bi bi-arrow-left me-1"></i>Continuer mes achats
+            Continuer mes achats
         </a>
     </div>
 
