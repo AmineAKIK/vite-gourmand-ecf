@@ -779,6 +779,29 @@ a:focus {
     white-space: nowrap;
 }
 
+/* Tableaux de bord back-office */
+.dashboard-alert > div {
+    min-width: 0;
+}
+
+.dashboard-activity-row {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: .75rem;
+}
+
+.dashboard-activity-main {
+    min-width: 0;
+}
+
+.dashboard-activity-meta {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: .5rem;
+}
+
 /* Statistiques admin */
 .stats-page {
     --stats-panel-bg: rgba(254, 248, 239, .78);
@@ -1415,10 +1438,41 @@ input[type="password"]::-webkit-caps-lock-indicator {
     .workspace-content-inner {
         padding: 1rem;
     }
-    /* Alertes dashboard wrap sur mobile */
-    .alert.d-flex {
-        flex-wrap: wrap;
-        gap: .5rem;
+    .workspace-dashboard h1 {
+        font-size: 2rem;
+    }
+
+    .dashboard-alert {
+        align-items: flex-start !important;
+        flex-direction: column;
+    }
+
+    .dashboard-alert .btn {
+        align-self: flex-start;
+    }
+
+    .dashboard-activity-item {
+        padding: 1rem !important;
+    }
+
+    .dashboard-activity-row {
+        flex-direction: column;
+        gap: .7rem;
+    }
+
+    .dashboard-activity-main {
+        width: 100%;
+    }
+
+    .dashboard-activity-main .text-truncate {
+        overflow: visible;
+        text-overflow: clip;
+        white-space: normal;
+    }
+
+    .dashboard-activity-meta {
+        justify-content: space-between;
+        width: 100%;
     }
 }
 

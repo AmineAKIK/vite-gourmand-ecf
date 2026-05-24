@@ -1,6 +1,6 @@
 <?php $pageTitle = 'Tableau de bord — Vite & Gourmand'; ?>
 
-<div class="container py-4">
+<div class="container py-4 workspace-dashboard">
 
     <h1 class="fw-bold mb-4">
         <i class="bi bi-speedometer2 me-2 text-vg"></i>Tableau de bord
@@ -12,7 +12,7 @@
     <div class="row g-3 mb-4">
         <?php if ($nbAttente > 0): ?>
         <div class="col-12 col-lg-6">
-            <div class="alert alert-warning d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0 shadow-sm">
+            <div class="alert alert-warning dashboard-alert d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0 shadow-sm">
                 <div>
                     <i class="bi bi-exclamation-circle me-2"></i>
                     <strong><?= $nbAttente ?> commande<?= $nbAttente > 1 ? 's' : '' ?></strong> en attente de confirmation
@@ -25,7 +25,7 @@
         <?php endif; ?>
         <?php if ($nbAvis > 0): ?>
         <div class="col-12 col-lg-6">
-            <div class="alert alert-info d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0 shadow-sm">
+            <div class="alert alert-info dashboard-alert d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0 shadow-sm">
                 <div>
                     <i class="bi bi-star me-2"></i>
                     <strong><?= $nbAvis ?> avis</strong> en attente de validation
@@ -66,7 +66,7 @@
     </div>
 
     <!-- FIL D'ACTIVITÉ -->
-    <div class="card shadow-sm" style="border:1px solid rgba(0,0,0,.08);">
+    <div class="card dashboard-activity-card shadow-sm" style="border:1px solid rgba(0,0,0,.08);">
         <div class="card-header fw-semibold">
             <i class="bi bi-clock-history me-2 text-vg"></i>Activité récente
         </div>
@@ -76,16 +76,16 @@
             <?php else: ?>
             <ul class="list-group list-group-flush">
                 <?php foreach ($activiteRecente as $cmd): ?>
-                <li class="list-group-item py-3 px-3">
-                    <div class="d-flex align-items-start justify-content-between gap-2">
-                        <div style="min-width:0;">
+                <li class="list-group-item dashboard-activity-item py-3 px-3">
+                    <div class="dashboard-activity-row">
+                        <div class="dashboard-activity-main">
                             <div class="fw-medium text-truncate"><?= sanitize($cmd['numero_commande'] ?? '') ?></div>
                             <div class="text-muted small text-truncate">
                                 <?= sanitize(personFullName($cmd)) ?> · <?= sanitize($cmd['menu_titre'] ?? '') ?>
                                 · <?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?>
                             </div>
                         </div>
-                        <div class="flex-shrink-0">
+                        <div class="dashboard-activity-meta">
                             <?= commandeStatusBadge($cmd['statut'] ?? null) ?>
                         </div>
                     </div>
