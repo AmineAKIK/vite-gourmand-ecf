@@ -123,15 +123,22 @@ class CommandeModel {
         $db  = Database::getConnection();
         $sql = "
             SELECT c.*,
+                   accept_hist.date_acceptation,
                    GROUP_CONCAT(m.titre ORDER BY cl.ligne_id SEPARATOR ', ') AS menu_titre,
                    u.prenom, u.nom, u.email, u.telephone
             FROM commande c
+            LEFT JOIN (
+                SELECT commande_id, MIN(created_at) AS date_acceptation
+                FROM commande_historique
+                WHERE nouveau_statut = ?
+                GROUP BY commande_id
+            ) accept_hist ON accept_hist.commande_id = c.commande_id
             JOIN commande_ligne cl ON cl.commande_id = c.commande_id
             JOIN menu m ON m.menu_id = cl.menu_id
             JOIN utilisateur u ON u.utilisateur_id = c.utilisateur_id
             WHERE 1=1
         ";
-        $params = [];
+        $params = [commandeAcceptedStatus()];
         if (!empty($filters['statut'])) {
             $sql .= " AND c.statut = ?"; $params[] = $filters['statut'];
         }
@@ -203,38 +210,48 @@ class CommandeModel {
 
     public static function getStatsByMenu(): array {
         $db = Database::getConnection();
+        $revenueStatuses = commandeRevenueStatuses();
+        $placeholders = implode(',', array_fill(0, count($revenueStatuses), '?'));
         $stmt = $db->prepare("
-            SELECT m.titre, COUNT(DISTINCT c.commande_id) AS nb_commandes, SUM(c.prix_total) AS ca_total
+            SELECT m.titre, COUNT(DISTINCT c.commande_id) AS nb_commandes, SUM(cl.prix_total_ligne) AS ca_total
             FROM commande c
             JOIN commande_ligne cl ON cl.commande_id = c.commande_id
             JOIN menu m ON m.menu_id = cl.menu_id
-            WHERE c.statut != ?
+            WHERE c.statut IN ($placeholders)
             GROUP BY cl.menu_id
         ");
-        $stmt->execute([commandeCancelledStatus()]);
+        $stmt->execute($revenueStatuses);
         return $stmt->fetchAll();
     }
 
     public static function getCaStatsByMenu(int $menuId = 0, string $dateDebut = '', string $dateFin = ''): array {
+        $revenueStatuses = commandeRevenueStatuses();
+        $placeholders = implode(',', array_fill(0, count($revenueStatuses), '?'));
         $sql = "
             SELECT m.menu_id, m.titre, SUM(cl.prix_total_ligne) AS ca, COUNT(DISTINCT c.commande_id) AS nb
             FROM commande c
+            LEFT JOIN (
+                SELECT commande_id, MIN(created_at) AS date_acceptation
+                FROM commande_historique
+                WHERE nouveau_statut = ?
+                GROUP BY commande_id
+            ) accept_hist ON accept_hist.commande_id = c.commande_id
             JOIN commande_ligne cl ON cl.commande_id = c.commande_id
             JOIN menu m ON m.menu_id = cl.menu_id
-            WHERE c.statut != ?
+            WHERE c.statut IN ($placeholders)
         ";
-        $params = [commandeCancelledStatus()];
+        $params = array_merge([commandeAcceptedStatus()], $revenueStatuses);
 
         if ($menuId) {
             $sql .= " AND cl.menu_id = ?";
             $params[] = $menuId;
         }
         if ($dateDebut) {
-            $sql .= " AND c.date_commande >= ?";
+            $sql .= " AND COALESCE(accept_hist.date_acceptation, c.date_commande) >= ?";
             $params[] = $dateDebut;
         }
         if ($dateFin) {
-            $sql .= " AND c.date_commande <= ?";
+            $sql .= " AND COALESCE(accept_hist.date_acceptation, c.date_commande) <= ?";
             $params[] = $dateFin . ' 23:59:59';
         }
 

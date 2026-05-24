@@ -9,7 +9,7 @@ $topMenu = $caStats[0] ?? null;
 $topMenuShare = ($topMenu && $totalCA > 0) ? ((float)$topMenu['ca'] / $totalCA) * 100 : 0;
 $activeFilters = (int)($menuFilter ?? 0) > 0 || !empty($dateDebut) || !empty($dateFin);
 
-$periodLabel = 'Toutes les commandes comptabilisées';
+$periodLabel = 'Commandes acceptées comptabilisées';
 if (!empty($dateDebut) && !empty($dateFin)) {
     $periodLabel = 'Du ' . formatDateFr($dateDebut) . ' au ' . formatDateFr($dateFin);
 } elseif (!empty($dateDebut)) {
@@ -40,12 +40,12 @@ $chartData = array_map(fn($row) => round((float)($row['ca'] ?? 0), 2), $caStats 
         <article class="stats-kpi-card">
             <span class="stats-kpi-label">Chiffre d'affaires</span>
             <strong class="stats-kpi-value"><?= sanitize(formatPrice($totalCA)) ?></strong>
-            <span class="stats-kpi-note">Hors commandes annulées</span>
+            <span class="stats-kpi-note">À partir du statut accepté</span>
         </article>
         <article class="stats-kpi-card">
             <span class="stats-kpi-label">Commandes</span>
             <strong class="stats-kpi-value"><?= sanitize(formatInteger($totalNb)) ?></strong>
-            <span class="stats-kpi-note">Sur la période affichée</span>
+            <span class="stats-kpi-note">Acceptées sur la période affichée</span>
         </article>
         <article class="stats-kpi-card">
             <span class="stats-kpi-label">Panier moyen</span>
@@ -192,23 +192,23 @@ $chartData = array_map(fn($row) => round((float)($row['ca'] ?? 0), 2), $caStats 
                             $share = $totalCA > 0 ? ($ca / $totalCA) * 100 : 0;
                         ?>
                         <tr>
-                            <td class="stats-table-title"><?= sanitize($row['titre'] ?? '') ?></td>
-                            <td class="text-end"><?= sanitize(formatInteger($nb)) ?></td>
-                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($average)) ?></td>
-                            <td class="text-end">
+                            <td class="stats-table-title" data-label="Menu"><?= sanitize($row['titre'] ?? '') ?></td>
+                            <td class="text-end" data-label="Commandes"><?= sanitize(formatInteger($nb)) ?></td>
+                            <td class="text-end text-nowrap" data-label="Panier moyen"><?= sanitize(formatPrice($average)) ?></td>
+                            <td class="text-end" data-label="Part CA">
                                 <span class="stats-percent"><?= sanitize(number_format($share, 0, ',', ' ')) ?> %</span>
                             </td>
-                            <td class="text-end fw-bold text-vg text-nowrap"><?= sanitize(formatPrice($ca)) ?></td>
+                            <td class="text-end fw-bold text-vg text-nowrap" data-label="CA total"><?= sanitize(formatPrice($ca)) ?></td>
                         </tr>
                         <?php endforeach; ?>
                     </tbody>
                     <tfoot>
                         <tr>
-                            <td>Total</td>
-                            <td class="text-end"><?= sanitize(formatInteger($totalNb)) ?></td>
-                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($panierMoyen)) ?></td>
-                            <td class="text-end">100 %</td>
-                            <td class="text-end text-vg text-nowrap"><?= sanitize(formatPrice($totalCA)) ?></td>
+                            <td data-label="Menu">Total</td>
+                            <td class="text-end" data-label="Commandes"><?= sanitize(formatInteger($totalNb)) ?></td>
+                            <td class="text-end text-nowrap" data-label="Panier moyen"><?= sanitize(formatPrice($panierMoyen)) ?></td>
+                            <td class="text-end" data-label="Part CA">100 %</td>
+                            <td class="text-end text-vg text-nowrap" data-label="CA total"><?= sanitize(formatPrice($totalCA)) ?></td>
                         </tr>
                     </tfoot>
                 </table>

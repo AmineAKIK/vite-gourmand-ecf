@@ -264,6 +264,25 @@ function commandeCancelledStatus(): string {
     return 'annulee';
 }
 
+function commandeAcceptedStatus(): string {
+    return 'accepte';
+}
+
+function commandeRevenueStatuses(): array {
+    return [
+        commandeAcceptedStatus(),
+        'en_preparation',
+        'en_cours_livraison',
+        'livre',
+        'en_attente_materiel',
+        'terminee',
+    ];
+}
+
+function commandeCountsTowardRevenue(?string $status): bool {
+    return in_array($status, commandeRevenueStatuses(), true);
+}
+
 function commandeCompletedStatus(): string {
     return 'terminee';
 }

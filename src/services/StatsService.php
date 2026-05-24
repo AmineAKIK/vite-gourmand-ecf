@@ -6,6 +6,10 @@ class StatsService
     private const COLLECTION = 'commandes_stats';
     public static function recordCommande(int $commandeId, array $commande, array $menu): void
     {
+        if (!commandeCountsTowardRevenue($commande['statut'] ?? null)) {
+            return;
+        }
+
         try {
             $collection = self::collection();
             if (!$collection) {
@@ -72,18 +76,37 @@ class StatsService
 
     private static function syncFromMysql(mixed $collection): void
     {
+        $revenueStatuses = commandeRevenueStatuses();
+        $placeholders = implode(',', array_fill(0, count($revenueStatuses), '?'));
         $stmt = Database::getConnection()->prepare("
             SELECT cl.ligne_id, cl.commande_id, cl.menu_id, m.titre AS menu_titre,
-                   cl.prix_total_ligne, cl.nombre_personne, c.date_commande
+                   cl.prix_total_ligne, cl.nombre_personne,
+                   COALESCE(accept_hist.date_acceptation, c.date_commande) AS date_comptabilisation
             FROM commande c
+            LEFT JOIN (
+                SELECT commande_id, MIN(created_at) AS date_acceptation
+                FROM commande_historique
+                WHERE nouveau_statut = ?
+                GROUP BY commande_id
+            ) accept_hist ON accept_hist.commande_id = c.commande_id
             JOIN commande_ligne cl ON cl.commande_id = c.commande_id
             JOIN menu m ON m.menu_id = cl.menu_id
-            WHERE c.statut != ?
+            WHERE c.statut IN ($placeholders)
         ");
-        $stmt->execute([commandeCancelledStatus()]);
+        $stmt->execute(array_merge([commandeAcceptedStatus()], $revenueStatuses));
 
-        foreach ($stmt->fetchAll() as $row) {
-            $createdAt = !empty($row['date_commande']) ? strtotime($row['date_commande']) : time();
+        $rows = $stmt->fetchAll();
+        $eligibleCommandeIds = array_values(array_unique(array_map(fn($row) => (int)$row['commande_id'], $rows)));
+
+        $collection->deleteMany(['ligne_id' => ['$exists' => false]]);
+        if ($eligibleCommandeIds) {
+            $collection->deleteMany(['commande_id' => ['$nin' => $eligibleCommandeIds]]);
+        } else {
+            $collection->deleteMany([]);
+        }
+
+        foreach ($rows as $row) {
+            $createdAt = !empty($row['date_comptabilisation']) ? strtotime($row['date_comptabilisation']) : time();
             $collection->updateOne(
                 ['ligne_id' => (int)$row['ligne_id']],
                 ['$setOnInsert' => [

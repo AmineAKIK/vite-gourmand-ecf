@@ -65,7 +65,7 @@
         </div>
         <div class="col-6 col-lg-3">
             <div class="card shadow-sm p-3 text-center h-100 d-flex flex-column justify-content-center" style="border:1px solid rgba(0,0,0,.08);">
-                <div class="fw-bold text-vg lh-1 mb-1 fs-3"><?= count($stats ?? []) ?></div>
+                <div class="fw-bold text-vg lh-1 mb-1 fs-3"><?= count($menusActifs ?? []) ?></div>
                 <div class="text-muted small">Menus actifs</div>
             </div>
         </div>

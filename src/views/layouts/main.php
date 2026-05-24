@@ -21,7 +21,7 @@
     <script nonce="<?= $cspNonce ?>">(function(){var l=document.getElementById('fonts-preload');if(l){l.onload=function(){this.rel='stylesheet';};}}());</script>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" nonce="<?= $cspNonce ?>">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" nonce="<?= $cspNonce ?>">
-    <link rel="stylesheet" href="/css/style.css?v=20260524-53" nonce="<?= $cspNonce ?>">
+    <link rel="stylesheet" href="/css/style.css?v=20260524-57" nonce="<?= $cspNonce ?>">
 </head>
 <body>
 
@@ -43,29 +43,40 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
             <span class="navbar-toggler-icon"></span>
         </button>
         <div class="collapse navbar-collapse text-start" id="navMain">
-            <ul class="navbar-nav me-auto mb-0">
+            <ul class="navbar-nav main-nav-list me-auto mb-0">
+                <li class="nav-section-title d-lg-none">Navigation</li>
                 <li class="nav-item">
-                    <a class="nav-link <?= routeIsActive('/') ? 'active' : '' ?>" href="/" <?= routeIsActive('/') ? 'aria-current="page"' : '' ?>>Accueil</a>
+                    <a class="nav-link <?= routeIsActive('/') ? 'active' : '' ?>" href="/" <?= routeIsActive('/') ? 'aria-current="page"' : '' ?>>
+                        <i class="bi bi-house-door nav-link-icon d-lg-none" aria-hidden="true"></i>
+                        <span>Accueil</span>
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= routeIsActive('/menus*') ? 'active' : '' ?>" href="/menus" <?= routeIsActive('/menus*') ? 'aria-current="page"' : '' ?>>Tous les menus</a>
+                    <a class="nav-link <?= routeIsActive('/menus*') ? 'active' : '' ?>" href="/menus" <?= routeIsActive('/menus*') ? 'aria-current="page"' : '' ?>>
+                        <i class="bi bi-journal-richtext nav-link-icon d-lg-none" aria-hidden="true"></i>
+                        <span>Tous les menus</span>
+                    </a>
                 </li>
                 <li class="nav-item">
-                    <a class="nav-link <?= routeIsActive('/contact') ? 'active' : '' ?>" href="/contact" <?= routeIsActive('/contact') ? 'aria-current="page"' : '' ?>>Contact</a>
+                    <a class="nav-link <?= routeIsActive('/contact') ? 'active' : '' ?>" href="/contact" <?= routeIsActive('/contact') ? 'aria-current="page"' : '' ?>>
+                        <i class="bi bi-chat-left-text nav-link-icon d-lg-none" aria-hidden="true"></i>
+                        <span>Contact</span>
+                    </a>
                 </li>
             </ul>
-            <ul class="navbar-nav ms-auto align-items-lg-center">
+            <ul class="navbar-nav account-nav-list ms-auto align-items-lg-center">
                 <?php if (isAuth()): ?>
+                    <li class="nav-section-title d-lg-none">Compte</li>
                     <li class="nav-item me-1">
                         <?php $panierCount = count($_SESSION['panier'] ?? []); ?>
-                        <a class="nav-link" href="/panier" aria-label="Votre panier (<?= $panierCount ?> article<?= $panierCount > 1 ? 's' : '' ?>)" style="padding-right:1.2rem;">
+                        <a class="nav-link nav-link-cart" href="/panier" aria-label="Votre panier (<?= $panierCount ?> article<?= $panierCount > 1 ? 's' : '' ?>)">
                             <span class="position-relative d-inline-block">
-                                <i class="bi bi-cart3 fs-5"></i>
+                                <i class="bi bi-cart3 fs-5 nav-link-icon" aria-hidden="true"></i>
                                 <?php if ($panierCount > 0): ?>
-                                    <span class="position-absolute badge rounded-pill d-none d-lg-inline-block" style="background:var(--vg-or);color:#2C2C2C;font-size:.6rem;top:-6px;left:100%;transform:translateX(-40%);min-width:1.1em;line-height:1.3;"><?= $panierCount ?></span>
+                                    <span class="position-absolute badge rounded-pill cart-count-badge" style="background:var(--vg-or);color:#2C2C2C;font-size:.6rem;top:-6px;left:100%;transform:translateX(-40%);min-width:1.1em;line-height:1.3;"><?= $panierCount ?></span>
                                 <?php endif; ?>
                             </span>
-                            <span class="d-lg-none ms-2">Votre panier<?= $panierCount > 0 ? ' (' . $panierCount . ')' : '' ?></span>
+                            <span class="d-lg-none">Votre panier<?= $panierCount > 0 ? ' (' . $panierCount . ')' : '' ?></span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -74,15 +85,23 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
                             $navActive = hasRole(ROLE_ADMIN) || hasRole(ROLE_EMPLOYE) ? $workspaceActive : routeIsActive('/mon-compte');
                         ?>
                         <a class="nav-link <?= $navActive ? 'active' : '' ?>" href="<?= sanitize($navHref) ?>" <?= $navActive ? 'aria-current="page"' : '' ?>>
-                            <?= sanitize(roleHomeLabel()) ?>
+                            <i class="bi bi-person-workspace nav-link-icon d-lg-none" aria-hidden="true"></i>
+                            <span><?= sanitize(roleHomeLabel()) ?></span>
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="/deconnexion" style="opacity:.7;">Déconnexion</a>
+                        <a class="nav-link nav-link-logout" href="/deconnexion">
+                            <i class="bi bi-box-arrow-right nav-link-icon d-lg-none" aria-hidden="true"></i>
+                            <span>Déconnexion</span>
+                        </a>
                     </li>
                 <?php else: ?>
+                    <li class="nav-section-title d-lg-none">Compte</li>
                     <li class="nav-item">
-                        <a class="nav-link <?= routeIsActive('/connexion') ? 'active' : '' ?>" href="/connexion" <?= routeIsActive('/connexion') ? 'aria-current="page"' : '' ?>>Connexion</a>
+                        <a class="nav-link <?= routeIsActive('/connexion') ? 'active' : '' ?>" href="/connexion" <?= routeIsActive('/connexion') ? 'aria-current="page"' : '' ?>>
+                            <i class="bi bi-person-circle nav-link-icon d-lg-none" aria-hidden="true"></i>
+                            <span>Connexion</span>
+                        </a>
                     </li>
                 <?php endif; ?>
             </ul>
