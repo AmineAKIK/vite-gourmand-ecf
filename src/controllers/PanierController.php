@@ -51,6 +51,8 @@ class PanierController
         }
 
         // Fusionner si le même menu est déjà dans le panier
+        $retour = $_SERVER['HTTP_REFERER'] ?? '/menus';
+
         foreach ($_SESSION['panier'] as &$item) {
             if ((int)$item['menu_id'] === $menuId) {
                 $item['nombre_personne'] += $nbPersonnes;
@@ -59,8 +61,8 @@ class PanierController
                     $item['nombre_personne'],
                     $minimum
                 );
-                flash('success', '« ' . $menu['titre'] . ' » mis à jour dans votre panier.');
-                redirect('/panier');
+                flash('success', '« ' . $menu['titre'] . ' » mis à jour dans votre panier. <a href="/panier" class="alert-link">Voir le panier</a>');
+                redirect($retour);
             }
         }
         unset($item);
@@ -74,8 +76,8 @@ class PanierController
             'prix_menu'        => $prixMenu,
         ];
 
-        flash('success', '« ' . $menu['titre'] . ' » ajouté à votre panier.');
-        redirect('/panier');
+        flash('success', '« ' . $menu['titre'] . ' » ajouté à votre panier. <a href="/panier" class="alert-link">Voir le panier</a>');
+        redirect($retour);
     }
 
     public function remove(): void

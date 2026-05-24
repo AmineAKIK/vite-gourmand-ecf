@@ -54,8 +54,19 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
                     <a class="nav-link <?= routeIsActive('/contact') ? 'active' : '' ?>" href="/contact" <?= routeIsActive('/contact') ? 'aria-current="page"' : '' ?>>Contact</a>
                 </li>
             </ul>
-            <ul class="navbar-nav ms-auto">
+            <ul class="navbar-nav ms-auto align-items-lg-center">
                 <?php if (isAuth()): ?>
+                    <?php if (!hasRole(ROLE_ADMIN) && !hasRole(ROLE_EMPLOYE)): ?>
+                    <li class="nav-item me-1">
+                        <?php $panierCount = count($_SESSION['panier'] ?? []); ?>
+                        <a class="nav-link position-relative" href="/panier" aria-label="Votre panier (<?= $panierCount ?> article<?= $panierCount > 1 ? 's' : '' ?>)">
+                            <i class="bi bi-cart3 fs-5"></i>
+                            <?php if ($panierCount > 0): ?>
+                                <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill" style="background:var(--vg-or);color:#2C2C2C;font-size:.65rem;"><?= $panierCount ?></span>
+                            <?php endif; ?>
+                        </a>
+                    </li>
+                    <?php endif; ?>
                     <li class="nav-item">
                         <?php
                             $navHref  = hasRole(ROLE_ADMIN) || hasRole(ROLE_EMPLOYE) ? roleHomePath() : '/mon-compte';
@@ -82,7 +93,7 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
 <div class="container mt-3">
     <?php if ($msg = getFlash('success')): ?>
         <div class="alert alert-success alert-dismissible fade show" role="alert" aria-live="polite">
-            <i class="bi bi-check-circle me-2"></i><?= sanitize($msg) ?>
+            <i class="bi bi-check-circle me-2"></i><?= $msg ?>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fermer"></button>
         </div>
     <?php endif; ?>

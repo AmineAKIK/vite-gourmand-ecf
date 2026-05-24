@@ -84,21 +84,9 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
                                 <p class="small text-success mt-2 mb-0"><i class="bi bi-check-circle me-1"></i><?= (int)$menu['quantite_restante'] ?> réservations disponibles</p>
                             <?php endif; ?>
                         <?php endif; ?>
-                        <div class="d-flex gap-2 mt-3 flex-wrap">
-                            <a href="/menus/detail?id=<?= (int)$menu['menu_id'] ?>" class="btn btn-vg-outline btn-sm">
-                                Voir le détail
-                            </a>
-                            <?php if (isAuth() && ($menu['quantite_restante'] === null || (int)$menu['quantite_restante'] > 0)): ?>
-                            <form method="POST" action="/panier/ajouter">
-                                <?= csrfField() ?>
-                                <input type="hidden" name="menu_id" value="<?= (int)$menu['menu_id'] ?>">
-                                <input type="hidden" name="nombre_personne" value="<?= (int)$menu['nombre_personne_minimum'] ?>">
-                                <button type="submit" class="btn btn-vg btn-sm">
-                                    <i class="bi bi-cart-plus me-1"></i>Ajouter
-                                </button>
-                            </form>
-                            <?php endif; ?>
-                        </div>
+                        <a href="/menus/detail?id=<?= (int)$menu['menu_id'] ?>" class="btn btn-vg btn-sm mt-3">
+                            Voir le détail
+                        </a>
                     </div>
                 </div>
             </article>
@@ -114,9 +102,6 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
 </div>
 
 <script nonce="<?= cspNonce() ?>">
-const IS_AUTH   = <?= isAuth() ? 'true' : 'false' ?>;
-const CSRF_TOKEN = <?= json_encode(csrf()) ?>;
-
 // Filtres dynamiques sans rechargement de page
 function esc(str) {
     const d = document.createElement('div');
@@ -188,20 +173,9 @@ function fetchMenus() {
                                         ? `<p class="small text-warning fw-semibold mt-2 mb-0"><i class="bi bi-exclamation-circle me-1"></i>Plus que ${parseInt(m.quantite_restante)} place(s)</p>`
                                         : `<p class="small text-success mt-2 mb-0"><i class="bi bi-check-circle me-1"></i>${parseInt(m.quantite_restante)} places disponibles</p>`
                             ) : ''}
-                            <div class="d-flex gap-2 mt-3 flex-wrap">
-                                <a href="/menus/detail?id=${parseInt(m.menu_id)}" class="btn btn-vg-outline btn-sm">
-                                    Voir le détail
-                                </a>
-                                ${IS_AUTH && (m.quantite_restante === null || parseInt(m.quantite_restante) > 0) ? `
-                                <form method="POST" action="/panier/ajouter">
-                                    <input type="hidden" name="csrf_token" value="${esc(CSRF_TOKEN)}">
-                                    <input type="hidden" name="menu_id" value="${parseInt(m.menu_id)}">
-                                    <input type="hidden" name="nombre_personne" value="${parseInt(m.nombre_personne_minimum)}">
-                                    <button type="submit" class="btn btn-vg btn-sm">
-                                        <i class="bi bi-cart-plus me-1"></i>Ajouter
-                                    </button>
-                                </form>` : ''}
-                            </div>
+                            <a href="/menus/detail?id=${parseInt(m.menu_id)}" class="btn btn-vg btn-sm mt-3">
+                                Voir le détail
+                            </a>
                         </div>
                     </div>
                 </article>
