@@ -96,12 +96,15 @@ $routes = [
     ],
     'GET_AUTH' => [
         '/mon-compte'          => ['UserController',    'dashboard'],
-        '/commande'            => ['CommandeController','form'],
+        '/panier'              => ['PanierController',  'view'],
         '/commande/suivi'      => ['CommandeController','suivi'],
     ],
     'POST_AUTH' => [
         '/mon-compte/modifier'  => ['UserController', 'update'],
         '/mon-compte/supprimer' => ['UserController', 'deleteAccount'],
+        '/panier/ajouter'      => ['PanierController', 'add'],
+        '/panier/retirer'      => ['PanierController', 'remove'],
+        '/panier/vider'        => ['PanierController', 'clear'],
         '/commande'            => ['CommandeController','create'],
         '/commande/modifier'   => ['CommandeController','update'],
         '/commande/annuler'    => ['CommandeController','cancel'],

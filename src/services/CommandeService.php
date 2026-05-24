@@ -3,7 +3,13 @@
 
 class CommandeService
 {
-    public static function payloadFromRequest(array $source, array $menu): array
+    /**
+     * Validates and extracts livraison fields from POST data.
+     * Returns: date_prestation, heure_livraison, adresse_livraison, ville_livraison,
+     *          code_postal_livraison, prix_livraison, prix_total (lignes total + livraison).
+     * $totalMenus: sum of prix_menu for all panier items (pre-calculated by caller).
+     */
+    public static function payloadFromRequest(array $source, float $totalMenus): array
     {
         $payload = [
             'date_prestation'       => sanitize($source['date_prestation'] ?? ''),
@@ -11,26 +17,19 @@ class CommandeService
             'adresse_livraison'     => sanitize($source['adresse_livraison'] ?? ''),
             'ville_livraison'       => sanitize($source['ville_livraison'] ?? ''),
             'code_postal_livraison' => sanitize($source['code_postal_livraison'] ?? ''),
-            'nombre_personne'       => (int)($source['nombre_personne'] ?? 0),
         ];
 
-        self::validatePayload($payload, $menu);
+        self::validatePayload($payload);
 
-        $prixMenu = calculPrixMenu(
-            (float)$menu['prix_par_personne'],
-            $payload['nombre_personne'],
-            (int)$menu['nombre_personne_minimum']
-        );
         $prixLivraison = calculPrixLivraison($payload['ville_livraison']);
 
         return $payload + [
-            'prix_menu'      => $prixMenu,
             'prix_livraison' => $prixLivraison,
-            'prix_total'     => round($prixMenu + $prixLivraison, 2),
+            'prix_total'     => round($totalMenus + $prixLivraison, 2),
         ];
     }
 
-    private static function validatePayload(array $payload, array $menu): void
+    private static function validatePayload(array $payload): void
     {
         if (
             !$payload['date_prestation']
@@ -42,7 +41,6 @@ class CommandeService
             throw new InvalidArgumentException('Tous les champs de livraison sont obligatoires.');
         }
 
-        // Validation date
         $datePrestation = DateTimeImmutable::createFromFormat('!Y-m-d', $payload['date_prestation']);
         $dateErrors = DateTimeImmutable::getLastErrors();
         $hasDateError = is_array($dateErrors) && ($dateErrors['warning_count'] > 0 || $dateErrors['error_count'] > 0);
@@ -55,7 +53,6 @@ class CommandeService
             throw new InvalidArgumentException('La date de prestation ne peut pas dépasser 1 an à l\'avance.');
         }
 
-        // Validation heure (format HH:MM strict, plage 07:00–22:00)
         $heureObj = \DateTime::createFromFormat('H:i', $payload['heure_livraison']);
         if (!$heureObj || $heureObj->format('H:i') !== $payload['heure_livraison']) {
             throw new InvalidArgumentException('Format d\'heure invalide (HH:MM).');
@@ -65,26 +62,15 @@ class CommandeService
             throw new InvalidArgumentException('L\'heure de livraison doit être entre 07:00 et 22:00.');
         }
 
-        // Validation code postal
         if (!preg_match('/^\d{5}$/', $payload['code_postal_livraison'])) {
             throw new InvalidArgumentException('Code postal invalide (5 chiffres requis).');
         }
 
-        // Validation adresse et ville
         if (strlen($payload['adresse_livraison']) < 3) {
             throw new InvalidArgumentException('Adresse de livraison invalide.');
         }
         if (strlen($payload['ville_livraison']) < 2) {
             throw new InvalidArgumentException('Ville de livraison invalide.');
-        }
-
-        // Validation nombre de personnes
-        $minimum = (int)$menu['nombre_personne_minimum'];
-        if ($payload['nombre_personne'] < $minimum) {
-            throw new InvalidArgumentException('Nombre de personnes insuffisant (minimum : ' . $minimum . ').');
-        }
-        if ($payload['nombre_personne'] > 500) {
-            throw new InvalidArgumentException('Nombre de personnes trop élevé (maximum : 500).');
         }
 
         if (strtolower(trim($payload['ville_livraison'])) !== 'bordeaux' && distanceKmDepuisBordeaux($payload['ville_livraison']) <= 0) {

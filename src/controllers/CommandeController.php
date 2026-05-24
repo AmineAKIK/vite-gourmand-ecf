@@ -21,54 +21,72 @@ class CommandeController {
         echo json_encode(['ok' => true, 'distance' => $distance, 'prix' => calculPrixLivraison($ville)]);
     }
 
-    public function form(): void {
-        $menus = MenuModel::getAll();
-        $menuPreselect = isset($_GET['menu_id']) ? MenuModel::getById((int)$_GET['menu_id']) : null;
-        $userSession = currentUser();
-        $user = \UserModel::findById($userSession['id']) ?: $userSession;
-        view('pages/commande/form', compact('menus', 'menuPreselect', 'user'));
-    }
-
     public function create(): void {
         requireAuth();
         verifyCsrf();
-        $user = currentUser();
+        $user  = currentUser();
+        $panier = $_SESSION['panier'] ?? [];
 
-        $menuId       = (int)($_POST['menu_id'] ?? 0);
-        $menu         = MenuModel::getById($menuId);
-
-        if (!$menu) { flash('error', 'Menu introuvable.'); redirect('/commande'); }
-        if ($menu['quantite_restante'] !== null && $menu['quantite_restante'] <= 0) {
-            flash('error', 'Ce menu n\'est plus disponible.'); redirect('/menus');
+        if (empty($panier)) {
+            flash('error', 'Votre panier est vide.');
+            redirect('/panier');
         }
 
+        $totalMenus = array_sum(array_column($panier, 'prix_menu'));
+
         try {
-            $payload = CommandeService::payloadFromRequest($_POST, $menu);
+            $payload = CommandeService::payloadFromRequest($_POST, (float)$totalMenus);
         } catch (InvalidArgumentException $e) {
             flash('error', $e->getMessage());
-            redirect('/commande?menu_id=' . $menuId);
+            redirect('/panier');
         }
 
-        $data = $payload + [
-            'numero_commande'       => generateNumeroCommande(),
-            'utilisateur_id'        => $user['id'],
-            'menu_id'               => $menuId,
+        $numeroCommande = generateNumeroCommande();
+
+        $commandeData = $payload + [
+            'numero_commande' => $numeroCommande,
+            'utilisateur_id'  => $user['id'],
         ];
 
-        try {
-            $commandeId = CommandeModel::create($data);
-        } catch (\Throwable $e) {
-            flash('error', 'Ce menu n\'est plus disponible.');
-            redirect('/menus');
+        // Distribute livraison cost on first ligne only
+        $lignes = [];
+        $livraisonApplied = false;
+        foreach ($panier as $item) {
+            $prixLivraison = (!$livraisonApplied) ? (float)$payload['prix_livraison'] : 0.0;
+            $livraisonApplied = true;
+            $lignes[] = [
+                'menu_id'         => (int)$item['menu_id'],
+                'nombre_personne' => (int)$item['nombre_personne'],
+                'prix_menu'       => (float)$item['prix_menu'],
+                'prix_livraison'  => $prixLivraison,
+                'prix_total_ligne'=> round((float)$item['prix_menu'] + $prixLivraison, 2),
+            ];
         }
 
-        StatsService::recordCommande($commandeId, $data, $menu);
+        try {
+            $commandeId = CommandeModel::create($commandeData, $lignes);
+        } catch (\Throwable $e) {
+            flash('error', 'Un ou plusieurs menus ne sont plus disponibles.');
+            redirect('/panier');
+        }
 
-        // Mail de confirmation
+        foreach ($panier as $item) {
+            $menu = MenuModel::getById((int)$item['menu_id']);
+            if ($menu) {
+                StatsService::recordCommande($commandeId, [
+                    'menu_id'        => $item['menu_id'],
+                    'prix_total'     => $item['prix_menu'],
+                    'nombre_personne'=> $item['nombre_personne'],
+                ], $menu);
+            }
+        }
+
         $userFull = \UserModel::findById($user['id']);
-        MailService::sendCommandeConfirmation($userFull['email'], $data, $menu);
+        MailService::sendCommandeConfirmation($userFull['email'], $commandeData, $panier);
 
-        flash('success', 'Commande #' . $data['numero_commande'] . ' passée avec succès !');
+        $_SESSION['panier'] = [];
+
+        flash('success', 'Commande #' . $numeroCommande . ' passée avec succès !');
         redirect('/mon-compte');
     }
 
@@ -84,13 +102,11 @@ class CommandeController {
             flash('error', 'Cette commande ne peut plus être modifiée.'); redirect('/mon-compte');
         }
 
-        $menu = MenuModel::getById((int)$commande['menu_id']);
-        if (!$menu) {
-            flash('error', 'Menu introuvable.'); redirect('/mon-compte');
-        }
+        $lignes = CommandeModel::getLignes((int)$commande['commande_id']);
+        $totalMenus = array_sum(array_column($lignes, 'prix_menu'));
 
         try {
-            $payload = CommandeService::payloadFromRequest($_POST, $menu);
+            $payload = CommandeService::payloadFromRequest($_POST, (float)$totalMenus);
         } catch (InvalidArgumentException $e) {
             redirect('/mon-compte?open_modal=modif_' . (int)$commande['commande_id'] . '&modal_error=' . urlencode($e->getMessage()));
         }

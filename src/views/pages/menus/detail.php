@@ -83,11 +83,24 @@
             </div>
             <?php endif; ?>
 
-            <!-- Bouton Commander -->
+            <!-- Ajouter au panier -->
             <?php if (isAuth()): ?>
-                <a href="/commande?menu_id=<?= (int)$menu['menu_id'] ?>" class="btn btn-vg btn-lg w-100 mt-3">
-                    <i class="bi bi-cart-plus me-2"></i>Commander ce menu
-                </a>
+                <form method="POST" action="/panier/ajouter" class="mt-3">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="menu_id" value="<?= (int)$menu['menu_id'] ?>">
+                    <div class="input-group mb-2">
+                        <label for="detail_nb_personnes" class="input-group-text">Personnes</label>
+                        <input type="number" class="form-control" id="detail_nb_personnes"
+                               name="nombre_personne"
+                               min="<?= (int)$menu['nombre_personne_minimum'] ?>"
+                               max="500"
+                               value="<?= (int)$menu['nombre_personne_minimum'] ?>"
+                               required>
+                    </div>
+                    <button type="submit" class="btn btn-vg btn-lg w-100">
+                        <i class="bi bi-cart-plus me-2"></i>Ajouter au panier
+                    </button>
+                </form>
             <?php else: ?>
                 <div class="alert alert-info mt-3">
                     <i class="bi bi-lock me-2"></i>

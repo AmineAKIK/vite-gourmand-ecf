@@ -23,7 +23,7 @@
                         <?php foreach ($commandes as $cmd): ?>
                             <tr>
                                 <td class="d-none d-lg-table-cell"><small class="text-muted" style="font-size:.7rem;"><?= sanitize($cmd['numero_commande']) ?></small></td>
-                                <td><?= sanitize($cmd['menu_titre']) ?></td>
+                                <td class="small"><?= sanitize($cmd['menu_titre']) ?></td>
                                 <td class="text-nowrap small"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></td>
                                 <td class="d-none d-lg-table-cell" style="max-width:160px;"><span class="text-truncate d-block" title="<?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?>"><?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?></span></td>
                                 <td class="text-nowrap"><strong><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></strong></td>
@@ -159,13 +159,6 @@
                                        name="heure_livraison"
                                        value="<?= sanitize($cmd['heure_livraison']) ?>" required>
                             </div>
-                        </div>
-                        <div class="mt-2">
-                            <label for="nbpers_<?= (int)$cmd['commande_id'] ?>" class="form-label">Nombre de personnes</label>
-                            <input type="number" class="form-control"
-                                   id="nbpers_<?= (int)$cmd['commande_id'] ?>"
-                                   name="nombre_personne"
-                                   value="<?= (int)$cmd['nombre_personne'] ?>" min="1" required>
                         </div>
                     </div>
                     <div class="modal-footer">

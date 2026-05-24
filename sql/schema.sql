@@ -119,24 +119,31 @@ CREATE TABLE commande (
     commande_id INT AUTO_INCREMENT PRIMARY KEY,
     numero_commande VARCHAR(50) NOT NULL UNIQUE,
     utilisateur_id INT NOT NULL,
-    menu_id INT NOT NULL,
     date_commande DATETIME DEFAULT CURRENT_TIMESTAMP,
     date_prestation DATE NOT NULL,
     heure_livraison VARCHAR(10) NOT NULL,
     adresse_livraison VARCHAR(255) NOT NULL,
     ville_livraison VARCHAR(100) NOT NULL,
     code_postal_livraison VARCHAR(10) NOT NULL,
-    nombre_personne INT NOT NULL,
-    prix_menu DOUBLE NOT NULL,
-    prix_livraison DOUBLE NOT NULL DEFAULT 0,
     prix_total DOUBLE NOT NULL,
     statut VARCHAR(50) NOT NULL DEFAULT 'en_attente',
     -- Statuts : en_attente, accepte, en_preparation, en_cours_livraison, livre, en_attente_materiel, terminee, annulee
     pret_materiel BOOLEAN DEFAULT FALSE,
     motif_annulation TEXT,
     mode_contact_annulation VARCHAR(50),
-    FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(utilisateur_id),
-    FOREIGN KEY (menu_id) REFERENCES menu(menu_id)
+    FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(utilisateur_id)
+);
+
+CREATE TABLE commande_ligne (
+    ligne_id          INT AUTO_INCREMENT PRIMARY KEY,
+    commande_id       INT NOT NULL,
+    menu_id           INT NOT NULL,
+    nombre_personne   INT NOT NULL,
+    prix_menu         DOUBLE NOT NULL,
+    prix_livraison    DOUBLE NOT NULL DEFAULT 0,
+    prix_total_ligne  DOUBLE NOT NULL,
+    FOREIGN KEY (commande_id) REFERENCES commande(commande_id) ON DELETE CASCADE,
+    FOREIGN KEY (menu_id)     REFERENCES menu(menu_id)
 );
 
 CREATE TABLE commande_historique (
@@ -224,10 +231,11 @@ CREATE TABLE geocache (
 -- INDEX DE PERFORMANCE
 -- ============================================
 
-CREATE INDEX idx_commande_statut       ON commande(statut);
-CREATE INDEX idx_commande_utilisateur  ON commande(utilisateur_id);
-CREATE INDEX idx_commande_menu_statut  ON commande(menu_id, statut);
-CREATE INDEX idx_commande_date         ON commande(date_prestation);
+CREATE INDEX idx_commande_statut          ON commande(statut);
+CREATE INDEX idx_commande_utilisateur     ON commande(utilisateur_id);
+CREATE INDEX idx_commande_date            ON commande(date_prestation);
+CREATE INDEX idx_commande_ligne_commande  ON commande_ligne(commande_id);
+CREATE INDEX idx_commande_ligne_menu      ON commande_ligne(menu_id);
 CREATE INDEX idx_avis_statut           ON avis(statut);
 CREATE INDEX idx_avis_utilisateur      ON avis(utilisateur_id);
 CREATE INDEX idx_menu_actif            ON menu(actif);

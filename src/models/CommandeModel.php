@@ -3,40 +3,68 @@
 
 class CommandeModel {
 
-    public static function create(array $data): int {
+    /**
+     * $commandeData: numero_commande, utilisateur_id, date_prestation, heure_livraison,
+     *                adresse_livraison, ville_livraison, code_postal_livraison, prix_total
+     * $lignes: array of { menu_id, nombre_personne, prix_menu, prix_livraison, prix_total_ligne }
+     */
+    public static function create(array $commandeData, array $lignes): int {
         $db = Database::getConnection();
         $db->beginTransaction();
         try {
-            $stockStmt = $db->prepare("SELECT quantite_restante FROM menu WHERE menu_id = ? AND actif = 1 FOR UPDATE");
-            $stockStmt->execute([(int)$data['menu_id']]);
-            $stock = $stockStmt->fetchColumn();
-
-            if ($stock === false || ($stock !== null && (int)$stock <= 0)) {
-                throw new RuntimeException('Stock indisponible.');
+            foreach ($lignes as $ligne) {
+                $stockStmt = $db->prepare("SELECT quantite_restante FROM menu WHERE menu_id = ? AND actif = 1 FOR UPDATE");
+                $stockStmt->execute([(int)$ligne['menu_id']]);
+                $stock = $stockStmt->fetchColumn();
+                if ($stock === false || ($stock !== null && (int)$stock <= 0)) {
+                    throw new RuntimeException('Stock indisponible pour l\'un des menus.');
+                }
             }
 
             $stmt = $db->prepare("
-                INSERT INTO commande (numero_commande, utilisateur_id, menu_id, date_prestation,
-                    heure_livraison, adresse_livraison, ville_livraison, code_postal_livraison,
-                    nombre_personne, prix_menu, prix_livraison, prix_total)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO commande (numero_commande, utilisateur_id, date_prestation,
+                    heure_livraison, adresse_livraison, ville_livraison, code_postal_livraison, prix_total)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
-                $data['numero_commande'], $data['utilisateur_id'], $data['menu_id'],
-                $data['date_prestation'], $data['heure_livraison'], $data['adresse_livraison'],
-                $data['ville_livraison'], $data['code_postal_livraison'], $data['nombre_personne'],
-                $data['prix_menu'], $data['prix_livraison'], $data['prix_total']
+                $commandeData['numero_commande'],
+                $commandeData['utilisateur_id'],
+                $commandeData['date_prestation'],
+                $commandeData['heure_livraison'],
+                $commandeData['adresse_livraison'],
+                $commandeData['ville_livraison'],
+                $commandeData['code_postal_livraison'],
+                $commandeData['prix_total'],
             ]);
-            $id = (int)$db->lastInsertId();
+            $commandeId = (int)$db->lastInsertId();
 
-            if ($stock !== null) {
-                $db->prepare("UPDATE menu SET quantite_restante = quantite_restante - 1 WHERE menu_id = ?")
-                   ->execute([(int)$data['menu_id']]);
+            $ligneStmt = $db->prepare("
+                INSERT INTO commande_ligne (commande_id, menu_id, nombre_personne, prix_menu, prix_livraison, prix_total_ligne)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ");
+
+            foreach ($lignes as $ligne) {
+                $ligneStmt->execute([
+                    $commandeId,
+                    (int)$ligne['menu_id'],
+                    (int)$ligne['nombre_personne'],
+                    (float)$ligne['prix_menu'],
+                    (float)$ligne['prix_livraison'],
+                    (float)$ligne['prix_total_ligne'],
+                ]);
+
+                $stockStmt2 = $db->prepare("SELECT quantite_restante FROM menu WHERE menu_id = ?");
+                $stockStmt2->execute([(int)$ligne['menu_id']]);
+                $stock = $stockStmt2->fetchColumn();
+                if ($stock !== null) {
+                    $db->prepare("UPDATE menu SET quantite_restante = quantite_restante - 1 WHERE menu_id = ?")
+                       ->execute([(int)$ligne['menu_id']]);
+                }
             }
 
-            self::addHistorique($id, null, commandeInitialStatus(), 'Commande passée', $data['utilisateur_id']);
+            self::addHistorique($commandeId, null, commandeInitialStatus(), 'Commande passée', $commandeData['utilisateur_id']);
             $db->commit();
-            return $id;
+            return $commandeId;
         } catch (Throwable $e) {
             if ($db->inTransaction()) {
                 $db->rollBack();
@@ -45,13 +73,29 @@ class CommandeModel {
         }
     }
 
+    public static function getLignes(int $commandeId): array {
+        $db   = Database::getConnection();
+        $stmt = $db->prepare("
+            SELECT cl.*, m.titre AS menu_titre
+            FROM commande_ligne cl
+            JOIN menu m ON m.menu_id = cl.menu_id
+            WHERE cl.commande_id = ?
+            ORDER BY cl.ligne_id ASC
+        ");
+        $stmt->execute([$commandeId]);
+        return $stmt->fetchAll();
+    }
+
     public static function getByUser(int $userId): array {
         $db   = Database::getConnection();
         $stmt = $db->prepare("
-            SELECT c.*, m.titre AS menu_titre
+            SELECT c.*,
+                   GROUP_CONCAT(m.titre ORDER BY cl.ligne_id SEPARATOR ', ') AS menu_titre
             FROM commande c
-            JOIN menu m ON m.menu_id = c.menu_id
+            JOIN commande_ligne cl ON cl.commande_id = c.commande_id
+            JOIN menu m ON m.menu_id = cl.menu_id
             WHERE c.utilisateur_id = ?
+            GROUP BY c.commande_id
             ORDER BY c.date_commande DESC
         ");
         $stmt->execute([$userId]);
@@ -61,11 +105,15 @@ class CommandeModel {
     public static function getById(int $id): ?array {
         $db   = Database::getConnection();
         $stmt = $db->prepare("
-            SELECT c.*, m.titre AS menu_titre, u.email, u.prenom, u.nom, u.telephone
+            SELECT c.*,
+                   GROUP_CONCAT(m.titre ORDER BY cl.ligne_id SEPARATOR ', ') AS menu_titre,
+                   u.email, u.prenom, u.nom, u.telephone
             FROM commande c
-            JOIN menu m ON m.menu_id = c.menu_id
+            JOIN commande_ligne cl ON cl.commande_id = c.commande_id
+            JOIN menu m ON m.menu_id = cl.menu_id
             JOIN utilisateur u ON u.utilisateur_id = c.utilisateur_id
             WHERE c.commande_id = ?
+            GROUP BY c.commande_id
         ");
         $stmt->execute([$id]);
         return $stmt->fetch() ?: null;
@@ -74,9 +122,12 @@ class CommandeModel {
     public static function getAll(array $filters = []): array {
         $db  = Database::getConnection();
         $sql = "
-            SELECT c.*, m.titre AS menu_titre, u.prenom, u.nom, u.email, u.telephone
+            SELECT c.*,
+                   GROUP_CONCAT(m.titre ORDER BY cl.ligne_id SEPARATOR ', ') AS menu_titre,
+                   u.prenom, u.nom, u.email, u.telephone
             FROM commande c
-            JOIN menu m ON m.menu_id = c.menu_id
+            JOIN commande_ligne cl ON cl.commande_id = c.commande_id
+            JOIN menu m ON m.menu_id = cl.menu_id
             JOIN utilisateur u ON u.utilisateur_id = c.utilisateur_id
             WHERE 1=1
         ";
@@ -89,7 +140,7 @@ class CommandeModel {
             $clientLike = '%' . $filters['client'] . '%';
             array_push($params, ...array_fill(0, 3, $clientLike));
         }
-        $sql .= " ORDER BY c.date_commande DESC";
+        $sql .= " GROUP BY c.commande_id ORDER BY c.date_commande DESC";
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();
@@ -106,8 +157,7 @@ class CommandeModel {
         $db   = Database::getConnection();
         $stmt = $db->prepare("
             UPDATE commande SET date_prestation=?, heure_livraison=?, adresse_livraison=?,
-            ville_livraison=?, code_postal_livraison=?, nombre_personne=?,
-            prix_menu=?, prix_livraison=?, prix_total=? WHERE commande_id=?
+            ville_livraison=?, code_postal_livraison=?, prix_total=? WHERE commande_id=?
         ");
         $stmt->execute([
             $data['date_prestation'],
@@ -115,9 +165,6 @@ class CommandeModel {
             $data['adresse_livraison'],
             $data['ville_livraison'],
             $data['code_postal_livraison'],
-            $data['nombre_personne'],
-            $data['prix_menu'],
-            $data['prix_livraison'],
             $data['prix_total'],
             $id,
         ]);
@@ -157,11 +204,12 @@ class CommandeModel {
     public static function getStatsByMenu(): array {
         $db = Database::getConnection();
         $stmt = $db->prepare("
-            SELECT m.titre, COUNT(c.commande_id) AS nb_commandes, SUM(c.prix_total) AS ca_total
+            SELECT m.titre, COUNT(DISTINCT c.commande_id) AS nb_commandes, SUM(c.prix_total) AS ca_total
             FROM commande c
-            JOIN menu m ON m.menu_id = c.menu_id
+            JOIN commande_ligne cl ON cl.commande_id = c.commande_id
+            JOIN menu m ON m.menu_id = cl.menu_id
             WHERE c.statut != ?
-            GROUP BY c.menu_id
+            GROUP BY cl.menu_id
         ");
         $stmt->execute([commandeCancelledStatus()]);
         return $stmt->fetchAll();
@@ -169,15 +217,16 @@ class CommandeModel {
 
     public static function getCaStatsByMenu(int $menuId = 0, string $dateDebut = '', string $dateFin = ''): array {
         $sql = "
-            SELECT m.menu_id, m.titre, SUM(c.prix_total) AS ca, COUNT(c.commande_id) AS nb
+            SELECT m.menu_id, m.titre, SUM(cl.prix_total_ligne) AS ca, COUNT(DISTINCT c.commande_id) AS nb
             FROM commande c
-            JOIN menu m ON m.menu_id = c.menu_id
+            JOIN commande_ligne cl ON cl.commande_id = c.commande_id
+            JOIN menu m ON m.menu_id = cl.menu_id
             WHERE c.statut != ?
         ";
         $params = [commandeCancelledStatus()];
 
         if ($menuId) {
-            $sql .= " AND c.menu_id = ?";
+            $sql .= " AND cl.menu_id = ?";
             $params[] = $menuId;
         }
         if ($dateDebut) {
@@ -189,7 +238,7 @@ class CommandeModel {
             $params[] = $dateFin . ' 23:59:59';
         }
 
-        $sql .= " GROUP BY c.menu_id ORDER BY ca DESC";
+        $sql .= " GROUP BY cl.menu_id ORDER BY ca DESC";
         $stmt = Database::getConnection()->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();

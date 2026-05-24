@@ -82,8 +82,7 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                                     <div class="d-flex gap-2 mb-1"><dt class="text-muted" style="min-width:80px;">Client</dt><dd class="mb-0 fw-medium"><?= sanitize(personFullName($cmd)) ?></dd></div>
                                     <div class="d-flex gap-2 mb-1"><dt class="text-muted" style="min-width:80px;">Email</dt><dd class="mb-0" style="word-break:break-all;"><?= sanitize($cmd['email'] ?? '') ?></dd></div>
                                     <div class="d-flex gap-2 mb-1"><dt class="text-muted" style="min-width:80px;">Téléphone</dt><dd class="mb-0"><?= sanitize($cmd['telephone'] ?? '—') ?></dd></div>
-                                    <div class="d-flex gap-2 mb-1"><dt class="text-muted" style="min-width:80px;">Menu</dt><dd class="mb-0"><?= sanitize($cmd['menu_titre'] ?? '') ?></dd></div>
-                                    <div class="d-flex gap-2 mb-1"><dt class="text-muted" style="min-width:80px;">Personnes</dt><dd class="mb-0"><?= (int)($cmd['nombre_personne'] ?? 0) ?></dd></div>
+                                    <div class="d-flex gap-2 mb-1"><dt class="text-muted" style="min-width:80px;">Menus</dt><dd class="mb-0"><?= sanitize($cmd['menu_titre'] ?? '') ?></dd></div>
                                     <div class="d-flex gap-2 mb-1"><dt class="text-muted" style="min-width:80px;">Adresse</dt><dd class="mb-0"><?= sanitize(($cmd['adresse_livraison'] ?? '') . ', ' . ($cmd['ville_livraison'] ?? '')) ?></dd></div>
                                     <div class="d-flex gap-2 mb-0"><dt class="text-muted" style="min-width:80px;">Total</dt><dd class="mb-0 fw-bold text-vg"><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></dd></div>
                                 </dl>

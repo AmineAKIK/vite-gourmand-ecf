@@ -73,10 +73,11 @@ class StatsService
     private static function syncFromMysql(mixed $collection): void
     {
         $stmt = Database::getConnection()->prepare("
-            SELECT c.commande_id, c.menu_id, m.titre AS menu_titre, c.prix_total,
-                   c.nombre_personne, c.date_commande
+            SELECT cl.ligne_id, cl.commande_id, cl.menu_id, m.titre AS menu_titre,
+                   cl.prix_total_ligne, cl.nombre_personne, c.date_commande
             FROM commande c
-            JOIN menu m ON m.menu_id = c.menu_id
+            JOIN commande_ligne cl ON cl.commande_id = c.commande_id
+            JOIN menu m ON m.menu_id = cl.menu_id
             WHERE c.statut != ?
         ");
         $stmt->execute([commandeCancelledStatus()]);
@@ -84,12 +85,13 @@ class StatsService
         foreach ($stmt->fetchAll() as $row) {
             $createdAt = !empty($row['date_commande']) ? strtotime($row['date_commande']) : time();
             $collection->updateOne(
-                ['commande_id' => (int)$row['commande_id']],
+                ['ligne_id' => (int)$row['ligne_id']],
                 ['$setOnInsert' => [
+                    'ligne_id'     => (int)$row['ligne_id'],
                     'commande_id'  => (int)$row['commande_id'],
                     'menu_id'      => (int)$row['menu_id'],
                     'menu_titre'   => $row['menu_titre'],
-                    'prix_total'   => (float)$row['prix_total'],
+                    'prix_total'   => (float)$row['prix_total_ligne'],
                     'nb_personnes' => (int)$row['nombre_personne'],
                     'created_at'   => new \MongoDB\BSON\UTCDateTime($createdAt * 1000),
                 ]],

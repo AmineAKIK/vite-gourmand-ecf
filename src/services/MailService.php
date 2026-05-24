@@ -100,8 +100,21 @@ class MailService {
         }
     }
 
-    public static function sendCommandeConfirmation(string $email, array $commande, array $menu): void {
+    /**
+     * $panier: array of session panier items (titre, nombre_personne, prix_menu)
+     */
+    public static function sendCommandeConfirmation(string $email, array $commande, array $panier): void {
         try {
+            $lignesHtml = '';
+            $totalMenus = 0.0;
+            foreach ($panier as $item) {
+                $lignesHtml .= "<tr><td style='padding:4px 0;color:#5F6470'>" . htmlspecialchars($item['titre']) . " (" . (int)$item['nombre_personne'] . " pers.)</td>"
+                             . "<td style='padding:4px 0;text-align:right'>" . number_format((float)$item['prix_menu'], 2, ',', ' ') . " €</td></tr>";
+                $totalMenus += (float)$item['prix_menu'];
+            }
+            $prixLivraison = (float)($commande['prix_livraison'] ?? round((float)$commande['prix_total'] - $totalMenus, 2));
+            $titresCsv = implode(', ', array_column($panier, 'titre'));
+
             self::send(
                 $email,
                 'Confirmation de votre commande #' . $commande['numero_commande'],
@@ -110,19 +123,20 @@ class MailService {
                     <p>Nous avons bien reçu votre commande. Voici le récapitulatif :</p>
                     <table style='width:100%;border-collapse:collapse;margin:16px 0'>
                         <tr><td style='padding:6px 0;color:#5F6470'>Numéro</td><td style='padding:6px 0'><strong>{$commande['numero_commande']}</strong></td></tr>
-                        <tr style='background:#FDF6EC'><td style='padding:6px 8px;color:#5F6470'>Menu</td><td style='padding:6px 8px'><strong>" . htmlspecialchars($menu['titre']) . "</strong></td></tr>
                         <tr><td style='padding:6px 0;color:#5F6470'>Date</td><td style='padding:6px 0'>" . htmlspecialchars($commande['date_prestation']) . " à " . htmlspecialchars($commande['heure_livraison']) . "</td></tr>
                         <tr style='background:#FDF6EC'><td style='padding:6px 8px;color:#5F6470'>Adresse</td><td style='padding:6px 8px'>" . htmlspecialchars($commande['adresse_livraison'] . ', ' . $commande['ville_livraison']) . "</td></tr>
-                        <tr><td style='padding:6px 0;color:#5F6470'>Personnes</td><td style='padding:6px 0'>{$commande['nombre_personne']}</td></tr>
+                    </table>
+                    <table style='width:100%;border-collapse:collapse;margin:8px 0'>
+                        <tr><th style='text-align:left;padding:4px 0;color:#5F6470;font-weight:normal'>Menus</th><th style='text-align:right;padding:4px 0;color:#5F6470;font-weight:normal'>Prix</th></tr>
+                        $lignesHtml
                     </table>
                     <table style='width:100%;border-collapse:collapse;border-top:2px solid #8B1A2B;margin-top:8px'>
-                        <tr><td style='padding:6px 0;color:#5F6470'>Prix menu</td><td style='padding:6px 0;text-align:right'>{$commande['prix_menu']} €</td></tr>
-                        <tr><td style='padding:6px 0;color:#5F6470'>Livraison</td><td style='padding:6px 0;text-align:right'>{$commande['prix_livraison']} €</td></tr>
+                        <tr><td style='padding:6px 0;color:#5F6470'>Livraison</td><td style='padding:6px 0;text-align:right'>$prixLivraison €</td></tr>
                         <tr style='font-size:1.1em'><td style='padding:10px 0'><strong>Total</strong></td><td style='padding:10px 0;text-align:right;color:#8B1A2B'><strong>{$commande['prix_total']} €</strong></td></tr>
                     </table>
                     <p>Merci pour votre confiance !<br>L'équipe Vite &amp; Gourmand</p>
                 "),
-                "Commande #{$commande['numero_commande']} confirmée — Menu : {$menu['titre']} — Total : {$commande['prix_total']} €"
+                "Commande #{$commande['numero_commande']} confirmée — Menus : $titresCsv — Total : {$commande['prix_total']} €"
             );
         } catch (\Throwable $e) {
             error_log("Erreur mail commande : " . $e->getMessage());
