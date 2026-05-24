@@ -41,22 +41,26 @@ $pageTitle = 'Vite & Gourmand - Traiteur à Bordeaux';
             </div>
             <div class="col-lg-7">
                 <h2 id="atouts-titre" class="mb-4">Une équipe professionnelle à votre service</h2>
+                <!-- 3 atouts fixes — contenu naturellement impair.
+                     Règle de parité non applicable. Saut 1→3 col volontaire :
+                     col-md-6 produirait un orphelin structurel garanti.
+                     Palier intermédiaire inexistant pour ce contenu. -->
                 <div class="row g-4">
-                    <div class="col-12 col-md-6 col-lg-4">
+                    <div class="col-12 col-lg-4">
                         <div class="p-3">
                             <i class="bi bi-award display-5 text-vg mb-3"></i>
                             <h3 class="h5">25 ans d'expérience</h3>
                             <p class="text-muted">Julie et José coordonnent chaque prestation avec rigueur, ponctualité et sens du détail.</p>
                         </div>
                     </div>
-                    <div class="col-12 col-md-6 col-lg-4">
+                    <div class="col-12 col-lg-4">
                         <div class="p-3">
                             <i class="bi bi-clipboard-check display-5 text-vg mb-3"></i>
                             <h3 class="h5">Organisation maîtrisée</h3>
                             <p class="text-muted">Les commandes, les délais, les quantités et la livraison sont suivis avec méthode.</p>
                         </div>
                     </div>
-                    <div class="col-12 col-md-6 col-lg-4">
+                    <div class="col-12 col-lg-4">
                         <div class="p-3">
                             <i class="bi bi-stars display-5 text-vg mb-3"></i>
                             <h3 class="h5">Qualité constante</h3>

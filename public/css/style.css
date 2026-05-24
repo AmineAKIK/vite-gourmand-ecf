@@ -746,11 +746,16 @@ a:focus {
 
 .stats-kpi-grid {
     display: grid;
-    /* auto-fit : étire les items restants, élimine les colonnes vides.
-       minmax calé sur --grid-unit-4col : 4 cards à 200px+ tiennent jusqu'à ~880px,
-       puis auto-fit passe à 2, puis à 1 — les breakpoints 991px et 575px sont absorbés. */
-    grid-template-columns: repeat(auto-fit, minmax(var(--grid-unit-4col), 1fr));
+    /* 2 colonnes par défaut (mobile + tablette) — palier --bp-8col passe à 4.
+       auto-fit écarté : ne peut pas garantir des paliers pairs (passage 4→3→2)
+       sur un contenu fixe à 4 items — breakpoint explicite requis. */
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 1rem;
+}
+@media (min-width: 992px) { /* var(--bp-8col) */
+    .stats-kpi-grid {
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
 }
 
 .stats-kpi-card,
@@ -952,7 +957,7 @@ a:focus {
     color: var(--vg-text);
 }
 
-@media (max-width: 991px) {
+@media (max-width: 991px) { /* var(--bp-8col) */
     .stats-heading {
         align-items: flex-start;
         flex-direction: column;
@@ -1051,7 +1056,7 @@ a:focus {
     display: none;
 }
 
-@media (max-width: 991px) {
+@media (max-width: 991px) { /* var(--bp-8col) */
     .commandes-accordion .accordion-item {
         overflow: hidden;
     }
@@ -1159,14 +1164,14 @@ input[type="password"]::-webkit-caps-lock-indicator {
 .skip-link:focus { top: 0; }
 
 /* Responsive — tablette portrait */
-@media (max-width: 991px) {
+@media (max-width: 991px) { /* var(--bp-8col) */
     .hero h1 { font-size: 2.6rem; }
     .hero { padding: 80px 0; }
     .professional-img { height: 320px; }
 }
 
 /* Responsive — mobile */
-@media (max-width: 991px) {
+@media (max-width: 991px) { /* var(--bp-8col) */
     .hero h1 { font-size: 2rem; }
     .hero { padding: 52px 0; }
     .hero .subtitle { font-size: 1rem; }
@@ -1540,7 +1545,7 @@ input[type="password"]::-webkit-caps-lock-indicator {
 
 /* --- TOPBAR MOBILE --- */
 /* --- RESPONSIVE --- */
-@media (max-width: 991px) {
+@media (max-width: 991px) { /* var(--bp-8col) */
     .workspace-sidebar {
         display: none;
     }
