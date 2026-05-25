@@ -17,16 +17,15 @@
                         <table class="table table-hover align-middle mb-0 account-orders-table" aria-label="Mes commandes">
                             <thead class="table-light">
                                 <tr>
-                                    <th class="d-none d-lg-table-cell">N°</th><th>Menu</th><th>Date</th><th class="d-none d-lg-table-cell">Adresse</th><th>Total</th><th>Statut</th><th>Actions</th>
+                                    <th class="d-none d-xl-table-cell">N°</th><th>Menu</th><th>Date</th><th>Total</th><th>Statut</th><th>Actions</th>
                                 </tr>
                             </thead>
                             <tbody>
                             <?php foreach ($commandes as $cmd): ?>
                                 <tr>
-                                    <td class="d-none d-lg-table-cell" data-label="N°"><small class="text-muted" style="font-size:.7rem;"><?= sanitize($cmd['numero_commande']) ?></small></td>
+                                    <td class="d-none d-xl-table-cell" data-label="N°"><small class="text-muted" style="font-size:.7rem;"><?= sanitize($cmd['numero_commande']) ?></small></td>
                                     <td class="small account-order-title" data-label="Menu"><?= sanitize($cmd['menu_titre']) ?></td>
                                     <td class="text-nowrap small" data-label="Date"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></td>
-                                    <td class="d-none d-lg-table-cell" data-label="Adresse" style="max-width:160px;"><span class="text-truncate d-block" title="<?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?>"><?= sanitize($cmd['adresse_livraison'] . ', ' . $cmd['ville_livraison']) ?></span></td>
                                     <td class="text-nowrap" data-label="Total"><strong><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></strong></td>
                                     <td data-label="Statut"><?= commandeStatusBadge($cmd['statut'] ?? null) ?></td>
                                     <td class="account-order-actions-cell" data-label="Actions">
