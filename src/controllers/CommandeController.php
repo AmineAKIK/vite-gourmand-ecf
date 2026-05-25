@@ -5,20 +5,33 @@ class CommandeController {
 
     public function calculLivraison(): void {
         header('Content-Type: application/json; charset=utf-8');
+        $adresse = sanitize($_GET['adresse'] ?? '');
         $ville = sanitize($_GET['ville'] ?? '');
-        if (!$ville || strtolower(trim($ville)) === 'bordeaux') {
-            echo json_encode(['ok' => true, 'distance' => 0, 'prix' => 0]);
-            return;
-        }
-
-        $distance = distanceKmDepuisBordeaux($ville);
-        if ($distance <= 0) {
+        $codePostal = sanitize($_GET['code_postal'] ?? '');
+        if (!$adresse || !$ville || !$codePostal) {
             http_response_code(422);
-            echo json_encode(['ok' => false, 'message' => 'Distance de livraison impossible à calculer.']);
+            echo json_encode(['ok' => false, 'message' => 'Adresse, ville et code postal sont requis.']);
             return;
         }
 
-        echo json_encode(['ok' => true, 'distance' => $distance, 'prix' => calculPrixLivraison($ville)]);
+        $adresseResolue = resolveAdresseLivraison($adresse, $ville, $codePostal);
+        if (!$adresseResolue) {
+            http_response_code(422);
+            echo json_encode(['ok' => false, 'message' => 'Adresse non reconnue ou incohérente avec le code postal.']);
+            return;
+        }
+
+        $distance = distanceKmDepuisCoordonnees((float)$adresseResolue['lat'], (float)$adresseResolue['lng']);
+        $prix = (
+            normalizeLocationLabel($adresseResolue['city'] ?? '') === 'bordeaux'
+            && in_array((string)($adresseResolue['postcode'] ?? ''), ['33000', '33100', '33200', '33300', '33800'], true)
+        ) ? 0.0 : round(livraisonBase() + (livraisonKm() * $distance), 2);
+        echo json_encode([
+            'ok' => true,
+            'distance' => $distance,
+            'prix' => $prix,
+            'adresse' => $adresseResolue['label'] ?? null,
+        ]);
     }
 
     public function create(): void {

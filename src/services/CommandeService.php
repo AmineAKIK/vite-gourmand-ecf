@@ -21,7 +21,14 @@ class CommandeService
 
         self::validatePayload($payload);
 
-        $prixLivraison = calculPrixLivraison($payload['ville_livraison']);
+        $prixLivraison = calculPrixLivraisonAdresse(
+            $payload['adresse_livraison'],
+            $payload['ville_livraison'],
+            $payload['code_postal_livraison']
+        );
+        if ($prixLivraison === null) {
+            throw new InvalidArgumentException('Adresse de livraison non reconnue ou incohérente avec la ville et le code postal.');
+        }
 
         return $payload + [
             'prix_livraison' => $prixLivraison,
@@ -71,10 +78,6 @@ class CommandeService
         }
         if (strlen($payload['ville_livraison']) < 2) {
             throw new InvalidArgumentException('Ville de livraison invalide.');
-        }
-
-        if (strtolower(trim($payload['ville_livraison'])) !== 'bordeaux' && distanceKmDepuisBordeaux($payload['ville_livraison']) <= 0) {
-            throw new InvalidArgumentException('Distance de livraison impossible à calculer pour cette ville.');
         }
     }
 }

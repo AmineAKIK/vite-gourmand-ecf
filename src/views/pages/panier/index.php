@@ -99,16 +99,16 @@
                         <div class="row g-3">
                             <div class="col-12">
                                 <label for="adresse_livraison" class="form-label">Adresse <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="adresse_livraison" name="adresse_livraison" required>
+                                <input type="text" class="form-control" id="adresse_livraison" name="adresse_livraison" autocomplete="street-address" required>
                             </div>
                             <div class="col-12 col-lg-6">
                                 <label for="ville_livraison" class="form-label">Ville <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="ville_livraison" name="ville_livraison" required>
+                                <input type="text" class="form-control" id="ville_livraison" name="ville_livraison" autocomplete="address-level2" required>
                                 <div class="form-text"><?= sanitize(deliveryPricingLabel()) ?></div>
                             </div>
                             <div class="col-12 col-lg-6">
                                 <label for="code_postal_livraison" class="form-label">Code postal <span class="text-danger">*</span></label>
-                                <input type="text" class="form-control" id="code_postal_livraison" name="code_postal_livraison" required>
+                                <input type="text" class="form-control" id="code_postal_livraison" name="code_postal_livraison" inputmode="numeric" pattern="[0-9]{5}" autocomplete="postal-code" required>
                             </div>
                             <div class="col-12 col-lg-6">
                                 <label for="date_prestation" class="form-label">Date <span class="text-danger">*</span></label>
@@ -178,17 +178,23 @@
 </div>
 
 <script nonce="<?= cspNonce() ?>">
+const adresseInput = document.getElementById('adresse_livraison');
 const villeInput  = document.getElementById('ville_livraison');
+const codePostalInput = document.getElementById('code_postal_livraison');
+const submitBtn = document.getElementById('btn-finaliser');
 const totalMenus  = <?= json_encode(array_sum(array_column($panier, 'prix_menu'))) ?>;
 let reqId = 0;
 
 async function updateLivraison() {
     const id = ++reqId;
+    const adresse = adresseInput ? adresseInput.value.trim() : '';
     const ville = villeInput ? villeInput.value.trim() : '';
+    const codePostal = codePostalInput ? codePostalInput.value.trim() : '';
 
-    if (!ville) {
+    if (!adresse || !ville || !codePostal) {
         document.getElementById('recap-livraison').textContent = '—';
         document.getElementById('recap-total').textContent = '—';
+        if (submitBtn) submitBtn.disabled = true;
         return;
     }
 
@@ -196,27 +202,36 @@ async function updateLivraison() {
     document.getElementById('recap-total').textContent = '—';
 
     try {
-        const r = await fetch('/livraison/calcul?ville=' + encodeURIComponent(ville), {
+        const params = new URLSearchParams({
+            adresse: adresse,
+            ville: ville,
+            code_postal: codePostal,
+        });
+        const r = await fetch('/livraison/calcul?' + params.toString(), {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         const data = await r.json();
         if (id !== reqId) return;
         if (!r.ok || !data.ok) {
-            document.getElementById('recap-livraison').textContent = 'Ville non reconnue';
+            document.getElementById('recap-livraison').textContent = data.message || 'Adresse non reconnue';
             document.getElementById('recap-total').textContent = '—';
+            if (submitBtn) submitBtn.disabled = true;
             return;
         }
         const livraison = parseFloat(data.prix);
         document.getElementById('recap-livraison').textContent = livraison.toFixed(2) + ' €';
         document.getElementById('recap-total').textContent = (totalMenus + livraison).toFixed(2) + ' €';
+        if (submitBtn) submitBtn.disabled = false;
     } catch (e) {
         if (id !== reqId) return;
         document.getElementById('recap-livraison').textContent = '—';
         document.getElementById('recap-total').textContent = '—';
+        if (submitBtn) submitBtn.disabled = true;
     }
 }
 
-if (villeInput) {
-    villeInput.addEventListener('input', updateLivraison);
-}
+[adresseInput, villeInput, codePostalInput].forEach(input => {
+    if (input) input.addEventListener('input', updateLivraison);
+});
+updateLivraison();
 </script>

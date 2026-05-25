@@ -460,13 +460,103 @@ function geocodeVille(string $ville): ?array {
     return [(float)$data[0]['lat'], (float)$data[0]['lon']];
 }
 
-function distanceKmDepuisBordeaux(string $ville): float {
-    $coords = geocodeVille($ville);
-    if (!$coords) {
-        return 0.0;
+function normalizeLocationLabel(string $value): string {
+    $value = strtolower(trim($value));
+    $value = str_replace(['’', "'"], ' ', $value);
+    $value = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $value) ?: $value;
+    $value = preg_replace('/[^a-z0-9]+/', ' ', $value) ?? $value;
+    return trim(preg_replace('/\s+/', ' ', $value) ?? $value);
+}
+
+function knownDeliveryLocations(): array {
+    return [
+        'bordeaux' => ['postcodes' => ['33000', '33100', '33200', '33300', '33800'], 'coords' => [44.8378, -0.5792]],
+        'merignac' => ['postcodes' => ['33700'], 'coords' => [44.8448, -0.6564]],
+        'pessac' => ['postcodes' => ['33600'], 'coords' => [44.8058, -0.6305]],
+        'talence' => ['postcodes' => ['33400'], 'coords' => [44.8088, -0.5892]],
+        'begles' => ['postcodes' => ['33130'], 'coords' => [44.8077, -0.5488]],
+        'cenon' => ['postcodes' => ['33150'], 'coords' => [44.8558, -0.5328]],
+        'lormont' => ['postcodes' => ['33310'], 'coords' => [44.8792, -0.5256]],
+        'floirac' => ['postcodes' => ['33270'], 'coords' => [44.8327, -0.5278]],
+        'bruges' => ['postcodes' => ['33520'], 'coords' => [44.8829, -0.6120]],
+        'gradignan' => ['postcodes' => ['33170'], 'coords' => [44.7736, -0.6156]],
+        'villenave d ornon' => ['postcodes' => ['33140'], 'coords' => [44.7733, -0.5679]],
+        'le bouscat' => ['postcodes' => ['33110'], 'coords' => [44.8662, -0.5984]],
+    ];
+}
+
+function knownDeliveryLocation(string $ville, string $codePostal): ?array {
+    $cityKey = normalizeLocationLabel($ville);
+    $locations = knownDeliveryLocations();
+    if (!isset($locations[$cityKey]) || !in_array($codePostal, $locations[$cityKey]['postcodes'], true)) {
+        return null;
     }
 
-    [$lat2, $lon2] = $coords;
+    return [
+        'label' => trim($codePostal . ' ' . $ville),
+        'city' => $ville,
+        'postcode' => $codePostal,
+        'lat' => $locations[$cityKey]['coords'][0],
+        'lng' => $locations[$cityKey]['coords'][1],
+        'score' => 1,
+        'fallback' => true,
+    ];
+}
+
+function resolveAdresseLivraison(string $adresse, string $ville, string $codePostal): ?array {
+    $adresse = trim($adresse);
+    $ville = trim($ville);
+    $codePostal = trim($codePostal);
+
+    if ($adresse === '' || $ville === '' || !preg_match('/^\d{5}$/', $codePostal)) {
+        return null;
+    }
+
+    $query = trim($adresse . ' ' . $codePostal . ' ' . $ville);
+    $url = 'https://api-adresse.data.gouv.fr/search/?limit=1&q=' . urlencode($query);
+    $context = stream_context_create([
+        'http' => [
+            'header' => "User-Agent: ViteGourmand/1.0\r\n",
+            'timeout' => 3,
+        ],
+    ]);
+    $response = @file_get_contents($url, false, $context);
+    if ($response) {
+        $data = json_decode($response, true);
+        $feature = $data['features'][0] ?? null;
+        $properties = $feature['properties'] ?? [];
+        $coordinates = $feature['geometry']['coordinates'] ?? [];
+        $score = (float)($properties['score'] ?? 0);
+        $apiPostcode = (string)($properties['postcode'] ?? '');
+        $apiCity = (string)($properties['city'] ?? '');
+        $apiType = (string)($properties['type'] ?? '');
+
+        if (
+            $feature
+            && $score >= .45
+            && in_array($apiType, ['housenumber', 'street'], true)
+            && $apiPostcode === $codePostal
+            && normalizeLocationLabel($apiCity) === normalizeLocationLabel($ville)
+            && isset($coordinates[0], $coordinates[1])
+        ) {
+            return [
+                'label' => $properties['label'] ?? $query,
+                'city' => $apiCity,
+                'postcode' => $apiPostcode,
+                'lat' => (float)$coordinates[1],
+                'lng' => (float)$coordinates[0],
+                'score' => $score,
+                'fallback' => false,
+            ];
+        }
+
+        return null;
+    }
+
+    return knownDeliveryLocation($ville, $codePostal);
+}
+
+function distanceKmDepuisCoordonnees(float $lat2, float $lon2): float {
     $earthRadius = 6371;
     $lat1 = deg2rad(BORDEAUX_LAT);
     $lon1 = deg2rad(BORDEAUX_LNG);
@@ -480,9 +570,36 @@ function distanceKmDepuisBordeaux(string $ville): float {
     return round($earthRadius * $c, 2);
 }
 
+function distanceKmDepuisBordeaux(string $ville): float {
+    $coords = geocodeVille($ville);
+    if (!$coords) {
+        return 0.0;
+    }
+
+    [$lat2, $lon2] = $coords;
+    return distanceKmDepuisCoordonnees($lat2, $lon2);
+}
+
 function calculPrixLivraison(string $ville): float {
     if (strtolower(trim($ville)) === 'bordeaux') return 0.0;
     $distanceKm = distanceKmDepuisBordeaux($ville);
+    return round(livraisonBase() + (livraisonKm() * $distanceKm), 2);
+}
+
+function calculPrixLivraisonAdresse(string $adresse, string $ville, string $codePostal): ?float {
+    $resolved = resolveAdresseLivraison($adresse, $ville, $codePostal);
+    if (!$resolved) {
+        return null;
+    }
+
+    if (
+        normalizeLocationLabel($resolved['city'] ?? '') === 'bordeaux'
+        && in_array((string)($resolved['postcode'] ?? ''), ['33000', '33100', '33200', '33300', '33800'], true)
+    ) {
+        return 0.0;
+    }
+
+    $distanceKm = distanceKmDepuisCoordonnees((float)$resolved['lat'], (float)$resolved['lng']);
     return round(livraisonBase() + (livraisonKm() * $distanceKm), 2);
 }
 

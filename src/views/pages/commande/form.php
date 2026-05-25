@@ -39,16 +39,16 @@
                 <div class="row g-3">
                     <div class="col-12">
                         <label for="adresse_livraison" class="form-label">Adresse <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="adresse_livraison" name="adresse_livraison" required>
+                        <input type="text" class="form-control" id="adresse_livraison" name="adresse_livraison" autocomplete="street-address" required>
                     </div>
                     <div class="col-12 col-lg-6">
                         <label for="ville_livraison" class="form-label">Ville <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="ville_livraison" name="ville_livraison" required>
+                        <input type="text" class="form-control" id="ville_livraison" name="ville_livraison" autocomplete="address-level2" required>
                         <div class="form-text"><?= sanitize(deliveryPricingLabel()) ?></div>
                     </div>
                     <div class="col-12 col-lg-6">
                         <label for="code_postal_livraison" class="form-label">Code postal <span class="text-danger">*</span></label>
-                        <input type="text" class="form-control" id="code_postal_livraison" name="code_postal_livraison" required>
+                        <input type="text" class="form-control" id="code_postal_livraison" name="code_postal_livraison" inputmode="numeric" pattern="[0-9]{5}" autocomplete="postal-code" required>
                     </div>
                     <div class="col-12 col-lg-6">
                         <label for="date_prestation" class="form-label">Date <span class="text-danger">*</span></label>
@@ -118,7 +118,9 @@
 <script nonce="<?= cspNonce() ?>">
 const menuSelect    = document.getElementById('menu_id');
 const nbPersonnes   = document.getElementById('nombre_personne');
+const adresseInput  = document.getElementById('adresse_livraison');
 const villeInput    = document.getElementById('ville_livraison');
+const codePostalInput = document.getElementById('code_postal_livraison');
 const conditionsBox = document.getElementById('conditions-menu');
 const conditionsTexte = document.getElementById('conditions-texte');
 const hintMin       = document.getElementById('hint-min');
@@ -161,21 +163,33 @@ async function updateRecap() {
     let prixMenu = prixParPers * nb;
     if (prixMenu >= reductionSeuil) prixMenu *= (1 - reductionTaux);
 
-    const ville = villeInput.value.trim().toLowerCase();
+    const adresse = adresseInput.value.trim();
+    const ville = villeInput.value.trim();
+    const codePostal = codePostalInput.value.trim();
     recapDiv.style.removeProperty('display');
     document.getElementById('recap-menu').textContent      = prixMenu.toFixed(2) + ' €';
-    document.getElementById('recap-livraison').textContent = 'Calcul...';
     document.getElementById('recap-total').textContent     = '—';
+    if (!adresse || !ville || !codePostal) {
+        document.getElementById('recap-livraison').textContent = 'Adresse à compléter';
+        if (submitBtn) submitBtn.disabled = true;
+        return;
+    }
+    document.getElementById('recap-livraison').textContent = 'Calcul...';
     if (submitBtn) submitBtn.disabled = true;
 
     try {
-        const response = await fetch('/livraison/calcul?ville=' + encodeURIComponent(ville), {
+        const params = new URLSearchParams({
+            adresse: adresse,
+            ville: ville,
+            code_postal: codePostal,
+        });
+        const response = await fetch('/livraison/calcul?' + params.toString(), {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
         const data = await response.json();
         if (requestId !== recapRequestId) return;
         if (!response.ok || !data.ok) {
-            document.getElementById('recap-livraison').textContent = 'Distance impossible';
+            document.getElementById('recap-livraison').textContent = data.message || 'Adresse non reconnue';
             document.getElementById('recap-total').textContent     = '—';
             return;
         }
@@ -192,6 +206,8 @@ async function updateRecap() {
 
 menuSelect.addEventListener('change', updateRecap);
 nbPersonnes.addEventListener('input', updateRecap);
+adresseInput.addEventListener('input', updateRecap);
 villeInput.addEventListener('input', updateRecap);
+codePostalInput.addEventListener('input', updateRecap);
 updateRecap();
 </script>

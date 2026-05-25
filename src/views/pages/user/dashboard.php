@@ -138,6 +138,7 @@
                             <input type="text" class="form-control"
                                    id="adresse_<?= (int)$cmd['commande_id'] ?>"
                                    name="adresse_livraison"
+                                   autocomplete="street-address"
                                    value="<?= sanitize($cmd['adresse_livraison']) ?>" required>
                         </div>
                         <div class="row g-2">
@@ -146,6 +147,7 @@
                                 <input type="text" class="form-control"
                                        id="ville_<?= (int)$cmd['commande_id'] ?>"
                                        name="ville_livraison"
+                                       autocomplete="address-level2"
                                        value="<?= sanitize($cmd['ville_livraison']) ?>" required>
                             </div>
                             <div class="col-4">
@@ -153,6 +155,9 @@
                                 <input type="text" class="form-control"
                                        id="cp_<?= (int)$cmd['commande_id'] ?>"
                                        name="code_postal_livraison"
+                                       inputmode="numeric"
+                                       pattern="[0-9]{5}"
+                                       autocomplete="postal-code"
                                        value="<?= sanitize($cmd['code_postal_livraison']) ?>" required>
                             </div>
                         </div>
