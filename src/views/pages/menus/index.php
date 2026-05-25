@@ -1,5 +1,6 @@
 <?php
 $pageTitle = 'Nos Menus - Vite & Gourmand';
+$selectedGuests = max(0, (int)($filters['nb_personnes'] ?? 0));
 ?>
 <div class="container py-5 menus-page">
     <h1 class="text-center mb-5">Tous les menus</h1>
@@ -7,24 +8,16 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
     <!-- FILTRES -->
     <aside class="filtres-panel mb-5" aria-label="Filtres de recherche">
         <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
-            <h2 class="h6 mb-0 fw-semibold"><i class="bi bi-funnel me-2"></i>Filtrer les menus</h2>
+            <h2 class="h6 mb-0 fw-semibold"><i class="bi bi-funnel me-2"></i>Trouver le bon menu</h2>
             <button id="reset-filtres" class="btn btn-sm btn-vg-outline">
                 Réinitialiser
             </button>
         </div>
         <div class="row g-3">
-            <div class="col-6 col-lg">
-                <label for="filtre-prix-min" class="form-label small fw-medium">Prix min (€)</label>
-                <input type="number" id="filtre-prix-min" class="form-control filtre" placeholder="0" min="0" value="<?= sanitize($filters['prix_min'] ?? '') ?>">
-            </div>
-            <div class="col-6 col-lg">
-                <label for="filtre-prix-max" class="form-label small fw-medium">Prix max (€)</label>
-                <input type="number" id="filtre-prix-max" class="form-control filtre" placeholder="Sans limite" min="0" value="<?= sanitize($filters['prix_max'] ?? '') ?>">
-            </div>
-            <div class="col-6 col-lg">
-                <label for="filtre-theme" class="form-label small fw-medium">Thème</label>
+            <div class="col-12 col-md-6 col-xl">
+                <label for="filtre-theme" class="form-label small fw-medium">Type d'événement</label>
                 <select id="filtre-theme" class="form-select filtre">
-                    <option value="">Tous les thèmes</option>
+                    <option value="">Tous les événements</option>
                     <?php foreach ($themes as $t): ?>
                         <option value="<?= $t['theme_id'] ?>" <?= ($filters['theme_id'] ?? '') == $t['theme_id'] ? 'selected' : '' ?>>
                             <?= sanitize($t['libelle']) ?>
@@ -32,10 +25,10 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-6 col-lg">
-                <label for="filtre-regime" class="form-label small fw-medium">Régime</label>
+            <div class="col-12 col-md-6 col-xl">
+                <label for="filtre-regime" class="form-label small fw-medium">Régime alimentaire</label>
                 <select id="filtre-regime" class="form-select filtre">
-                    <option value="">Tous les régimes</option>
+                    <option value="">Toutes les contraintes</option>
                     <?php foreach ($regimes as $r): ?>
                         <option value="<?= $r['regime_id'] ?>" <?= ($filters['regime_id'] ?? '') == $r['regime_id'] ? 'selected' : '' ?>>
                             <?= sanitize($r['libelle']) ?>
@@ -43,9 +36,23 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-6 col-lg">
-                <label for="filtre-personnes" class="form-label small fw-medium">Nb. personnes min.</label>
-                <input type="number" id="filtre-personnes" class="form-control filtre" placeholder="ex : 4" min="1" value="<?= sanitize($filters['nb_personnes'] ?? '') ?>">
+            <div class="col-12 col-md-6 col-xl">
+                <label for="filtre-personnes" class="form-label small fw-medium">Nombre de convives</label>
+                <input type="number" id="filtre-personnes" class="form-control filtre" placeholder="ex : 12" min="1" value="<?= sanitize($filters['nb_personnes'] ?? '') ?>">
+            </div>
+            <div class="col-12 col-md-6 col-xl">
+                <label for="filtre-budget" class="form-label small fw-medium">Budget max / personne</label>
+                <input type="number" id="filtre-budget" class="form-control filtre" placeholder="Sans limite" min="0" value="<?= sanitize($filters['budget_personne_max'] ?? '') ?>">
+            </div>
+            <div class="col-12 col-md-6 col-xl">
+                <label for="filtre-tri" class="form-label small fw-medium">Trier par</label>
+                <select id="filtre-tri" class="form-select filtre">
+                    <option value="recommande" <?= ($filters['tri'] ?? 'recommande') === 'recommande' ? 'selected' : '' ?>>Recommandés</option>
+                    <option value="prix_asc" <?= ($filters['tri'] ?? '') === 'prix_asc' ? 'selected' : '' ?>>Prix croissant</option>
+                    <option value="prix_desc" <?= ($filters['tri'] ?? '') === 'prix_desc' ? 'selected' : '' ?>>Prix décroissant</option>
+                    <option value="personnes_asc" <?= ($filters['tri'] ?? '') === 'personnes_asc' ? 'selected' : '' ?>>Minimum convives croissant</option>
+                    <option value="personnes_desc" <?= ($filters['tri'] ?? '') === 'personnes_desc' ? 'selected' : '' ?>>Minimum convives décroissant</option>
+                </select>
             </div>
         </div>
     </aside>
@@ -68,13 +75,22 @@ $pageTitle = 'Nos Menus - Vite & Gourmand';
                         <?= sanitize(substr(html_entity_decode($menu['description'] ?? '', ENT_QUOTES, 'UTF-8'), 0, 120)) ?>...
                     </p>
                     <div class="mt-3">
-                        <p class="small mb-2">
-                            Minimum : <?= (int)$menu['nombre_personne_minimum'] ?> personnes
-                        </p>
+                        <?php
+                            $minimum = (int)($menu['nombre_personne_minimum'] ?? 0);
+                            $personnesEstimees = max($selectedGuests, $minimum);
+                            $prixEstime = calculPrixMenu((float)($menu['prix_par_personne'] ?? 0), $personnesEstimees, $minimum);
+                        ?>
                         <div>
-                            <span class="prix-tag"><?= sanitize(formatPrice(($menu['prix_par_personne'] ?? 0) * ($menu['nombre_personne_minimum'] ?? 0))) ?></span>
-                            <small class="text-muted">pour <?= (int)$menu['nombre_personne_minimum'] ?> personnes</small>
+                            <span class="prix-tag"><?= sanitize(formatPrice($menu['prix_par_personne'] ?? 0)) ?></span>
+                            <small class="text-muted">/ personne</small>
                         </div>
+                        <p class="small text-muted mt-2 mb-0">
+                            <?php if ($selectedGuests > 0): ?>
+                                Estimation pour <?= $personnesEstimees ?> personnes : <strong><?= sanitize(formatPrice($prixEstime)) ?></strong>
+                            <?php else: ?>
+                                À partir de <?= $minimum ?> personnes : <strong><?= sanitize(formatPrice($prixEstime)) ?></strong>
+                            <?php endif; ?>
+                        </p>
                         <?php if ($menu['quantite_restante'] !== null): ?>
                             <?php if ((int)$menu['quantite_restante'] <= 0): ?>
                                 <p class="small text-danger fw-semibold mt-2 mb-0"><i class="bi bi-x-circle me-1"></i>Plus disponible</p>
@@ -113,11 +129,11 @@ let debounceTimer;
 const filtres = document.querySelectorAll('.filtre');
 
 document.getElementById('reset-filtres').addEventListener('click', () => {
-    document.getElementById('filtre-prix-min').value = '';
-    document.getElementById('filtre-prix-max').value = '';
     document.getElementById('filtre-theme').value = '';
     document.getElementById('filtre-regime').value = '';
     document.getElementById('filtre-personnes').value = '';
+    document.getElementById('filtre-budget').value = '';
+    document.getElementById('filtre-tri').value = 'recommande';
     fetchMenus();
 });
 
@@ -125,15 +141,17 @@ filtres.forEach(f => f.addEventListener('input', () => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(fetchMenus, 400);
 }));
+filtres.forEach(f => f.addEventListener('change', fetchMenus));
 
 function fetchMenus() {
     const params = new URLSearchParams({
-        prix_min:     document.getElementById('filtre-prix-min').value,
-        prix_max:     document.getElementById('filtre-prix-max').value,
-        theme_id:     document.getElementById('filtre-theme').value,
-        regime_id:    document.getElementById('filtre-regime').value,
-        nb_personnes: document.getElementById('filtre-personnes').value,
+        theme_id:             document.getElementById('filtre-theme').value,
+        regime_id:            document.getElementById('filtre-regime').value,
+        nb_personnes:         document.getElementById('filtre-personnes').value,
+        budget_personne_max:  document.getElementById('filtre-budget').value,
+        tri:                  document.getElementById('filtre-tri').value,
     });
+    const requestedGuests = parseInt(document.getElementById('filtre-personnes').value, 10) || 0;
 
     const container = document.getElementById('menus-container');
     container.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-vg" role="status"><span class="visually-hidden">Chargement...</span></div></div>';
@@ -161,11 +179,16 @@ function fetchMenus() {
                         <h3 class="card-title h5">${esc(m.titre)}</h3>
                         <p class="card-text text-muted small flex-grow-1">${m.description ? esc(m.description.substring(0, 120)) + '...' : ''}</p>
                         <div class="mt-3">
-                            <p class="small mb-2">Minimum : ${parseInt(m.nombre_personne_minimum)} personnes</p>
                             <div>
-                                <span class="prix-tag">${(parseFloat(m.prix_par_personne) * parseInt(m.nombre_personne_minimum)).toFixed(2)} €</span>
-                                <small class="text-muted">pour ${parseInt(m.nombre_personne_minimum)} personnes</small>
+                                <span class="prix-tag">${Number(m.prix_par_personne).toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} €</span>
+                                <small class="text-muted">/ personne</small>
                             </div>
+                            <p class="small text-muted mt-2 mb-0">
+                                ${requestedGuests > 0
+                                    ? `Estimation pour ${parseInt(m.personnes_estimees)} personnes : <strong>${Number(m.prix_estime).toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} €</strong>`
+                                    : `À partir de ${parseInt(m.nombre_personne_minimum)} personnes : <strong>${Number(m.prix_estime).toLocaleString('fr-FR', {minimumFractionDigits: 2, maximumFractionDigits: 2})} €</strong>`
+                                }
+                            </p>
                             ${m.quantite_restante !== null ? (
                                 parseInt(m.quantite_restante) <= 0
                                     ? `<p class="small text-danger fw-semibold mt-2 mb-0"><i class="bi bi-x-circle me-1"></i>Plus disponible</p>`

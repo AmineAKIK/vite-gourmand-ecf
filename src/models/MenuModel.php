@@ -15,13 +15,9 @@ class MenuModel {
         ";
         $params = [];
 
-        if (!empty($filters['prix_max'])) {
-            $sql .= " AND m.prix_par_personne * m.nombre_personne_minimum <= ?";
-            $params[] = (float)$filters['prix_max'];
-        }
-        if (!empty($filters['prix_min'])) {
-            $sql .= " AND m.prix_par_personne * m.nombre_personne_minimum >= ?";
-            $params[] = (float)$filters['prix_min'];
+        if (!empty($filters['budget_personne_max'])) {
+            $sql .= " AND m.prix_par_personne <= ?";
+            $params[] = (float)$filters['budget_personne_max'];
         }
         if (!empty($filters['theme_id'])) {
             $sql .= " AND m.theme_id = ?";
@@ -35,6 +31,16 @@ class MenuModel {
             $sql .= " AND m.nombre_personne_minimum <= ?";
             $params[] = (int)$filters['nb_personnes'];
         }
+
+        $sort = $filters['tri'] ?? 'recommande';
+        $orderBy = match ($sort) {
+            'prix_asc' => 'm.prix_par_personne ASC, m.nombre_personne_minimum ASC, m.titre ASC',
+            'prix_desc' => 'm.prix_par_personne DESC, m.nombre_personne_minimum ASC, m.titre ASC',
+            'personnes_asc' => 'm.nombre_personne_minimum ASC, m.prix_par_personne ASC, m.titre ASC',
+            'personnes_desc' => 'm.nombre_personne_minimum DESC, m.prix_par_personne ASC, m.titre ASC',
+            default => '(m.quantite_restante IS NOT NULL AND m.quantite_restante <= 0) ASC, m.nombre_personne_minimum ASC, m.prix_par_personne ASC, m.titre ASC',
+        };
+        $sql .= " ORDER BY $orderBy";
 
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
