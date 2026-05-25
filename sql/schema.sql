@@ -169,6 +169,7 @@ CREATE TABLE avis (
     note INT NOT NULL CHECK (note BETWEEN 1 AND 5),
     description VARCHAR(500),
     statut VARCHAR(20) DEFAULT 'en_attente', -- en_attente, valide, refuse
+    afficher_accueil BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (commande_id) REFERENCES commande(commande_id),
     FOREIGN KEY (utilisateur_id) REFERENCES utilisateur(utilisateur_id)

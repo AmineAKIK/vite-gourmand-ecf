@@ -2,7 +2,7 @@
 // src/controllers/HomeController.php
 class HomeController {
     public function index(): void {
-        $avisValides   = AvisModel::getValidated();
+        $avisValides   = AvisModel::getHomepage();
         $siteImages    = SiteImageModel::getAll();
         $heroUrl       = imageUrl($siteImages['hero']        ?? null, 'images/hero-traiteur-bordeaux.webp');
         $preparationUrl = imageUrl($siteImages['preparation'] ?? null, 'images/preparation-traiteur.webp');

@@ -60,15 +60,38 @@ class EmployeController
 
         $ancienStatut = $commande['statut'] ?? null;
 
-        if ($action === 'annuler' || $statut === commandeCancelledStatus()) {
+        if ($statut === commandeCancelledStatus() && $action !== 'annuler') {
+            flash('error', 'Une annulation doit passer par le formulaire dédié avec motif et confirmation.');
+            redirect('/employe/commandes');
+        }
+
+        if ($action === 'annuler' && $statut !== commandeCancelledStatus()) {
+            flash('error', 'Requête d\'annulation invalide.');
+            redirect('/employe/commandes');
+        }
+
+        if ($action === 'annuler' && $ancienStatut === commandeCancelledStatus()) {
+            flash('error', 'Cette commande est déjà annulée.');
+            redirect('/employe/commandes');
+        }
+
+        if (!commandeCanTransition($ancienStatut, $statut)) {
+            flash('error', 'Transition de statut non autorisée.');
+            redirect('/employe/commandes');
+        }
+
+        if ($action === 'annuler') {
             $motif       = $commentaire;
             $modeContact = sanitize($_POST['mode_contact'] ?? '');
-            if ($action === 'annuler' && (!$motif || !$modeContact)) {
-                flash('error', 'Le motif et le mode de contact sont obligatoires pour une annulation.');
+            $confirmationAnnulation = ($_POST['confirmation_annulation'] ?? '') === '1';
+            if (!$motif || !$modeContact || !$confirmationAnnulation) {
+                flash('error', 'Le motif, le mode de contact et la confirmation sont obligatoires pour une annulation.');
                 redirect('/employe/commandes');
             }
-            $motif = $motif ?: 'Annulation enregistrée depuis le back-office.';
-            $modeContact = $modeContact ?: 'interne';
+            if (!in_array($modeContact, ['mail', 'gsm'], true)) {
+                flash('error', 'Mode de contact invalide pour l\'annulation.');
+                redirect('/employe/commandes');
+            }
             CommandeModel::cancel($commandeId, $motif, $modeContact, $user['id']);
         } else {
             CommandeModel::updateStatut($commandeId, $statut, $commentaire ?: null, $user['id']);
@@ -219,8 +242,9 @@ class EmployeController
         $filtre  = in_array($_GET['filtre'] ?? '', ['en_attente', 'valide', 'refuse']) ? $_GET['filtre'] : 'en_attente';
         $avis    = AvisModel::getAll($filtre);
         $pending = AvisModel::getPending();
+        $doublonsAccueil = AvisModel::getHomepageDuplicateClients();
 
-        view('pages/employe/avis', compact('avis', 'filtre', 'pending'));
+        view('pages/employe/avis', compact('avis', 'filtre', 'pending', 'doublonsAccueil'));
     }
 
     public function validerAvis(): void
@@ -234,6 +258,22 @@ class EmployeController
         AvisModel::updateStatusByCommande($commandeId, $statut);
 
         flash('success', 'Avis ' . ($statut === 'valide' ? 'validé' : 'refusé') . '.');
+        redirect('/employe/avis?filtre=' . urlencode($filtre));
+    }
+
+    public function toggleAvisAccueil(): void
+    {
+        verifyCsrf();
+        $avisId = (int)($_POST['avis_id'] ?? 0);
+        $filtre = sanitize($_POST['filtre'] ?? 'valide');
+        $featured = ($_POST['afficher_accueil'] ?? '') === '1';
+
+        if (!$avisId || !AvisModel::setHomepageFeatured($avisId, $featured)) {
+            flash('error', 'Seul un avis validé peut être affiché sur l\'accueil.');
+            redirect('/employe/avis?filtre=' . urlencode($filtre));
+        }
+
+        flash('success', $featured ? 'Avis ajouté à l\'accueil.' : 'Avis retiré de l\'accueil.');
         redirect('/employe/avis?filtre=' . urlencode($filtre));
     }
 

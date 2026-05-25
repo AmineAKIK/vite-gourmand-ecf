@@ -6,6 +6,20 @@ $pageTitle = 'Modération des avis - Vite & Gourmand';
 
     <?php partial('partials/page_title_bar', ['icon' => 'bi-star', 'title' => 'Modération des avis']); ?>
 
+    <?php if (!empty($doublonsAccueil)): ?>
+        <div class="alert alert-warning d-flex align-items-start gap-2" role="alert">
+            <i class="bi bi-exclamation-triangle-fill mt-1" aria-hidden="true"></i>
+            <div>
+                <strong>Attention :</strong>
+                plusieurs avis mis en avant sur l'accueil viennent du même client
+                (<?= sanitize(implode(', ', array_map(
+                    fn($client) => trim(($client['prenom'] ?? '') . ' ' . ($client['nom'] ?? '')) . ' x' . (int)($client['total'] ?? 0),
+                    $doublonsAccueil
+                ))) ?>).
+            </div>
+        </div>
+    <?php endif; ?>
+
     <!-- Onglets filtre -->
     <ul class="nav nav-tabs mb-4">
         <li class="nav-item">
@@ -48,6 +62,7 @@ $pageTitle = 'Modération des avis - Vite & Gourmand';
                             <th scope="col" class="text-vg fw-semibold">Menu</th>
                             <th scope="col" class="text-vg fw-semibold">Date</th>
                             <th scope="col" class="text-vg fw-semibold">Statut</th>
+                            <th scope="col" class="text-vg fw-semibold">Accueil</th>
                             <th scope="col" class="text-vg fw-semibold pe-3">Actions</th>
                         </tr>
                     </thead>
@@ -79,8 +94,29 @@ $pageTitle = 'Modération des avis - Vite & Gourmand';
                                     <span class="badge bg-warning text-dark">En attente</span>
                                 <?php endif; ?>
                             </td>
+                            <td class="text-nowrap">
+                                <?php if ($a['statut'] === 'valide' && !empty($a['afficher_accueil'])): ?>
+                                    <span class="badge bg-success">Affiché</span>
+                                <?php elseif ($a['statut'] === 'valide'): ?>
+                                    <span class="badge bg-secondary">Non affiché</span>
+                                <?php else: ?>
+                                    <span class="text-muted">—</span>
+                                <?php endif; ?>
+                            </td>
                             <td class="pe-3 text-nowrap">
                                 <div class="d-flex gap-2 flex-wrap">
+                                    <?php if ($a['statut'] === 'valide'): ?>
+                                    <form method="POST" action="/employe/avis/accueil">
+                                        <?= csrfField() ?>
+                                        <input type="hidden" name="avis_id" value="<?= (int)($a['avis_id'] ?? 0) ?>">
+                                        <input type="hidden" name="afficher_accueil" value="<?= !empty($a['afficher_accueil']) ? '0' : '1' ?>">
+                                        <input type="hidden" name="filtre" value="<?= sanitize($filtre) ?>">
+                                        <button type="submit" class="btn <?= !empty($a['afficher_accueil']) ? 'btn-outline-secondary' : 'btn-vg-outline' ?> btn-sm">
+                                            <i class="bi <?= !empty($a['afficher_accueil']) ? 'bi-eye-slash' : 'bi-house-heart' ?> me-1"></i>
+                                            <?= !empty($a['afficher_accueil']) ? 'Retirer accueil' : 'Afficher accueil' ?>
+                                        </button>
+                                    </form>
+                                    <?php endif; ?>
                                     <?php if ($a['statut'] !== 'valide'): ?>
                                     <form method="POST" action="/employe/avis/valider">
                                         <?= csrfField() ?>

@@ -1,6 +1,10 @@
 <?php
 // src/views/pages/employe/commandes.php
 $pageTitle = 'Gestion des commandes - Vite & Gourmand';
+$statutsMiseAJour = array_values(array_filter(
+    $statuts,
+    fn($statut) => $statut !== commandeCancelledStatus()
+));
 ?>
 <div class="container py-5 commandes-page">
 
@@ -49,6 +53,15 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
     <?php else: ?>
         <div class="accordion commandes-accordion" id="accordionCommandes">
             <?php foreach ($commandes as $idx => $cmd): ?>
+            <?php
+                $statutActuel = $cmd['statut'] ?? null;
+                $statutsDisponibles = array_values(array_filter(
+                    $statutsMiseAJour,
+                    fn($statut) => commandeCanTransition($statutActuel, $statut)
+                ));
+                $peutAnnuler = $statutActuel !== commandeCancelledStatus()
+                    && commandeCanTransition($statutActuel, commandeCancelledStatus());
+            ?>
             <div class="accordion-item commande-card mb-3">
                 <h2 class="accordion-header" id="heading<?= $cmd['commande_id'] ?>">
                     <button
@@ -106,13 +119,17 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                                                         id="statut-<?= $cmd['commande_id'] ?>"
                                                         name="statut"
                                                         aria-label="Sélectionner le nouveau statut"
+                                                        <?= empty($statutsDisponibles) ? 'disabled' : '' ?>
                                                     >
-                                                        <?php foreach ($statuts as $s): ?>
+                                                        <?php foreach ($statutsDisponibles as $s): ?>
                                                             <option value="<?= sanitize($s) ?>" <?= ($cmd['statut'] ?? '') === $s ? 'selected' : '' ?>>
                                                                 <?= sanitize(commandeStatusLabel($s)) ?>
                                                             </option>
                                                         <?php endforeach; ?>
                                                     </select>
+                                                    <?php if (empty($statutsDisponibles)): ?>
+                                                        <div class="form-text">Aucun changement de statut disponible.</div>
+                                                    <?php endif; ?>
                                                 </div>
 
                                                 <div>
@@ -127,7 +144,7 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                                                     ></textarea>
                                                 </div>
 
-                                                <button type="submit" class="btn btn-vg btn-sm" aria-label="Mettre à jour le statut de la commande">
+                                                <button type="submit" class="btn btn-vg btn-sm" aria-label="Mettre à jour le statut de la commande" <?= empty($statutsDisponibles) ? 'disabled' : '' ?>>
                                                     <i class="bi bi-check-lg me-1"></i>Mettre à jour
                                                 </button>
                                             </div>
@@ -135,7 +152,7 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                                     </section>
 
                                     <!-- Annulation si la commande est encore modifiable -->
-                                    <?php if (commandeCanClientModify($cmd)): ?>
+                                    <?php if ($peutAnnuler): ?>
                                     <section class="commande-danger-zone">
                                         <div class="commande-danger-header">
                                             <div>
@@ -155,7 +172,12 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                                         </div>
 
                                         <div class="collapse" id="annulation-<?= (int)$cmd['commande_id'] ?>">
-                                            <form method="POST" action="/employe/commande/statut" class="commande-cancel-form form-confirm">
+                                            <form
+                                                method="POST"
+                                                action="/employe/commande/statut"
+                                                class="commande-cancel-form form-confirm"
+                                                data-confirm="Confirmer l'annulation définitive de cette commande ?"
+                                            >
                                                 <?= csrfField() ?>
                                                 <input type="hidden" name="commande_id" value="<?= (int)$cmd['commande_id'] ?>">
                                                 <input type="hidden" name="action" value="annuler">
@@ -186,6 +208,21 @@ $pageTitle = 'Gestion des commandes - Vite & Gourmand';
                                                         <option value="mail">Email</option>
                                                         <option value="gsm">GSM</option>
                                                     </select>
+                                                </div>
+
+                                                <div class="form-check commande-cancel-confirm">
+                                                    <input
+                                                        class="form-check-input"
+                                                        type="checkbox"
+                                                        id="confirm-annulation-<?= $cmd['commande_id'] ?>"
+                                                        name="confirmation_annulation"
+                                                        value="1"
+                                                        required
+                                                        aria-required="true"
+                                                    >
+                                                    <label class="form-check-label small" for="confirm-annulation-<?= $cmd['commande_id'] ?>">
+                                                        Je confirme que cette annulation est volontaire et que le client sera informé.
+                                                    </label>
                                                 </div>
 
                                                 <button type="submit" class="btn btn-danger btn-sm" aria-label="Confirmer l'annulation de la commande">
