@@ -59,7 +59,7 @@
             </form>
 
             <!-- Formulaire de livraison -->
-            <form method="POST" action="/commande" id="form-panier" novalidate>
+            <form method="POST" action="/commande" id="form-panier">
                 <?= csrfField() ?>
 
                 <div class="card panier-panel mb-4">
@@ -117,15 +117,22 @@
                             </div>
                             <div class="col-12 col-lg-6">
                                 <label for="heure_livraison" class="form-label">Heure souhaitée <span class="text-danger">*</span></label>
-                                <input type="time" class="form-control" id="heure_livraison" name="heure_livraison"
-                                       min="07:00" max="22:00" required>
+                                <select class="form-select" id="heure_livraison" name="heure_livraison" required>
+                                    <option value="">— Choisir une heure —</option>
+                                    <?php for ($h = 7; $h <= 22; $h++): ?>
+                                        <option value="<?= sprintf('%02d:00', $h) ?>"><?= sprintf('%02dh00', $h) ?></option>
+                                        <?php if ($h < 22): ?>
+                                        <option value="<?= sprintf('%02d:30', $h) ?>"><?= sprintf('%02dh30', $h) ?></option>
+                                        <?php endif; ?>
+                                    <?php endfor; ?>
+                                </select>
                             </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="d-grid">
-                    <button type="submit" class="btn btn-vg btn-lg" id="btn-finaliser">
+                    <button type="submit" class="btn btn-vg btn-lg" id="btn-finaliser" disabled>
                         <i class="bi bi-cart-check me-2"></i>Finaliser la commande
                     </button>
                 </div>
@@ -178,23 +185,33 @@
 </div>
 
 <script nonce="<?= cspNonce() ?>">
-const adresseInput = document.getElementById('adresse_livraison');
-const villeInput  = document.getElementById('ville_livraison');
+const adresseInput    = document.getElementById('adresse_livraison');
+const villeInput      = document.getElementById('ville_livraison');
 const codePostalInput = document.getElementById('code_postal_livraison');
-const submitBtn = document.getElementById('btn-finaliser');
-const totalMenus  = <?= json_encode(array_sum(array_column($panier, 'prix_menu'))) ?>;
+const dateInput       = document.getElementById('date_prestation');
+const heureInput      = document.getElementById('heure_livraison');
+const submitBtn       = document.getElementById('btn-finaliser');
+const totalMenus      = <?= json_encode(array_sum(array_column($panier, 'prix_menu'))) ?>;
 let reqId = 0;
+let livraisonOk = false;
+
+function checkForm() {
+    const date  = dateInput ? dateInput.value.trim() : '';
+    const heure = heureInput ? heureInput.value.trim() : '';
+    if (submitBtn) submitBtn.disabled = !(livraisonOk && date && heure);
+}
 
 async function updateLivraison() {
     const id = ++reqId;
-    const adresse = adresseInput ? adresseInput.value.trim() : '';
-    const ville = villeInput ? villeInput.value.trim() : '';
+    const adresse    = adresseInput    ? adresseInput.value.trim()    : '';
+    const ville      = villeInput      ? villeInput.value.trim()      : '';
     const codePostal = codePostalInput ? codePostalInput.value.trim() : '';
 
     if (!adresse || !ville || !codePostal) {
         document.getElementById('recap-livraison').textContent = '—';
         document.getElementById('recap-total').textContent = '—';
-        if (submitBtn) submitBtn.disabled = true;
+        livraisonOk = false;
+        checkForm();
         return;
     }
 
@@ -202,11 +219,7 @@ async function updateLivraison() {
     document.getElementById('recap-total').textContent = '—';
 
     try {
-        const params = new URLSearchParams({
-            adresse: adresse,
-            ville: ville,
-            code_postal: codePostal,
-        });
+        const params = new URLSearchParams({ adresse, ville, code_postal: codePostal });
         const r = await fetch('/livraison/calcul?' + params.toString(), {
             headers: { 'X-Requested-With': 'XMLHttpRequest' }
         });
@@ -215,23 +228,29 @@ async function updateLivraison() {
         if (!r.ok || !data.ok) {
             document.getElementById('recap-livraison').textContent = data.message || 'Adresse non reconnue';
             document.getElementById('recap-total').textContent = '—';
-            if (submitBtn) submitBtn.disabled = true;
+            livraisonOk = false;
+            checkForm();
             return;
         }
         const livraison = parseFloat(data.prix);
         document.getElementById('recap-livraison').textContent = livraison.toFixed(2) + ' €';
         document.getElementById('recap-total').textContent = (totalMenus + livraison).toFixed(2) + ' €';
-        if (submitBtn) submitBtn.disabled = false;
+        livraisonOk = true;
+        checkForm();
     } catch (e) {
         if (id !== reqId) return;
         document.getElementById('recap-livraison').textContent = '—';
         document.getElementById('recap-total').textContent = '—';
-        if (submitBtn) submitBtn.disabled = true;
+        livraisonOk = false;
+        checkForm();
     }
 }
 
-[adresseInput, villeInput, codePostalInput].forEach(input => {
-    if (input) input.addEventListener('input', updateLivraison);
+[adresseInput, villeInput, codePostalInput].forEach(el => {
+    if (el) el.addEventListener('input', updateLivraison);
 });
-updateLivraison();
+[dateInput, heureInput].forEach(el => {
+    if (el) el.addEventListener('change', checkForm);
+});
+checkForm();
 </script>
