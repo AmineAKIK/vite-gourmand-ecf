@@ -223,12 +223,12 @@ $chartData = array_map(fn($row) => round((float)($row['ca'] ?? 0), 2), $caStats 
                     <article class="stats-menu-card stats-menu-card-row">
                         <div class="stats-menu-card-head">
                             <strong><?= sanitize($row['titre'] ?? '') ?></strong>
-                            <span class="stats-percent"><?= sanitize(number_format($share, 0, ',', ' ')) ?> %</span>
+                            <span><?= sanitize(formatPrice($ca)) ?></span>
                         </div>
                         <dl>
                             <div><dt>Commandes</dt><dd><?= sanitize(formatInteger($nb)) ?></dd></div>
                             <div><dt>Panier moyen</dt><dd><?= sanitize(formatPrice($average)) ?></dd></div>
-                            <div><dt>CA total</dt><dd class="text-vg"><?= sanitize(formatPrice($ca)) ?></dd></div>
+                            <div><dt>Part CA</dt><dd><?= sanitize(number_format($share, 0, ',', ' ')) ?> %</dd></div>
                         </dl>
                     </article>
                 <?php endforeach; ?>
@@ -237,12 +237,12 @@ $chartData = array_map(fn($row) => round((float)($row['ca'] ?? 0), 2), $caStats 
                     <article class="stats-menu-card stats-menu-card-total">
                         <div class="stats-menu-card-head">
                             <strong>Total</strong>
-                            <span>100 %</span>
+                            <span><?= sanitize(formatPrice($totalCA)) ?></span>
                         </div>
                         <dl>
                             <div><dt>Commandes</dt><dd><?= sanitize(formatInteger($totalNb)) ?></dd></div>
                             <div><dt>Panier moyen</dt><dd><?= sanitize(formatPrice($panierMoyen)) ?></dd></div>
-                            <div><dt>CA total</dt><dd class="text-vg"><?= sanitize(formatPrice($totalCA)) ?></dd></div>
+                            <div><dt>Part CA</dt><dd>100 %</dd></div>
                         </dl>
                     </article>
                 <?php endif; ?>
