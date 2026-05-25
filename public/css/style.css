@@ -1148,6 +1148,20 @@ a:focus {
 /* Section background alternée */
 .bg-creme { background-color: var(--vg-creme); }
 
+/* Suivi commande */
+.suivi-panel {
+    background: #fff;
+    border: 1px solid var(--vg-border);
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(139,26,43,.07);
+}
+.suivi-panel-header {
+    background: var(--vg-creme);
+    border-bottom: 1px solid var(--vg-border);
+    border-radius: 10px 10px 0 0;
+    color: var(--vg-text);
+}
+
 /* Modération des avis */
 .avis-moderation-list {
     display: flex;
