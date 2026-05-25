@@ -58,15 +58,12 @@ $prixMinimum = $prixParPersonne * $nombrePersonneMinimum;
             <p class="lead text-muted"><?= nl2br(sanitize($menu['description'] ?? '')) ?></p>
 
             <div class="menu-pricing-panel my-3" aria-label="Tarif du menu">
-                <div class="menu-pricing-main">
+                <div class="menu-pricing-line">
                     <span class="menu-pricing-price"><?= sanitize(formatPrice($prixParPersonne)) ?></span>
                     <span class="menu-pricing-unit">par personne</span>
+                    <span class="menu-pricing-minimum">dès <?= $nombrePersonneMinimum ?> personnes</span>
                 </div>
-                <div class="menu-pricing-divider" aria-hidden="true"></div>
-                <div class="menu-pricing-meta">
-                    <span class="menu-pricing-minimum"><?= $nombrePersonneMinimum ?> personnes minimum</span>
-                    <span class="menu-pricing-total">Commande à partir de <?= sanitize(formatPrice($prixMinimum)) ?></span>
-                </div>
+                <div class="menu-pricing-total">Minimum de commande : <?= sanitize(formatPrice($prixMinimum)) ?></div>
             </div>
 
             <div class="row g-3 my-3">

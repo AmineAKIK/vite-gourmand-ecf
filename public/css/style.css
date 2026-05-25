@@ -211,7 +211,7 @@ a:focus {
     height: 1.25em;
 }
 
-@media (min-width: 992px) {
+@media (min-width: 1200px) {
     .site-navbar {
         min-height: 72px;
         padding: 0;
@@ -353,6 +353,136 @@ a:focus {
         color: #fff;
         background: rgba(255,255,255,.07);
         border-color: rgba(255,255,255,.28);
+    }
+}
+
+@media (max-width: 1199.98px) {
+    .site-navbar {
+        min-height: 56px;
+    }
+
+    .site-navbar .container {
+        min-height: 56px;
+    }
+
+    .site-navbar .navbar-brand {
+        height: 56px;
+    }
+
+    .site-navbar .navbar-toggler {
+        border-color: rgba(255,255,255,.65);
+        width: 42px;
+        height: 38px;
+        padding: 0;
+    }
+
+    .site-navbar .navbar-collapse {
+        padding: .55rem 0 1rem;
+        border-top: 1px solid rgba(255,255,255,.14);
+    }
+
+    .site-navbar .navbar-nav {
+        align-items: flex-start;
+        width: 100%;
+        gap: .25rem;
+    }
+
+    .site-navbar .account-nav-list {
+        margin-top: .45rem;
+        padding-top: .55rem;
+        border-top: 1px solid rgba(255,255,255,.14);
+    }
+
+    .site-navbar .nav-section-title {
+        width: 100%;
+        margin: .2rem 0 .25rem;
+        padding: 0 .85rem;
+        color: rgba(255,255,255,.58);
+        font-size: .72rem;
+        font-weight: 700;
+        line-height: 1.2;
+        letter-spacing: .08em;
+        text-transform: uppercase;
+    }
+
+    .site-navbar .navbar-nav .nav-item {
+        width: 100%;
+    }
+
+    .site-navbar.navbar-dark .navbar-nav .nav-link {
+        width: 100%;
+        justify-content: flex-start;
+        gap: .75rem;
+        min-height: 46px;
+        height: auto;
+        padding: .65rem .8rem;
+        border-radius: 8px;
+        color: rgba(255,255,255,.82);
+        font-weight: 700;
+        line-height: 1.2;
+        transform: none;
+    }
+
+    .site-navbar.navbar-dark .navbar-nav .nav-link:hover,
+    .site-navbar.navbar-dark .navbar-nav .nav-link:focus {
+        background: rgba(255,255,255,.08);
+        color: #fff;
+    }
+
+    .site-navbar.navbar-dark .navbar-nav .nav-link.active,
+    .site-navbar.navbar-dark .navbar-nav .nav-link[aria-current="page"] {
+        background: rgba(255,255,255,.1);
+        color: #fff;
+    }
+
+    .site-navbar.navbar-dark .navbar-nav .nav-link::after,
+    .site-navbar.navbar-dark .navbar-nav .dropdown-toggle.nav-link::before {
+        display: none;
+    }
+
+    .site-navbar.navbar-dark .navbar-nav .nav-link.active::before,
+    .site-navbar.navbar-dark .navbar-nav .nav-link[aria-current="page"]::before {
+        content: '';
+        position: absolute;
+        left: 0;
+        top: .65rem;
+        bottom: .65rem;
+        width: 3px;
+        border-radius: 999px;
+        background: var(--vg-or);
+    }
+
+    .site-navbar.navbar-dark .navbar-nav .nav-link-icon {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        flex: 0 0 2rem;
+        width: 2rem;
+        height: 2rem;
+        border-radius: 8px;
+        background: rgba(255,255,255,.1);
+        color: #fff;
+        font-size: 1rem !important;
+    }
+
+    .site-navbar.navbar-dark .navbar-nav .nav-link-logout {
+        margin-top: .15rem;
+        color: rgba(255,255,255,.74);
+    }
+
+    .site-navbar.navbar-dark .navbar-nav .nav-link-logout:hover,
+    .site-navbar.navbar-dark .navbar-nav .nav-link-logout:focus {
+        background: rgba(255,255,255,.08);
+        color: #fff;
+    }
+
+    .site-navbar.navbar-dark .navbar-nav .nav-link-logout .nav-link-icon {
+        background: rgba(255,255,255,.1);
+        color: #fff;
+    }
+
+    .site-navbar.navbar-dark .navbar-nav .cart-count-badge {
+        display: none !important;
     }
 }
 .text-vg { color: var(--vg-bordeaux) !important; }
@@ -932,32 +1062,29 @@ a:focus {
 }
 
 .menu-pricing-panel {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) 1px minmax(0, 1fr);
+    display: flex;
     align-items: center;
-    gap: 1.25rem;
-    padding: 1.1rem 1.25rem;
-    background: linear-gradient(135deg, rgba(254, 248, 239, .96), rgba(253, 246, 236, .78));
+    justify-content: space-between;
+    gap: .85rem 1.25rem;
+    padding: .85rem 1rem;
+    background: rgba(253, 246, 236, .58);
     border: 1px solid var(--menu-panel-border, var(--vg-border));
+    border-left: 4px solid var(--vg-or);
     border-radius: 8px;
-    box-shadow: 0 10px 26px rgba(44, 44, 44, .06);
+    box-shadow: none;
 }
 
-.menu-pricing-main,
-.menu-pricing-meta {
-    min-width: 0;
-}
-
-.menu-pricing-main {
+.menu-pricing-line {
     display: flex;
     align-items: baseline;
-    gap: .45rem;
     flex-wrap: wrap;
+    gap: .35rem .55rem;
+    min-width: 0;
 }
 
 .menu-pricing-price {
     color: var(--vg-bordeaux);
-    font-size: 1.75rem;
+    font-size: 1.55rem;
     font-weight: 800;
     line-height: 1;
 }
@@ -968,20 +1095,26 @@ a:focus {
     font-size: .95rem;
 }
 
-.menu-pricing-divider {
-    width: 1px;
-    min-height: 46px;
-    background: var(--menu-panel-border, var(--vg-border));
-}
-
-.menu-pricing-meta {
-    display: grid;
-    gap: .18rem;
-}
-
 .menu-pricing-minimum {
-    color: var(--vg-bordeaux-dark);
+    color: var(--vg-text);
     font-weight: 700;
+}
+
+.menu-pricing-minimum::before {
+    content: '';
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    margin: 0 .2rem .18rem 0;
+    border-radius: 50%;
+    background-color: var(--vg-or);
+}
+
+.menu-pricing-total {
+    flex: 0 0 auto;
+    color: var(--vg-muted);
+    font-size: .92rem;
+    white-space: nowrap;
 }
 
 .menu-cart-form .input-group-text {
@@ -1002,18 +1135,16 @@ a:focus {
 
 @media (max-width: 575.98px) {
     .menu-pricing-panel {
-        grid-template-columns: 1fr;
-        gap: .75rem;
-        padding: 1rem;
-    }
-
-    .menu-pricing-divider {
-        width: 100%;
-        min-height: 1px;
+        align-items: flex-start;
+        flex-direction: column;
     }
 
     .menu-pricing-price {
-        font-size: 1.55rem;
+        font-size: 1.45rem;
+    }
+
+    .menu-pricing-total {
+        white-space: normal;
     }
 }
 

@@ -34,7 +34,7 @@
 $workspaceActive = isAuth() && roleWorkspaceIsActive();
 $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
 ?>
-<nav class="navbar navbar-expand-lg navbar-dark bg-vg sticky-top site-navbar" role="navigation" aria-label="Navigation principale">
+<nav class="navbar navbar-expand-xl navbar-dark bg-vg sticky-top site-navbar" role="navigation" aria-label="Navigation principale">
     <div class="container">
         <a class="navbar-brand fw-bold" href="/" aria-label="Retour à l'accueil Vite et Gourmand">
             <span class="site-brand-name">Vite &amp; Gourmand</span>
@@ -45,29 +45,29 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
         </button>
         <div class="collapse navbar-collapse text-start" id="navMain">
             <ul class="navbar-nav main-nav-list me-auto mb-0">
-                <li class="nav-section-title d-lg-none">Navigation</li>
+                <li class="nav-section-title d-xl-none">Navigation</li>
                 <li class="nav-item">
                     <a class="nav-link <?= routeIsActive('/') ? 'active' : '' ?>" href="/" <?= routeIsActive('/') ? 'aria-current="page"' : '' ?>>
-                        <i class="bi bi-house-door nav-link-icon d-lg-none" aria-hidden="true"></i>
+                        <i class="bi bi-house-door nav-link-icon d-xl-none" aria-hidden="true"></i>
                         <span>Accueil</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link <?= routeIsActive('/menus*') ? 'active' : '' ?>" href="/menus" <?= routeIsActive('/menus*') ? 'aria-current="page"' : '' ?>>
-                        <i class="bi bi-journal-richtext nav-link-icon d-lg-none" aria-hidden="true"></i>
+                        <i class="bi bi-journal-richtext nav-link-icon d-xl-none" aria-hidden="true"></i>
                         <span>Tous les menus</span>
                     </a>
                 </li>
                 <li class="nav-item">
                     <a class="nav-link <?= routeIsActive('/contact') ? 'active' : '' ?>" href="/contact" <?= routeIsActive('/contact') ? 'aria-current="page"' : '' ?>>
-                        <i class="bi bi-chat-left-text nav-link-icon d-lg-none" aria-hidden="true"></i>
+                        <i class="bi bi-chat-left-text nav-link-icon d-xl-none" aria-hidden="true"></i>
                         <span>Contact</span>
                     </a>
                 </li>
             </ul>
-            <ul class="navbar-nav account-nav-list ms-auto align-items-lg-center">
+            <ul class="navbar-nav account-nav-list ms-auto align-items-xl-center">
                 <?php if (isAuth()): ?>
-                    <li class="nav-section-title d-lg-none">Compte</li>
+                    <li class="nav-section-title d-xl-none">Compte</li>
                     <li class="nav-item me-1">
                         <?php $panierCount = count($_SESSION['panier'] ?? []); ?>
                         <a class="nav-link nav-link-cart" href="/panier" aria-label="Votre panier (<?= $panierCount ?> article<?= $panierCount > 1 ? 's' : '' ?>)">
@@ -77,7 +77,7 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
                                     <span class="position-absolute badge rounded-pill cart-count-badge" style="background:var(--vg-or);color:#2C2C2C;font-size:.6rem;top:-6px;left:100%;transform:translateX(-40%);min-width:1.1em;line-height:1.3;"><?= $panierCount ?></span>
                                 <?php endif; ?>
                             </span>
-                            <span class="d-lg-none">Votre panier<?= $panierCount > 0 ? ' (' . $panierCount . ')' : '' ?></span>
+                            <span class="d-xl-none">Votre panier<?= $panierCount > 0 ? ' (' . $panierCount . ')' : '' ?></span>
                         </a>
                     </li>
                     <li class="nav-item">
@@ -86,21 +86,21 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
                             $navActive = hasRole(ROLE_ADMIN) || hasRole(ROLE_EMPLOYE) ? $workspaceActive : routeIsActive('/mon-compte');
                         ?>
                         <a class="nav-link <?= $navActive ? 'active' : '' ?>" href="<?= sanitize($navHref) ?>" <?= $navActive ? 'aria-current="page"' : '' ?>>
-                            <i class="bi bi-person-workspace nav-link-icon d-lg-none" aria-hidden="true"></i>
+                            <i class="bi bi-person-workspace nav-link-icon d-xl-none" aria-hidden="true"></i>
                             <span><?= sanitize(roleHomeLabel()) ?></span>
                         </a>
                     </li>
                     <li class="nav-item">
                         <a class="nav-link nav-link-logout" href="/deconnexion">
-                            <i class="bi bi-box-arrow-right nav-link-icon d-lg-none" aria-hidden="true"></i>
+                            <i class="bi bi-box-arrow-right nav-link-icon d-xl-none" aria-hidden="true"></i>
                             <span>Déconnexion</span>
                         </a>
                     </li>
                 <?php else: ?>
-                    <li class="nav-section-title d-lg-none">Compte</li>
+                    <li class="nav-section-title d-xl-none">Compte</li>
                     <li class="nav-item">
                         <a class="nav-link <?= routeIsActive('/connexion') ? 'active' : '' ?>" href="/connexion" <?= routeIsActive('/connexion') ? 'aria-current="page"' : '' ?>>
-                            <i class="bi bi-person-circle nav-link-icon d-lg-none" aria-hidden="true"></i>
+                            <i class="bi bi-person-circle nav-link-icon d-xl-none" aria-hidden="true"></i>
                             <span>Connexion</span>
                         </a>
                     </li>
