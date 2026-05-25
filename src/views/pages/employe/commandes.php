@@ -55,10 +55,7 @@ $statutsMiseAJour = array_values(array_filter(
             <?php foreach ($commandes as $idx => $cmd): ?>
             <?php
                 $statutActuel = $cmd['statut'] ?? null;
-                $statutsDisponibles = array_values(array_filter(
-                    $statutsMiseAJour,
-                    fn($statut) => commandeCanTransition($statutActuel, $statut)
-                ));
+                $statutsDisponibles = $statutsMiseAJour;
                 $peutAnnuler = $statutActuel !== commandeCancelledStatus()
                     && commandeCanTransition($statutActuel, commandeCancelledStatus());
             ?>
