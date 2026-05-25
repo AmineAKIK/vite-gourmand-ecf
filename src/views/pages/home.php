@@ -90,7 +90,7 @@ $pageTitle = 'Vite & Gourmand - Traiteur à Bordeaux';
                         <div class="stars mb-2" aria-label="Note : <?= (int)$avis['note'] ?> sur 5">
                             <?= str_repeat('★', (int)$avis['note']) . str_repeat('☆', 5 - (int)$avis['note']) ?>
                         </div>
-                        <p class="card-text fst-italic">"<?= sanitize($avis['description']) ?>"</p>
+                        <p class="card-text fst-italic">"<?= htmlspecialchars(html_entity_decode(trim($avis['description'] ?? ''), ENT_QUOTES, 'UTF-8'), ENT_COMPAT, 'UTF-8') ?>"</p>
                         <footer class="text-muted small mt-3">
                             <strong><?= sanitize(personFullName($avis)) ?></strong>
                             · Menu : <?= sanitize($avis['menu_titre']) ?>
