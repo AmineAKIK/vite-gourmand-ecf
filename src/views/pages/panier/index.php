@@ -166,6 +166,10 @@
                             <td class="text-muted">Livraison</td>
                             <td class="text-end" id="recap-livraison">—</td>
                         </tr>
+                        <tr id="recap-remise-row" class="text-success" style="display:none">
+                            <td><i class="bi bi-tag me-1"></i>Réduction (<?= (int)reductionTauxPourcentage() ?>%)</td>
+                            <td class="text-end fw-medium" id="recap-remise">—</td>
+                        </tr>
                         <tr class="border-top fw-bold">
                             <td>Total</td>
                             <td class="text-end prix-tag" id="recap-total">—</td>
@@ -191,7 +195,9 @@ const codePostalInput = document.getElementById('code_postal_livraison');
 const dateInput       = document.getElementById('date_prestation');
 const heureInput      = document.getElementById('heure_livraison');
 const submitBtn       = document.getElementById('btn-finaliser');
-const totalMenus      = <?= json_encode(array_sum(array_column($panier, 'prix_menu'))) ?>;
+const totalMenus       = <?= json_encode(array_sum(array_column($panier, 'prix_menu'))) ?>;
+const reductionSeuil   = <?= json_encode(reductionSeuilMontant()) ?>;
+const reductionTaux    = <?= json_encode(reductionTauxPourcentage() / 100) ?>;
 let reqId = 0;
 let livraisonOk = false;
 
@@ -233,8 +239,17 @@ async function updateLivraison() {
             return;
         }
         const livraison = parseFloat(data.prix);
+        const remiseRow = document.getElementById('recap-remise-row');
+        let remise = 0;
+        if (totalMenus >= reductionSeuil) {
+            remise = totalMenus * reductionTaux;
+            document.getElementById('recap-remise').textContent = '-' + remise.toFixed(2) + ' €';
+            remiseRow.style.display = '';
+        } else {
+            remiseRow.style.display = 'none';
+        }
         document.getElementById('recap-livraison').textContent = livraison.toFixed(2) + ' €';
-        document.getElementById('recap-total').textContent = (totalMenus + livraison).toFixed(2) + ' €';
+        document.getElementById('recap-total').textContent = (totalMenus - remise + livraison).toFixed(2) + ' €';
         livraisonOk = true;
         checkForm();
     } catch (e) {
