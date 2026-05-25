@@ -228,12 +228,10 @@
                     <div id="avis_<?= (int)$cmd['commande_id'] ?>-error" class="alert alert-danger d-none" role="alert"></div>
                     <fieldset class="mb-3">
                         <legend class="form-label fs-6">Note (1 à 5)</legend>
-                        <div class="d-flex gap-2">
+                        <div class="avis-stars-group">
                             <?php for ($i = 1; $i <= 5; $i++): ?>
-                                <div class="form-check form-check-inline">
-                                    <input class="form-check-input" type="radio" name="note" id="note<?= (int)$cmd['commande_id'] ?>_<?= $i ?>" value="<?= $i ?>" required>
-                                    <label class="form-check-label stars" for="note<?= (int)$cmd['commande_id'] ?>_<?= $i ?>"><?= str_repeat('★', $i) ?></label>
-                                </div>
+                                <input class="avis-star-input" type="radio" name="note" id="note<?= (int)$cmd['commande_id'] ?>_<?= $i ?>" value="<?= $i ?>" required>
+                                <label class="avis-star-label" for="note<?= (int)$cmd['commande_id'] ?>_<?= $i ?>" title="<?= $i ?> étoile<?= $i > 1 ? 's' : '' ?>">★</label>
                             <?php endfor; ?>
                         </div>
                     </fieldset>

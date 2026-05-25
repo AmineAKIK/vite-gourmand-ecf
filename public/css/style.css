@@ -1151,6 +1151,31 @@ a:focus {
 /* Avis étoiles */
 .stars { color: var(--vg-or); }
 
+.avis-stars-group {
+    display: flex;
+    flex-direction: row-reverse;
+    justify-content: flex-end;
+    gap: .25rem;
+}
+.avis-star-input {
+    display: none;
+}
+.avis-star-label {
+    font-size: 2rem;
+    color: #ccc;
+    cursor: pointer;
+    line-height: 1;
+    transition: color .15s;
+}
+.avis-star-label:hover,
+.avis-star-label:hover ~ .avis-star-label,
+.avis-star-input:checked ~ .avis-star-label {
+    color: var(--vg-or);
+}
+.avis-star-input:checked + .avis-star-label {
+    color: var(--vg-or);
+}
+
 /* Filtres */
 .filtres-panel {
     background: var(--menu-panel-bg, rgba(254, 248, 239, .82));
