@@ -1433,6 +1433,10 @@ a:focus {
 }
 
 @media (max-width: 575.98px) {
+    .stats-detail-panel {
+        display: none;
+    }
+
     .stats-table-desktop {
         display: none;
     }

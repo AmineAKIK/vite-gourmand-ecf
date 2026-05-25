@@ -166,7 +166,7 @@ $chartData = array_map(fn($row) => round((float)($row['ca'] ?? 0), 2), $caStats 
             </div>
         </div>
 
-        <section class="stats-panel">
+        <section class="stats-panel stats-detail-panel">
             <div class="stats-panel-header stats-panel-header--table">
                 <div>
                     <h2>Détail par menu</h2>
