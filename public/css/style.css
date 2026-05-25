@@ -1760,6 +1760,9 @@ a:focus {
 .commandes-accordion .commande-status {
     justify-self: end;
     white-space: nowrap;
+    align-self: center;
+    display: inline-flex;
+    align-items: center;
 }
 
 .commandes-accordion .badge-statut {
@@ -1896,8 +1899,10 @@ a:focus {
 
     .commandes-accordion .commande-status {
         grid-area: status;
-        align-self: start;
+        align-self: center;
         justify-self: end;
+        display: inline-flex;
+        align-items: center;
     }
 
     .commandes-accordion .badge-statut {
