@@ -86,7 +86,7 @@ $pageTitle = 'Modération des avis - Vite & Gourmand';
                 <!-- Ligne 2 : commentaire -->
                 <p class="avis-moderation-comment">
                     <?php if (!empty($a['description'])): ?>
-                        <?= htmlspecialchars(trim($a['description']), ENT_COMPAT, 'UTF-8') ?>
+                        <?= htmlspecialchars(html_entity_decode(trim($a['description']), ENT_QUOTES, 'UTF-8'), ENT_COMPAT, 'UTF-8') ?>
                     <?php else: ?>
                         <em class="text-muted">Aucun commentaire</em>
                     <?php endif; ?>
