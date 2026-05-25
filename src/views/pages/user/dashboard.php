@@ -228,7 +228,7 @@
                     <fieldset class="mb-3">
                         <legend class="form-label fs-6">Note (1 à 5)</legend>
                         <div class="avis-stars-group">
-                            <?php for ($i = 1; $i <= 5; $i++): ?>
+                            <?php for ($i = 5; $i >= 1; $i--): ?>
                                 <input class="avis-star-input" type="radio" name="note" id="note<?= (int)$cmd['commande_id'] ?>_<?= $i ?>" value="<?= $i ?>" required>
                                 <label class="avis-star-label" for="note<?= (int)$cmd['commande_id'] ?>_<?= $i ?>" title="<?= $i ?> étoile<?= $i > 1 ? 's' : '' ?>">★</label>
                             <?php endfor; ?>

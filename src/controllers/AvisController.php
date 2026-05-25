@@ -10,7 +10,7 @@ class AvisController
         $user        = currentUser();
         $commandeId  = (int)($_POST['commande_id'] ?? 0);
         $note        = (int)($_POST['note']         ?? 0);
-        $commentaire = sanitize($_POST['commentaire'] ?? '');
+        $commentaire = trim($_POST['commentaire'] ?? '');
 
         if ($note < 1 || $note > 5) {
             redirect('/mon-compte?open_modal=avis_' . $commandeId . '&modal_error=' . urlencode('Veuillez sélectionner une note entre 1 et 5.'));

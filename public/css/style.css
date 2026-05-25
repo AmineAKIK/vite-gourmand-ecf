@@ -1205,12 +1205,11 @@ a:focus {
     line-height: 1;
     transition: color .15s;
 }
+/* avec row-reverse + ordre DOM 5→1 : hover sur une étoile colore elle et toutes les "suivantes" (= valeurs plus hautes) */
 .avis-star-label:hover,
 .avis-star-label:hover ~ .avis-star-label,
+.avis-star-input:checked + .avis-star-label,
 .avis-star-input:checked ~ .avis-star-label {
-    color: var(--vg-or);
-}
-.avis-star-input:checked + .avis-star-label {
     color: var(--vg-or);
 }
 
