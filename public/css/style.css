@@ -1062,29 +1062,21 @@ a:focus {
 }
 
 .menu-pricing-panel {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: .85rem 1.25rem;
-    padding: .85rem 1rem;
-    background: rgba(253, 246, 236, .58);
-    border: 1px solid var(--menu-panel-border, var(--vg-border));
-    border-left: 4px solid var(--vg-or);
-    border-radius: 8px;
-    box-shadow: none;
+    padding: .15rem 0 1rem;
+    border-bottom: 1px solid rgba(139, 26, 43, .14);
 }
 
 .menu-pricing-line {
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
-    gap: .35rem .55rem;
+    gap: .45rem;
     min-width: 0;
 }
 
 .menu-pricing-price {
     color: var(--vg-bordeaux);
-    font-size: 1.55rem;
+    font-size: 2rem;
     font-weight: 800;
     line-height: 1;
 }
@@ -1095,26 +1087,10 @@ a:focus {
     font-size: .95rem;
 }
 
-.menu-pricing-minimum {
-    color: var(--vg-text);
-    font-weight: 700;
-}
-
-.menu-pricing-minimum::before {
-    content: '';
-    display: inline-block;
-    width: 4px;
-    height: 4px;
-    margin: 0 .2rem .18rem 0;
-    border-radius: 50%;
-    background-color: var(--vg-or);
-}
-
-.menu-pricing-total {
-    flex: 0 0 auto;
+.menu-pricing-note {
     color: var(--vg-muted);
-    font-size: .92rem;
-    white-space: nowrap;
+    font-size: .95rem;
+    margin-top: .45rem;
 }
 
 .menu-cart-form .input-group-text {
@@ -1134,17 +1110,8 @@ a:focus {
 }
 
 @media (max-width: 575.98px) {
-    .menu-pricing-panel {
-        align-items: flex-start;
-        flex-direction: column;
-    }
-
     .menu-pricing-price {
-        font-size: 1.45rem;
-    }
-
-    .menu-pricing-total {
-        white-space: normal;
+        font-size: 1.75rem;
     }
 }
 
