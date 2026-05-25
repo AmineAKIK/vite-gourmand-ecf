@@ -1676,10 +1676,14 @@ a:focus {
 }
 
 .badge-statut {
+    display: inline-flex;
+    align-items: center;
     padding: .4em .8em;
     border-radius: 999px;
     font-size: .8rem;
     font-weight: 600;
+    vertical-align: middle;
+    line-height: 1;
 }
 .statut-en_attente       { background: var(--vg-status-warning-bg); color: var(--vg-status-warning-text); }
 .statut-accepte          { background: var(--vg-status-soft-bg); color: var(--vg-bordeaux-dark); }
@@ -1761,8 +1765,6 @@ a:focus {
     justify-self: end;
     white-space: nowrap;
     align-self: center;
-    display: inline-flex;
-    align-items: center;
 }
 
 .commandes-accordion .badge-statut {
@@ -1901,8 +1903,6 @@ a:focus {
         grid-area: status;
         align-self: center;
         justify-self: end;
-        display: inline-flex;
-        align-items: center;
     }
 
     .commandes-accordion .badge-statut {
