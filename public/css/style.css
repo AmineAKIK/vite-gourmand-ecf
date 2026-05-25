@@ -1729,6 +1729,12 @@ a:focus {
     width: 100%;
     min-width: 0;
     padding-right: 1rem;
+    line-height: 1;
+}
+
+.commande-row-summary > * {
+    display: flex;
+    align-items: center;
 }
 
 .commandes-accordion .commande-numero {
