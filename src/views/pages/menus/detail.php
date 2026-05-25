@@ -1,4 +1,9 @@
-<?php $pageTitle = sanitize($menu['titre']) . ' - Vite & Gourmand'; ?>
+<?php
+$pageTitle = sanitize($menu['titre']) . ' - Vite & Gourmand';
+$prixParPersonne = (float)($menu['prix_par_personne'] ?? 0);
+$nombrePersonneMinimum = (int)($menu['nombre_personne_minimum'] ?? 1);
+$prixMinimum = $prixParPersonne * $nombrePersonneMinimum;
+?>
 
 <div class="container py-5 menus-page menu-detail-page">
     <!-- Fil d'ariane -->
@@ -52,19 +57,19 @@
             <h1 class="fw-bold"><?= sanitize($menu['titre']) ?></h1>
             <p class="lead text-muted"><?= nl2br(sanitize($menu['description'] ?? '')) ?></p>
 
+            <div class="menu-pricing-panel my-3" aria-label="Tarif du menu">
+                <div class="menu-pricing-main">
+                    <span class="menu-pricing-price"><?= sanitize(formatPrice($prixParPersonne)) ?></span>
+                    <span class="menu-pricing-unit">par personne</span>
+                </div>
+                <div class="menu-pricing-divider" aria-hidden="true"></div>
+                <div class="menu-pricing-meta">
+                    <span class="menu-pricing-minimum"><?= $nombrePersonneMinimum ?> personnes minimum</span>
+                    <span class="menu-pricing-total">Commande à partir de <?= sanitize(formatPrice($prixMinimum)) ?></span>
+                </div>
+            </div>
+
             <div class="row g-3 my-3">
-                <div class="col-6">
-                    <div class="menu-panel rounded p-3 text-center">
-                        <div class="prix-tag"><?= sanitize(formatPrice($menu['prix_par_personne'] ?? 0)) ?></div>
-                        <small class="text-muted">par personne</small>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="menu-panel rounded p-3 text-center">
-                        <div class="h4 fw-bold text-vg"><?= $menu['nombre_personne_minimum'] ?>+</div>
-                        <small class="text-muted">personnes minimum</small>
-                    </div>
-                </div>
                 <?php if ($menu['quantite_restante'] !== null): ?>
                 <div class="col-12">
                     <div class="alert alert-warning py-2 mb-0">
@@ -85,16 +90,16 @@
 
             <!-- Ajouter au panier -->
             <?php if (isAuth()): ?>
-                <form method="POST" action="/panier/ajouter" class="mt-3">
+                <form method="POST" action="/panier/ajouter" class="menu-cart-form mt-3">
                     <?= csrfField() ?>
                     <input type="hidden" name="menu_id" value="<?= (int)$menu['menu_id'] ?>">
                     <div class="input-group mb-2">
                         <label for="detail_nb_personnes" class="input-group-text">Personnes</label>
                         <input type="number" class="form-control" id="detail_nb_personnes"
                                name="nombre_personne"
-                               min="<?= (int)$menu['nombre_personne_minimum'] ?>"
+                               min="<?= $nombrePersonneMinimum ?>"
                                max="500"
-                               value="<?= (int)$menu['nombre_personne_minimum'] ?>"
+                               value="<?= $nombrePersonneMinimum ?>"
                                required>
                     </div>
                     <button type="submit" class="btn btn-vg btn-lg w-100">
