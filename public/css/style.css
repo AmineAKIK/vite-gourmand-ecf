@@ -1148,6 +1148,44 @@ a:focus {
 /* Section background alternée */
 .bg-creme { background-color: var(--vg-creme); }
 
+/* Modération des avis */
+.avis-moderation-list {
+    display: flex;
+    flex-direction: column;
+    gap: .75rem;
+}
+.avis-moderation-card {
+    background: var(--vg-creme);
+    border: 1px solid var(--vg-border);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    flex-direction: column;
+    gap: .6rem;
+}
+.avis-moderation-meta {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .5rem;
+    font-size: .875rem;
+}
+.avis-moderation-comment {
+    margin: 0;
+    color: var(--vg-text);
+    font-size: .9rem;
+    line-height: 1.5;
+    word-break: break-word;
+}
+.avis-moderation-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .5rem;
+    padding-top: .5rem;
+    border-top: 1px solid var(--vg-border);
+}
+
 /* Avis étoiles */
 .stars { color: var(--vg-or); }
 
