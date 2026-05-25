@@ -75,11 +75,6 @@ class EmployeController
             redirect('/employe/commandes');
         }
 
-        if (!commandeCanTransition($ancienStatut, $statut)) {
-            flash('error', 'Transition de statut non autorisée.');
-            redirect('/employe/commandes');
-        }
-
         if ($action === 'annuler') {
             $motif       = $commentaire;
             $modeContact = sanitize($_POST['mode_contact'] ?? '');
