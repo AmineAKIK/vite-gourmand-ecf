@@ -16,6 +16,11 @@ class AvisController
             redirect('/mon-compte?open_modal=avis_' . $commandeId . '&modal_error=' . urlencode('Veuillez sélectionner une note entre 1 et 5.'));
         }
 
+        if (mb_strlen($commentaire) > 300) {
+            flash('error', 'Le commentaire ne peut pas dépasser 300 caractères.');
+            redirect('/mon-compte');
+        }
+
         $commande = CommandeModel::getById($commandeId);
         if (!$commande || $commande['utilisateur_id'] != $user['id'] || !commandeCanReview($commande['statut'] ?? null)) {
             flash('error', 'Impossible de laisser un avis.');

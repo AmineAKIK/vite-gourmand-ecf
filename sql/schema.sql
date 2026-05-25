@@ -167,7 +167,7 @@ CREATE TABLE avis (
     commande_id INT NOT NULL UNIQUE,
     utilisateur_id INT NOT NULL,
     note INT NOT NULL CHECK (note BETWEEN 1 AND 5),
-    description VARCHAR(500),
+    description VARCHAR(300),
     statut VARCHAR(20) DEFAULT 'en_attente', -- en_attente, valide, refuse
     afficher_accueil BOOLEAN DEFAULT FALSE,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

@@ -236,7 +236,7 @@
                     </fieldset>
                     <div class="mb-3">
                         <label for="commentaire<?= (int)$cmd['commande_id'] ?>" class="form-label">Commentaire</label>
-                        <textarea class="form-control" id="commentaire<?= (int)$cmd['commande_id'] ?>" name="commentaire" rows="3" maxlength="500"></textarea>
+                        <textarea class="form-control" id="commentaire<?= (int)$cmd['commande_id'] ?>" name="commentaire" rows="3" maxlength="300"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
