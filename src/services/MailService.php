@@ -145,7 +145,7 @@ class MailService {
 
     public static function sendCommandeTerminee(string $email, int $commandeId): void {
         try {
-            $link = BASE_URL . "/mon-compte";
+            $link = BASE_URL . "/connexion?next=/mon-compte";
             self::send(
                 $email,
                 'Votre avis nous intéresse !',

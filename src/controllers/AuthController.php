@@ -4,6 +4,11 @@
 class AuthController {
 
     public function loginForm(): void {
+        $next = $_GET['next'] ?? '';
+        $allowed = ['/mon-compte'];
+        if ($next && in_array($next, $allowed, true)) {
+            $_SESSION['redirect_after_login'] = $next;
+        }
         view('pages/auth/login');
     }
 
