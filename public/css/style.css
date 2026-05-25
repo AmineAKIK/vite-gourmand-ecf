@@ -1377,6 +1377,10 @@ a:focus {
     font-weight: 700;
 }
 
+.stats-menu-cards {
+    display: none;
+}
+
 .stats-percent {
     display: inline-flex;
     justify-content: center;
@@ -1429,86 +1433,81 @@ a:focus {
 }
 
 @media (max-width: 575.98px) {
-    .stats-panel .table-responsive {
-        overflow-x: visible;
-    }
-
-    .stats-table {
-        margin: 0;
-    }
-
-    .stats-table thead {
+    .stats-table-desktop {
         display: none;
     }
 
-    .stats-table,
-    .stats-table tbody,
-    .stats-table tfoot,
-    .stats-table tr,
-    .stats-table td {
-        display: block;
-        width: 100%;
-    }
-
-    .stats-table tbody {
+    .stats-menu-cards {
         display: grid;
         gap: .75rem;
         padding: .75rem;
     }
 
-    .stats-table tfoot {
-        padding: 0 .75rem .75rem;
-    }
-
-    .stats-table tr {
+    .stats-menu-card {
         overflow: hidden;
         background: rgba(255, 249, 240, .78);
         border: 1px solid var(--stats-panel-border);
         border-radius: 8px;
     }
 
-    .stats-table tfoot tr {
+    .stats-menu-card-total {
         background: rgba(139, 26, 43, .05);
     }
 
-    .stats-table th,
-    .stats-table td,
-    .stats-table tfoot td {
-        padding: .72rem .85rem;
-        background: transparent;
-        border: 0;
+    .stats-menu-card-head {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+        padding: .85rem;
         border-bottom: 1px solid var(--stats-panel-border);
     }
 
-    .stats-table td {
+    .stats-menu-card-head strong {
+        min-width: 0;
+        color: var(--vg-text);
+        font-size: 1rem;
+        line-height: 1.25;
+    }
+
+    .stats-menu-card-head > span {
+        flex: 0 0 auto;
+        color: var(--vg-bordeaux-dark);
+        font-weight: 800;
+    }
+
+    .stats-menu-card dl {
+        margin: 0;
+    }
+
+    .stats-menu-card dl div {
         display: flex;
         align-items: center;
         justify-content: space-between;
         gap: 1rem;
-        text-align: right !important;
-        white-space: normal !important;
+        padding: .7rem .85rem;
+        border-bottom: 1px solid var(--stats-panel-border);
     }
 
-    .stats-table td:last-child {
+    .stats-menu-card dl div:last-child {
         border-bottom: 0;
     }
 
-    .stats-table td::before {
-        content: attr(data-label);
-        flex: 0 0 auto;
+    .stats-menu-card dt {
         color: var(--vg-muted);
         font-size: .75rem;
         font-weight: 800;
         line-height: 1.2;
-        text-align: left;
         text-transform: uppercase;
     }
 
-    .stats-table-title {
-        align-items: flex-start !important;
+    .stats-menu-card dd {
+        flex: 0 0 auto;
+        margin: 0;
         color: var(--vg-text);
-        font-size: 1rem;
-        line-height: 1.35;
+        font-weight: 800;
+        text-align: right;
+        white-space: nowrap;
     }
 
     .stats-percent {

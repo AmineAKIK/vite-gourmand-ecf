@@ -173,7 +173,7 @@ $chartData = array_map(fn($row) => round((float)($row['ca'] ?? 0), 2), $caStats 
                     <p>CA, volume, panier moyen et part dans le total.</p>
                 </div>
             </div>
-            <div class="table-responsive">
+            <div class="table-responsive stats-table-desktop">
                 <table class="table stats-table align-middle mb-0" aria-label="Chiffre d'affaires détaillé par menu">
                     <thead>
                         <tr>
@@ -212,6 +212,38 @@ $chartData = array_map(fn($row) => round((float)($row['ca'] ?? 0), 2), $caStats 
                         </tr>
                     </tfoot>
                 </table>
+            </div>
+            <div class="stats-menu-cards" aria-label="Chiffre d'affaires détaillé par menu">
+                <?php foreach ($caStats as $row):
+                    $nb = (int)($row['nb'] ?? 0);
+                    $ca = (float)($row['ca'] ?? 0);
+                    $average = $nb > 0 ? $ca / $nb : 0;
+                    $share = $totalCA > 0 ? ($ca / $totalCA) * 100 : 0;
+                ?>
+                    <article class="stats-menu-card">
+                        <div class="stats-menu-card-head">
+                            <strong><?= sanitize($row['titre'] ?? '') ?></strong>
+                            <span class="stats-percent"><?= sanitize(number_format($share, 0, ',', ' ')) ?> %</span>
+                        </div>
+                        <dl>
+                            <div><dt>Commandes</dt><dd><?= sanitize(formatInteger($nb)) ?></dd></div>
+                            <div><dt>Panier moyen</dt><dd><?= sanitize(formatPrice($average)) ?></dd></div>
+                            <div><dt>CA total</dt><dd class="text-vg"><?= sanitize(formatPrice($ca)) ?></dd></div>
+                        </dl>
+                    </article>
+                <?php endforeach; ?>
+
+                <article class="stats-menu-card stats-menu-card-total">
+                    <div class="stats-menu-card-head">
+                        <strong>Total</strong>
+                        <span>100 %</span>
+                    </div>
+                    <dl>
+                        <div><dt>Commandes</dt><dd><?= sanitize(formatInteger($totalNb)) ?></dd></div>
+                        <div><dt>Panier moyen</dt><dd><?= sanitize(formatPrice($panierMoyen)) ?></dd></div>
+                        <div><dt>CA total</dt><dd class="text-vg"><?= sanitize(formatPrice($totalCA)) ?></dd></div>
+                    </dl>
+                </article>
             </div>
         </section>
     <?php endif; ?>
