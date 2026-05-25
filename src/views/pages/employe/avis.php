@@ -73,7 +73,7 @@ $pageTitle = 'Modération des avis - Vite & Gourmand';
                         <?php if ($a['statut'] === 'valide'): ?>
                             <span class="badge bg-success">Validé</span>
                             <?php if (!empty($a['afficher_accueil'])): ?>
-                                <span class="badge bg-info text-dark ms-1">Accueil</span>
+                                <span class="badge bg-info ms-1">Accueil</span>
                             <?php endif; ?>
                         <?php elseif ($a['statut'] === 'refuse'): ?>
                             <span class="badge bg-danger">Refusé</span>
