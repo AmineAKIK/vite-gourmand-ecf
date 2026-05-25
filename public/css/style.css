@@ -1433,29 +1433,29 @@ a:focus {
 }
 
 @media (max-width: 575.98px) {
-    .stats-detail-panel {
-        display: none;
-    }
-
     .stats-table-desktop {
         display: none;
     }
 
     .stats-menu-cards {
         display: grid;
-        gap: .75rem;
-        padding: .75rem;
+        gap: .55rem;
+        padding: .65rem;
     }
 
     .stats-menu-card {
-        overflow: hidden;
-        background: rgba(255, 249, 240, .78);
-        border: 1px solid var(--stats-panel-border);
-        border-radius: 8px;
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: .5rem;
+        padding: .85rem;
+        background: transparent;
+        border: 0;
+        border-bottom: 1px solid var(--stats-panel-border);
+        border-radius: 0;
     }
 
-    .stats-menu-card-total {
-        background: rgba(139, 26, 43, .05);
+    .stats-menu-card:last-child {
+        border-bottom: 0;
     }
 
     .stats-menu-card-head {
@@ -1463,8 +1463,8 @@ a:focus {
         align-items: center;
         justify-content: space-between;
         gap: .75rem;
-        padding: .85rem;
-        border-bottom: 1px solid var(--stats-panel-border);
+        padding: 0;
+        border-bottom: 0;
     }
 
     .stats-menu-card-head strong {
@@ -1481,20 +1481,16 @@ a:focus {
     }
 
     .stats-menu-card dl {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .5rem;
         margin: 0;
     }
 
     .stats-menu-card dl div {
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
-        padding: .7rem .85rem;
-        border-bottom: 1px solid var(--stats-panel-border);
-    }
-
-    .stats-menu-card dl div:last-child {
-        border-bottom: 0;
+        display: grid;
+        gap: .22rem;
+        min-width: 0;
     }
 
     .stats-menu-card dt {
@@ -1506,11 +1502,11 @@ a:focus {
     }
 
     .stats-menu-card dd {
-        flex: 0 0 auto;
         margin: 0;
         color: var(--vg-text);
+        font-size: .95rem;
         font-weight: 800;
-        text-align: right;
+        text-align: left;
         white-space: nowrap;
     }
 
