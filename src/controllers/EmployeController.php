@@ -45,6 +45,9 @@ class EmployeController
         $commandes = CommandeModel::getAll($filters);
         $statuts   = commandeStatuses();
         $menus      = MenuModel::getAll();
+        $commandeIds = array_column($commandes, 'commande_id');
+        $lignesByCommande = CommandeModel::getLignesByCommandes($commandeIds);
+        $documentsByCommande = FacturationModel::listByCommandeIds($commandeIds);
 
         $statusFilters = $filters;
         $statusFilters['statut'] = '';
@@ -56,7 +59,74 @@ class EmployeController
             }
         }
 
-        view('pages/employe/commandes', compact('commandes', 'filters', 'statuts', 'menus', 'statusCounts'));
+        view('pages/employe/commandes', compact(
+            'commandes',
+            'filters',
+            'statuts',
+            'menus',
+            'statusCounts',
+            'lignesByCommande',
+            'documentsByCommande'
+        ));
+    }
+
+    public function createDocument(): void
+    {
+        verifyCsrf();
+
+        $commandeId = (int)($_POST['commande_id'] ?? 0);
+        $type = sanitize($_POST['type_document'] ?? '');
+
+        try {
+            $documentId = FacturationModel::createDraftFromCommande($commandeId, $type, currentUser()['id'] ?? null);
+            redirect('/employe/document/edit?id=' . $documentId);
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+            redirect('/employe/commandes');
+        }
+    }
+
+    public function editDocument(): void
+    {
+        $documentId = (int)($_GET['id'] ?? 0);
+        $document = FacturationModel::getById($documentId);
+        if (!$document) {
+            flash('error', 'Document introuvable.');
+            redirect('/employe/commandes');
+        }
+
+        $commande = CommandeModel::getById((int)$document['commande_id']);
+        $pageTitle = ucfirst($document['type_document']) . ' brouillon - Vite & Gourmand';
+        view('pages/employe/document_edit', compact('document', 'commande', 'pageTitle'));
+    }
+
+    public function updateDocument(): void
+    {
+        verifyCsrf();
+
+        $documentId = (int)($_POST['document_id'] ?? 0);
+        try {
+            FacturationModel::updateDraft($documentId, $_POST);
+            flash('success', 'Brouillon mis à jour.');
+            redirect('/employe/document/edit?id=' . $documentId);
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+            redirect('/employe/document/edit?id=' . $documentId);
+        }
+    }
+
+    public function previewDocument(): void
+    {
+        $documentId = (int)($_GET['id'] ?? 0);
+        $document = FacturationModel::getById($documentId);
+        if (!$document) {
+            flash('error', 'Document introuvable.');
+            redirect('/employe/commandes');
+        }
+
+        $commande = CommandeModel::getById((int)$document['commande_id']);
+        $pageTitle = 'Aperçu ' . $document['type_document'] . ' - Vite & Gourmand';
+        view('pages/employe/document_preview', compact('document', 'commande', 'pageTitle'));
     }
 
     public function updateStatut(): void

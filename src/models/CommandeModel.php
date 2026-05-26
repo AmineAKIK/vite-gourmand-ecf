@@ -86,6 +86,29 @@ class CommandeModel {
         return $stmt->fetchAll();
     }
 
+    public static function getLignesByCommandes(array $commandeIds): array {
+        $ids = array_values(array_unique(array_filter(array_map('intval', $commandeIds))));
+        if (!$ids) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = Database::getConnection()->prepare("
+            SELECT cl.*, m.titre AS menu_titre
+            FROM commande_ligne cl
+            JOIN menu m ON m.menu_id = cl.menu_id
+            WHERE cl.commande_id IN ($placeholders)
+            ORDER BY cl.commande_id ASC, cl.ligne_id ASC
+        ");
+        $stmt->execute($ids);
+
+        $lignes = [];
+        foreach ($stmt->fetchAll() as $ligne) {
+            $lignes[(int)$ligne['commande_id']][] = $ligne;
+        }
+        return $lignes;
+    }
+
     public static function getByUser(int $userId): array {
         $db   = Database::getConnection();
         $stmt = $db->prepare("

@@ -116,6 +116,8 @@ $routes = [
         '/employe/menus'                  => ['EmployeController', 'menus'],
         '/employe/avis'                   => ['EmployeController', 'avis'],
         '/employe/horaires'               => ['EmployeController', 'horaires'],
+        '/employe/document/edit'          => ['EmployeController', 'editDocument'],
+        '/employe/document/apercu'        => ['EmployeController', 'previewDocument'],
         '/employe/changer-mot-de-passe'   => ['EmployeController', 'changePasswordForm'],
     ],
     'GET_ADMIN' => [
@@ -129,6 +131,8 @@ $routes = [
     'POST_EMPLOYE' => [
         '/employe/changer-mot-de-passe'  => ['EmployeController', 'changePassword'],
         '/employe/commande/statut'   => ['EmployeController', 'updateStatut'],
+        '/employe/document/creer'     => ['EmployeController', 'createDocument'],
+        '/employe/document/modifier'  => ['EmployeController', 'updateDocument'],
         '/employe/menu/creer'        => ['EmployeController', 'createMenu'],
         '/employe/menu/modifier'     => ['EmployeController', 'updateMenu'],
         '/employe/menu/supprimer'    => ['EmployeController', 'deleteMenu'],

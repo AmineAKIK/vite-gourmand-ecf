@@ -158,6 +158,48 @@ CREATE TABLE commande_historique (
     FOREIGN KEY (modifie_par) REFERENCES utilisateur(utilisateur_id)
 );
 
+CREATE TABLE document_facturation (
+    document_id          INT AUTO_INCREMENT PRIMARY KEY,
+    commande_id          INT NOT NULL,
+    type_document        VARCHAR(20) NOT NULL,
+    statut               VARCHAR(20) NOT NULL DEFAULT 'brouillon',
+    numero_document      VARCHAR(50),
+    date_emission        DATE NOT NULL,
+    date_prestation      DATE,
+    client_nom           VARCHAR(160) NOT NULL DEFAULT '',
+    client_email         VARCHAR(190) NOT NULL DEFAULT '',
+    client_telephone     VARCHAR(40) NOT NULL DEFAULT '',
+    client_adresse       VARCHAR(255) NOT NULL DEFAULT '',
+    client_ville         VARCHAR(120) NOT NULL DEFAULT '',
+    client_code_postal   VARCHAR(20) NOT NULL DEFAULT '',
+    entreprise_snapshot  LONGTEXT,
+    note_publique        TEXT,
+    mention_legale       TEXT,
+    total_ht             DECIMAL(10,2) NOT NULL DEFAULT 0,
+    total_tva            DECIMAL(10,2) NOT NULL DEFAULT 0,
+    total_ttc            DECIMAL(10,2) NOT NULL DEFAULT 0,
+    created_by           INT,
+    created_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    updated_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    FOREIGN KEY (commande_id) REFERENCES commande(commande_id) ON DELETE CASCADE,
+    FOREIGN KEY (created_by) REFERENCES utilisateur(utilisateur_id)
+);
+
+CREATE TABLE document_facturation_ligne (
+    ligne_document_id    INT AUTO_INCREMENT PRIMARY KEY,
+    document_id          INT NOT NULL,
+    designation          VARCHAR(255) NOT NULL,
+    quantite             DECIMAL(10,2) NOT NULL DEFAULT 1,
+    prix_unitaire_ht     DECIMAL(10,2) NOT NULL DEFAULT 0,
+    prix_unitaire_ttc    DECIMAL(10,2) NOT NULL DEFAULT 0,
+    taux_tva             DECIMAL(5,2) NOT NULL DEFAULT 10,
+    total_ht             DECIMAL(10,2) NOT NULL DEFAULT 0,
+    total_tva            DECIMAL(10,2) NOT NULL DEFAULT 0,
+    total_ttc            DECIMAL(10,2) NOT NULL DEFAULT 0,
+    ordre                INT NOT NULL DEFAULT 0,
+    FOREIGN KEY (document_id) REFERENCES document_facturation(document_id) ON DELETE CASCADE
+);
+
 -- ============================================
 -- AVIS
 -- ============================================
@@ -237,6 +279,10 @@ CREATE INDEX idx_commande_utilisateur     ON commande(utilisateur_id);
 CREATE INDEX idx_commande_date            ON commande(date_prestation);
 CREATE INDEX idx_commande_ligne_commande  ON commande_ligne(commande_id);
 CREATE INDEX idx_commande_ligne_menu      ON commande_ligne(menu_id);
+CREATE INDEX idx_document_facturation_commande ON document_facturation(commande_id);
+CREATE INDEX idx_document_facturation_type     ON document_facturation(type_document);
+CREATE INDEX idx_document_facturation_statut   ON document_facturation(statut);
+CREATE INDEX idx_document_ligne_document       ON document_facturation_ligne(document_id);
 CREATE INDEX idx_avis_statut           ON avis(statut);
 CREATE INDEX idx_avis_utilisateur      ON avis(utilisateur_id);
 CREATE INDEX idx_menu_actif            ON menu(actif);

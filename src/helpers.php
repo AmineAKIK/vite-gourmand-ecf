@@ -138,7 +138,7 @@ function workspaceNavItems(): array {
     $items[] = ['href' => $dashHref, 'label' => 'Tableau de bord', 'icon' => 'bi-speedometer2', 'match' => $dashMatch, 'exact' => true];
 
     // Opérationnel — commun aux deux rôles
-    $items[] = ['href' => '/employe/commandes', 'label' => 'Commandes',     'icon' => 'bi-list-check',   'match' => '/employe/commandes*'];
+    $items[] = ['href' => '/employe/commandes', 'label' => 'Commandes',     'icon' => 'bi-list-check',   'match' => ['/employe/commandes*', '/employe/document*']];
     $items[] = ['href' => '/employe/menus',     'label' => 'Menus et plats','icon' => 'bi-journal-text', 'match' => '/employe/menus*'];
     $items[] = ['href' => '/employe/avis',      'label' => 'Avis clients',  'icon' => 'bi-star',         'match' => '/employe/avis*'];
     $items[] = ['href' => '/employe/horaires',  'label' => 'Horaires',      'icon' => 'bi-clock',        'match' => '/employe/horaires*'];

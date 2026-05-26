@@ -99,4 +99,10 @@ document.addEventListener('DOMContentLoaded', function () {
             icon.className = reveal ? 'bi bi-eye-slash' : 'bi bi-eye';
         });
     });
+
+    document.querySelectorAll('[data-print-document]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            window.print();
+        });
+    });
 });

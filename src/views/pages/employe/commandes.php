@@ -146,6 +146,9 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
             <?php
                 $statutActuel = $cmd['statut'] ?? null;
                 $statutsDisponibles = $statutsMiseAJour;
+                $commandeId = (int)$cmd['commande_id'];
+                $lignesCommande = $lignesByCommande[$commandeId] ?? [];
+                $documentsCommande = $documentsByCommande[$commandeId] ?? [];
                 $peutAnnuler = $statutActuel !== commandeCancelledStatus()
                     && commandeCanTransition($statutActuel, commandeCancelledStatus());
             ?>
@@ -175,22 +178,104 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
 
                             <!-- Informations de la commande -->
                             <div class="col-12 col-lg-5">
-                                <section class="commande-section h-100">
-                                    <h3 class="h6 fw-bold">Détails</h3>
+                                <section class="commande-section">
+                                    <h3 class="h6 fw-bold">Client</h3>
                                     <dl class="commande-detail-list mb-0 small">
                                         <div><dt>Client</dt><dd><?= sanitize(personFullName($cmd)) ?></dd></div>
                                         <div><dt>Email</dt><dd class="text-break"><?= sanitize($cmd['email'] ?? '') ?></dd></div>
                                         <div><dt>Téléphone</dt><dd><?= sanitize($cmd['telephone'] ?? '—') ?></dd></div>
-                                        <div><dt>Menus</dt><dd><?= sanitize($cmd['menu_titre'] ?? '') ?></dd></div>
-                                        <div><dt>Adresse</dt><dd><?= sanitize(($cmd['adresse_livraison'] ?? '') . ', ' . ($cmd['ville_livraison'] ?? '')) ?></dd></div>
-                                        <div><dt>Total</dt><dd class="fw-bold text-vg"><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></dd></div>
+                                        <div><dt>Adresse</dt><dd><?= sanitize(($cmd['adresse_livraison'] ?? '') . ', ' . ($cmd['code_postal_livraison'] ?? '') . ' ' . ($cmd['ville_livraison'] ?? '')) ?></dd></div>
                                     </dl>
+                                </section>
+
+                                <section class="commande-section mt-3">
+                                    <h3 class="h6 fw-bold">Prestation</h3>
+                                    <dl class="commande-detail-list mb-0 small">
+                                        <div><dt>Date</dt><dd><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></dd></div>
+                                        <div><dt>Heure</dt><dd><?= sanitize($cmd['heure_livraison'] ?? '—') ?></dd></div>
+                                        <div><dt>Ville</dt><dd><?= sanitize($cmd['ville_livraison'] ?? '—') ?></dd></div>
+                                        <div><dt>Commande</dt><dd><code><?= sanitize($cmd['numero_commande'] ?? '') ?></code></dd></div>
+                                    </dl>
+                                </section>
+
+                                <section class="commande-section mt-3">
+                                    <h3 class="h6 fw-bold">Documents</h3>
+                                    <div class="commande-doc-actions">
+                                        <form method="POST" action="/employe/document/creer">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="commande_id" value="<?= $commandeId ?>">
+                                            <input type="hidden" name="type_document" value="facture">
+                                            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                                <i class="bi bi-file-earmark-text me-1"></i>Facture
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="/employe/document/creer">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="commande_id" value="<?= $commandeId ?>">
+                                            <input type="hidden" name="type_document" value="ticket">
+                                            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                                <i class="bi bi-receipt me-1"></i>Ticket
+                                            </button>
+                                        </form>
+                                    </div>
+
+                                    <?php if (empty($documentsCommande)): ?>
+                                        <p class="small text-muted mb-0 mt-2">Aucun brouillon généré.</p>
+                                    <?php else: ?>
+                                        <div class="commande-doc-list mt-2">
+                                            <?php foreach ($documentsCommande as $doc): ?>
+                                                <div class="commande-doc-item">
+                                                    <span>
+                                                        <?= sanitize(ucfirst($doc['type_document'] ?? 'document')) ?>
+                                                        <small><?= sanitize($doc['statut'] ?? '') ?></small>
+                                                    </span>
+                                                    <strong><?= sanitize(formatPrice($doc['total_ttc'] ?? 0)) ?></strong>
+                                                    <a href="/employe/document/edit?id=<?= (int)$doc['document_id'] ?>" class="btn btn-link btn-sm">Éditer</a>
+                                                    <a href="/employe/document/apercu?id=<?= (int)$doc['document_id'] ?>" class="btn btn-link btn-sm">Aperçu</a>
+                                                </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                    <?php endif; ?>
                                 </section>
                             </div>
 
                             <!-- Mise à jour du statut -->
                             <div class="col-12 col-lg-7">
                                 <div class="commande-action-stack">
+                                    <section class="commande-section">
+                                        <h3 class="h6 fw-bold">Lignes de commande</h3>
+                                        <div class="commande-lines-table">
+                                            <table class="table table-sm align-middle mb-0">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Menu</th>
+                                                        <th class="text-end">Pers.</th>
+                                                        <th class="text-end">Menu</th>
+                                                        <th class="text-end">Livraison</th>
+                                                        <th class="text-end">Total</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($lignesCommande as $ligne): ?>
+                                                        <tr>
+                                                            <td><?= sanitize($ligne['menu_titre'] ?? '') ?></td>
+                                                            <td class="text-end"><?= (int)($ligne['nombre_personne'] ?? 0) ?></td>
+                                                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($ligne['prix_menu'] ?? 0)) ?></td>
+                                                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($ligne['prix_livraison'] ?? 0)) ?></td>
+                                                            <td class="text-end text-nowrap fw-semibold"><?= sanitize(formatPrice($ligne['prix_total_ligne'] ?? 0)) ?></td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                                <tfoot>
+                                                    <tr>
+                                                        <th colspan="4" class="text-end">Total commande</th>
+                                                        <th class="text-end text-nowrap text-vg"><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></th>
+                                                    </tr>
+                                                </tfoot>
+                                            </table>
+                                        </div>
+                                    </section>
+
                                     <section class="commande-section">
                                         <h3 class="h6 fw-bold">Statut de la commande</h3>
                                         <form method="POST" action="/employe/commande/statut">
