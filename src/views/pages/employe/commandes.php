@@ -230,6 +230,11 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                                         <small><?= sanitize($doc['numero_document'] ?: ($doc['statut'] ?? '')) ?></small>
                                                     </span>
                                                     <strong><?= sanitize(formatPrice($doc['total_ttc'] ?? 0)) ?></strong>
+                                                    <?php if (!empty($doc['sent_at'])): ?>
+                                                        <i class="bi bi-envelope-check text-success" title="Envoyé"></i>
+                                                    <?php elseif (!empty($doc['archive_path'])): ?>
+                                                        <i class="bi bi-archive text-muted" title="Archivé"></i>
+                                                    <?php endif; ?>
                                                     <a href="/employe/document/edit?id=<?= (int)$doc['document_id'] ?>" class="btn btn-link btn-sm">Éditer</a>
                                                     <a href="/employe/document/apercu?id=<?= (int)$doc['document_id'] ?>" class="btn btn-link btn-sm">Aperçu</a>
                                                 </div>

@@ -118,6 +118,7 @@ $routes = [
         '/employe/horaires'               => ['EmployeController', 'horaires'],
         '/employe/document/edit'          => ['EmployeController', 'editDocument'],
         '/employe/document/apercu'        => ['EmployeController', 'previewDocument'],
+        '/employe/document/export'        => ['EmployeController', 'exportDocument'],
         '/employe/changer-mot-de-passe'   => ['EmployeController', 'changePasswordForm'],
     ],
     'GET_ADMIN' => [
@@ -134,6 +135,8 @@ $routes = [
         '/employe/document/creer'     => ['EmployeController', 'createDocument'],
         '/employe/document/modifier'  => ['EmployeController', 'updateDocument'],
         '/employe/document/finaliser' => ['EmployeController', 'finalizeDocument'],
+        '/employe/document/archiver'  => ['EmployeController', 'archiveDocument'],
+        '/employe/document/envoyer'   => ['EmployeController', 'sendDocument'],
         '/employe/menu/creer'        => ['EmployeController', 'createMenu'],
         '/employe/menu/modifier'     => ['EmployeController', 'updateMenu'],
         '/employe/menu/supprimer'    => ['EmployeController', 'deleteMenu'],

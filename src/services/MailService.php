@@ -26,7 +26,7 @@ class MailService {
         </body></html>";
     }
 
-    private static function send(string $to, string $subject, string $html, string $text, ?string $replyTo = null): void {
+    private static function send(string $to, string $subject, string $html, string $text, ?string $replyTo = null, array $attachments = []): void {
         $apiKey = BREVO_API_KEY;
         if (!$apiKey) {
             throw new RuntimeException('BREVO_API_KEY non configurée.');
@@ -42,6 +42,9 @@ class MailService {
 
         if ($replyTo) {
             $payload['replyTo'] = ['email' => $replyTo];
+        }
+        if ($attachments) {
+            $payload['attachment'] = $attachments;
         }
 
         $ch = curl_init('https://api.brevo.com/v3/smtp/email');
@@ -160,6 +163,42 @@ class MailService {
         } catch (\Throwable $e) {
             error_log("Erreur mail terminée : " . $e->getMessage());
         }
+    }
+
+    public static function sendDocumentFacturation(array $document, array $commande, string $archiveAbsolutePath): void {
+        $email = trim((string)($document['client_email'] ?? ''));
+        if (!$email) {
+            throw new InvalidArgumentException('Email client manquant.');
+        }
+        if (!is_file($archiveAbsolutePath)) {
+            throw new RuntimeException('Archive du document introuvable.');
+        }
+
+        $typeLabel = ($document['type_document'] ?? '') === 'ticket' ? 'ticket de caisse' : 'facture';
+        $numero = $document['numero_document'] ?: ('document #' . (int)$document['document_id']);
+        $filename = preg_replace('/[^A-Z0-9_-]+/i', '-', $numero) ?: 'document';
+        $subject = ucfirst($typeLabel) . ' ' . $numero . ' - Vite & Gourmand';
+        $html = self::wrap(ucfirst($typeLabel) . ' disponible', "
+            <p>Bonjour " . htmlspecialchars($document['client_nom'] ?? '') . ",</p>
+            <p>Veuillez trouver ci-joint votre <strong>" . htmlspecialchars($typeLabel) . "</strong> lié à la commande <strong>" . htmlspecialchars($commande['numero_commande'] ?? '') . "</strong>.</p>
+            <table style='width:100%;border-collapse:collapse;margin:16px 0'>
+                <tr><td style='padding:6px 0;color:#5F6470'>Document</td><td style='padding:6px 0'><strong>" . htmlspecialchars($numero) . "</strong></td></tr>
+                <tr><td style='padding:6px 0;color:#5F6470'>Total TTC</td><td style='padding:6px 0;color:#8B1A2B'><strong>" . htmlspecialchars(formatPrice($document['total_ttc'] ?? 0)) . "</strong></td></tr>
+            </table>
+            <p>Merci pour votre confiance,<br>L'équipe Vite &amp; Gourmand</p>
+        ");
+
+        self::send(
+            $email,
+            $subject,
+            $html,
+            ucfirst($typeLabel) . " $numero - total " . formatPrice($document['total_ttc'] ?? 0),
+            null,
+            [[
+                'name' => $filename . '.html',
+                'content' => base64_encode(file_get_contents($archiveAbsolutePath)),
+            ]]
+        );
     }
 
     public static function sendMaterielRelance(string $email, string $prenom): void {

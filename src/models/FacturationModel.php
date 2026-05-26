@@ -24,6 +24,12 @@ class FacturationModel
                 client_adresse VARCHAR(255) NOT NULL DEFAULT '',
                 client_ville VARCHAR(120) NOT NULL DEFAULT '',
                 client_code_postal VARCHAR(20) NOT NULL DEFAULT '',
+                client_siren VARCHAR(20) NULL,
+                adresse_livraison VARCHAR(255) NULL,
+                ville_livraison VARCHAR(120) NULL,
+                code_postal_livraison VARCHAR(20) NULL,
+                categorie_operation VARCHAR(30) NOT NULL DEFAULT 'mixte',
+                option_tva_debits TINYINT(1) NOT NULL DEFAULT 0,
                 entreprise_snapshot LONGTEXT,
                 note_publique TEXT,
                 mention_legale TEXT,
@@ -35,6 +41,9 @@ class FacturationModel
                 updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
                 finalized_at DATETIME NULL,
                 finalized_by INT NULL,
+                archive_path VARCHAR(255) NULL,
+                sent_at DATETIME NULL,
+                sent_by INT NULL,
                 INDEX idx_document_facturation_commande (commande_id),
                 INDEX idx_document_facturation_type (type_document),
                 INDEX idx_document_facturation_statut (statut)
@@ -66,6 +75,15 @@ class FacturationModel
         ");
         self::addColumnIfMissing('document_facturation', 'finalized_at', 'DATETIME NULL');
         self::addColumnIfMissing('document_facturation', 'finalized_by', 'INT NULL');
+        self::addColumnIfMissing('document_facturation', 'archive_path', 'VARCHAR(255) NULL');
+        self::addColumnIfMissing('document_facturation', 'sent_at', 'DATETIME NULL');
+        self::addColumnIfMissing('document_facturation', 'sent_by', 'INT NULL');
+        self::addColumnIfMissing('document_facturation', 'client_siren', 'VARCHAR(20) NULL');
+        self::addColumnIfMissing('document_facturation', 'adresse_livraison', 'VARCHAR(255) NULL');
+        self::addColumnIfMissing('document_facturation', 'ville_livraison', 'VARCHAR(120) NULL');
+        self::addColumnIfMissing('document_facturation', 'code_postal_livraison', 'VARCHAR(20) NULL');
+        self::addColumnIfMissing('document_facturation', 'categorie_operation', "VARCHAR(30) NOT NULL DEFAULT 'mixte'");
+        self::addColumnIfMissing('document_facturation', 'option_tva_debits', 'TINYINT(1) NOT NULL DEFAULT 0');
     }
 
     public static function listByCommandeIds(array $commandeIds): array
@@ -241,9 +259,11 @@ class FacturationModel
                 INSERT INTO document_facturation (
                     commande_id, type_document, statut, date_emission, date_prestation,
                     client_nom, client_email, client_telephone, client_adresse, client_ville,
-                    client_code_postal, entreprise_snapshot, note_publique, mention_legale,
+                    client_code_postal, client_siren, adresse_livraison, ville_livraison,
+                    code_postal_livraison, categorie_operation, option_tva_debits,
+                    entreprise_snapshot, note_publique, mention_legale,
                     total_ht, total_tva, total_ttc, created_by
-                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
+                ) VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)
             ");
             $stmt->execute([
                 $commandeId,
@@ -257,6 +277,12 @@ class FacturationModel
                 $clientAdresse,
                 $commande['ville_livraison'] ?? '',
                 $commande['code_postal_livraison'] ?? '',
+                '',
+                $commande['adresse_livraison'] ?? '',
+                $commande['ville_livraison'] ?? '',
+                $commande['code_postal_livraison'] ?? '',
+                'mixte',
+                0,
                 json_encode(self::entrepriseSnapshot(), JSON_UNESCAPED_UNICODE),
                 self::defaultNote($type),
                 self::defaultMention($type),
@@ -302,6 +328,8 @@ class FacturationModel
                 UPDATE document_facturation
                 SET date_emission = ?, date_prestation = ?, client_nom = ?, client_email = ?,
                     client_telephone = ?, client_adresse = ?, client_ville = ?, client_code_postal = ?,
+                    client_siren = ?, adresse_livraison = ?, ville_livraison = ?, code_postal_livraison = ?,
+                    categorie_operation = ?, option_tva_debits = ?,
                     note_publique = ?, mention_legale = ?, total_ht = ?, total_tva = ?, total_ttc = ?
                 WHERE document_id = ?
             ");
@@ -314,6 +342,12 @@ class FacturationModel
                 trim((string)($payload['client_adresse'] ?? '')),
                 trim((string)($payload['client_ville'] ?? '')),
                 trim((string)($payload['client_code_postal'] ?? '')),
+                preg_replace('/\D+/', '', (string)($payload['client_siren'] ?? '')),
+                trim((string)($payload['adresse_livraison'] ?? '')),
+                trim((string)($payload['ville_livraison'] ?? '')),
+                trim((string)($payload['code_postal_livraison'] ?? '')),
+                self::validCategorieOperation((string)($payload['categorie_operation'] ?? 'mixte')),
+                !empty($payload['option_tva_debits']) ? 1 : 0,
                 trim((string)($payload['note_publique'] ?? '')),
                 trim((string)($payload['mention_legale'] ?? '')),
                 $totals['ht'],
@@ -365,6 +399,7 @@ class FacturationModel
             ");
             $update->execute([$numero, $finalizedBy, $documentId]);
             $db->commit();
+            self::archiveDocument($documentId);
             return $numero;
         } catch (Throwable $e) {
             if ($db->inTransaction()) {
@@ -372,6 +407,179 @@ class FacturationModel
             }
             throw $e;
         }
+    }
+
+    public static function archiveDocument(int $documentId): string
+    {
+        self::ensureSchema();
+        $document = self::getById($documentId);
+        if (!$document) {
+            throw new InvalidArgumentException('Document introuvable.');
+        }
+        if (($document['statut'] ?? '') !== 'finalise') {
+            throw new InvalidArgumentException('Seuls les documents finalisés peuvent être archivés.');
+        }
+
+        $filename = self::archiveFilename($document);
+        $dir = dirname($filename);
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            throw new RuntimeException('Impossible de créer le dossier d\'archive.');
+        }
+
+        file_put_contents($filename, self::renderDocumentHtml($document, true));
+        $relativePath = 'uploads/facturation/' . basename($filename);
+        $stmt = Database::getConnection()->prepare("UPDATE document_facturation SET archive_path = ? WHERE document_id = ?");
+        $stmt->execute([$relativePath, $documentId]);
+        return $relativePath;
+    }
+
+    public static function markSent(int $documentId, ?int $sentBy): void
+    {
+        self::ensureSchema();
+        $stmt = Database::getConnection()->prepare("UPDATE document_facturation SET sent_at = NOW(), sent_by = ? WHERE document_id = ?");
+        $stmt->execute([$sentBy, $documentId]);
+    }
+
+    public static function renderDocumentHtml(array $document, bool $standalone = false): string
+    {
+        $type = $document['type_document'] ?? 'facture';
+        $isTicket = $type === 'ticket';
+        $typeLabel = $isTicket ? 'Ticket de caisse' : 'Facture';
+        $entreprise = $document['entreprise'] ?? (json_decode($document['entreprise_snapshot'] ?? '{}', true) ?: []);
+        $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['document_id']);
+        $lignes = $document['lignes'] ?? self::getLignes((int)$document['document_id']);
+        $operationLabel = self::categorieOperationLabel($document['categorie_operation'] ?? 'mixte');
+
+        $rows = '';
+        foreach ($lignes as $ligne) {
+            $rows .= '<tr>'
+                . '<td>' . htmlspecialchars($ligne['designation'] ?? '', ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td class="num">' . htmlspecialchars(formatPriceInput($ligne['quantite'] ?? 0), ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td class="num">' . htmlspecialchars(formatPrice($ligne['prix_unitaire_ttc'] ?? 0), ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td class="num">' . htmlspecialchars(formatPriceInput($ligne['taux_tva'] ?? 0), ENT_QUOTES, 'UTF-8') . ' %</td>'
+                . '<td class="num">' . htmlspecialchars(formatPrice($ligne['total_ttc'] ?? 0), ENT_QUOTES, 'UTF-8') . '</td>'
+                . '</tr>';
+        }
+
+        $html = '<article class="document-preview ' . ($isTicket ? 'document-preview-ticket' : '') . '">'
+            . '<header class="document-preview-header"><div>'
+            . '<p class="document-brand">Vite &amp; Gourmand</p>'
+            . '<address>' . htmlspecialchars($entreprise['adresse'] ?? 'Bordeaux', ENT_QUOTES, 'UTF-8') . '<br>'
+            . htmlspecialchars($entreprise['email'] ?? MAIL_FROM, ENT_QUOTES, 'UTF-8') . '</address>'
+            . '</div><div class="document-meta">'
+            . '<h2>' . htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8') . '</h2>'
+            . '<p>' . htmlspecialchars($documentRef, ENT_QUOTES, 'UTF-8') . '</p>'
+            . '<p>' . htmlspecialchars(formatDateFr($document['date_emission'] ?? null), ENT_QUOTES, 'UTF-8') . '</p>'
+            . '</div></header>'
+            . '<section class="document-parties"><div><h3>Client</h3><p><strong>'
+            . htmlspecialchars($document['client_nom'] ?? '', ENT_QUOTES, 'UTF-8') . '</strong><br>'
+            . htmlspecialchars($document['client_adresse'] ?? '', ENT_QUOTES, 'UTF-8') . '<br>'
+            . htmlspecialchars(trim(($document['client_code_postal'] ?? '') . ' ' . ($document['client_ville'] ?? '')), ENT_QUOTES, 'UTF-8') . '<br>'
+            . htmlspecialchars($document['client_email'] ?? '', ENT_QUOTES, 'UTF-8') . '</p></div>'
+            . '<div><h3>Document</h3><p>'
+            . htmlspecialchars($documentRef, ENT_QUOTES, 'UTF-8') . '<br>'
+            . 'Prestation : ' . htmlspecialchars(formatDateFr($document['date_prestation'] ?? null), ENT_QUOTES, 'UTF-8') . '<br>'
+            . 'Opération : ' . htmlspecialchars($operationLabel, ENT_QUOTES, 'UTF-8') . '<br>'
+            . 'Statut : finalisé</p></div></section>'
+            . '<section class="document-electronic"><h3>Préparation facturation électronique</h3><p>'
+            . 'SIREN client : ' . htmlspecialchars($document['client_siren'] ?: 'non renseigné', ENT_QUOTES, 'UTF-8') . '<br>'
+            . 'Livraison : ' . htmlspecialchars(trim(($document['adresse_livraison'] ?? '') . ', ' . ($document['code_postal_livraison'] ?? '') . ' ' . ($document['ville_livraison'] ?? '')), ENT_QUOTES, 'UTF-8') . '<br>'
+            . (!empty($document['option_tva_debits']) ? 'Option TVA sur les débits : oui' : 'Option TVA sur les débits : non')
+            . '</p></section>'
+            . '<div class="document-lines"><table><thead><tr>'
+            . '<th>Désignation</th><th class="num">Qté</th><th class="num">PU TTC</th><th class="num">TVA</th><th class="num">Total TTC</th>'
+            . '</tr></thead><tbody>' . $rows . '</tbody></table></div>'
+            . '<section class="document-totals"><div>'
+            . (!empty($document['note_publique']) ? '<p>' . nl2br(htmlspecialchars($document['note_publique'], ENT_QUOTES, 'UTF-8')) . '</p>' : '')
+            . '</div><dl>'
+            . '<div><dt>Total HT</dt><dd>' . htmlspecialchars(formatPrice($document['total_ht'] ?? 0), ENT_QUOTES, 'UTF-8') . '</dd></div>'
+            . '<div><dt>TVA</dt><dd>' . htmlspecialchars(formatPrice($document['total_tva'] ?? 0), ENT_QUOTES, 'UTF-8') . '</dd></div>'
+            . '<div class="document-total-main"><dt>Total TTC</dt><dd>' . htmlspecialchars(formatPrice($document['total_ttc'] ?? 0), ENT_QUOTES, 'UTF-8') . '</dd></div>'
+            . '</dl></section>'
+            . (!empty($document['mention_legale']) ? '<footer class="document-footer">' . nl2br(htmlspecialchars($document['mention_legale'], ENT_QUOTES, 'UTF-8')) . '</footer>' : '')
+            . '</article>';
+
+        if (!$standalone) {
+            return $html;
+        }
+
+        return '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>'
+            . htmlspecialchars($documentRef, ENT_QUOTES, 'UTF-8')
+            . '</title><style>'
+            . self::archiveCss()
+            . '</style></head><body>' . $html . '</body></html>';
+    }
+
+    public static function eInvoicingPayload(int $documentId): array
+    {
+        self::ensureSchema();
+        $document = self::getById($documentId);
+        if (!$document) {
+            throw new InvalidArgumentException('Document introuvable.');
+        }
+
+        $warnings = [];
+        if (($document['type_document'] ?? '') === 'facture' && empty($document['client_siren'])) {
+            $warnings[] = 'SIREN client non renseigné. Obligatoire pour une facture B2B concernée par la facturation électronique.';
+        }
+        if (empty($document['categorie_operation'])) {
+            $warnings[] = 'Catégorie d’opération non renseignée.';
+        }
+        if (empty($document['adresse_livraison'])) {
+            $warnings[] = 'Adresse de livraison non renseignée.';
+        }
+
+        return [
+            'format' => 'vite_gourmand_e_invoice_preparation_v1',
+            'ready_for_platform_mapping' => empty($warnings),
+            'warnings' => $warnings,
+            'document' => [
+                'id' => (int)$document['document_id'],
+                'type' => $document['type_document'],
+                'statut' => $document['statut'],
+                'numero' => $document['numero_document'],
+                'date_emission' => $document['date_emission'],
+                'date_prestation' => $document['date_prestation'],
+                'categorie_operation' => $document['categorie_operation'],
+                'categorie_operation_label' => self::categorieOperationLabel($document['categorie_operation'] ?? 'mixte'),
+                'option_tva_debits' => (bool)($document['option_tva_debits'] ?? false),
+            ],
+            'vendeur' => $document['entreprise'],
+            'client' => [
+                'nom' => $document['client_nom'],
+                'email' => $document['client_email'],
+                'telephone' => $document['client_telephone'],
+                'adresse_facturation' => [
+                    'adresse' => $document['client_adresse'],
+                    'code_postal' => $document['client_code_postal'],
+                    'ville' => $document['client_ville'],
+                    'pays' => 'FR',
+                ],
+                'siren' => $document['client_siren'],
+            ],
+            'livraison' => [
+                'adresse' => $document['adresse_livraison'],
+                'code_postal' => $document['code_postal_livraison'],
+                'ville' => $document['ville_livraison'],
+                'pays' => 'FR',
+            ],
+            'lignes' => array_map(static fn($ligne) => [
+                'designation' => $ligne['designation'],
+                'quantite' => (float)$ligne['quantite'],
+                'prix_unitaire_ht' => (float)$ligne['prix_unitaire_ht'],
+                'prix_unitaire_ttc' => (float)$ligne['prix_unitaire_ttc'],
+                'taux_tva' => (float)$ligne['taux_tva'],
+                'total_ht' => (float)$ligne['total_ht'],
+                'total_tva' => (float)$ligne['total_tva'],
+                'total_ttc' => (float)$ligne['total_ttc'],
+            ], $document['lignes'] ?? []),
+            'totaux' => [
+                'total_ht' => (float)$document['total_ht'],
+                'total_tva' => (float)$document['total_tva'],
+                'total_ttc' => (float)$document['total_ttc'],
+                'devise' => 'EUR',
+            ],
+        ];
     }
 
     private static function findDraftForCommande(int $commandeId, string $type): ?array
@@ -426,6 +634,34 @@ class FacturationModel
         }
 
         return sprintf('%s-%d-%04d', $prefix, $annee, $next);
+    }
+
+    private static function archiveFilename(array $document): string
+    {
+        $ref = $document['numero_document'] ?: ('DOC-' . (int)$document['document_id']);
+        $safeRef = preg_replace('/[^A-Z0-9_-]+/i', '-', $ref) ?: ('document-' . (int)$document['document_id']);
+        return dirname(__DIR__, 2) . '/public/uploads/facturation/' . $safeRef . '.html';
+    }
+
+    private static function archiveCss(): string
+    {
+        return "
+            body{margin:0;padding:32px;background:#f7f3ec;color:#111827;font-family:Arial,sans-serif}
+            .document-preview{max-width:920px;margin:0 auto;background:#fff;padding:32px;border:1px solid #ddd}
+            .document-preview-ticket{max-width:430px}
+            .document-preview-header,.document-parties,.document-totals{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+            .document-preview-header{border-bottom:2px solid #8B1A2B;padding-bottom:16px}
+            .document-brand{margin:0 0 8px;color:#8B1A2B;font-size:24px;font-weight:700}
+            address,p{margin:0;line-height:1.45}.document-meta{text-align:right}.document-meta h2{margin:0 0 8px;font-size:28px}
+            .document-parties{margin:24px 0}.document-parties h3{margin:0 0 8px;color:#5F6470;font-size:12px;text-transform:uppercase}
+            .document-electronic{margin:24px 0;padding:14px 16px;border:1px solid #ead0d4;background:#FDF6EC}.document-electronic h3{margin:0 0 8px;color:#5F6470;font-size:12px;text-transform:uppercase}.document-electronic p{margin:0;color:#4B5563}
+            table{width:100%;border-collapse:collapse}th,td{padding:10px 8px;border-bottom:1px solid #e5e7eb}th{color:#5F6470;font-size:12px;text-align:left}
+            .num{text-align:right}.document-totals{margin-top:24px}.document-totals dl{margin:0;justify-self:end;min-width:280px}
+            .document-totals dl div{display:flex;justify-content:space-between;gap:24px;padding:6px 0}
+            .document-total-main{border-top:2px solid #8B1A2B;color:#8B1A2B;font-weight:700;font-size:18px}
+            .document-footer{margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;color:#4B5563;font-size:13px}
+            @media(max-width:700px){body{padding:12px}.document-preview-header,.document-parties,.document-totals{grid-template-columns:1fr}.document-meta{text-align:left}.document-totals dl{justify-self:stretch;min-width:0}}
+        ";
     }
 
     private static function addColumnIfMissing(string $table, string $column, string $definition): void
@@ -538,6 +774,20 @@ class FacturationModel
         if (!in_array($type, self::TYPES, true)) {
             throw new InvalidArgumentException('Type de document invalide.');
         }
+    }
+
+    private static function validCategorieOperation(string $value): string
+    {
+        return in_array($value, ['biens', 'services', 'mixte'], true) ? $value : 'mixte';
+    }
+
+    private static function categorieOperationLabel(string $value): string
+    {
+        return match (self::validCategorieOperation($value)) {
+            'biens' => 'Livraison de biens',
+            'services' => 'Prestation de services',
+            default => 'Livraison de biens et prestation de services',
+        };
     }
 
     private static function entrepriseSnapshot(): array

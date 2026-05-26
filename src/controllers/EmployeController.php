@@ -136,6 +136,65 @@ class EmployeController
         }
     }
 
+    public function archiveDocument(): void
+    {
+        verifyCsrf();
+
+        $documentId = (int)($_POST['document_id'] ?? 0);
+        try {
+            FacturationModel::archiveDocument($documentId);
+            flash('success', 'Archive du document générée.');
+            redirect('/employe/document/apercu?id=' . $documentId);
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+            redirect($documentId ? '/employe/document/apercu?id=' . $documentId : '/employe/commandes');
+        }
+    }
+
+    public function sendDocument(): void
+    {
+        verifyCsrf();
+
+        $documentId = (int)($_POST['document_id'] ?? 0);
+        try {
+            $document = FacturationModel::getById($documentId);
+            if (!$document) {
+                throw new InvalidArgumentException('Document introuvable.');
+            }
+            if (($document['statut'] ?? '') !== 'finalise') {
+                throw new InvalidArgumentException('Seuls les documents finalisés peuvent être envoyés.');
+            }
+
+            $relativeArchive = $document['archive_path'] ?: FacturationModel::archiveDocument($documentId);
+            $absoluteArchive = dirname(__DIR__, 2) . '/public/' . ltrim($relativeArchive, '/');
+            $commande = CommandeModel::getById((int)$document['commande_id']);
+            MailService::sendDocumentFacturation($document, $commande ?: [], $absoluteArchive);
+            FacturationModel::markSent($documentId, currentUser()['id'] ?? null);
+
+            flash('success', 'Document envoyé au client.');
+            redirect('/employe/document/apercu?id=' . $documentId);
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+            redirect($documentId ? '/employe/document/apercu?id=' . $documentId : '/employe/commandes');
+        }
+    }
+
+    public function exportDocument(): void
+    {
+        $documentId = (int)($_GET['id'] ?? 0);
+        try {
+            $payload = FacturationModel::eInvoicingPayload($documentId);
+            $filename = ($payload['document']['numero'] ?? ('document-' . $documentId)) . '.json';
+            header('Content-Type: application/json; charset=utf-8');
+            header('Content-Disposition: attachment; filename="' . preg_replace('/[^A-Z0-9_.-]+/i', '-', $filename) . '"');
+            echo json_encode($payload, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+        } catch (Throwable $e) {
+            http_response_code(404);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(['error' => $e->getMessage()], JSON_UNESCAPED_UNICODE);
+        }
+    }
+
     public function previewDocument(): void
     {
         $documentId = (int)($_GET['id'] ?? 0);

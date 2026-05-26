@@ -2229,6 +2229,25 @@ a:focus {
     gap: .5rem;
 }
 
+.facturation-state-strip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+}
+
+.facturation-state-strip span {
+    display: inline-flex;
+    align-items: center;
+    gap: .25rem;
+    padding: .4rem .65rem;
+    border: 1px solid var(--facturation-panel-border);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, .48);
+    color: var(--vg-muted);
+    font-size: .85rem;
+    font-weight: 700;
+}
+
 .facturation-editor {
     display: grid;
     gap: 1rem;
@@ -2280,6 +2299,14 @@ a:focus {
 
 .facturation-grid-wide {
     grid-column: span 2;
+}
+
+.facturation-check {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    min-height: 34px;
+    padding-top: 1.65rem;
 }
 
 .facturation-lines {
@@ -2390,12 +2417,26 @@ a:focus {
     margin: 1.25rem 0;
 }
 
-.document-parties h3 {
+.document-parties h3,
+.document-electronic h3 {
     color: var(--vg-muted);
     font-size: .78rem;
     font-weight: 700;
     letter-spacing: 0;
     text-transform: uppercase;
+}
+
+.document-electronic {
+    margin: 1.25rem 0;
+    padding: .9rem 1rem;
+    border: 1px solid rgba(139, 26, 43, .16);
+    border-radius: 8px;
+    background: rgba(253, 246, 236, .7);
+}
+
+.document-electronic p {
+    color: #4B5563;
+    font-size: .9rem;
 }
 
 .document-lines {

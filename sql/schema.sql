@@ -172,6 +172,12 @@ CREATE TABLE document_facturation (
     client_adresse       VARCHAR(255) NOT NULL DEFAULT '',
     client_ville         VARCHAR(120) NOT NULL DEFAULT '',
     client_code_postal   VARCHAR(20) NOT NULL DEFAULT '',
+    client_siren         VARCHAR(20),
+    adresse_livraison    VARCHAR(255),
+    ville_livraison      VARCHAR(120),
+    code_postal_livraison VARCHAR(20),
+    categorie_operation  VARCHAR(30) NOT NULL DEFAULT 'mixte',
+    option_tva_debits    TINYINT(1) NOT NULL DEFAULT 0,
     entreprise_snapshot  LONGTEXT,
     note_publique        TEXT,
     mention_legale       TEXT,
@@ -183,6 +189,9 @@ CREATE TABLE document_facturation (
     updated_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
     finalized_at         DATETIME,
     finalized_by         INT,
+    archive_path         VARCHAR(255),
+    sent_at              DATETIME,
+    sent_by              INT,
     FOREIGN KEY (commande_id) REFERENCES commande(commande_id) ON DELETE CASCADE,
     FOREIGN KEY (created_by) REFERENCES utilisateur(utilisateur_id)
 );

@@ -61,9 +61,49 @@ $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['
                     <label for="client-code-postal" class="form-label form-label-sm">Code postal</label>
                     <input type="text" class="form-control form-control-sm" id="client-code-postal" name="client_code_postal" value="<?= sanitize($document['client_code_postal'] ?? '') ?>">
                 </div>
+                <div>
+                    <label for="client-siren" class="form-label form-label-sm">SIREN client</label>
+                    <input type="text" class="form-control form-control-sm" id="client-siren" name="client_siren" value="<?= sanitize($document['client_siren'] ?? '') ?>" maxlength="9" inputmode="numeric">
+                </div>
                 <div class="facturation-grid-wide">
                     <label for="client-adresse" class="form-label form-label-sm">Adresse</label>
                     <input type="text" class="form-control form-control-sm" id="client-adresse" name="client_adresse" value="<?= sanitize($document['client_adresse'] ?? '') ?>">
+                </div>
+            </div>
+        </section>
+
+        <section class="facturation-panel">
+            <div class="facturation-panel-header">
+                <div>
+                    <h2>Facturation électronique</h2>
+                    <p>Champs préparatoires pour les futures plateformes de facturation.</p>
+                </div>
+            </div>
+
+            <div class="facturation-grid">
+                <div class="facturation-grid-wide">
+                    <label for="adresse-livraison" class="form-label form-label-sm">Adresse de livraison</label>
+                    <input type="text" class="form-control form-control-sm" id="adresse-livraison" name="adresse_livraison" value="<?= sanitize($document['adresse_livraison'] ?? '') ?>">
+                </div>
+                <div>
+                    <label for="code-postal-livraison" class="form-label form-label-sm">CP livraison</label>
+                    <input type="text" class="form-control form-control-sm" id="code-postal-livraison" name="code_postal_livraison" value="<?= sanitize($document['code_postal_livraison'] ?? '') ?>">
+                </div>
+                <div>
+                    <label for="ville-livraison" class="form-label form-label-sm">Ville livraison</label>
+                    <input type="text" class="form-control form-control-sm" id="ville-livraison" name="ville_livraison" value="<?= sanitize($document['ville_livraison'] ?? '') ?>">
+                </div>
+                <div>
+                    <label for="categorie-operation" class="form-label form-label-sm">Catégorie d'opération</label>
+                    <select class="form-select form-select-sm" id="categorie-operation" name="categorie_operation">
+                        <option value="mixte" <?= ($document['categorie_operation'] ?? 'mixte') === 'mixte' ? 'selected' : '' ?>>Biens + services</option>
+                        <option value="biens" <?= ($document['categorie_operation'] ?? '') === 'biens' ? 'selected' : '' ?>>Livraison de biens</option>
+                        <option value="services" <?= ($document['categorie_operation'] ?? '') === 'services' ? 'selected' : '' ?>>Prestation de services</option>
+                    </select>
+                </div>
+                <div class="facturation-check">
+                    <input class="form-check-input" type="checkbox" id="option-tva-debits" name="option_tva_debits" value="1" <?= !empty($document['option_tva_debits']) ? 'checked' : '' ?>>
+                    <label class="form-check-label" for="option-tva-debits">Option TVA sur les débits</label>
                 </div>
             </div>
         </section>
