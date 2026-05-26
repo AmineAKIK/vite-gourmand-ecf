@@ -12,12 +12,15 @@
     <div class="row g-3 mb-4">
         <?php if ($nbAttente > 0): ?>
         <div class="col-12 col-lg-6">
-            <div class="alert alert-warning dashboard-alert d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0 shadow-sm">
-                <div>
-                    <i class="bi bi-exclamation-circle me-2"></i>
-                    <strong><?= $nbAttente ?> commande<?= $nbAttente > 1 ? 's' : '' ?></strong> en attente de confirmation
+            <div class="alert alert-warning dashboard-alert dashboard-action-card mb-0 shadow-sm">
+                <span class="dashboard-action-icon">
+                    <i class="bi bi-exclamation-circle" aria-hidden="true"></i>
+                </span>
+                <div class="dashboard-action-copy">
+                    <strong><span><?= $nbAttente ?></span> commande<?= $nbAttente > 1 ? 's' : '' ?></strong>
+                    <small>En attente de confirmation</small>
                 </div>
-                <a href="/employe/commandes?statut=en_attente" class="btn btn-sm btn-vg">
+                <a href="/employe/commandes?statut=en_attente" class="btn btn-sm btn-vg dashboard-action-btn">
                     Traiter
                 </a>
             </div>
@@ -25,12 +28,15 @@
         <?php endif; ?>
         <?php if ($nbAvis > 0): ?>
         <div class="col-12 col-lg-6">
-            <div class="alert alert-info dashboard-alert d-flex align-items-center justify-content-between flex-wrap gap-2 mb-0 shadow-sm">
-                <div>
-                    <i class="bi bi-star me-2"></i>
-                    <strong><?= $nbAvis ?> avis</strong> en attente de validation
+            <div class="alert alert-info dashboard-alert dashboard-action-card mb-0 shadow-sm">
+                <span class="dashboard-action-icon">
+                    <i class="bi bi-star" aria-hidden="true"></i>
+                </span>
+                <div class="dashboard-action-copy">
+                    <strong><span><?= $nbAvis ?></span> avis</strong>
+                    <small>En attente de validation</small>
                 </div>
-                <a href="/employe/avis" class="btn btn-sm btn-vg">
+                <a href="/employe/avis" class="btn btn-sm btn-vg dashboard-action-btn">
                     Valider
                 </a>
             </div>

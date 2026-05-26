@@ -12,7 +12,7 @@ class EmployeController
         $toutesCommandes     = CommandeModel::getAll();
         $commandesEnAttente  = CommandeModel::getAll(['statut' => 'en_attente']);
         $avisEnAttente       = AvisModel::getPending();
-        $activiteRecente     = array_slice($toutesCommandes, 0, 5);
+        $activiteRecente     = array_slice(CommandeModel::getAll(['tri' => 'date_prestation_desc']), 0, 5);
 
         $today           = date('Y-m-d');
         $lundiSemaine    = date('Y-m-d', strtotime('monday this week'));

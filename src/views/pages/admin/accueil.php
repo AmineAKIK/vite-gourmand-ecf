@@ -26,15 +26,14 @@ $defaultParagraphe = 'Depuis 25 ans, Vite & Gourmand accompagne les particuliers
                     Sous-titre <span class="text-danger">*</span>
                     <small class="text-muted fw-normal ms-1">— affiché en doré</small>
                 </label>
-                <input
-                    type="text"
+                <textarea
                     id="hero_sous_titre"
                     name="hero_sous_titre"
                     class="form-control"
+                    rows="2"
                     maxlength="60"
-                    value="<?= $cfg('hero_sous_titre', 'Traiteur bordelais depuis 25 ans') ?>"
                     required
-                >
+                ><?= $cfg('hero_sous_titre', 'Traiteur bordelais depuis 25 ans') ?></textarea>
                 <div class="d-flex justify-content-between">
                     <div class="form-text">Accroche courte, mise en valeur en couleur dorée.</div>
                     <small class="text-muted mt-1"><span id="count-sous-titre">0</span>/60</small>

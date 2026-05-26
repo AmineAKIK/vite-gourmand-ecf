@@ -35,7 +35,13 @@
         <!-- Étape 2 : Lieu et date -->
         <div class="card border-0 shadow-sm mb-4" style="background:var(--vg-creme);">
             <div class="card-body">
-                <h2 class="h5 mb-3"><span class="badge bg-vg me-2">2</span>Lieu et date de la prestation</h2>
+                <h2 class="h5 mb-3 checkout-step-title">
+                    <span class="checkout-step-badge">2</span>
+                    <span>
+                        <span class="checkout-step-main">Prestation</span>
+                        <span class="checkout-step-subtitle">Lieu, date et heure</span>
+                    </span>
+                </h2>
                 <div class="row g-3">
                     <div class="col-12">
                         <label for="adresse_livraison" class="form-label">Adresse <span class="text-danger">*</span></label>

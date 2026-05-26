@@ -9,7 +9,7 @@ $topMenu = $caStats[0] ?? null;
 $topMenuShare = ($topMenu && $totalCA > 0) ? ((float)$topMenu['ca'] / $totalCA) * 100 : 0;
 $activeFilters = (int)($menuFilter ?? 0) > 0 || !empty($dateDebut) || !empty($dateFin);
 
-$periodLabel = 'Commandes acceptées comptabilisées';
+$periodLabel = 'Toutes les commandes acceptées sont comptabilisées';
 if (!empty($dateDebut) && !empty($dateFin)) {
     $periodLabel = 'Du ' . formatDateFr($dateDebut) . ' au ' . formatDateFr($dateFin);
 } elseif (!empty($dateDebut)) {

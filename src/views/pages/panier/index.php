@@ -92,9 +92,12 @@
 
                 <div class="card panier-panel mb-4">
                     <div class="card-body">
-                        <h2 class="h5 mb-3">
-                            <span class="badge me-2" style="background:var(--vg-bordeaux)!important">2</span>
-                            Lieu et date de la prestation
+                        <h2 class="h5 mb-3 checkout-step-title">
+                            <span class="checkout-step-badge">2</span>
+                            <span>
+                                <span class="checkout-step-main">Prestation</span>
+                                <span class="checkout-step-subtitle">Lieu, date et heure</span>
+                            </span>
                         </h2>
                         <div class="row g-3">
                             <div class="col-12">

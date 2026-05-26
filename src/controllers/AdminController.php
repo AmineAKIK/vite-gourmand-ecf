@@ -23,8 +23,8 @@ class AdminController {
             )
         ));
 
-        // Fil d'activité : 5 dernières commandes
-        $activiteRecente = array_slice($toutesCommandes, 0, 5);
+        // Fil d'activité : prestations les plus récentes affichées en premier.
+        $activiteRecente = array_slice(CommandeModel::getAll(['tri' => 'date_prestation_desc']), 0, 5);
 
         view('pages/admin/dashboard', compact(
             'commandesEnAttente', 'avisEnAttente',
