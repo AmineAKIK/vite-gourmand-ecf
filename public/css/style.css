@@ -1785,10 +1785,11 @@ a:focus {
 
 .commande-status-filters {
     display: flex;
+    flex-wrap: wrap;
+    align-items: center;
     gap: .5rem;
-    overflow-x: auto;
-    padding-bottom: .25rem;
-    scrollbar-width: thin;
+    overflow: visible;
+    padding-bottom: 0;
 }
 
 .commande-status-filter {
@@ -1841,6 +1842,10 @@ a:focus {
     grid-template-columns: minmax(240px, 1.5fr) minmax(170px, .65fr) minmax(180px, .72fr) minmax(300px, .9fr);
     gap: .75rem;
     align-items: end;
+}
+
+.commande-mobile-status {
+    display: none;
 }
 
 .commande-filter-field {
@@ -2152,20 +2157,20 @@ a:focus {
     }
 }
 
+@media (max-width: 767px) {
+    .commande-status-filters {
+        display: none;
+    }
+
+    .commande-mobile-status {
+        display: block;
+        grid-column: 1 / -1;
+    }
+}
+
 @media (max-width: 575px) {
     .commandes-filter-panel {
         padding: .85rem !important;
-    }
-
-    .commande-status-filters {
-        margin-right: -.85rem;
-        padding-right: .85rem;
-    }
-
-    .commande-status-filter {
-        min-height: 36px;
-        padding: .4rem .65rem;
-        font-size: .82rem;
     }
 
     .commande-filter-form,

@@ -44,7 +44,17 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
         </nav>
 
         <form method="GET" action="/employe/commandes" class="commande-filter-form" role="search" aria-label="Filtrer les commandes">
-            <input type="hidden" name="statut" value="<?= sanitize($filters['statut'] ?? '') ?>">
+            <div class="commande-filter-field commande-mobile-status">
+                <label for="filtre-statut-mobile" class="form-label form-label-sm">Statut</label>
+                <select class="form-select form-select-sm" id="filtre-statut-mobile" name="statut" aria-label="Filtrer par statut">
+                    <option value="">Tous les statuts</option>
+                    <?php foreach ($statuts as $s): ?>
+                        <option value="<?= sanitize($s) ?>" <?= ($filters['statut'] ?? '') === $s ? 'selected' : '' ?>>
+                            <?= sanitize(commandeStatusLabel($s)) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
 
             <div class="commande-filter-field commande-filter-search">
                 <label for="filtre-q" class="form-label form-label-sm">Recherche globale</label>
