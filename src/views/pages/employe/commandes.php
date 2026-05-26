@@ -5,11 +5,6 @@ $statutsMiseAJour = array_values(array_filter(
     $statuts,
     fn($statut) => $statut !== commandeCancelledStatus()
 ));
-$buildFilterUrl = static function (array $overrides = []) use ($filters): string {
-    $params = array_merge($filters, $overrides);
-    $params = array_filter($params, static fn($value) => $value !== null && $value !== '');
-    return '/employe/commandes' . ($params ? '?' . http_build_query($params) : '');
-};
 $activeAdvancedFilters = !empty($filters['date_debut'])
     || !empty($filters['date_fin'])
     || !empty($filters['menu_id'])
@@ -22,35 +17,14 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
 
     <!-- Formulaire de filtres -->
     <div class="filtres-panel commandes-filter-panel p-3 mb-4">
-        <nav class="commande-status-filters mb-3" aria-label="Filtrer par statut">
-            <a
-                href="<?= sanitize($buildFilterUrl(['statut' => ''])) ?>"
-                class="commande-status-filter <?= empty($filters['statut']) ? 'is-active' : '' ?>"
-                <?= empty($filters['statut']) ? 'aria-current="page"' : '' ?>
-            >
-                <span>Toutes</span>
-                <strong><?= array_sum($statusCounts ?? []) ?></strong>
-            </a>
-            <?php foreach ($statuts as $s): ?>
-                <a
-                    href="<?= sanitize($buildFilterUrl(['statut' => $s])) ?>"
-                    class="commande-status-filter <?= ($filters['statut'] ?? '') === $s ? 'is-active' : '' ?>"
-                    <?= ($filters['statut'] ?? '') === $s ? 'aria-current="page"' : '' ?>
-                >
-                    <span><?= sanitize(commandeStatusLabel($s)) ?></span>
-                    <strong><?= (int)($statusCounts[$s] ?? 0) ?></strong>
-                </a>
-            <?php endforeach; ?>
-        </nav>
-
         <form method="GET" action="/employe/commandes" class="commande-filter-form" role="search" aria-label="Filtrer les commandes">
-            <div class="commande-filter-field commande-mobile-status">
-                <label for="filtre-statut-mobile" class="form-label form-label-sm">Statut</label>
-                <select class="form-select form-select-sm" id="filtre-statut-mobile" name="statut" aria-label="Filtrer par statut">
-                    <option value="">Tous les statuts</option>
+            <div class="commande-filter-field">
+                <label for="filtre-statut" class="form-label form-label-sm">Statut</label>
+                <select class="form-select form-select-sm" id="filtre-statut" name="statut" aria-label="Filtrer par statut">
+                    <option value="">Tous les statuts (<?= array_sum($statusCounts ?? []) ?>)</option>
                     <?php foreach ($statuts as $s): ?>
                         <option value="<?= sanitize($s) ?>" <?= ($filters['statut'] ?? '') === $s ? 'selected' : '' ?>>
-                            <?= sanitize(commandeStatusLabel($s)) ?>
+                            <?= sanitize(commandeStatusLabel($s)) ?> (<?= (int)($statusCounts[$s] ?? 0) ?>)
                         </option>
                     <?php endforeach; ?>
                 </select>
