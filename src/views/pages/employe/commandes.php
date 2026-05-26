@@ -147,12 +147,17 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                 $statutActuel = $cmd['statut'] ?? null;
                 $statutsDisponibles = $statutsMiseAJour;
                 $commandeId = (int)$cmd['commande_id'];
-                $lignesCommande = $lignesByCommande[$commandeId] ?? [];
+                $lignesCommande    = $lignesByCommande[$commandeId] ?? [];
                 $documentsCommande = $documentsByCommande[$commandeId] ?? [];
+                $paiementsSynthese = $paiementsByCommande[$commandeId] ?? null;
+                $totalEncaisse     = (float)($paiementsSynthese['total_encaisse'] ?? 0);
+                $prixTotal         = (float)($cmd['prix_total'] ?? 0);
+                $soldeRestant      = max(0, round($prixTotal - $totalEncaisse, 2));
+                $statutPaiement    = PaiementModel::statutPaiement($totalEncaisse, $prixTotal);
                 $peutAnnuler = $statutActuel !== commandeCancelledStatus()
                     && commandeCanTransition($statutActuel, commandeCancelledStatus());
             ?>
-            <div class="accordion-item commande-card mb-3">
+            <div class="accordion-item commande-card mb-3" id="cmd-<?= $commandeId ?>">
                 <h2 class="accordion-header" id="heading<?= $cmd['commande_id'] ?>">
                     <button
                         class="accordion-button collapsed commande-card-header py-3"
@@ -168,6 +173,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                             <span class="commande-menu"><?= sanitize($cmd['menu_titre'] ?? '') ?></span>
                             <span class="commande-date"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></span>
                             <span class="commande-status"><?= commandeStatusBadge($cmd['statut'] ?? null) ?></span>
+                            <span class="commande-status"><?= paiementStatusBadge($statutPaiement) ?></span>
                         </div>
                     </button>
                 </h2>
@@ -369,6 +375,126 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                                 </button>
                                             </div>
                                         </form>
+                                    </section>
+
+                                    <!-- Paiements -->
+                                    <section class="commande-section">
+                                        <h3 class="h6 fw-bold d-flex align-items-center gap-2">
+                                            Paiements
+                                            <?= paiementStatusBadge($statutPaiement) ?>
+                                        </h3>
+
+                                        <!-- Synthèse encaissement -->
+                                        <div class="commande-paiement-synthese mb-3">
+                                            <div class="commande-paiement-row">
+                                                <span class="text-muted small">Total commande</span>
+                                                <strong><?= sanitize(formatPrice($prixTotal)) ?></strong>
+                                            </div>
+                                            <div class="commande-paiement-row">
+                                                <span class="text-muted small">Encaissé</span>
+                                                <strong class="text-success"><?= sanitize(formatPrice($totalEncaisse)) ?></strong>
+                                            </div>
+                                            <?php if ($soldeRestant > 0): ?>
+                                            <div class="commande-paiement-row">
+                                                <span class="text-muted small">Solde restant</span>
+                                                <strong class="text-vg"><?= sanitize(formatPrice($soldeRestant)) ?></strong>
+                                            </div>
+                                            <?php endif; ?>
+                                        </div>
+
+                                        <!-- Historique des paiements -->
+                                        <?php
+                                        $histoPaiements = isset($paiementsHistorique) ? ($paiementsHistorique[$commandeId] ?? []) : [];
+                                        ?>
+                                        <?php if (!empty($histoPaiements)): ?>
+                                        <div class="commande-paiement-historique mb-3">
+                                            <?php foreach ($histoPaiements as $p): ?>
+                                            <div class="commande-paiement-item">
+                                                <div class="commande-paiement-item-info">
+                                                    <span class="badge bg-secondary me-1">
+                                                        <?= sanitize(paiementTypeLabel($p['type_paiement'] ?? '')) ?>
+                                                    </span>
+                                                    <span class="small text-muted"><?= sanitize(formatDateFr($p['date_paiement'] ?? null)) ?></span>
+                                                    <?php if (!empty($p['mode'])): ?>
+                                                    <span class="small text-muted">· <?= sanitize($p['mode']) ?></span>
+                                                    <?php endif; ?>
+                                                    <?php if (!empty($p['reference'])): ?>
+                                                    <span class="small text-muted">· Réf. <?= sanitize($p['reference']) ?></span>
+                                                    <?php endif; ?>
+                                                </div>
+                                                <div class="commande-paiement-item-actions">
+                                                    <strong class="small"><?= sanitize(formatPrice($p['montant'] ?? 0)) ?></strong>
+                                                    <form method="POST" action="/employe/paiement/supprimer" class="d-inline">
+                                                        <?= csrfField() ?>
+                                                        <input type="hidden" name="paiement_id" value="<?= (int)$p['paiement_id'] ?>">
+                                                        <input type="hidden" name="commande_id" value="<?= $commandeId ?>">
+                                                        <button type="submit" class="btn btn-link btn-sm text-danger p-0 ms-2"
+                                                                data-confirm="Supprimer ce paiement ?"
+                                                                aria-label="Supprimer ce paiement">
+                                                            <i class="bi bi-trash" aria-hidden="true"></i>
+                                                        </button>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                            <?php endforeach; ?>
+                                        </div>
+                                        <?php endif; ?>
+
+                                        <!-- Formulaire enregistrement paiement -->
+                                        <?php if ($statutPaiement !== 'solde'): ?>
+                                        <details class="commande-paiement-form-toggle">
+                                            <summary class="btn btn-outline-secondary btn-sm">
+                                                <i class="bi bi-plus-circle me-1"></i>Enregistrer un paiement
+                                            </summary>
+                                            <form method="POST" action="/employe/paiement/enregistrer" class="commande-paiement-form mt-3">
+                                                <?= csrfField() ?>
+                                                <input type="hidden" name="commande_id" value="<?= $commandeId ?>">
+                                                <div class="row g-2">
+                                                    <div class="col-6 col-lg-4">
+                                                        <label class="form-label form-label-sm">Type</label>
+                                                        <select class="form-select form-select-sm" name="type_paiement" required>
+                                                            <option value="acompte">Acompte</option>
+                                                            <option value="solde">Solde</option>
+                                                            <option value="paiement_unique" <?= $statutPaiement === 'non_paye' ? 'selected' : '' ?>>Paiement unique</option>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-6 col-lg-4">
+                                                        <label class="form-label form-label-sm">Mode</label>
+                                                        <select class="form-select form-select-sm" name="mode" required>
+                                                            <?php foreach ($modesPaiement as $mp): ?>
+                                                            <option value="<?= sanitize($mp['code']) ?>"><?= sanitize($mp['libelle']) ?></option>
+                                                            <?php endforeach; ?>
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-6 col-lg-4">
+                                                        <label class="form-label form-label-sm">Montant (€)</label>
+                                                        <input type="number" step="0.01" min="0.01" class="form-control form-control-sm"
+                                                               name="montant"
+                                                               value="<?= $soldeRestant > 0 ? sanitize(formatPriceInput($soldeRestant)) : '' ?>"
+                                                               required>
+                                                    </div>
+                                                    <div class="col-6 col-lg-4">
+                                                        <label class="form-label form-label-sm">Date</label>
+                                                        <input type="date" class="form-control form-control-sm"
+                                                               name="date_paiement"
+                                                               value="<?= date('Y-m-d') ?>"
+                                                               required>
+                                                    </div>
+                                                    <div class="col-12 col-lg-8">
+                                                        <label class="form-label form-label-sm">Référence (optionnel)</label>
+                                                        <input type="text" class="form-control form-control-sm"
+                                                               name="reference"
+                                                               placeholder="N° virement, chèque...">
+                                                    </div>
+                                                    <div class="col-12 text-end">
+                                                        <button type="submit" class="btn btn-vg btn-sm">
+                                                            <i class="bi bi-check-lg me-1"></i>Enregistrer
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </form>
+                                        </details>
+                                        <?php endif; ?>
                                     </section>
 
                                     <!-- Annulation si la commande est encore modifiable -->

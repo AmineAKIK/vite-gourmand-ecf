@@ -8,7 +8,7 @@ class AdminController {
         $commandesEnAttente = CommandeModel::getAll(['statut' => 'en_attente']);
         $avisEnAttente     = AvisModel::getPending();
         $menusActifs       = MenuModel::getAll();
-        $mongoStats        = StatsService::getCommandesByMenu();
+        $statsParMenu      = StatsService::getCaParMenu();
 
         // Métriques période
         $today      = date('Y-m-d');
@@ -29,7 +29,7 @@ class AdminController {
         view('pages/admin/dashboard', compact(
             'commandesEnAttente', 'avisEnAttente',
             'commandesAujourdhui', 'commandesSemaine', 'caSemaine',
-            'activiteRecente', 'menusActifs', 'mongoStats'
+            'activiteRecente', 'menusActifs', 'statsParMenu'
         ));
     }
 
@@ -161,77 +161,382 @@ class AdminController {
         redirect('/admin/images');
     }
 
-    public function parametres(): void {
-        $config = SiteConfigModel::getAll();
-        view('pages/admin/parametres', compact('config'));
-    }
-
     public function updateParametres(): void {
         verifyCsrf();
+        $section = $_POST['_section'] ?? 'tarification';
 
-        $fields = [
-            'hero_sous_titre' => ['type' => 'string', 'max' => 60],
-            'hero_paragraphe' => ['type' => 'string', 'max' => 200],
-            'livraison_base'  => ['type' => 'decimal'],
-            'livraison_km'    => ['type' => 'decimal'],
-            'reduction_seuil' => ['type' => 'decimal'],
-            'reduction_taux'  => ['type' => 'int', 'min' => 0, 'max' => 100],
+        // Field definitions keyed by section
+        $allFields = [
+            'entreprise' => [
+                'entreprise_nom'             => ['type' => 'string',  'max' => 100],
+                'entreprise_siret'           => ['type' => 'siret'],
+                'entreprise_forme_juridique' => ['type' => 'string',  'max' => 60],
+                'entreprise_adresse'         => ['type' => 'string',  'max' => 150],
+                'entreprise_code_postal'     => ['type' => 'cp'],
+                'entreprise_ville'           => ['type' => 'string',  'max' => 80],
+                'entreprise_telephone'       => ['type' => 'string',  'max' => 20],
+                'entreprise_email'           => ['type' => 'email'],
+                'entreprise_tva_intracom'    => ['type' => 'string',  'max' => 20],
+                'banque_iban'                => ['type' => 'string',  'max' => 34],
+                'banque_bic'                 => ['type' => 'string',  'max' => 11],
+                'banque_nom_banque'          => ['type' => 'string',  'max' => 80],
+            ],
+            'fiscal' => [
+                'regime_tva'                 => ['type' => 'enum', 'values' => ['assujetti', 'non_assujetti']],
+                'mention_facture'            => ['type' => 'string',  'max' => 500],
+                'mention_ticket'             => ['type' => 'string',  'max' => 500],
+                'mention_acompte'            => ['type' => 'string',  'max' => 500],
+            ],
+            'paiement' => [
+                'acompte_taux_defaut'        => ['type' => 'int',     'min' => 0,   'max' => 100],
+                'delai_paiement_jours'       => ['type' => 'int',     'min' => 0,   'max' => 365],
+                'penalites_retard_taux'      => ['type' => 'decimal', 'min' => 0],
+                'indemnite_recouvrement'     => ['type' => 'decimal', 'min' => 0],
+            ],
+            'tarification' => [
+                'hero_sous_titre'            => ['type' => 'string',  'max' => 60],
+                'hero_paragraphe'            => ['type' => 'string',  'max' => 200],
+                'livraison_base'             => ['type' => 'decimal', 'min' => 0],
+                'livraison_km'               => ['type' => 'decimal', 'min' => 0],
+                'reduction_seuil'            => ['type' => 'decimal', 'min' => 0],
+                'reduction_taux'             => ['type' => 'int',     'min' => 0,   'max' => 100],
+            ],
         ];
+
+        $fields = $allFields[$section] ?? $allFields['tarification'];
 
         foreach ($fields as $cle => $rules) {
             $raw = trim($_POST[$cle] ?? '');
-            $label = match ($cle) {
-                'hero_sous_titre' => 'Le sous-titre',
-                'hero_paragraphe' => 'Le paragraphe',
-                'livraison_base' => 'Les frais fixes de livraison',
-                'livraison_km' => 'Le tarif au km',
-                'reduction_seuil' => 'Le seuil de réduction',
-                'reduction_taux' => 'Le taux de réduction',
-                default => 'La valeur',
-            };
 
-            if ($rules['type'] === 'string') {
-                if (mb_strlen($raw) > $rules['max']) {
-                    flash('error', $label . ' ne peut pas dépasser ' . $rules['max'] . ' caractères.');
-                    redirect('/admin/parametres');
-                }
-                SiteConfigModel::set($cle, $raw);
-                continue;
-            }
+            switch ($rules['type']) {
+                case 'string':
+                    if (mb_strlen($raw) > ($rules['max'] ?? 255)) {
+                        flash('error', "Le champ '$cle' dépasse la longueur maximale autorisée.");
+                        redirect('/admin/parametres#' . $section);
+                    }
+                    SiteConfigModel::set($cle, $raw);
+                    break;
 
-            if ($rules['type'] === 'decimal') {
-                if (!is_numeric($raw) || (float)$raw < 0) {
-                    flash('error', $label . ' est invalide.');
-                    redirect('/admin/parametres');
-                }
-                SiteConfigModel::set($cle, number_format((float)$raw, 2, '.', ''));
-                continue;
-            }
+                case 'email':
+                    if ($raw !== '' && !filter_var($raw, FILTER_VALIDATE_EMAIL)) {
+                        flash('error', "L'adresse email '$raw' est invalide.");
+                        redirect('/admin/parametres#' . $section);
+                    }
+                    SiteConfigModel::set($cle, $raw);
+                    break;
 
-            if ($rules['type'] === 'int') {
-                $val = (int)$raw;
-                if ($val < ($rules['min'] ?? 0) || $val > ($rules['max'] ?? PHP_INT_MAX)) {
-                    flash('error', 'Le taux de réduction doit être entre 0 et 100.');
-                    redirect('/admin/parametres');
-                }
-                SiteConfigModel::set($cle, (string)$val);
+                case 'siret':
+                    $digits = preg_replace('/\s/', '', $raw);
+                    if ($digits !== '' && !preg_match('/^\d{14}$/', $digits)) {
+                        flash('error', 'Le numéro SIRET doit comporter exactement 14 chiffres.');
+                        redirect('/admin/parametres#' . $section);
+                    }
+                    SiteConfigModel::set($cle, $digits);
+                    break;
+
+                case 'cp':
+                    if ($raw !== '' && !preg_match('/^\d{5}$/', $raw)) {
+                        flash('error', 'Le code postal doit comporter 5 chiffres.');
+                        redirect('/admin/parametres#' . $section);
+                    }
+                    SiteConfigModel::set($cle, $raw);
+                    break;
+
+                case 'enum':
+                    if (!in_array($raw, $rules['values'] ?? [], true)) {
+                        flash('error', "Valeur invalide pour le champ '$cle'.");
+                        redirect('/admin/parametres#' . $section);
+                    }
+                    SiteConfigModel::set($cle, $raw);
+                    break;
+
+                case 'decimal':
+                    if (!is_numeric($raw) || (float)$raw < ($rules['min'] ?? 0)) {
+                        flash('error', "La valeur '$cle' est invalide.");
+                        redirect('/admin/parametres#' . $section);
+                    }
+                    SiteConfigModel::set($cle, number_format((float)$raw, 2, '.', ''));
+                    break;
+
+                case 'int':
+                    $val = (int)$raw;
+                    if ($val < ($rules['min'] ?? 0) || $val > ($rules['max'] ?? PHP_INT_MAX)) {
+                        flash('error', "La valeur '$cle' est hors limites.");
+                        redirect('/admin/parametres#' . $section);
+                    }
+                    SiteConfigModel::set($cle, (string)$val);
+                    break;
             }
         }
 
         flash('success', 'Paramètres mis à jour.');
-        redirect('/admin/parametres');
+        redirect('/admin/parametres#' . $section);
+    }
+
+    public function parametres(): void {
+        $config    = SiteConfigModel::getAll();
+        $tauxTva   = PricingService::tauxTvaActifs();
+        $tousLesToux = db()->fetchAll(
+            "SELECT * FROM taux_tva ORDER BY actif DESC, taux ASC, libelle ASC"
+        );
+        view('pages/admin/parametres', compact('config', 'tauxTva', 'tousLesToux'));
+    }
+
+    public function createTauxTva(): void {
+        verifyCsrf();
+        $libelle   = trim($_POST['libelle']   ?? '');
+        $taux      = trim($_POST['taux']      ?? '');
+        $categorie = trim($_POST['categorie'] ?? 'general');
+        $note      = trim($_POST['note']      ?? '');
+
+        if (!$libelle || !is_numeric($taux) || (float)$taux < 0 || (float)$taux > 100) {
+            flash('error', 'Libellé et taux (0–100) sont obligatoires.');
+            redirect('/admin/parametres#tva');
+        }
+        if (!in_array($categorie, ['menu', 'livraison', 'general'], true)) {
+            $categorie = 'general';
+        }
+
+        db()->execute(
+            "INSERT INTO taux_tva (libelle, taux, categorie, actif, par_defaut, note)
+             VALUES (?, ?, ?, 1, 0, ?)",
+            [$libelle, number_format((float)$taux, 2, '.', ''), $categorie, $note ?: null]
+        );
+        flash('success', 'Taux TVA créé.');
+        redirect('/admin/parametres#tva');
+    }
+
+    public function toggleTauxTva(): void {
+        verifyCsrf();
+        $id    = (int)($_POST['taux_id'] ?? 0);
+        $actif = (int)($_POST['actif']   ?? 0);
+        if (!$id) { redirect('/admin/parametres#tva'); }
+
+        db()->execute(
+            "UPDATE taux_tva SET actif = ? WHERE taux_id = ?",
+            [$actif ? 1 : 0, $id]
+        );
+        flash('success', $actif ? 'Taux activé.' : 'Taux désactivé.');
+        redirect('/admin/parametres#tva');
+    }
+
+    public function setDefaultTauxTva(): void {
+        verifyCsrf();
+        $id        = (int)($_POST['taux_id']   ?? 0);
+        $categorie = trim($_POST['categorie']  ?? '');
+        if (!$id || !in_array($categorie, ['menu', 'livraison', 'general'], true)) {
+            redirect('/admin/parametres#tva');
+        }
+
+        // Clear existing default for this category, then set the new one
+        db()->execute(
+            "UPDATE taux_tva SET par_defaut = 0 WHERE categorie = ?",
+            [$categorie]
+        );
+        db()->execute(
+            "UPDATE taux_tva SET par_defaut = 1, actif = 1 WHERE taux_id = ?",
+            [$id]
+        );
+        flash('success', 'Taux par défaut mis à jour.');
+        redirect('/admin/parametres#tva');
     }
 
     public function stats(): void {
         $menuFilter = (int)($_GET['menu_id'] ?? 0);
         $dateDebut  = sanitize($_GET['date_debut'] ?? '');
         $dateFin    = sanitize($_GET['date_fin'] ?? '');
-        $caStats = CommandeModel::getCaStatsByMenu($menuFilter, $dateDebut, $dateFin);
-        $menus = \MenuModel::getAll();
+
+        $caStats   = StatsService::getCaParMenu($menuFilter, $dateDebut, $dateFin);
+        $synthese  = StatsService::getSynthese($dateDebut, $dateFin);
+        $caMensuel = StatsService::getCaMensuel(24, $dateDebut, $dateFin);
+        $menus     = \MenuModel::getAll();
+        $regimeTva = PricingService::regimeTva();
+
         view('pages/admin/stats', compact(
-            'caStats', 'menus',
+            'caStats', 'synthese', 'caMensuel', 'menus', 'regimeTva',
             'menuFilter', 'dateDebut', 'dateFin'
         ));
+    }
+
+    public function exportStats(): void {
+        $dateDebut = sanitize($_GET['date_debut'] ?? '');
+        $dateFin   = sanitize($_GET['date_fin'] ?? '');
+
+        $rows = StatsService::getExportRows($dateDebut, $dateFin);
+
+        $filename = 'ca_vite_gourmand_' . date('Y-m-d') . '.csv';
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Content-Disposition: attachment; filename="' . $filename . '"');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+
+        $out = fopen('php://output', 'w');
+        // UTF-8 BOM for Excel compatibility
+        fwrite($out, "\xEF\xBB\xBF");
+
+        fputcsv($out, [
+            'N° commande', 'Date comptabilisation', 'Date prestation',
+            'Ville', 'Client', 'Email client', 'Nb personnes',
+            'Total HT', 'TVA', 'Total TTC',
+            'Encaissé', 'Solde restant', 'Statut paiement', 'Statut commande',
+        ], ';');
+
+        foreach ($rows as $row) {
+            fputcsv($out, [
+                $row['numero_commande'],
+                $row['date_comptabilisation'],
+                $row['date_prestation'],
+                $row['ville_livraison'],
+                $row['client'],
+                $row['client_email'],
+                $row['nb_personnes'],
+                number_format((float)$row['total_ht'],        2, ',', ''),
+                number_format((float)$row['total_tva'],       2, ',', ''),
+                number_format((float)$row['total_ttc'],       2, ',', ''),
+                number_format((float)$row['montant_encaisse'],2, ',', ''),
+                number_format((float)$row['solde_restant'],   2, ',', ''),
+                $row['statut_paiement'],
+                $row['statut'],
+            ], ';');
+        }
+
+        fclose($out);
+        exit;
+    }
+
+    public function comptabilite(): void {
+        $config    = SiteConfigModel::getAll();
+        $regimeTva = PricingService::regimeTva();
+        $synthese  = StatsService::getSynthese();
+        $pageTitle = 'Comptabilité — Vite & Gourmand';
+        view('pages/admin/comptabilite', compact('config', 'regimeTva', 'synthese', 'pageTitle'));
+    }
+
+    public function exportComptabilite(): void {
+        $format    = sanitize($_GET['format']     ?? 'commandes');
+        $dateDebut = sanitize($_GET['date_debut'] ?? '');
+        $dateFin   = sanitize($_GET['date_fin']   ?? '');
+        $regimeTva = PricingService::regimeTva();
+        $isAssujetti = $regimeTva === 'assujetti';
+
+        $periodSuffix = '';
+        if ($dateDebut && $dateFin) {
+            $periodSuffix = '_' . $dateDebut . '_' . $dateFin;
+        } elseif ($dateDebut) {
+            $periodSuffix = '_depuis_' . $dateDebut;
+        } elseif ($dateFin) {
+            $periodSuffix = '_jusqu_' . $dateFin;
+        }
+
+        header('Content-Type: text/csv; charset=UTF-8');
+        header('Cache-Control: no-cache, no-store, must-revalidate');
+
+        $out = fopen('php://output', 'w');
+        fwrite($out, "\xEF\xBB\xBF"); // UTF-8 BOM pour Excel
+
+        switch ($format) {
+
+            case 'lignes':
+                header('Content-Disposition: attachment; filename="journal_lignes_vg' . $periodSuffix . '.csv"');
+                $headers = [
+                    'N° commande', 'Date comptabilisation', 'Date prestation',
+                    'Ville', 'Client', 'Email', 'Menu', 'Personnes',
+                    'Prix brut', 'Remise', 'Net menu', 'Livraison', 'Total TTC',
+                ];
+                if ($isAssujetti) {
+                    $headers[] = 'TVA %';
+                    $headers[] = 'Total HT';
+                    $headers[] = 'TVA';
+                }
+                fputcsv($out, $headers, ';');
+                foreach (StatsService::getExportLignes($dateDebut, $dateFin) as $r) {
+                    $row = [
+                        $r['numero_commande'],
+                        $r['date_comptabilisation'],
+                        $r['date_prestation'],
+                        $r['ville_livraison'],
+                        $r['client'],
+                        $r['client_email'],
+                        $r['menu_titre'],
+                        $r['nombre_personne'],
+                        number_format((float)$r['prix_brut_menu'],    2, ',', ''),
+                        number_format((float)$r['remise'],            2, ',', ''),
+                        number_format((float)$r['prix_net_menu'],     2, ',', ''),
+                        number_format((float)$r['frais_livraison'],   2, ',', ''),
+                        number_format((float)$r['total_ligne_ttc'],   2, ',', ''),
+                    ];
+                    if ($isAssujetti) {
+                        $row[] = number_format((float)$r['taux_tva'],       2, ',', '');
+                        $row[] = number_format((float)$r['total_ligne_ht'], 2, ',', '');
+                        $row[] = number_format((float)$r['tva_ligne'],      2, ',', '');
+                    }
+                    fputcsv($out, $row, ';');
+                }
+                break;
+
+            case 'mensuel':
+                header('Content-Disposition: attachment; filename="ca_mensuel_vg' . $periodSuffix . '.csv"');
+                $headers = ['Mois', 'Commandes', 'Personnes', 'Panier moyen TTC', 'CA TTC'];
+                if ($isAssujetti) {
+                    $headers[] = 'CA HT';
+                    $headers[] = 'TVA collectée';
+                }
+                fputcsv($out, $headers, ';');
+                foreach (StatsService::getExportMensuel($dateDebut, $dateFin) as $r) {
+                    $row = [
+                        $r['annee_mois'],
+                        $r['nb_commandes'],
+                        $r['nb_personnes'],
+                        number_format((float)$r['panier_moyen_ttc'], 2, ',', ''),
+                        number_format((float)$r['ca_ttc'],           2, ',', ''),
+                    ];
+                    if ($isAssujetti) {
+                        $row[] = number_format((float)$r['ca_ht'],         2, ',', '');
+                        $row[] = number_format((float)$r['tva_collectee'], 2, ',', '');
+                    }
+                    fputcsv($out, $row, ';');
+                }
+                break;
+
+            default: // 'commandes'
+                header('Content-Disposition: attachment; filename="journal_commandes_vg' . $periodSuffix . '.csv"');
+                $headers = [
+                    'N° commande', 'Date comptabilisation', 'Date prestation',
+                    'Ville', 'Client', 'Email', 'Personnes', 'Total TTC',
+                ];
+                if ($isAssujetti) {
+                    $headers[] = 'Total HT';
+                    $headers[] = 'TVA';
+                }
+                array_push($headers, 'Encaissé', 'Solde restant', 'Statut paiement', 'Statut commande');
+                fputcsv($out, $headers, ';');
+                foreach (StatsService::getExportRows($dateDebut, $dateFin) as $r) {
+                    $row = [
+                        $r['numero_commande'],
+                        $r['date_comptabilisation'],
+                        $r['date_prestation'],
+                        $r['ville_livraison'],
+                        $r['client'],
+                        $r['client_email'],
+                        $r['nb_personnes'],
+                        number_format((float)$r['total_ttc'],        2, ',', ''),
+                    ];
+                    if ($isAssujetti) {
+                        $row[] = number_format((float)$r['total_ht'],  2, ',', '');
+                        $row[] = number_format((float)$r['total_tva'], 2, ',', '');
+                    }
+                    array_push($row,
+                        number_format((float)$r['montant_encaisse'], 2, ',', ''),
+                        number_format((float)$r['solde_restant'],    2, ',', ''),
+                        $r['statut_paiement'],
+                        $r['statut']
+                    );
+                    fputcsv($out, $row, ';');
+                }
+                break;
+        }
+
+        fclose($out);
+        exit;
     }
 
 }

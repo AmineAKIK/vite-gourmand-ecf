@@ -1,168 +1,447 @@
 <?php
-$pageTitle = 'Paramètres de tarification — Vite & Gourmand';
+$pageTitle = 'Paramètres — Vite & Gourmand';
 $cspNonce  = $GLOBALS['csp_nonce'] ?? '';
 
 $cfg = function(string $cle, string $default = '') use ($config): string {
     return sanitize($config[$cle] ?? $default);
 };
 
-$reductionSeuil = (float)($config['reduction_seuil'] ?? 100);
-$reductionTaux = (float)($config['reduction_taux'] ?? 10);
-$reductionExampleTotal = max(120, $reductionSeuil);
-$reductionExampleAmount = $reductionExampleTotal * $reductionTaux / 100;
+$regimeTva          = $config['regime_tva'] ?? 'assujetti';
+$reductionSeuil     = (float)($config['reduction_seuil'] ?? 100);
+$reductionTaux      = (float)($config['reduction_taux']  ?? 10);
+$reductionExample   = max(120, $reductionSeuil);
+$reductionExAmt     = $reductionExample * $reductionTaux / 100;
+
+$categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', 'general' => 'Général'];
 ?>
 
-<?php partial('partials/page_title_bar', ['icon' => 'bi-sliders', 'title' => 'Paramètres de tarification']); ?>
+<?php partial('partials/page_title_bar', ['icon' => 'bi-sliders', 'title' => 'Paramètres']); ?>
 
-<div class="row g-4">
+<div class="params-page row g-4">
 
-    <!-- Frais de livraison -->
-    <div class="col-12 col-lg-6">
+    <!-- ============================================================
+         SECTION 1 — Informations entreprise
+    ============================================================ -->
+    <div class="col-12" id="entreprise">
         <div class="card shadow-sm">
             <div class="card-header fw-semibold">
-                <i class="bi bi-truck me-2 text-vg"></i>Frais de livraison
+                <i class="bi bi-building me-2 text-vg"></i>Informations entreprise
             </div>
             <div class="card-body">
-                <form method="post" action="/admin/parametres/modifier">
+                <form method="POST" action="/admin/parametres/modifier">
                     <?= csrfField() ?>
-                    <input type="hidden" name="hero_sous_titre"  value="<?= $cfg('hero_sous_titre') ?>">
-                    <input type="hidden" name="hero_paragraphe"  value="<?= $cfg('hero_paragraphe') ?>">
-                    <input type="hidden" name="reduction_seuil"  value="<?= $cfg('reduction_seuil', '100.00') ?>">
-                    <input type="hidden" name="reduction_taux"   value="<?= $cfg('reduction_taux',  '10') ?>">
+                    <input type="hidden" name="_section" value="entreprise">
 
-                    <div class="mb-3">
-                        <label class="form-label fw-medium" for="livraison_base">Frais fixes (€)</label>
-                        <div class="input-group">
-                            <input
-                                type="number"
-                                id="livraison_base"
-                                name="livraison_base"
-                                class="form-control"
-                                min="0"
-                                step="0.01"
-                                value="<?= $cfg('livraison_base', '5.00') ?>"
-                                required
-                            >
-                            <span class="input-group-text">€</span>
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label fw-medium" for="entreprise_nom">Nom commercial</label>
+                            <input type="text" class="form-control" id="entreprise_nom" name="entreprise_nom"
+                                   value="<?= $cfg('entreprise_nom', 'Vite & Gourmand') ?>" maxlength="100">
                         </div>
-                        <div class="form-text">Montant forfaitaire appliqué à chaque commande.</div>
+                        <div class="col-12 col-lg-3">
+                            <label class="form-label fw-medium" for="entreprise_siret">
+                                SIRET <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" class="form-control" id="entreprise_siret" name="entreprise_siret"
+                                   value="<?= $cfg('entreprise_siret') ?>" maxlength="14" inputmode="numeric"
+                                   placeholder="14 chiffres">
+                            <div class="form-text">Obligatoire pour finaliser des factures.</div>
+                        </div>
+                        <div class="col-12 col-lg-3">
+                            <label class="form-label fw-medium" for="entreprise_forme_juridique">Forme juridique</label>
+                            <input type="text" class="form-control" id="entreprise_forme_juridique" name="entreprise_forme_juridique"
+                                   value="<?= $cfg('entreprise_forme_juridique') ?>" maxlength="60"
+                                   placeholder="EI, EURL, SARL…">
+                        </div>
+
+                        <div class="col-12">
+                            <label class="form-label fw-medium" for="entreprise_adresse">Adresse</label>
+                            <input type="text" class="form-control" id="entreprise_adresse" name="entreprise_adresse"
+                                   value="<?= $cfg('entreprise_adresse') ?>" maxlength="150">
+                        </div>
+                        <div class="col-12 col-lg-3">
+                            <label class="form-label fw-medium" for="entreprise_code_postal">Code postal</label>
+                            <input type="text" class="form-control" id="entreprise_code_postal" name="entreprise_code_postal"
+                                   value="<?= $cfg('entreprise_code_postal') ?>" maxlength="5" inputmode="numeric">
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-medium" for="entreprise_ville">Ville</label>
+                            <input type="text" class="form-control" id="entreprise_ville" name="entreprise_ville"
+                                   value="<?= $cfg('entreprise_ville', 'Bordeaux') ?>" maxlength="80">
+                        </div>
+                        <div class="col-12 col-lg-5">
+                            <label class="form-label fw-medium" for="entreprise_telephone">Téléphone</label>
+                            <input type="tel" class="form-control" id="entreprise_telephone" name="entreprise_telephone"
+                                   value="<?= $cfg('entreprise_telephone') ?>" maxlength="20">
+                        </div>
+
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label fw-medium" for="entreprise_email">Email de contact</label>
+                            <input type="email" class="form-control" id="entreprise_email" name="entreprise_email"
+                                   value="<?= $cfg('entreprise_email') ?>" maxlength="150">
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label fw-medium" for="entreprise_tva_intracom">N° TVA intracommunautaire</label>
+                            <input type="text" class="form-control" id="entreprise_tva_intracom" name="entreprise_tva_intracom"
+                                   value="<?= $cfg('entreprise_tva_intracom') ?>" maxlength="20"
+                                   placeholder="FR12345678901">
+                            <div class="form-text">Laissez vide si non assujetti à la TVA.</div>
+                        </div>
+
+                        <div class="col-12"><hr class="my-1"><small class="text-muted fw-semibold">Coordonnées bancaires (virements)</small></div>
+                        <div class="col-12 col-lg-5">
+                            <label class="form-label fw-medium" for="banque_iban">IBAN</label>
+                            <input type="text" class="form-control" id="banque_iban" name="banque_iban"
+                                   value="<?= $cfg('banque_iban') ?>" maxlength="34"
+                                   placeholder="FR76 1234 5678 9012 3456 7890 123">
+                        </div>
+                        <div class="col-12 col-lg-3">
+                            <label class="form-label fw-medium" for="banque_bic">BIC / SWIFT</label>
+                            <input type="text" class="form-control" id="banque_bic" name="banque_bic"
+                                   value="<?= $cfg('banque_bic') ?>" maxlength="11"
+                                   placeholder="BNPAFRPPXXX">
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-medium" for="banque_nom_banque">Nom de la banque</label>
+                            <input type="text" class="form-control" id="banque_nom_banque" name="banque_nom_banque"
+                                   value="<?= $cfg('banque_nom_banque') ?>" maxlength="80">
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-medium" for="livraison_km">Tarif au km (€/km)</label>
-                        <div class="input-group">
-                            <input
-                                type="number"
-                                id="livraison_km"
-                                name="livraison_km"
-                                class="form-control"
-                                min="0"
-                                step="0.01"
-                                value="<?= $cfg('livraison_km', '0.50') ?>"
-                                required
-                            >
-                            <span class="input-group-text">€/km</span>
-                        </div>
-                        <div class="form-text">Multiplié par la distance entre le client et votre adresse.</div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-vg">
+                            <i class="bi bi-save me-1"></i>Enregistrer entreprise
+                        </button>
                     </div>
-
-                    <button type="submit" class="btn btn-vg">
-                        <i class="bi bi-save me-1"></i>Enregistrer
-                    </button>
                 </form>
             </div>
         </div>
     </div>
 
-    <!-- Réduction -->
-    <div class="col-12 col-lg-6">
+    <!-- ============================================================
+         SECTION 2 — Régime fiscal + TVA
+    ============================================================ -->
+    <div class="col-12" id="fiscal">
         <div class="card shadow-sm">
             <div class="card-header fw-semibold">
-                <i class="bi bi-percent me-2 text-vg"></i>Réduction automatique
+                <i class="bi bi-percent me-2 text-vg"></i>Régime fiscal et TVA
             </div>
             <div class="card-body">
-                <form method="post" action="/admin/parametres/modifier">
+
+                <!-- Régime + mentions légales -->
+                <form method="POST" action="/admin/parametres/modifier" class="mb-4">
                     <?= csrfField() ?>
-                    <input type="hidden" name="hero_sous_titre"  value="<?= $cfg('hero_sous_titre') ?>">
-                    <input type="hidden" name="hero_paragraphe"  value="<?= $cfg('hero_paragraphe') ?>">
-                    <input type="hidden" name="livraison_base"   value="<?= $cfg('livraison_base',  '5.00') ?>">
-                    <input type="hidden" name="livraison_km"     value="<?= $cfg('livraison_km',    '0.50') ?>">
+                    <input type="hidden" name="_section" value="fiscal">
 
-                    <div class="mb-3">
-                        <label class="form-label fw-medium" for="reduction_seuil">Seuil de déclenchement (€)</label>
-                        <div class="input-group">
-                            <input
-                                type="number"
-                                id="reduction_seuil"
-                                name="reduction_seuil"
-                                class="form-control"
-                                min="0"
-                                step="0.01"
-                                value="<?= $cfg('reduction_seuil', '100.00') ?>"
-                                required
-                            >
-                            <span class="input-group-text">€</span>
+                    <div class="row g-3 mb-3">
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-medium" for="regime_tva">Régime TVA</label>
+                            <select class="form-select" id="regime_tva" name="regime_tva">
+                                <option value="assujetti"     <?= $regimeTva === 'assujetti'     ? 'selected' : '' ?>>Assujetti à la TVA</option>
+                                <option value="non_assujetti" <?= $regimeTva === 'non_assujetti' ? 'selected' : '' ?>>Non assujetti (art. 293 B CGI)</option>
+                            </select>
+                            <div class="form-text">
+                                En franchise de base : aucune TVA collectée ni facturée.
+                            </div>
                         </div>
-                        <div class="form-text">La réduction s'applique dès que la commande atteint ce montant.</div>
                     </div>
 
-                    <div class="mb-3">
-                        <label class="form-label fw-medium" for="reduction_taux">Taux de réduction (%)</label>
-                        <div class="input-group">
-                            <input
-                                type="number"
-                                id="reduction_taux"
-                                name="reduction_taux"
-                                class="form-control"
-                                min="0"
-                                max="100"
-                                step="1"
-                                value="<?= $cfg('reduction_taux', '10') ?>"
-                                required
-                            >
-                            <span class="input-group-text">%</span>
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-medium" for="mention_facture">Mention pied de facture</label>
+                            <textarea class="form-control form-control-sm" id="mention_facture" name="mention_facture"
+                                      rows="3" maxlength="500"><?= $cfg('mention_facture') ?></textarea>
+                            <div class="form-text">Texte imprimé en bas de chaque facture finalisée.</div>
                         </div>
-                        <div class="form-text">Pourcentage déduit du sous-total lorsque le seuil est atteint.</div>
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-medium" for="mention_ticket">Mention pied de ticket</label>
+                            <textarea class="form-control form-control-sm" id="mention_ticket" name="mention_ticket"
+                                      rows="3" maxlength="500"><?= $cfg('mention_ticket') ?></textarea>
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-medium" for="mention_acompte">Mention pied d'acompte</label>
+                            <textarea class="form-control form-control-sm" id="mention_acompte" name="mention_acompte"
+                                      rows="3" maxlength="500"><?= $cfg('mention_acompte') ?></textarea>
+                        </div>
                     </div>
 
-                    <div class="p-3 rounded mb-3" style="background:var(--vg-creme);">
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-vg">
+                            <i class="bi bi-save me-1"></i>Enregistrer régime fiscal
+                        </button>
+                    </div>
+                </form>
+
+                <hr id="tva">
+                <h6 class="fw-semibold mb-3">Taux de TVA</h6>
+
+                <!-- Tableau des taux -->
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                            <tr>
+                                <th>Libellé</th>
+                                <th class="text-end">Taux</th>
+                                <th>Catégorie</th>
+                                <th class="text-center">Par défaut</th>
+                                <th class="text-center">Actif</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($tousLesToux as $t): ?>
+                            <tr class="<?= !$t['actif'] ? 'text-muted' : '' ?>">
+                                <td>
+                                    <?= sanitize($t['libelle']) ?>
+                                    <?php if ($t['note']): ?>
+                                    <small class="text-muted d-block" style="font-size:.75rem"><?= sanitize($t['note']) ?></small>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-end fw-semibold text-nowrap"><?= number_format((float)$t['taux'], 2) ?> %</td>
+                                <td><span class="badge bg-secondary"><?= sanitize($categorieLabels[$t['categorie']] ?? $t['categorie']) ?></span></td>
+                                <td class="text-center">
+                                    <?php if ($t['par_defaut']): ?>
+                                        <i class="bi bi-check-circle-fill text-success" title="Par défaut pour cette catégorie"></i>
+                                    <?php else: ?>
+                                        <form method="POST" action="/admin/taux-tva/defaut" class="d-inline">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="taux_id"   value="<?= (int)$t['taux_id'] ?>">
+                                            <input type="hidden" name="categorie" value="<?= sanitize($t['categorie']) ?>">
+                                            <button type="submit" class="btn btn-link btn-sm p-0 text-muted"
+                                                    title="Définir par défaut pour <?= sanitize($categorieLabels[$t['categorie']] ?? '') ?>">
+                                                <i class="bi bi-circle"></i>
+                                            </button>
+                                        </form>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="text-center">
+                                    <form method="POST" action="/admin/taux-tva/toggle" class="d-inline">
+                                        <?= csrfField() ?>
+                                        <input type="hidden" name="taux_id" value="<?= (int)$t['taux_id'] ?>">
+                                        <input type="hidden" name="actif"   value="<?= $t['actif'] ? '0' : '1' ?>">
+                                        <button type="submit" class="btn btn-link btn-sm p-0"
+                                                title="<?= $t['actif'] ? 'Désactiver' : 'Activer' ?>"
+                                                <?= $t['par_defaut'] ? 'disabled title="Taux par défaut — ne peut pas être désactivé"' : '' ?>>
+                                            <i class="bi <?= $t['actif'] ? 'bi-toggle-on text-success' : 'bi-toggle-off text-muted' ?>"></i>
+                                        </button>
+                                    </form>
+                                </td>
+                                <td class="text-end text-nowrap small text-muted">
+                                    id <?= (int)$t['taux_id'] ?>
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Ajouter un taux -->
+                <details>
+                    <summary class="btn btn-outline-secondary btn-sm mb-3">
+                        <i class="bi bi-plus-circle me-1"></i>Ajouter un taux de TVA
+                    </summary>
+                    <form method="POST" action="/admin/taux-tva/creer" class="p-3 border rounded mt-2">
+                        <?= csrfField() ?>
+                        <div class="row g-3">
+                            <div class="col-12 col-lg-5">
+                                <label class="form-label form-label-sm">Libellé <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control form-control-sm" name="libelle"
+                                       placeholder="Ex. Taux spécial alcools 20%" required maxlength="80">
+                            </div>
+                            <div class="col-6 col-lg-2">
+                                <label class="form-label form-label-sm">Taux (%) <span class="text-danger">*</span></label>
+                                <input type="number" step="0.01" min="0" max="100" class="form-control form-control-sm"
+                                       name="taux" required placeholder="10.00">
+                            </div>
+                            <div class="col-6 col-lg-2">
+                                <label class="form-label form-label-sm">Catégorie</label>
+                                <select class="form-select form-select-sm" name="categorie">
+                                    <?php foreach ($categorieLabels as $val => $lbl): ?>
+                                    <option value="<?= $val ?>"><?= $lbl ?></option>
+                                    <?php endforeach; ?>
+                                </select>
+                            </div>
+                            <div class="col-12 col-lg-3">
+                                <label class="form-label form-label-sm">Note / référence légale</label>
+                                <input type="text" class="form-control form-control-sm" name="note"
+                                       placeholder="Art. 278bis CGI…" maxlength="255">
+                            </div>
+                            <div class="col-12">
+                                <button type="submit" class="btn btn-vg btn-sm">
+                                    <i class="bi bi-plus me-1"></i>Créer le taux
+                                </button>
+                            </div>
+                        </div>
+                    </form>
+                </details>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
+         SECTION 3 — Livraison & Réduction
+    ============================================================ -->
+    <div class="col-12 col-lg-6" id="tarification">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-semibold">
+                <i class="bi bi-truck me-2 text-vg"></i>Livraison &amp; Réduction
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/admin/parametres/modifier">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="_section" value="tarification">
+                    <input type="hidden" name="hero_sous_titre" value="<?= $cfg('hero_sous_titre') ?>">
+                    <input type="hidden" name="hero_paragraphe" value="<?= $cfg('hero_paragraphe') ?>">
+
+                    <h6 class="fw-semibold mb-3">Frais de livraison</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-6">
+                            <label class="form-label fw-medium" for="livraison_base">Frais fixes (€)</label>
+                            <div class="input-group">
+                                <input type="number" id="livraison_base" name="livraison_base"
+                                       class="form-control" min="0" step="0.01"
+                                       value="<?= $cfg('livraison_base', '5.00') ?>" required>
+                                <span class="input-group-text">€</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-medium" for="livraison_km">Tarif au km (€/km)</label>
+                            <div class="input-group">
+                                <input type="number" id="livraison_km" name="livraison_km"
+                                       class="form-control" min="0" step="0.01"
+                                       value="<?= $cfg('livraison_km', '0.59') ?>" required>
+                                <span class="input-group-text">€/km</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-semibold mb-3">Réduction automatique</h6>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6">
+                            <label class="form-label fw-medium" for="reduction_seuil">Seuil (€)</label>
+                            <div class="input-group">
+                                <input type="number" id="reduction_seuil" name="reduction_seuil"
+                                       class="form-control" min="0" step="0.01"
+                                       value="<?= $cfg('reduction_seuil', '100.00') ?>" required>
+                                <span class="input-group-text">€</span>
+                            </div>
+                            <div class="form-text">Seuil TTC à atteindre pour déclencher la réduction.</div>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label fw-medium" for="reduction_taux">Taux (%)</label>
+                            <div class="input-group">
+                                <input type="number" id="reduction_taux" name="reduction_taux"
+                                       class="form-control" min="0" max="100" step="1"
+                                       value="<?= $cfg('reduction_taux', '10') ?>" required>
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="p-3 rounded mb-3" style="background:var(--vg-creme)">
                         <small class="text-muted">
                             <i class="bi bi-info-circle me-1 text-vg"></i>
-                            Exemple : avec un seuil à <strong id="prev-seuil"><?= $cfg('reduction_seuil', '100.00') ?> €</strong>
-                            et un taux de <strong id="prev-taux"><?= $cfg('reduction_taux', '10') ?>%</strong>,
-                            une commande de <strong id="prev-commande"><?= number_format($reductionExampleTotal, 2) ?> €</strong>
-                            bénéficiera d'une réduction de
-                            <strong id="prev-montant"><?= number_format($reductionExampleAmount, 2) ?> €</strong>.
+                            Exemple : seuil <strong id="prev-seuil"><?= $cfg('reduction_seuil', '100.00') ?> €</strong>,
+                            taux <strong id="prev-taux"><?= $cfg('reduction_taux', '10') ?>%</strong>
+                            → réduction de <strong id="prev-montant"><?= number_format($reductionExAmt, 2) ?> €</strong>
+                            sur une commande de <strong id="prev-commande"><?= number_format($reductionExample, 2) ?> €</strong>.
                         </small>
                     </div>
 
                     <button type="submit" class="btn btn-vg">
-                        <i class="bi bi-save me-1"></i>Enregistrer
+                        <i class="bi bi-save me-1"></i>Enregistrer tarification
                     </button>
                 </form>
             </div>
         </div>
     </div>
 
-</div>
+    <!-- ============================================================
+         SECTION 4 — Conditions de paiement
+    ============================================================ -->
+    <div class="col-12 col-lg-6" id="paiement">
+        <div class="card shadow-sm h-100">
+            <div class="card-header fw-semibold">
+                <i class="bi bi-credit-card me-2 text-vg"></i>Conditions de paiement
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/admin/parametres/modifier">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="_section" value="paiement">
+
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label fw-medium" for="acompte_taux_defaut">Acompte par défaut (%)</label>
+                            <div class="input-group">
+                                <input type="number" id="acompte_taux_defaut" name="acompte_taux_defaut"
+                                       class="form-control" min="0" max="100" step="1"
+                                       value="<?= $cfg('acompte_taux_defaut', '30') ?>">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="form-text">Taux pré-rempli lors de la création d'une facture d'acompte.</div>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label fw-medium" for="delai_paiement_jours">Délai de paiement (jours)</label>
+                            <div class="input-group">
+                                <input type="number" id="delai_paiement_jours" name="delai_paiement_jours"
+                                       class="form-control" min="0" max="365" step="1"
+                                       value="<?= $cfg('delai_paiement_jours', '30') ?>">
+                                <span class="input-group-text">jours</span>
+                            </div>
+                            <div class="form-text">Mentionné sur les factures (ex. 30 jours à réception).</div>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label fw-medium" for="penalites_retard_taux">Pénalités de retard (%/an)</label>
+                            <div class="input-group">
+                                <input type="number" id="penalites_retard_taux" name="penalites_retard_taux"
+                                       class="form-control" min="0" step="0.01"
+                                       value="<?= $cfg('penalites_retard_taux', '12.00') ?>">
+                                <span class="input-group-text">%</span>
+                            </div>
+                            <div class="form-text">Légalement obligatoire sur les factures B2B (art. L.441-10 Code de commerce).</div>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label fw-medium" for="indemnite_recouvrement">Indemnité forfaitaire (€)</label>
+                            <div class="input-group">
+                                <input type="number" id="indemnite_recouvrement" name="indemnite_recouvrement"
+                                       class="form-control" min="0" step="0.01"
+                                       value="<?= $cfg('indemnite_recouvrement', '40.00') ?>">
+                                <span class="input-group-text">€</span>
+                            </div>
+                            <div class="form-text">Forfait légal de recouvrement en cas de retard (décret n° 2012-1115).</div>
+                        </div>
+                    </div>
+
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-vg">
+                            <i class="bi bi-save me-1"></i>Enregistrer conditions
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+</div><!-- /.row -->
 
 <script nonce="<?= $cspNonce ?>">
 (function () {
-    var seuil = document.getElementById('reduction_seuil');
-    var taux  = document.getElementById('reduction_taux');
+    var seuil    = document.getElementById('reduction_seuil');
+    var taux     = document.getElementById('reduction_taux');
     var pSeuil   = document.getElementById('prev-seuil');
     var pTaux    = document.getElementById('prev-taux');
     var pCommande = document.getElementById('prev-commande');
     var pMontant = document.getElementById('prev-montant');
-    if (!seuil || !taux || !pSeuil) return;
+    if (!seuil || !taux) return;
     function update() {
         var s = parseFloat(seuil.value) || 0;
         var t = parseFloat(taux.value)  || 0;
-        var total = Math.max(120, s);
-        pSeuil.textContent   = s.toFixed(2) + ' €';
-        pTaux.textContent    = t.toFixed(0) + '%';
+        var total = Math.max(s + 20, s * 1.2, 120);
+        if (pSeuil)    pSeuil.textContent    = s.toFixed(2) + ' €';
+        if (pTaux)     pTaux.textContent     = t.toFixed(0) + '%';
         if (pCommande) pCommande.textContent = total.toFixed(2) + ' €';
-        pMontant.textContent = (total * t / 100).toFixed(2) + ' €';
+        if (pMontant)  pMontant.textContent  = (total * t / 100).toFixed(2) + ' €';
     }
     seuil.addEventListener('input', update);
     taux.addEventListener('input', update);

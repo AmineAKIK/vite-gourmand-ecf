@@ -104,18 +104,19 @@ class MailService {
     }
 
     /**
-     * $panier: array of session panier items (titre, nombre_personne, prix_menu)
+     * $panier: array of session panier items (titre, nombre_personne, prix_par_personne)
      */
     public static function sendCommandeConfirmation(string $email, array $commande, array $panier): void {
         try {
             $lignesHtml = '';
-            $totalMenus = 0.0;
+            $totalMenusBrut = 0.0;
             foreach ($panier as $item) {
+                $prixLigne = round((float)$item['prix_par_personne'] * (int)$item['nombre_personne'], 2);
                 $lignesHtml .= "<tr><td style='padding:4px 0;color:#5F6470'>" . htmlspecialchars($item['titre']) . " (" . (int)$item['nombre_personne'] . " pers.)</td>"
-                             . "<td style='padding:4px 0;text-align:right'>" . number_format((float)$item['prix_menu'], 2, ',', ' ') . " €</td></tr>";
-                $totalMenus += (float)$item['prix_menu'];
+                             . "<td style='padding:4px 0;text-align:right'>" . number_format($prixLigne, 2, ',', ' ') . " €</td></tr>";
+                $totalMenusBrut += $prixLigne;
             }
-            $prixLivraison = (float)($commande['prix_livraison'] ?? round((float)$commande['prix_total'] - $totalMenus, 2));
+            $prixLivraison = (float)($commande['prix_livraison'] ?? 0.0);
             $titresCsv = implode(', ', array_column($panier, 'titre'));
 
             self::send(

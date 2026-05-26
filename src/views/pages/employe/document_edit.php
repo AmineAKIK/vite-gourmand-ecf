@@ -9,6 +9,17 @@ $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['
 
     <?php partial('partials/page_title_bar', ['icon' => 'bi-receipt', 'title' => 'Éditeur de ' . $typeLabel]); ?>
 
+    <?php if (!empty($siretMissing) && !$isFinalise): ?>
+    <div class="alert alert-warning d-flex align-items-start gap-2 mb-4" role="alert">
+        <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+        <div>
+            <strong>SIRET manquant.</strong>
+            Les documents peuvent être édités en brouillon, mais la finalisation sera bloquée tant que le numéro SIRET de l'entreprise n'est pas renseigné.
+            <a href="/admin/parametres" class="alert-link ms-1">Configurer les paramètres entreprise →</a>
+        </div>
+    </div>
+    <?php endif; ?>
+
     <div class="facturation-toolbar mb-4">
         <a href="/employe/commandes" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left me-1"></i>Commandes
@@ -124,9 +135,10 @@ $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['
                     <span>TVA %</span>
                 </div>
                 <?php
-                $editableLines = $document['lignes'] ?? [];
-                $editableLines[] = ['designation' => '', 'quantite' => 1, 'prix_unitaire_ttc' => '', 'taux_tva' => '10'];
-                $editableLines[] = ['designation' => '', 'quantite' => 1, 'prix_unitaire_ttc' => '', 'taux_tva' => '10'];
+                $editableLines   = $document['lignes'] ?? [];
+                $defaultTvaBlank = !empty($tauxTvaOptions) ? (float)$tauxTvaOptions[0]['taux'] : 10.0;
+                $editableLines[] = ['designation' => '', 'quantite' => 1, 'prix_unitaire_ttc' => '', 'taux_tva' => $defaultTvaBlank];
+                $editableLines[] = ['designation' => '', 'quantite' => 1, 'prix_unitaire_ttc' => '', 'taux_tva' => $defaultTvaBlank];
                 ?>
                 <?php foreach ($editableLines as $index => $ligne): ?>
                     <?php $prixUnitaireTtc = $ligne['prix_unitaire_ttc'] ?? ''; ?>
@@ -167,15 +179,32 @@ $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['
                         </div>
                         <div class="facturation-line-field">
                             <label class="facturation-line-label" for="ligne-tva-<?= $index ?>">TVA %</label>
-                            <input
-                                type="number"
-                                step="0.01"
-                                min="0"
-                                class="form-control form-control-sm"
+                            <?php
+                            $ligneTauxTva = (float)($ligne['taux_tva'] ?? 10);
+                            ?>
+                            <select
+                                class="form-select form-select-sm"
                                 id="ligne-tva-<?= $index ?>"
                                 name="taux_tva[]"
-                                value="<?= sanitize(formatPriceInput($ligne['taux_tva'] ?? 10)) ?>"
                             >
+                                <?php foreach ($tauxTvaOptions as $opt): ?>
+                                <option
+                                    value="<?= (float)$opt['taux'] ?>"
+                                    <?= (float)$opt['taux'] === $ligneTauxTva ? 'selected' : '' ?>
+                                >
+                                    <?= sanitize($opt['libelle']) ?> (<?= number_format((float)$opt['taux'], 2) ?>%)
+                                </option>
+                                <?php endforeach; ?>
+                                <?php
+                                // If the stored rate isn't in current active list, add it as a fallback option
+                                $ratesInList = array_map(fn($o) => (float)$o['taux'], $tauxTvaOptions);
+                                if (!in_array($ligneTauxTva, $ratesInList, true) && $prixUnitaireTtc !== ''):
+                                ?>
+                                <option value="<?= $ligneTauxTva ?>" selected>
+                                    <?= number_format($ligneTauxTva, 2) ?>% (taux archivé)
+                                </option>
+                                <?php endif; ?>
+                            </select>
                         </div>
                     </div>
                 <?php endforeach; ?>

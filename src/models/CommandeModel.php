@@ -5,8 +5,11 @@ class CommandeModel {
 
     /**
      * $commandeData: numero_commande, utilisateur_id, date_prestation, heure_livraison,
-     *                adresse_livraison, ville_livraison, code_postal_livraison, prix_total
-     * $lignes: array of { menu_id, nombre_personne, prix_menu, prix_livraison, prix_total_ligne }
+     *                adresse_livraison, ville_livraison, code_postal_livraison, prix_total, prix_livraison
+     * $lignes: produit de PricingService::computeOrderTotal()['lignes'], chaque entrée contient :
+     *   menu_id, nombre_personne, prix_menu, prix_livraison, prix_total_ligne,
+     *   prix_par_personne_snapshot, taux_tva_snapshot, taux_reduction_snapshot,
+     *   remise_appliquee, taux_tva_id
      */
     public static function create(array $commandeData, array $lignes): int {
         $db = Database::getConnection();
@@ -39,8 +42,12 @@ class CommandeModel {
             $commandeId = (int)$db->lastInsertId();
 
             $ligneStmt = $db->prepare("
-                INSERT INTO commande_ligne (commande_id, menu_id, nombre_personne, prix_menu, prix_livraison, prix_total_ligne)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO commande_ligne (
+                    commande_id, menu_id, nombre_personne,
+                    prix_menu, prix_livraison, prix_total_ligne,
+                    prix_par_personne_snapshot, taux_tva_snapshot,
+                    taux_reduction_snapshot, remise_appliquee, taux_tva_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             foreach ($lignes as $ligne) {
@@ -51,6 +58,11 @@ class CommandeModel {
                     (float)$ligne['prix_menu'],
                     (float)$ligne['prix_livraison'],
                     (float)$ligne['prix_total_ligne'],
+                    (float)($ligne['prix_par_personne_snapshot'] ?? 0),
+                    (float)($ligne['taux_tva_snapshot']          ?? 10.0),
+                    (float)($ligne['taux_reduction_snapshot']    ?? 0),
+                    (float)($ligne['remise_appliquee']           ?? 0),
+                    isset($ligne['taux_tva_id']) ? (int)$ligne['taux_tva_id'] : null,
                 ]);
 
                 $stockStmt2 = $db->prepare("SELECT quantite_restante FROM menu WHERE menu_id = ?");
@@ -318,58 +330,5 @@ class CommandeModel {
 
     public static function canModify(array $commande): bool {
         return commandeCanClientModify($commande);
-    }
-
-    public static function getStatsByMenu(): array {
-        $db = Database::getConnection();
-        $revenueStatuses = commandeRevenueStatuses();
-        $placeholders = implode(',', array_fill(0, count($revenueStatuses), '?'));
-        $stmt = $db->prepare("
-            SELECT m.titre, COUNT(DISTINCT c.commande_id) AS nb_commandes, SUM(cl.prix_total_ligne) AS ca_total
-            FROM commande c
-            JOIN commande_ligne cl ON cl.commande_id = c.commande_id
-            JOIN menu m ON m.menu_id = cl.menu_id
-            WHERE c.statut IN ($placeholders)
-            GROUP BY cl.menu_id
-        ");
-        $stmt->execute($revenueStatuses);
-        return $stmt->fetchAll();
-    }
-
-    public static function getCaStatsByMenu(int $menuId = 0, string $dateDebut = '', string $dateFin = ''): array {
-        $revenueStatuses = commandeRevenueStatuses();
-        $placeholders = implode(',', array_fill(0, count($revenueStatuses), '?'));
-        $sql = "
-            SELECT m.menu_id, m.titre, SUM(cl.prix_total_ligne) AS ca, COUNT(DISTINCT c.commande_id) AS nb
-            FROM commande c
-            LEFT JOIN (
-                SELECT commande_id, MIN(created_at) AS date_acceptation
-                FROM commande_historique
-                WHERE nouveau_statut = ?
-                GROUP BY commande_id
-            ) accept_hist ON accept_hist.commande_id = c.commande_id
-            JOIN commande_ligne cl ON cl.commande_id = c.commande_id
-            JOIN menu m ON m.menu_id = cl.menu_id
-            WHERE c.statut IN ($placeholders)
-        ";
-        $params = array_merge([commandeAcceptedStatus()], $revenueStatuses);
-
-        if ($menuId) {
-            $sql .= " AND cl.menu_id = ?";
-            $params[] = $menuId;
-        }
-        if ($dateDebut) {
-            $sql .= " AND COALESCE(accept_hist.date_acceptation, c.date_commande) >= ?";
-            $params[] = $dateDebut;
-        }
-        if ($dateFin) {
-            $sql .= " AND COALESCE(accept_hist.date_acceptation, c.date_commande) <= ?";
-            $params[] = $dateFin . ' 23:59:59';
-        }
-
-        $sql .= " GROUP BY cl.menu_id ORDER BY ca DESC";
-        $stmt = Database::getConnection()->prepare($sql);
-        $stmt->execute($params);
-        return $stmt->fetchAll();
     }
 }

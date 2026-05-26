@@ -93,11 +93,15 @@ $routes = [
         '/mot-de-passe-oublie' => ['AuthController',    'forgot'],
         '/reinitialiser'       => ['AuthController',    'reset'],
         '/contact'             => ['ContactController', 'send'],
+        '/stripe/webhook'      => ['StripeController',  'webhook'],
     ],
     'GET_AUTH' => [
         '/mon-compte'          => ['UserController',    'dashboard'],
         '/panier'              => ['PanierController',  'view'],
         '/commande/suivi'      => ['CommandeController','suivi'],
+        '/stripe/checkout'     => ['StripeController',  'checkout'],
+        '/stripe/success'      => ['StripeController',  'success'],
+        '/stripe/cancel'       => ['StripeController',  'cancel'],
     ],
     'POST_AUTH' => [
         '/mon-compte/modifier'  => ['UserController', 'update'],
@@ -124,12 +128,17 @@ $routes = [
     'GET_ADMIN' => [
         '/admin'               => ['AdminController',   'dashboard'],
         '/admin/employes'      => ['AdminController',   'employes'],
-        '/admin/stats'         => ['AdminController',   'stats'],
+        '/admin/stats'              => ['AdminController',   'stats'],
+        '/admin/stats/export'       => ['AdminController',   'exportStats'],
+        '/admin/comptabilite'       => ['AdminController',   'comptabilite'],
+        '/admin/comptabilite/export'=> ['AdminController',   'exportComptabilite'],
         '/admin/accueil'       => ['AdminController',   'accueil'],
         '/admin/images'        => ['AdminController',   'images'],
         '/admin/parametres'    => ['AdminController',   'parametres'],
     ],
     'POST_EMPLOYE' => [
+        '/employe/paiement/enregistrer'  => ['PaiementController', 'enregistrer'],
+        '/employe/paiement/supprimer'    => ['PaiementController', 'supprimer'],
         '/employe/changer-mot-de-passe'  => ['EmployeController', 'changePassword'],
         '/employe/commande/statut'   => ['EmployeController', 'updateStatut'],
         '/employe/document/creer'     => ['EmployeController', 'createDocument'],
@@ -156,6 +165,9 @@ $routes = [
         '/admin/accueil/modifier'      => ['AdminController', 'updateAccueil'],
         '/admin/images/modifier'       => ['AdminController', 'updateImages'],
         '/admin/parametres/modifier'   => ['AdminController', 'updateParametres'],
+        '/admin/taux-tva/creer'        => ['AdminController', 'createTauxTva'],
+        '/admin/taux-tva/toggle'       => ['AdminController', 'toggleTauxTva'],
+        '/admin/taux-tva/defaut'       => ['AdminController', 'setDefaultTauxTva'],
     ],
 ];
 

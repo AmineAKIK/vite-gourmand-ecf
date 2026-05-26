@@ -146,10 +146,11 @@ function workspaceNavItems(): array {
     // Admin uniquement
     if ($isAdmin) {
         $items[] = ['separator' => true];
-        $items[] = ['href' => '/admin/employes',   'label' => 'Employés',             'icon' => 'bi-people',   'match' => '/admin/employes*'];
-        $items[] = ['href' => '/admin/stats',      'label' => 'Statistiques CA',      'icon' => 'bi-graph-up', 'match' => '/admin/stats*'];
-        $items[] = ['href' => '/admin/accueil',    'label' => "Personnaliser l'accueil", 'icon' => 'bi-brush', 'match' => '/admin/accueil*'];
-        $items[] = ['href' => '/admin/parametres', 'label' => 'Paramètres de tarification', 'icon' => 'bi-sliders', 'match' => '/admin/parametres*'];
+        $items[] = ['href' => '/admin/employes',     'label' => 'Employés',          'icon' => 'bi-people',        'match' => '/admin/employes*'];
+        $items[] = ['href' => '/admin/stats',        'label' => 'Statistiques CA',   'icon' => 'bi-graph-up',      'match' => '/admin/stats*'];
+        $items[] = ['href' => '/admin/comptabilite', 'label' => 'Comptabilité',      'icon' => 'bi-archive',       'match' => '/admin/comptabilite*'];
+        $items[] = ['href' => '/admin/accueil',      'label' => "Page d'accueil",    'icon' => 'bi-brush',         'match' => '/admin/accueil*'];
+        $items[] = ['href' => '/admin/parametres',   'label' => 'Paramètres',        'icon' => 'bi-sliders',       'match' => '/admin/parametres*'];
     }
 
     return $items;
@@ -312,6 +313,24 @@ function commandeStatusBadge(?string $status): string {
     return '<span class="badge-statut ' . sanitize(commandeStatusClass($status)) . '">'
         . sanitize(commandeStatusLabel($status))
         . '</span>';
+}
+
+function paiementTypeLabel(string $type): string {
+    return match ($type) {
+        'acompte'         => 'Acompte',
+        'solde'           => 'Solde',
+        'paiement_unique' => 'Paiement unique',
+        default           => ucfirst($type),
+    };
+}
+
+function paiementStatusBadge(string $statut): string {
+    [$cls, $label] = match ($statut) {
+        'solde'   => ['statut-termine',   'Soldé'],
+        'acompte' => ['statut-en_cours',  'Acompte versé'],
+        default   => ['statut-en_attente','Non payé'],
+    };
+    return '<span class="badge-statut ' . $cls . '">' . $label . '</span>';
 }
 
 function formatDateFr(?string $date, string $fallback = '—'): string {
@@ -580,12 +599,6 @@ function distanceKmDepuisBordeaux(string $ville): float {
     return distanceKmDepuisCoordonnees($lat2, $lon2);
 }
 
-function calculPrixLivraison(string $ville): float {
-    if (strtolower(trim($ville)) === 'bordeaux') return 0.0;
-    $distanceKm = distanceKmDepuisBordeaux($ville);
-    return round(livraisonBase() + (livraisonKm() * $distanceKm), 2);
-}
-
 function calculPrixLivraisonAdresse(string $adresse, string $ville, string $codePostal): ?float {
     $resolved = resolveAdresseLivraison($adresse, $ville, $codePostal);
     if (!$resolved) {
@@ -601,14 +614,6 @@ function calculPrixLivraisonAdresse(string $adresse, string $ville, string $code
 
     $distanceKm = distanceKmDepuisCoordonnees((float)$resolved['lat'], (float)$resolved['lng']);
     return round(livraisonBase() + (livraisonKm() * $distanceKm), 2);
-}
-
-function calculPrixMenu(float $prixParPersonne, int $nbPersonnes, int $nbMinimum): float {
-    $prix = $prixParPersonne * $nbPersonnes;
-    if ($prix >= reductionSeuilMontant()) {
-        $prix *= (1 - (reductionTauxPourcentage() / 100));
-    }
-    return round($prix, 2);
 }
 
 function siteConfigValue(string $key, string|float|int $default): string {
@@ -651,4 +656,34 @@ function validatePassword(string $password): bool {
         && preg_match('/[a-z]/', $password)
         && preg_match('/[0-9]/', $password)
         && preg_match('/[\W_]/', $password);
+}
+
+/**
+ * Thin fluent wrapper around the PDO singleton.
+ * Provides fetchAll/fetchOne/execute/lastInsertId so service and model
+ * code doesn't need to repeat prepare/execute boilerplate.
+ */
+function db(): object {
+    static $wrapper = null;
+    if ($wrapper === null) {
+        $wrapper = new class {
+            public function fetchAll(string $sql, array $params = []): array {
+                $stmt = Database::getConnection()->prepare($sql);
+                $stmt->execute($params);
+                return $stmt->fetchAll();
+            }
+            public function fetchOne(string $sql, array $params = []): array|false {
+                $stmt = Database::getConnection()->prepare($sql);
+                $stmt->execute($params);
+                return $stmt->fetch();
+            }
+            public function execute(string $sql, array $params = []): void {
+                Database::getConnection()->prepare($sql)->execute($params);
+            }
+            public function lastInsertId(): string {
+                return Database::getConnection()->lastInsertId();
+            }
+        };
+    }
+    return $wrapper;
 }

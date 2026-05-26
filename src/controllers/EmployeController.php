@@ -46,8 +46,14 @@ class EmployeController
         $statuts   = commandeStatuses();
         $menus      = MenuModel::getAll();
         $commandeIds = array_column($commandes, 'commande_id');
-        $lignesByCommande = CommandeModel::getLignesByCommandes($commandeIds);
+        $lignesByCommande    = CommandeModel::getLignesByCommandes($commandeIds);
         $documentsByCommande = FacturationModel::listByCommandeIds($commandeIds);
+        $paiementsByCommande  = PaiementModel::getSynthesesByCommandeIds($commandeIds);
+        $paiementsHistorique  = [];
+        foreach ($commandeIds as $cid) {
+            $paiementsHistorique[(int)$cid] = PaiementModel::getByCommande((int)$cid);
+        }
+        $modesPaiement = PaiementModel::getModePaiements();
 
         $statusFilters = $filters;
         $statusFilters['statut'] = '';
@@ -66,7 +72,10 @@ class EmployeController
             'menus',
             'statusCounts',
             'lignesByCommande',
-            'documentsByCommande'
+            'documentsByCommande',
+            'paiementsByCommande',
+            'paiementsHistorique',
+            'modesPaiement'
         ));
     }
 
@@ -95,9 +104,11 @@ class EmployeController
             redirect('/employe/commandes');
         }
 
-        $commande = CommandeModel::getById((int)$document['commande_id']);
-        $pageTitle = ucfirst($document['type_document']) . ' brouillon - Vite & Gourmand';
-        view('pages/employe/document_edit', compact('document', 'commande', 'pageTitle'));
+        $commande        = CommandeModel::getById((int)$document['commande_id']);
+        $tauxTvaOptions  = PricingService::tauxTvaActifs();
+        $siretMissing    = trim((string)siteConfigValue('entreprise_siret', '')) === '';
+        $pageTitle       = ucfirst($document['type_document']) . ' brouillon - Vite & Gourmand';
+        view('pages/employe/document_edit', compact('document', 'commande', 'tauxTvaOptions', 'siretMissing', 'pageTitle'));
     }
 
     public function updateDocument(): void

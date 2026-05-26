@@ -37,7 +37,7 @@ class CommandeController {
     public function create(): void {
         requireAuth();
         verifyCsrf();
-        $user  = currentUser();
+        $user   = currentUser();
         $panier = $_SESSION['panier'] ?? [];
 
         if (empty($panier)) {
@@ -45,53 +45,84 @@ class CommandeController {
             redirect('/panier');
         }
 
-        $totalMenus = array_sum(array_column($panier, 'prix_menu'));
-
+        // Valider les champs de livraison (date, heure, format)
         try {
-            $payload = CommandeService::payloadFromRequest($_POST, (float)$totalMenus);
+            CommandeService::validateLivraisonFields($_POST);
         } catch (InvalidArgumentException $e) {
             flash('error', $e->getMessage());
             redirect('/panier');
         }
 
-        $numeroCommande = generateNumeroCommande();
-
-        $commandeData = $payload + [
-            'numero_commande' => $numeroCommande,
-            'utilisateur_id'  => $user['id'],
-        ];
-
-        // Distribute livraison cost on first ligne only
-        $lignes = [];
-        $livraisonApplied = false;
-        foreach ($panier as $item) {
-            $prixLivraison = (!$livraisonApplied) ? (float)$payload['prix_livraison'] : 0.0;
-            $livraisonApplied = true;
-            $lignes[] = [
-                'menu_id'         => (int)$item['menu_id'],
-                'nombre_personne' => (int)$item['nombre_personne'],
-                'prix_menu'       => (float)$item['prix_menu'],
-                'prix_livraison'  => $prixLivraison,
-                'prix_total_ligne'=> round((float)$item['prix_menu'] + $prixLivraison, 2),
-            ];
-        }
-
-        try {
-            $commandeId = CommandeModel::create($commandeData, $lignes);
-        } catch (\Throwable $e) {
-            flash('error', 'Un ou plusieurs menus ne sont plus disponibles.');
+        // Détecter les changements de prix depuis la mise en panier
+        $changes = PricingService::detectPrixChanges($panier);
+        if (!empty($changes)) {
+            $titres = implode(', ', array_column($changes, 'titre'));
+            flash('error', 'Le prix du menu "' . $titres . '" a changé depuis votre mise en panier. Votre panier a été mis à jour — veuillez vérifier les nouveaux montants.');
+            // Mettre à jour les prix dans la session avant de rediriger
+            foreach ($_SESSION['panier'] as &$item) {
+                foreach ($changes as $change) {
+                    if ((int)$item['menu_id'] === $change['menu_id']) {
+                        $item['prix_par_personne'] = $change['prix_actuel'];
+                    }
+                }
+            }
+            unset($item);
             redirect('/panier');
         }
 
-        foreach ($panier as $item) {
-            $menu = MenuModel::getById((int)$item['menu_id']);
-            if ($menu) {
-                StatsService::recordCommande($commandeId, [
-                    'menu_id'        => $item['menu_id'],
-                    'prix_total'     => $item['prix_menu'],
-                    'nombre_personne'=> $item['nombre_personne'],
-                ], $menu);
-            }
+        $adresse    = sanitize($_POST['adresse_livraison']     ?? '');
+        $ville      = sanitize($_POST['ville_livraison']       ?? '');
+        $codePostal = sanitize($_POST['code_postal_livraison'] ?? '');
+
+        // Calcul complet via PricingService (réduction sur total global, snapshots)
+        try {
+            $pricing = PricingService::computeOrderTotal($panier, $adresse, $ville, $codePostal);
+        } catch (InvalidArgumentException $e) {
+            flash('error', $e->getMessage());
+            redirect('/panier');
+        }
+
+        $modePaiement = sanitize($_POST['mode_paiement'] ?? 'virement');
+
+        // Validate mode_paiement exists and is active
+        $modeActif = db()->fetchOne(
+            "SELECT code FROM mode_paiement WHERE code = ? AND actif = 1",
+            [$modePaiement]
+        );
+        if (!$modeActif) {
+            flash('error', 'Mode de paiement invalide.');
+            redirect('/panier');
+        }
+
+        $numeroCommande = generateNumeroCommande();
+
+        $commandeData = [
+            'numero_commande'       => $numeroCommande,
+            'utilisateur_id'        => $user['id'],
+            'date_prestation'       => sanitize($_POST['date_prestation']  ?? ''),
+            'heure_livraison'       => sanitize($_POST['heure_livraison']  ?? ''),
+            'adresse_livraison'     => $adresse,
+            'ville_livraison'       => $ville,
+            'code_postal_livraison' => $codePostal,
+            'prix_total'            => $pricing['total_ttc'],
+            'prix_livraison'        => $pricing['prix_livraison'],
+        ];
+
+        // CB en ligne : stocker les données en session, rediriger vers Stripe
+        if ($modePaiement === 'cb_online') {
+            $_SESSION['stripe_pending'] = [
+                'commande_data' => $commandeData,
+                'pricing'       => $pricing,
+                'panier'        => $panier,
+            ];
+            redirect('/stripe/checkout');
+        }
+
+        try {
+            $commandeId = CommandeModel::create($commandeData, $pricing['lignes']);
+        } catch (\Throwable $e) {
+            flash('error', 'Un ou plusieurs menus ne sont plus disponibles.');
+            redirect('/panier');
         }
 
         $userFull = \UserModel::findById($user['id']);
@@ -115,14 +146,44 @@ class CommandeController {
             flash('error', 'Cette commande ne peut plus être modifiée.'); redirect('/mon-compte');
         }
 
+        // Re-calculer le total avec la nouvelle adresse via PricingService
+        // (les lignes menus restent inchangées, seule la livraison peut varier)
         $lignes = CommandeModel::getLignes((int)$commande['commande_id']);
-        $totalMenus = array_sum(array_column($lignes, 'prix_menu'));
 
         try {
-            $payload = CommandeService::payloadFromRequest($_POST, (float)$totalMenus);
+            CommandeService::validateLivraisonFields($_POST);
         } catch (InvalidArgumentException $e) {
             redirect('/mon-compte?open_modal=modif_' . (int)$commande['commande_id'] . '&modal_error=' . urlencode($e->getMessage()));
         }
+
+        $adresse    = sanitize($_POST['adresse_livraison']     ?? '');
+        $ville      = sanitize($_POST['ville_livraison']       ?? '');
+        $codePostal = sanitize($_POST['code_postal_livraison'] ?? '');
+
+        // Reconstruire les items panier depuis les lignes DB pour PricingService
+        $panierItemsFromLignes = array_map(fn($l) => [
+            'menu_id'          => $l['menu_id'],
+            'nombre_personne'  => $l['nombre_personne'],
+            'prix_par_personne'=> $l['prix_par_personne_snapshot'] > 0
+                                  ? $l['prix_par_personne_snapshot']
+                                  : $l['prix_par_personne'],   // fallback DB si snapshot absent
+        ], $lignes);
+
+        try {
+            $pricing = PricingService::computeOrderTotal($panierItemsFromLignes, $adresse, $ville, $codePostal);
+        } catch (InvalidArgumentException $e) {
+            redirect('/mon-compte?open_modal=modif_' . (int)$commande['commande_id'] . '&modal_error=' . urlencode($e->getMessage()));
+        }
+
+        $payload = [
+            'date_prestation'       => sanitize($_POST['date_prestation']  ?? ''),
+            'heure_livraison'       => sanitize($_POST['heure_livraison']  ?? ''),
+            'adresse_livraison'     => $adresse,
+            'ville_livraison'       => $ville,
+            'code_postal_livraison' => $codePostal,
+            'prix_total'            => $pricing['total_ttc'],
+            'prix_livraison'        => $pricing['prix_livraison'],
+        ];
 
         CommandeModel::updateDetails((int)$commande['commande_id'], $payload);
 

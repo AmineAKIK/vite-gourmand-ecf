@@ -18,8 +18,9 @@ define('DB_USER', $_ENV['DB_USER'] ?? 'vg');
 define('DB_PASS', $_ENV['DB_PASS'] ?? 'vg');
 define('DB_CHARSET', 'utf8mb4');
 
-define('MONGO_URI', $_ENV['MONGO_URI'] ?? 'mongodb://localhost:27017');
-define('MONGO_DB',  $_ENV['MONGO_DB']  ?? 'vite_gourmand_stats');
+define('STRIPE_SECRET_KEY',   $_ENV['STRIPE_SECRET_KEY']   ?? '');
+define('STRIPE_PUBLISHABLE_KEY', $_ENV['STRIPE_PUBLISHABLE_KEY'] ?? '');
+define('STRIPE_WEBHOOK_SECRET', $_ENV['STRIPE_WEBHOOK_SECRET'] ?? '');
 
 define('BREVO_API_KEY', $_ENV['BREVO_API_KEY'] ?? '');
 define('MAIL_FROM',     $_ENV['MAIL_FROM']     ?? 'noreply@vitegourmand.fr');
@@ -48,5 +49,5 @@ define('BORDEAUX_LAT', 44.8378);
 define('BORDEAUX_LNG', -0.5792);
 define('LIVRAISON_BASE', 5.00);
 define('LIVRAISON_KM',   0.59);
-define('REDUCTION_SEUIL', 5);      // +5 personnes au-dessus du minimum
-define('REDUCTION_TAUX',  0.10);   // 10%
+// Valeurs de repli si site_config est indisponible. Source de vérité = table site_config.
+define('REDUCTION_TAUX',  0.10);   // 10% (0.10 = fraction, site_config stocke "10" en entier)

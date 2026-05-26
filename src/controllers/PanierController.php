@@ -40,12 +40,6 @@ class PanierController
             redirect($_SERVER['HTTP_REFERER'] ?? '/menus');
         }
 
-        $prixMenu = calculPrixMenu(
-            (float)$menu['prix_par_personne'],
-            $nbPersonnes,
-            $minimum
-        );
-
         if (!isset($_SESSION['panier'])) {
             $_SESSION['panier'] = [];
         }
@@ -55,25 +49,23 @@ class PanierController
 
         foreach ($_SESSION['panier'] as &$item) {
             if ((int)$item['menu_id'] === $menuId) {
-                $item['nombre_personne'] += $nbPersonnes;
-                $item['prix_menu'] = calculPrixMenu(
-                    (float)$menu['prix_par_personne'],
-                    $item['nombre_personne'],
-                    $minimum
-                );
+                $item['nombre_personne']  += $nbPersonnes;
+                // Mettre à jour le prix unitaire au cas où il aurait changé en DB
+                $item['prix_par_personne'] = (float)$menu['prix_par_personne'];
                 flash('success', '« ' . $menu['titre'] . ' » mis à jour dans votre panier. <a href="/panier" class="alert-link">Voir le panier</a>');
                 redirect($retour);
             }
         }
         unset($item);
 
+        // Le panier stocke uniquement le prix unitaire et le nombre de personnes.
+        // Le calcul de réduction et du total est fait par PricingService au checkout.
         $_SESSION['panier'][] = [
             'menu_id'          => $menuId,
             'titre'            => $menu['titre'],
             'prix_par_personne'=> (float)$menu['prix_par_personne'],
             'minimum'          => $minimum,
             'nombre_personne'  => $nbPersonnes,
-            'prix_menu'        => $prixMenu,
         ];
 
         flash('success', '« ' . $menu['titre'] . ' » ajouté à votre panier. <a href="/panier" class="alert-link">Voir le panier</a>');

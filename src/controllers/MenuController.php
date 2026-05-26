@@ -20,10 +20,9 @@ class MenuController {
                 'description'       => html_entity_decode($m['description'] ?? '', ENT_QUOTES, 'UTF-8'),
                 'titre'             => html_entity_decode($m['titre'] ?? '', ENT_QUOTES, 'UTF-8'),
                 'personnes_estimees'=> max($nbPersonnes, (int)($m['nombre_personne_minimum'] ?? 0)),
-                'prix_estime'       => calculPrixMenu(
-                    (float)($m['prix_par_personne'] ?? 0),
-                    max($nbPersonnes, (int)($m['nombre_personne_minimum'] ?? 0)),
-                    (int)($m['nombre_personne_minimum'] ?? 0)
+                'prix_estime'       => round(
+                    (float)($m['prix_par_personne'] ?? 0) * max($nbPersonnes, (int)($m['nombre_personne_minimum'] ?? 0)),
+                    2
                 ),
             ]), MenuModel::getAll($filters));
             echo json_encode(['ok' => true, 'data' => $menus]);

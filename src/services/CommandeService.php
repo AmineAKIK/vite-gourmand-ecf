@@ -1,43 +1,26 @@
 <?php
 // src/services/CommandeService.php
+//
+// Validation des champs de livraison (date, heure, adresse, format).
+// Le calcul des prix est délégué à PricingService.
 
 class CommandeService
 {
     /**
-     * Validates and extracts livraison fields from POST data.
-     * Returns: date_prestation, heure_livraison, adresse_livraison, ville_livraison,
-     *          code_postal_livraison, prix_livraison, prix_total (lignes total + livraison).
-     * $totalMenus: sum of prix_menu for all panier items (pre-calculated by caller).
+     * Valide uniquement les champs de formulaire de livraison depuis $_POST.
+     * Lève InvalidArgumentException si une règle est violée.
+     * Ne calcule aucun prix — c'est le rôle de PricingService.
      */
-    public static function payloadFromRequest(array $source, float $totalMenus): array
+    public static function validateLivraisonFields(array $source): void
     {
         $payload = [
-            'date_prestation'       => sanitize($source['date_prestation'] ?? ''),
-            'heure_livraison'       => sanitize($source['heure_livraison'] ?? ''),
-            'adresse_livraison'     => sanitize($source['adresse_livraison'] ?? ''),
-            'ville_livraison'       => sanitize($source['ville_livraison'] ?? ''),
+            'date_prestation'       => sanitize($source['date_prestation']       ?? ''),
+            'heure_livraison'       => sanitize($source['heure_livraison']       ?? ''),
+            'adresse_livraison'     => sanitize($source['adresse_livraison']     ?? ''),
+            'ville_livraison'       => sanitize($source['ville_livraison']       ?? ''),
             'code_postal_livraison' => sanitize($source['code_postal_livraison'] ?? ''),
         ];
 
-        self::validatePayload($payload);
-
-        $prixLivraison = calculPrixLivraisonAdresse(
-            $payload['adresse_livraison'],
-            $payload['ville_livraison'],
-            $payload['code_postal_livraison']
-        );
-        if ($prixLivraison === null) {
-            throw new InvalidArgumentException('Adresse de livraison non reconnue ou incohérente avec la ville et le code postal.');
-        }
-
-        return $payload + [
-            'prix_livraison' => $prixLivraison,
-            'prix_total'     => round($totalMenus + $prixLivraison, 2),
-        ];
-    }
-
-    private static function validatePayload(array $payload): void
-    {
         if (
             !$payload['date_prestation']
             || !$payload['heure_livraison']
@@ -49,10 +32,11 @@ class CommandeService
         }
 
         $datePrestation = DateTimeImmutable::createFromFormat('!Y-m-d', $payload['date_prestation']);
-        $dateErrors = DateTimeImmutable::getLastErrors();
-        $hasDateError = is_array($dateErrors) && ($dateErrors['warning_count'] > 0 || $dateErrors['error_count'] > 0);
-        $tomorrow = new DateTimeImmutable('tomorrow');
-        $maxDate  = new DateTimeImmutable('+365 days');
+        $dateErrors     = DateTimeImmutable::getLastErrors();
+        $hasDateError   = is_array($dateErrors) && ($dateErrors['warning_count'] > 0 || $dateErrors['error_count'] > 0);
+        $tomorrow       = new DateTimeImmutable('tomorrow');
+        $maxDate        = new DateTimeImmutable('+365 days');
+
         if (!$datePrestation || $hasDateError || $datePrestation < $tomorrow) {
             throw new InvalidArgumentException('La date de prestation doit être au minimum demain.');
         }
@@ -72,7 +56,6 @@ class CommandeService
         if (!preg_match('/^\d{5}$/', $payload['code_postal_livraison'])) {
             throw new InvalidArgumentException('Code postal invalide (5 chiffres requis).');
         }
-
         if (strlen($payload['adresse_livraison']) < 3) {
             throw new InvalidArgumentException('Adresse de livraison invalide.');
         }

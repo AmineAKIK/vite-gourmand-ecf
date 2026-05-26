@@ -1522,6 +1522,11 @@ a:focus {
     font-size: .84rem;
 }
 
+.stats-kpi-note--alert {
+    color: var(--vg-bordeaux);
+    font-weight: 600;
+}
+
 .stats-filter-panel {
     padding: 1rem;
 }
@@ -2355,6 +2360,89 @@ a:focus {
 
 .commande-cancel-confirm .form-check-input {
     margin-top: .25rem;
+}
+
+/* Comptabilité page */
+.comptabilite-export-card {
+    border-top: 3px solid var(--vg-bordeaux);
+    transition: box-shadow .15s;
+}
+.comptabilite-export-card:hover {
+    box-shadow: 0 4px 16px rgba(0,0,0,.1) !important;
+}
+.comptabilite-export-form .form-label {
+    font-size: .8rem;
+}
+.comptabilite-notes {
+    background: var(--vg-table-hover-bg, #fdf6ec);
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+}
+.comptabilite-notes li + li {
+    margin-top: .4rem;
+}
+
+/* Paiement badge statut */
+.statut-termine  { background: #d1fae5; color: #065f46; }
+.statut-en_cours { background: #dbeafe; color: #1e40af; }
+
+/* Synthèse paiement dans l'accordéon */
+.commande-paiement-synthese {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+    gap: .5rem;
+    background: var(--vg-table-hover-bg, #fdf6ec);
+    border-radius: 6px;
+    padding: .75rem 1rem;
+}
+.commande-paiement-row {
+    display: flex;
+    flex-direction: column;
+    gap: .1rem;
+}
+
+/* Historique paiements */
+.commande-paiement-historique {
+    display: flex;
+    flex-direction: column;
+    gap: .4rem;
+}
+.commande-paiement-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: .5rem;
+    padding: .4rem .6rem;
+    border: 1px solid var(--vg-border, #e8ddd0);
+    border-radius: 6px;
+    font-size: .85rem;
+}
+.commande-paiement-item-info {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .3rem;
+}
+.commande-paiement-item-actions {
+    display: flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: .25rem;
+}
+
+/* Formulaire enregistrement paiement */
+.commande-paiement-form-toggle > summary {
+    list-style: none;
+    cursor: pointer;
+}
+.commande-paiement-form-toggle > summary::-webkit-details-marker {
+    display: none;
+}
+.commande-paiement-form {
+    padding: .75rem;
+    background: var(--vg-bg, #fff);
+    border: 1px solid var(--vg-border, #e8ddd0);
+    border-radius: 6px;
 }
 
 @media (max-width: 1199px) {
@@ -4090,4 +4178,25 @@ input[type="password"]::-webkit-caps-lock-indicator {
     .workspace-content-inner {
         padding: 1.25rem;
     }
+}
+
+/* ==========================================
+   PANIER — sélection du mode de paiement
+   ========================================== */
+
+.cursor-pointer { cursor: pointer; }
+
+.panier-mode-label {
+    cursor: pointer;
+    transition: border-color .15s, background .15s;
+    border-color: #dee2e6 !important;
+}
+
+.panier-mode-label:has(input:checked) {
+    border-color: var(--vg-bordeaux) !important;
+    background: rgba(139, 26, 43, .05);
+}
+
+.panier-mode-label:hover {
+    border-color: var(--vg-bordeaux) !important;
 }

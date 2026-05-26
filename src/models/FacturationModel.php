@@ -162,95 +162,102 @@ class FacturationModel
             throw new InvalidArgumentException('Impossible de créer un document sans lignes de commande.');
         }
 
-        $clientNom = personFullName($commande);
+        $clientNom     = personFullName($commande);
         $clientAdresse = trim(($commande['adresse_livraison'] ?? ''));
-        $totals = ['ht' => 0.0, 'tva' => 0.0, 'ttc' => 0.0];
-        $lignes = [];
+        $totals        = ['ht' => 0.0, 'tva' => 0.0, 'ttc' => 0.0];
+        $lignes        = [];
 
-        foreach ($lignesCommande as $index => $ligne) {
+        // Taux TVA livraison par défaut (depuis table taux_tva si disponible)
+        $tauxTvaLivraison = PricingService::defaultTauxTvaByCategorie('livraison');
+
+        foreach ($lignesCommande as $ligne) {
             $nbPersonnes = (int)($ligne['nombre_personne'] ?? 1);
             $designation = ($ligne['menu_titre'] ?? 'Menu') . ' - ' . $nbPersonnes . ' pers.';
+
+            // Taux TVA : snapshot stocké au moment de la commande (migration 012)
+            // Fallback sur PricingService si snapshot absent (commandes pré-migration)
+            $tauxTvaMenu = (float)($ligne['taux_tva_snapshot'] ?? 0) > 0
+                ? (float)$ligne['taux_tva_snapshot']
+                : PricingService::defaultTauxTvaByCategorie('menu');
+
+            // Prix brut menu (avant remise) : depuis le snapshot de prix/pers
+            // Si snapshot absent (commandes pré-migration 012), fallback sur prix_par_personne DB actuel
+            $prixParPers = (float)($ligne['prix_par_personne_snapshot'] ?? 0) > 0
+                ? (float)$ligne['prix_par_personne_snapshot']
+                : (float)($ligne['prix_par_personne'] ?? 0);
+            $menuBrutTtc = round($prixParPers * $nbPersonnes, 2);
+
+            // Prix net menu (après remise) : valeur réelle persistée
             $menuNetTtc = (float)($ligne['prix_menu'] ?? 0);
-            $menuBrutTtc = !empty($ligne['prix_par_personne'])
-                ? round((float)$ligne['prix_par_personne'] * $nbPersonnes, 2)
-                : $menuNetTtc;
-            $ttc = $menuBrutTtc;
-            $computed = self::lineTotals(1, $ttc, self::DEFAULT_TVA);
+
+            // Ligne menu au prix BRUT
+            $computed = self::lineTotals(1, $menuBrutTtc, $tauxTvaMenu);
             $lignes[] = [
-                'designation' => $designation,
-                'quantite' => 1,
-                'prix_unitaire_ttc' => $ttc,
-                'prix_unitaire_ht' => $computed['unit_ht'],
-                'taux_tva' => self::DEFAULT_TVA,
-                'total_ht' => $computed['total_ht'],
-                'total_tva' => $computed['total_tva'],
-                'total_ttc' => $computed['total_ttc'],
-                'ordre' => count($lignes) + 1,
+                'designation'       => $designation,
+                'quantite'          => 1,
+                'prix_unitaire_ttc' => $menuBrutTtc,
+                'prix_unitaire_ht'  => $computed['unit_ht'],
+                'taux_tva'          => $tauxTvaMenu,
+                'total_ht'          => $computed['total_ht'],
+                'total_tva'         => $computed['total_tva'],
+                'total_ttc'         => $computed['total_ttc'],
+                'ordre'             => count($lignes) + 1,
             ];
-            $totals['ht'] += $computed['total_ht'];
+            $totals['ht']  += $computed['total_ht'];
             $totals['tva'] += $computed['total_tva'];
             $totals['ttc'] += $computed['total_ttc'];
 
-            $remiseTtc = round($menuBrutTtc - $menuNetTtc, 2);
-            if ($remiseTtc > 0.01) {
-                $remiseLabel = reductionTauxPourcentage() > 0
-                    ? 'Réduction volume (' . formatPriceInput(reductionTauxPourcentage()) . ' %)'
+            // Ligne remise : depuis le snapshot remise_appliquee (migration 012)
+            // Si snapshot absent, calcul depuis la différence brut/net
+            $remiseTtc = (float)($ligne['remise_appliquee'] ?? 0) > 0
+                ? (float)$ligne['remise_appliquee']
+                : round($menuBrutTtc - $menuNetTtc, 2);
+
+            if ($remiseTtc > 0.005) {
+                $tauxReduction = (float)($ligne['taux_reduction_snapshot'] ?? 0);
+                $remiseLabel = $tauxReduction > 0
+                    ? 'Réduction volume (' . formatPriceInput($tauxReduction) . ' %)'
                     : 'Réduction volume';
-                $remiseComputed = self::lineTotals(1, -$remiseTtc, self::DEFAULT_TVA);
+                $remiseComputed = self::lineTotals(1, -$remiseTtc, $tauxTvaMenu);
                 $lignes[] = [
-                    'designation' => $remiseLabel . ' - ' . ($ligne['menu_titre'] ?? 'Menu'),
-                    'quantite' => 1,
+                    'designation'       => $remiseLabel . ' — ' . ($ligne['menu_titre'] ?? 'Menu'),
+                    'quantite'          => 1,
                     'prix_unitaire_ttc' => -$remiseTtc,
-                    'prix_unitaire_ht' => $remiseComputed['unit_ht'],
-                    'taux_tva' => self::DEFAULT_TVA,
-                    'total_ht' => $remiseComputed['total_ht'],
-                    'total_tva' => $remiseComputed['total_tva'],
-                    'total_ttc' => $remiseComputed['total_ttc'],
-                    'ordre' => count($lignes) + 1,
+                    'prix_unitaire_ht'  => $remiseComputed['unit_ht'],
+                    'taux_tva'          => $tauxTvaMenu,
+                    'total_ht'          => $remiseComputed['total_ht'],
+                    'total_tva'         => $remiseComputed['total_tva'],
+                    'total_ttc'         => $remiseComputed['total_ttc'],
+                    'ordre'             => count($lignes) + 1,
                 ];
-                $totals['ht'] += $remiseComputed['total_ht'];
+                $totals['ht']  += $remiseComputed['total_ht'];
                 $totals['tva'] += $remiseComputed['total_tva'];
                 $totals['ttc'] += $remiseComputed['total_ttc'];
             }
 
+            // Ligne livraison (portée sur la première ligne commande uniquement)
             $livraisonTtc = (float)($ligne['prix_livraison'] ?? 0);
             if ($livraisonTtc > 0) {
-                $livraisonComputed = self::lineTotals(1, $livraisonTtc, self::DEFAULT_TVA);
+                $livraisonComputed = self::lineTotals(1, $livraisonTtc, $tauxTvaLivraison);
                 $lignes[] = [
-                    'designation' => 'Livraison - ' . ($commande['ville_livraison'] ?? 'adresse client'),
-                    'quantite' => 1,
+                    'designation'       => 'Livraison — ' . ($commande['ville_livraison'] ?? 'adresse client'),
+                    'quantite'          => 1,
                     'prix_unitaire_ttc' => $livraisonTtc,
-                    'prix_unitaire_ht' => $livraisonComputed['unit_ht'],
-                    'taux_tva' => self::DEFAULT_TVA,
-                    'total_ht' => $livraisonComputed['total_ht'],
-                    'total_tva' => $livraisonComputed['total_tva'],
-                    'total_ttc' => $livraisonComputed['total_ttc'],
-                    'ordre' => count($lignes) + 1,
+                    'prix_unitaire_ht'  => $livraisonComputed['unit_ht'],
+                    'taux_tva'          => $tauxTvaLivraison,
+                    'total_ht'          => $livraisonComputed['total_ht'],
+                    'total_tva'         => $livraisonComputed['total_tva'],
+                    'total_ttc'         => $livraisonComputed['total_ttc'],
+                    'ordre'             => count($lignes) + 1,
                 ];
-                $totals['ht'] += $livraisonComputed['total_ht'];
+                $totals['ht']  += $livraisonComputed['total_ht'];
                 $totals['tva'] += $livraisonComputed['total_tva'];
                 $totals['ttc'] += $livraisonComputed['total_ttc'];
             }
         }
 
-        $ecartCommande = round((float)($commande['prix_total'] ?? 0) - $totals['ttc'], 2);
-        if (abs($ecartCommande) > 0.01) {
-            $adjustment = self::lineTotals(1, $ecartCommande, self::DEFAULT_TVA);
-            $lignes[] = [
-                'designation' => 'Ajustement tarification commande',
-                'quantite' => 1,
-                'prix_unitaire_ttc' => $ecartCommande,
-                'prix_unitaire_ht' => $adjustment['unit_ht'],
-                'taux_tva' => self::DEFAULT_TVA,
-                'total_ht' => $adjustment['total_ht'],
-                'total_tva' => $adjustment['total_tva'],
-                'total_ttc' => $adjustment['total_ttc'],
-                'ordre' => count($lignes) + 1,
-            ];
-            $totals['ht'] += $adjustment['total_ht'];
-            $totals['tva'] += $adjustment['total_tva'];
-            $totals['ttc'] += $adjustment['total_ttc'];
-        }
+        // Pas de ligne "Ajustement" : les snapshots garantissent la cohérence.
+        // Un écart résiduel ≤ 0.02€ est absorbé par les arrondis DECIMAL — acceptable fiscalement.
 
         $db = Database::getConnection();
         $db->beginTransaction();
@@ -391,13 +398,29 @@ class FacturationModel
                 throw new InvalidArgumentException('Le nom du client est obligatoire avant finalisation.');
             }
 
-            $numero = self::nextNumeroDocument($db, $document['type_document'], $document['date_emission'] ?? date('Y-m-d'));
+            // Vérifier les mentions obligatoires côté vendeur
+            $entreprise = json_decode($document['entreprise_snapshot'] ?? '{}', true) ?: [];
+            $regimeTva  = $entreprise['regime_tva'] ?? siteConfigValue('regime_tva', 'assujetti');
+            if ($regimeTva === 'assujetti' && empty($entreprise['siret'])) {
+                throw new InvalidArgumentException(
+                    'Le SIRET de l\'entreprise est obligatoire pour finaliser une facture. Renseignez-le dans Admin → Paramètres → Informations entreprise.'
+                );
+            }
+
+            $typeDoc = $document['type_document'] ?? 'facture';
+            $numero  = self::nextNumeroDocument($db, $typeDoc, $document['date_emission'] ?? date('Y-m-d'));
+
+            // Mention légale finale : remplace le placeholder "brouillon" par le texte officiel
+            $mentionFinale = self::finalMentionLegale($typeDoc);
+
             $update = $db->prepare("
                 UPDATE document_facturation
-                SET statut = 'finalise', numero_document = ?, finalized_at = NOW(), finalized_by = ?
+                SET statut = 'finalise', numero_document = ?,
+                    mention_legale = ?,
+                    finalized_at = NOW(), finalized_by = ?
                 WHERE document_id = ?
             ");
-            $update->execute([$numero, $finalizedBy, $documentId]);
+            $update->execute([$numero, $mentionFinale, $finalizedBy, $documentId]);
             $db->commit();
             self::archiveDocument($documentId);
             return $numero;
@@ -442,75 +465,164 @@ class FacturationModel
 
     public static function renderDocumentHtml(array $document, bool $standalone = false): string
     {
-        $type = $document['type_document'] ?? 'facture';
-        $isTicket = $type === 'ticket';
-        $typeLabel = $isTicket ? 'Ticket de caisse' : 'Facture';
-        $entreprise = $document['entreprise'] ?? (json_decode($document['entreprise_snapshot'] ?? '{}', true) ?: []);
-        $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['document_id']);
-        $lignes = $document['lignes'] ?? self::getLignes((int)$document['document_id']);
+        $type        = $document['type_document'] ?? 'facture';
+        $isTicket    = $type === 'ticket';
+        $isAcompte   = $type === 'acompte';
+        $typeLabel   = match ($type) {
+            'ticket'  => 'Ticket de caisse',
+            'acompte' => "Facture d'acompte",
+            default   => 'Facture',
+        };
+        $entreprise    = $document['entreprise'] ?? (json_decode($document['entreprise_snapshot'] ?? '{}', true) ?: []);
+        $regimeTva     = $entreprise['regime_tva'] ?? 'assujetti';
+        $isAssujetti   = $regimeTva === 'assujetti';
+        $documentRef   = $document['numero_document'] ?: ('Brouillon #' . (int)$document['document_id']);
+        $lignes        = $document['lignes'] ?? self::getLignes((int)$document['document_id']);
         $operationLabel = self::categorieOperationLabel($document['categorie_operation'] ?? 'mixte');
+        $delaiPaiement = $entreprise['delai_paiement'] ?? '30';
 
+        // --- Bloc vendeur ---
+        $vendeurAdresse = trim(
+            ($entreprise['adresse'] ?? '') . ', '
+            . ($entreprise['code_postal'] ?? '') . ' '
+            . ($entreprise['ville'] ?? 'Bordeaux')
+        );
+        $vendeurAdresse = trim($vendeurAdresse, ', ');
+
+        $vendeurHtml = '<p class="document-brand">'
+            . htmlspecialchars($entreprise['nom'] ?? 'Vite & Gourmand', ENT_QUOTES, 'UTF-8')
+            . '</p><address>';
+        if ($vendeurAdresse) {
+            $vendeurHtml .= htmlspecialchars($vendeurAdresse, ENT_QUOTES, 'UTF-8') . '<br>';
+        }
+        if (!empty($entreprise['telephone'])) {
+            $vendeurHtml .= htmlspecialchars($entreprise['telephone'], ENT_QUOTES, 'UTF-8') . '<br>';
+        }
+        $vendeurHtml .= htmlspecialchars($entreprise['email'] ?? MAIL_FROM, ENT_QUOTES, 'UTF-8');
+        if (!empty($entreprise['siret'])) {
+            $vendeurHtml .= '<br>SIRET : ' . htmlspecialchars($entreprise['siret'], ENT_QUOTES, 'UTF-8');
+        }
+        if (!empty($entreprise['forme_juridique'])) {
+            $vendeurHtml .= '<br>' . htmlspecialchars($entreprise['forme_juridique'], ENT_QUOTES, 'UTF-8');
+        }
+        if ($isAssujetti && !empty($entreprise['tva_intracom'])) {
+            $vendeurHtml .= '<br>N° TVA : ' . htmlspecialchars($entreprise['tva_intracom'], ENT_QUOTES, 'UTF-8');
+        }
+        $vendeurHtml .= '</address>';
+
+        // --- Tableau des lignes ---
         $rows = '';
         $ticketRows = '';
-        foreach ($lignes as $ligne) {
-            $designation = htmlspecialchars($ligne['designation'] ?? '', ENT_QUOTES, 'UTF-8');
-            $quantite = htmlspecialchars(formatPriceInput($ligne['quantite'] ?? 0), ENT_QUOTES, 'UTF-8');
-            $prixUnitaire = htmlspecialchars(formatPrice($ligne['prix_unitaire_ttc'] ?? 0), ENT_QUOTES, 'UTF-8');
-            $tva = htmlspecialchars(formatPriceInput($ligne['taux_tva'] ?? 0), ENT_QUOTES, 'UTF-8');
-            $totalTtc = htmlspecialchars(formatPrice($ligne['total_ttc'] ?? 0), ENT_QUOTES, 'UTF-8');
 
-            $rows .= '<tr>'
-                . '<td data-label="Désignation">' . $designation . '</td>'
-                . '<td data-label="Qté" class="num">' . $quantite . '</td>'
-                . '<td data-label="PU TTC" class="num">' . $prixUnitaire . '</td>'
-                . '<td data-label="TVA" class="num">' . $tva . ' %</td>'
-                . '<td data-label="Total TTC" class="num">' . $totalTtc . '</td>'
-                . '</tr>';
+        if ($isAssujetti) {
+            $colHeaders = '<th>Désignation</th><th class="num">Qté</th><th class="num">PU HT</th><th class="num">TVA %</th><th class="num">Total HT</th><th class="num">Total TTC</th>';
+        } else {
+            $colHeaders = '<th>Désignation</th><th class="num">Qté</th><th class="num">PU TTC</th><th class="num">Total TTC</th>';
+        }
+
+        foreach ($lignes as $ligne) {
+            $designation  = htmlspecialchars($ligne['designation'] ?? '', ENT_QUOTES, 'UTF-8');
+            $quantite     = htmlspecialchars(formatPriceInput($ligne['quantite'] ?? 0), ENT_QUOTES, 'UTF-8');
+            $tva          = htmlspecialchars(formatPriceInput($ligne['taux_tva'] ?? 0), ENT_QUOTES, 'UTF-8');
+            $totalTtc     = htmlspecialchars(formatPrice($ligne['total_ttc'] ?? 0), ENT_QUOTES, 'UTF-8');
+
+            if ($isAssujetti) {
+                $puHt     = htmlspecialchars(formatPrice($ligne['prix_unitaire_ht'] ?? 0), ENT_QUOTES, 'UTF-8');
+                $totalHt  = htmlspecialchars(formatPrice($ligne['total_ht'] ?? 0), ENT_QUOTES, 'UTF-8');
+                $rows .= '<tr>'
+                    . '<td data-label="Désignation">' . $designation . '</td>'
+                    . '<td data-label="Qté" class="num">' . $quantite . '</td>'
+                    . '<td data-label="PU HT" class="num">' . $puHt . '</td>'
+                    . '<td data-label="TVA %" class="num">' . $tva . ' %</td>'
+                    . '<td data-label="Total HT" class="num">' . $totalHt . '</td>'
+                    . '<td data-label="Total TTC" class="num">' . $totalTtc . '</td>'
+                    . '</tr>';
+            } else {
+                $puTtc    = htmlspecialchars(formatPrice($ligne['prix_unitaire_ttc'] ?? 0), ENT_QUOTES, 'UTF-8');
+                $rows .= '<tr>'
+                    . '<td data-label="Désignation">' . $designation . '</td>'
+                    . '<td data-label="Qté" class="num">' . $quantite . '</td>'
+                    . '<td data-label="PU TTC" class="num">' . $puTtc . '</td>'
+                    . '<td data-label="Total TTC" class="num">' . $totalTtc . '</td>'
+                    . '</tr>';
+            }
+
             $ticketRows .= '<div class="document-ticket-line">'
                 . '<div class="document-ticket-line-main"><strong>' . $designation . '</strong><span>' . $totalTtc . '</span></div>'
-                . '<div class="document-ticket-line-meta"><span>Qté ' . $quantite . '</span><span>PU ' . $prixUnitaire . '</span><span>TVA ' . $tva . ' %</span></div>'
-                . '</div>';
+                . '<div class="document-ticket-line-meta"><span>Qté ' . $quantite . '</span>'
+                . ($isAssujetti ? '<span>TVA ' . $tva . ' %</span>' : '')
+                . '</div></div>';
         }
 
         $linesHtml = $isTicket
             ? '<div class="document-ticket-lines">' . $ticketRows . '</div>'
-            : '<div class="document-lines"><table><thead><tr>'
-                . '<th>Désignation</th><th class="num">Qté</th><th class="num">PU TTC</th><th class="num">TVA</th><th class="num">Total TTC</th>'
-                . '</tr></thead><tbody>' . $rows . '</tbody></table></div>';
+            : '<div class="document-lines"><table><thead><tr>' . $colHeaders . '</tr></thead><tbody>' . $rows . '</tbody></table></div>';
 
+        // --- Bloc totaux ---
+        $totauxHtml = '';
+        if ($isAssujetti) {
+            $totauxHtml .= '<div><dt>Total HT</dt><dd>' . htmlspecialchars(formatPrice($document['total_ht'] ?? 0), ENT_QUOTES, 'UTF-8') . '</dd></div>'
+                . '<div><dt>TVA (' . htmlspecialchars(formatPriceInput($lignes[0]['taux_tva'] ?? 10), ENT_QUOTES, 'UTF-8') . ' %)</dt><dd>' . htmlspecialchars(formatPrice($document['total_tva'] ?? 0), ENT_QUOTES, 'UTF-8') . '</dd></div>';
+        } else {
+            $totauxHtml .= '<div class="document-tva-non-applicable"><dt>TVA</dt><dd>TVA non applicable, art. 293 B du CGI</dd></div>';
+        }
+        // Acompte déjà versé (pour factures de solde)
+        if (!$isAcompte && (float)($document['montant_acompte_verse'] ?? 0) > 0) {
+            $totauxHtml .= '<div><dt>Acompte déjà versé</dt><dd>- ' . htmlspecialchars(formatPrice($document['montant_acompte_verse']), ENT_QUOTES, 'UTF-8') . '</dd></div>'
+                . '<div><dt>Solde à régler</dt><dd>' . htmlspecialchars(formatPrice($document['solde_a_regler'] ?? $document['total_ttc']), ENT_QUOTES, 'UTF-8') . '</dd></div>';
+        }
+        $totauxHtml .= '<div class="document-total-main"><dt>Total TTC</dt><dd>' . htmlspecialchars(formatPrice($document['total_ttc'] ?? 0), ENT_QUOTES, 'UTF-8') . '</dd></div>';
+
+        // --- Coordonnées bancaires (si virement renseigné) ---
+        $banqueHtml = '';
+        if (!$isTicket && !empty($entreprise['iban'])) {
+            $banqueHtml = '<section class="document-banque"><h3>Règlement par virement</h3><p>'
+                . 'IBAN : ' . htmlspecialchars($entreprise['iban'], ENT_QUOTES, 'UTF-8') . '<br>'
+                . (!empty($entreprise['bic']) ? 'BIC : ' . htmlspecialchars($entreprise['bic'], ENT_QUOTES, 'UTF-8') . '<br>' : '')
+                . (!empty($entreprise['nom_banque']) ? 'Banque : ' . htmlspecialchars($entreprise['nom_banque'], ENT_QUOTES, 'UTF-8') : '')
+                . '</p></section>';
+        }
+
+        // --- Conditions de paiement ---
+        $conditionsHtml = '';
+        if (!$isTicket) {
+            $conditionsHtml = '<section class="document-conditions"><p>'
+                . 'Délai de règlement : ' . htmlspecialchars($delaiPaiement, ENT_QUOTES, 'UTF-8') . ' jours à compter de la date d\'émission.'
+                . (!empty($entreprise['penalites_taux']) && $isAssujetti
+                    ? ' Pénalités de retard : ' . htmlspecialchars($entreprise['penalites_taux'], ENT_QUOTES, 'UTF-8') . ' % l\'an.'
+                      . (!empty($entreprise['indemnite_recouvrement']) ? ' Indemnité forfaitaire de recouvrement : ' . htmlspecialchars($entreprise['indemnite_recouvrement'], ENT_QUOTES, 'UTF-8') . ' €.' : '')
+                    : '')
+                . '</p></section>';
+        }
+
+        // --- Assembly HTML ---
         $html = '<article class="document-preview ' . ($isTicket ? 'document-preview-ticket' : '') . '">'
-            . '<header class="document-preview-header"><div>'
-            . '<p class="document-brand">Vite &amp; Gourmand</p>'
-            . '<address>' . htmlspecialchars($entreprise['adresse'] ?? 'Bordeaux', ENT_QUOTES, 'UTF-8') . '<br>'
-            . htmlspecialchars($entreprise['email'] ?? MAIL_FROM, ENT_QUOTES, 'UTF-8') . '</address>'
-            . '</div><div class="document-meta">'
+            . '<header class="document-preview-header"><div>' . $vendeurHtml . '</div>'
+            . '<div class="document-meta">'
             . '<h2>' . htmlspecialchars($typeLabel, ENT_QUOTES, 'UTF-8') . '</h2>'
-            . '<p>' . htmlspecialchars($documentRef, ENT_QUOTES, 'UTF-8') . '</p>'
-            . '<p>' . htmlspecialchars(formatDateFr($document['date_emission'] ?? null), ENT_QUOTES, 'UTF-8') . '</p>'
+            . '<p class="document-ref">' . htmlspecialchars($documentRef, ENT_QUOTES, 'UTF-8') . '</p>'
+            . '<p>Émis le ' . htmlspecialchars(formatDateFr($document['date_emission'] ?? null), ENT_QUOTES, 'UTF-8') . '</p>'
             . '</div></header>'
-            . '<section class="document-parties"><div><h3>Client</h3><p><strong>'
-            . htmlspecialchars($document['client_nom'] ?? '', ENT_QUOTES, 'UTF-8') . '</strong><br>'
+            . '<section class="document-parties">'
+            . '<div><h3>Client</h3><p><strong>' . htmlspecialchars($document['client_nom'] ?? '', ENT_QUOTES, 'UTF-8') . '</strong><br>'
             . htmlspecialchars($document['client_adresse'] ?? '', ENT_QUOTES, 'UTF-8') . '<br>'
             . htmlspecialchars(trim(($document['client_code_postal'] ?? '') . ' ' . ($document['client_ville'] ?? '')), ENT_QUOTES, 'UTF-8') . '<br>'
-            . htmlspecialchars($document['client_email'] ?? '', ENT_QUOTES, 'UTF-8') . '</p></div>'
-            . '<div><h3>Document</h3><p>'
-            . htmlspecialchars($documentRef, ENT_QUOTES, 'UTF-8') . '<br>'
-            . 'Prestation : ' . htmlspecialchars(formatDateFr($document['date_prestation'] ?? null), ENT_QUOTES, 'UTF-8') . '<br>'
-            . 'Opération : ' . htmlspecialchars($operationLabel, ENT_QUOTES, 'UTF-8') . '<br>'
-            . 'Statut : finalisé</p></div></section>'
-            . '<section class="document-electronic"><h3>Préparation facturation électronique</h3><p>'
-            . 'SIREN client : ' . htmlspecialchars($document['client_siren'] ?: 'non renseigné', ENT_QUOTES, 'UTF-8') . '<br>'
-            . 'Livraison : ' . htmlspecialchars(trim(($document['adresse_livraison'] ?? '') . ', ' . ($document['code_postal_livraison'] ?? '') . ' ' . ($document['ville_livraison'] ?? '')), ENT_QUOTES, 'UTF-8') . '<br>'
-            . (!empty($document['option_tva_debits']) ? 'Option TVA sur les débits : oui' : 'Option TVA sur les débits : non')
-            . '</p></section>'
+            . htmlspecialchars($document['client_email'] ?? '', ENT_QUOTES, 'UTF-8')
+            . (!empty($document['client_siren']) ? '<br>SIREN : ' . htmlspecialchars($document['client_siren'], ENT_QUOTES, 'UTF-8') : '')
+            . '</p></div>'
+            . '<div><h3>Prestation</h3><p>'
+            . 'Date : ' . htmlspecialchars(formatDateFr($document['date_prestation'] ?? null), ENT_QUOTES, 'UTF-8') . '<br>'
+            . 'Lieu : ' . htmlspecialchars(trim(($document['adresse_livraison'] ?? '') . ' ' . ($document['code_postal_livraison'] ?? '') . ' ' . ($document['ville_livraison'] ?? '')), ENT_QUOTES, 'UTF-8') . '<br>'
+            . 'Opération : ' . htmlspecialchars($operationLabel, ENT_QUOTES, 'UTF-8')
+            . (!empty($document['option_tva_debits']) ? '<br>TVA sur les débits' : '')
+            . '</p></div>'
+            . '</section>'
             . $linesHtml
             . '<section class="document-totals"><div>'
             . (!empty($document['note_publique']) ? '<p>' . nl2br(htmlspecialchars($document['note_publique'], ENT_QUOTES, 'UTF-8')) . '</p>' : '')
-            . '</div><dl>'
-            . '<div><dt>Total HT</dt><dd>' . htmlspecialchars(formatPrice($document['total_ht'] ?? 0), ENT_QUOTES, 'UTF-8') . '</dd></div>'
-            . '<div><dt>TVA</dt><dd>' . htmlspecialchars(formatPrice($document['total_tva'] ?? 0), ENT_QUOTES, 'UTF-8') . '</dd></div>'
-            . '<div class="document-total-main"><dt>Total TTC</dt><dd>' . htmlspecialchars(formatPrice($document['total_ttc'] ?? 0), ENT_QUOTES, 'UTF-8') . '</dd></div>'
-            . '</dl></section>'
+            . '</div><dl>' . $totauxHtml . '</dl></section>'
+            . $banqueHtml
+            . $conditionsHtml
             . (!empty($document['mention_legale']) ? '<footer class="document-footer">' . nl2br(htmlspecialchars($document['mention_legale'], ENT_QUOTES, 'UTF-8')) . '</footer>' : '')
             . '</article>';
 
@@ -811,13 +923,41 @@ class FacturationModel
     private static function entrepriseSnapshot(): array
     {
         return [
-            'nom' => 'Vite & Gourmand',
-            'adresse' => 'Bordeaux',
-            'email' => MAIL_FROM,
-            'telephone' => '',
-            'siret' => '',
-            'tva_intracom' => '',
+            'nom'              => siteConfigValue('entreprise_nom',          'Vite & Gourmand'),
+            'siret'            => siteConfigValue('entreprise_siret',        ''),
+            'forme_juridique'  => siteConfigValue('entreprise_forme_juridique', ''),
+            'adresse'          => siteConfigValue('entreprise_adresse',      ''),
+            'code_postal'      => siteConfigValue('entreprise_code_postal',  ''),
+            'ville'            => siteConfigValue('entreprise_ville',        'Bordeaux'),
+            'telephone'        => siteConfigValue('entreprise_telephone',    ''),
+            'email'            => siteConfigValue('entreprise_email',        MAIL_FROM),
+            'tva_intracom'     => siteConfigValue('entreprise_tva_intracom', ''),
+            'iban'             => siteConfigValue('banque_iban',             ''),
+            'bic'              => siteConfigValue('banque_bic',              ''),
+            'nom_banque'       => siteConfigValue('banque_nom_banque',       ''),
+            'regime_tva'       => siteConfigValue('regime_tva',              'assujetti'),
+            'delai_paiement'   => siteConfigValue('delai_paiement_jours',    '30'),
+            'penalites_taux'   => siteConfigValue('penalites_retard_taux',   '12.00'),
+            'indemnite_recouvrement' => siteConfigValue('indemnite_recouvrement', '40.00'),
         ];
+    }
+
+    private static function finalMentionLegale(string $type): string
+    {
+        $key = match ($type) {
+            'ticket'  => 'mention_ticket',
+            'acompte' => 'mention_acompte',
+            default   => 'mention_facture',
+        };
+        $mention = siteConfigValue($key, '');
+        if ($mention !== '') {
+            return $mention;
+        }
+        return match ($type) {
+            'ticket'  => 'Merci pour votre confiance.',
+            'acompte' => "Facture d'acompte. Cet acompte sera déduit de la facture définitive.",
+            default   => "Paiement à réception de facture. Tout retard de paiement entraîne des pénalités au taux légal en vigueur.",
+        };
     }
 
     private static function defaultNote(string $type): string
@@ -829,9 +969,11 @@ class FacturationModel
 
     private static function defaultMention(string $type): string
     {
-        return $type === 'ticket'
-            ? 'Ticket de caisse brouillon - document non finalisé.'
-            : 'Facture brouillon - document non finalisé.';
+        return match ($type) {
+            'ticket'  => 'Brouillon — ticket de caisse non finalisé.',
+            'acompte' => "Brouillon — facture d'acompte non finalisée.",
+            default   => 'Brouillon — facture non finalisée.',
+        };
     }
 
     private static function dateOrToday(string $date): string

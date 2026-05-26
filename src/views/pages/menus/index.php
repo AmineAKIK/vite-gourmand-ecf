@@ -78,7 +78,7 @@ $selectedGuests = max(0, (int)($filters['nb_personnes'] ?? 0));
                         <?php
                             $minimum = (int)($menu['nombre_personne_minimum'] ?? 0);
                             $personnesEstimees = max($selectedGuests, $minimum);
-                            $prixEstime = calculPrixMenu((float)($menu['prix_par_personne'] ?? 0), $personnesEstimees, $minimum);
+                            $prixEstime = round((float)($menu['prix_par_personne'] ?? 0) * $personnesEstimees, 2);
                         ?>
                         <div>
                             <span class="prix-tag"><?= sanitize(formatPrice($menu['prix_par_personne'] ?? 0)) ?></span>

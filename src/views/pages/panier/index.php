@@ -35,7 +35,7 @@
                             </div>
                         </div>
                         <div class="text-end flex-shrink-0">
-                            <div class="fw-bold text-vg"><?= sanitize(formatPrice($item['prix_menu'])) ?></div>
+                            <div class="fw-bold text-vg"><?= sanitize(formatPrice(round((float)$item['prix_par_personne'] * (int)$item['nombre_personne'], 2))) ?></div>
                             <form method="POST" action="/panier/retirer" class="mt-1">
                                 <?= csrfField() ?>
                                 <input type="hidden" name="index" value="<?= $i ?>">
@@ -134,6 +134,36 @@
                     </div>
                 </div>
 
+                <div class="card panier-panel mb-4">
+                    <div class="card-body">
+                        <h2 class="h5 mb-3 checkout-step-title">
+                            <span class="checkout-step-badge">3</span>
+                            <span>
+                                <span class="checkout-step-main">Mode de paiement</span>
+                                <span class="checkout-step-subtitle">Comment souhaitez-vous régler ?</span>
+                            </span>
+                        </h2>
+                        <div class="row g-2">
+                            <?php
+                            $modesActifs = db()->fetchAll("SELECT * FROM mode_paiement WHERE actif = 1 ORDER BY mode_id");
+                            foreach ($modesActifs as $mode):
+                            ?>
+                            <div class="col-12 col-sm-6">
+                                <label class="panier-mode-label d-flex align-items-center gap-2 border rounded p-3 cursor-pointer">
+                                    <input type="radio" name="mode_paiement" value="<?= sanitize($mode['code']) ?>"
+                                           class="form-check-input mt-0" required
+                                           <?= $mode['code'] === 'virement' ? 'checked' : '' ?>>
+                                    <span class="small fw-medium"><?= sanitize($mode['libelle']) ?></span>
+                                    <?php if ($mode['code'] === 'cb_online'): ?>
+                                    <i class="bi bi-shield-lock ms-auto text-success" title="Paiement sécurisé par Stripe"></i>
+                                    <?php endif; ?>
+                                </label>
+                            </div>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="d-grid">
                     <button type="submit" class="btn btn-vg btn-lg" id="btn-finaliser" disabled>
                         <i class="bi bi-cart-check me-2"></i>Finaliser la commande
@@ -149,21 +179,27 @@
                     <h2 class="h5 mb-3">Récapitulatif</h2>
 
                     <?php
-                    $totalMenus = array_sum(array_column($panier, 'prix_menu'));
+                    // Total brut = somme des (prix/pers × nb_personnes) sans réduction
+                    $totalBrut = 0.0;
+                    foreach ($panier as $item) {
+                        $totalBrut += round((float)$item['prix_par_personne'] * (int)$item['nombre_personne'], 2);
+                    }
+                    $totalBrut = round($totalBrut, 2);
                     ?>
 
                     <table class="table table-sm mb-3">
                         <?php foreach ($panier as $item): ?>
+                        <?php $prixLigne = round((float)$item['prix_par_personne'] * (int)$item['nombre_personne'], 2); ?>
                         <tr>
                             <td class="text-muted small"><?= sanitize($item['titre']) ?><br>
-                                <span class="text-muted" style="font-size:.75rem"><?= (int)$item['nombre_personne'] ?> pers.</span>
+                                <span class="text-muted" style="font-size:.75rem"><?= (int)$item['nombre_personne'] ?> pers. · <?= sanitize(formatPrice($item['prix_par_personne'])) ?>/pers.</span>
                             </td>
-                            <td class="text-end fw-medium text-nowrap"><?= sanitize(formatPrice($item['prix_menu'])) ?></td>
+                            <td class="text-end fw-medium text-nowrap"><?= sanitize(formatPrice($prixLigne)) ?></td>
                         </tr>
                         <?php endforeach; ?>
                         <tr class="border-top">
                             <td class="text-muted">Sous-total menus</td>
-                            <td class="text-end fw-medium"><?= sanitize(formatPrice($totalMenus)) ?></td>
+                            <td class="text-end fw-medium"><?= sanitize(formatPrice($totalBrut)) ?></td>
                         </tr>
                         <tr>
                             <td class="text-muted">Livraison</td>
@@ -198,7 +234,8 @@ const codePostalInput = document.getElementById('code_postal_livraison');
 const dateInput       = document.getElementById('date_prestation');
 const heureInput      = document.getElementById('heure_livraison');
 const submitBtn       = document.getElementById('btn-finaliser');
-const totalMenus       = <?= json_encode(array_sum(array_column($panier, 'prix_menu'))) ?>;
+// totalBrut = somme brute sans réduction (correspond à la logique PricingService côté PHP)
+const totalBrut        = <?= json_encode($totalBrut) ?>;
 const reductionSeuil   = <?= json_encode(reductionSeuilMontant()) ?>;
 const reductionTaux    = <?= json_encode(reductionTauxPourcentage() / 100) ?>;
 let reqId = 0;
@@ -240,16 +277,17 @@ async function updateLivraison() {
         if (id !== reqId) return;
         const livraison = parseFloat(data.prix);
         const remiseRow = document.getElementById('recap-remise-row');
+        // Remise calculée sur le total global (pas par ligne) — cohérent avec PricingService
         let remise = 0;
-        if (totalMenus >= reductionSeuil) {
-            remise = totalMenus * reductionTaux;
+        if (reductionSeuil > 0 && totalBrut >= reductionSeuil) {
+            remise = Math.round(totalBrut * reductionTaux * 100) / 100;
             document.getElementById('recap-remise').textContent = '-' + remise.toFixed(2) + ' €';
             remiseRow.style.display = '';
         } else {
             remiseRow.style.display = 'none';
         }
         document.getElementById('recap-livraison').textContent = livraison.toFixed(2) + ' €';
-        document.getElementById('recap-total').textContent = (totalMenus - remise + livraison).toFixed(2) + ' €';
+        document.getElementById('recap-total').textContent = (totalBrut - remise + livraison).toFixed(2) + ' €';
         livraisonOk = true;
         checkForm();
     } catch (e) {
