@@ -2542,6 +2542,22 @@ a:focus {
     align-items: center;
 }
 
+.facturation-line-field {
+    min-width: 0;
+}
+
+.facturation-line-field .form-control {
+    width: 100%;
+}
+
+.facturation-line-label {
+    display: none;
+    margin-bottom: .25rem;
+    color: var(--vg-muted);
+    font-size: .78rem;
+    font-weight: 700;
+}
+
 .facturation-line-head {
     color: var(--vg-muted);
     font-size: .78rem;
@@ -2582,6 +2598,7 @@ a:focus {
 }
 
 .document-preview {
+    width: min(100%, 920px);
     max-width: 920px;
     margin: 0 auto;
     background: #fff;
@@ -2593,6 +2610,7 @@ a:focus {
 }
 
 .document-preview-ticket {
+    width: min(100%, 430px);
     max-width: 430px;
     font-size: .9rem;
 }
@@ -2658,6 +2676,7 @@ a:focus {
 .document-electronic p {
     color: #4B5563;
     font-size: .9rem;
+    overflow-wrap: anywhere;
 }
 
 .document-lines {
@@ -2672,6 +2691,45 @@ a:focus {
 
 .document-preview-ticket .document-lines table {
     min-width: 0;
+}
+
+.document-ticket-lines {
+    display: grid;
+    border-top: 1px solid rgba(17, 24, 39, .1);
+}
+
+.document-ticket-line {
+    display: grid;
+    gap: .35rem;
+    padding: .8rem 0;
+    border-bottom: 1px solid rgba(17, 24, 39, .1);
+}
+
+.document-ticket-line-main {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: .85rem;
+}
+
+.document-ticket-line-main strong {
+    min-width: 0;
+    font-weight: 700;
+}
+
+.document-ticket-line-main span {
+    flex: 0 0 auto;
+    color: var(--vg-text);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.document-ticket-line-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .35rem .65rem;
+    color: var(--vg-muted);
+    font-size: .78rem;
 }
 
 .document-lines th,
@@ -2737,6 +2795,23 @@ a:focus {
         display: none;
     }
 
+    .facturation-line {
+        gap: .75rem;
+        padding: .85rem;
+        border: 1px solid var(--facturation-panel-border);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .42);
+    }
+
+    .facturation-line-label {
+        display: block;
+    }
+
+    .facturation-line-designation {
+        padding-bottom: .15rem;
+        border-bottom: 1px solid rgba(139, 26, 43, .1);
+    }
+
     .facturation-submit {
         align-items: stretch;
         flex-direction: column;
@@ -2755,9 +2830,121 @@ a:focus {
         text-align: left;
     }
 
+    .document-preview {
+        padding: 1.1rem;
+    }
+
+    .document-lines {
+        overflow: visible;
+    }
+
+    .document-lines table,
+    .document-lines thead,
+    .document-lines tbody,
+    .document-lines tr,
+    .document-lines th,
+    .document-lines td {
+        display: block;
+        width: 100%;
+    }
+
+    .document-lines table {
+        min-width: 0;
+        border-collapse: separate;
+        border-spacing: 0;
+    }
+
+    .document-lines thead {
+        display: none;
+    }
+
+    .document-lines tbody {
+        display: grid;
+        gap: .75rem;
+    }
+
+    .document-lines tr {
+        padding: .75rem;
+        border: 1px solid rgba(17, 24, 39, .1);
+        border-radius: 8px;
+        background: rgba(253, 246, 236, .4);
+    }
+
+    .document-lines td {
+        display: flex;
+        align-items: baseline;
+        justify-content: space-between;
+        gap: .75rem;
+        padding: .38rem 0;
+        border-bottom: 1px solid rgba(17, 24, 39, .08);
+        text-align: right !important;
+    }
+
+    .document-lines td::before {
+        content: attr(data-label);
+        flex: 0 0 auto;
+        color: var(--vg-muted);
+        font-size: .78rem;
+        font-weight: 700;
+        text-align: left;
+    }
+
+    .document-lines td:first-child {
+        display: block;
+        padding-top: 0;
+        color: var(--vg-text);
+        font-weight: 700;
+        text-align: left !important;
+    }
+
+    .document-lines td:first-child::before {
+        content: none;
+    }
+
+    .document-lines td:last-child {
+        padding-bottom: 0;
+        border-bottom: 0;
+        color: var(--vg-bordeaux);
+        font-weight: 700;
+    }
+
     .document-totals dl {
         justify-self: stretch;
         min-width: 0;
+    }
+}
+
+@media (max-width: 575px) {
+    .document-preview {
+        padding: .95rem;
+    }
+
+    .document-preview-header {
+        gap: .75rem;
+    }
+
+    .document-brand {
+        font-size: 1.35rem;
+    }
+
+    .document-meta h2 {
+        font-size: 1.45rem;
+    }
+
+    .document-electronic {
+        padding: .8rem;
+    }
+
+    .document-ticket-line-main {
+        align-items: start;
+    }
+
+    .document-ticket-line-meta {
+        font-size: .76rem;
+    }
+
+    .document-totals dl div {
+        gap: .75rem;
     }
 }
 

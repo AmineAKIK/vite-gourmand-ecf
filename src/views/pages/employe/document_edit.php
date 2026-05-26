@@ -131,10 +131,52 @@ $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['
                 <?php foreach ($editableLines as $index => $ligne): ?>
                     <?php $prixUnitaireTtc = $ligne['prix_unitaire_ttc'] ?? ''; ?>
                     <div class="facturation-line">
-                        <input type="text" class="form-control form-control-sm" name="designation[]" value="<?= sanitize($ligne['designation'] ?? '') ?>" placeholder="Désignation">
-                        <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="quantite[]" value="<?= sanitize(formatPriceInput($ligne['quantite'] ?? 1)) ?>" aria-label="Quantité ligne <?= $index + 1 ?>">
-                        <input type="number" step="0.01" class="form-control form-control-sm" name="prix_unitaire_ttc[]" value="<?= sanitize($prixUnitaireTtc === '' ? '' : formatPriceInput($prixUnitaireTtc)) ?>" aria-label="Prix unitaire TTC ligne <?= $index + 1 ?>">
-                        <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="taux_tva[]" value="<?= sanitize(formatPriceInput($ligne['taux_tva'] ?? 10)) ?>" aria-label="Taux TVA ligne <?= $index + 1 ?>">
+                        <div class="facturation-line-field facturation-line-designation">
+                            <label class="facturation-line-label" for="ligne-designation-<?= $index ?>">Désignation</label>
+                            <input
+                                type="text"
+                                class="form-control form-control-sm"
+                                id="ligne-designation-<?= $index ?>"
+                                name="designation[]"
+                                value="<?= sanitize($ligne['designation'] ?? '') ?>"
+                                placeholder="Désignation"
+                            >
+                        </div>
+                        <div class="facturation-line-field">
+                            <label class="facturation-line-label" for="ligne-quantite-<?= $index ?>">Quantité</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                class="form-control form-control-sm"
+                                id="ligne-quantite-<?= $index ?>"
+                                name="quantite[]"
+                                value="<?= sanitize(formatPriceInput($ligne['quantite'] ?? 1)) ?>"
+                            >
+                        </div>
+                        <div class="facturation-line-field">
+                            <label class="facturation-line-label" for="ligne-prix-<?= $index ?>">PU TTC</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                class="form-control form-control-sm"
+                                id="ligne-prix-<?= $index ?>"
+                                name="prix_unitaire_ttc[]"
+                                value="<?= sanitize($prixUnitaireTtc === '' ? '' : formatPriceInput($prixUnitaireTtc)) ?>"
+                            >
+                        </div>
+                        <div class="facturation-line-field">
+                            <label class="facturation-line-label" for="ligne-tva-<?= $index ?>">TVA %</label>
+                            <input
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                class="form-control form-control-sm"
+                                id="ligne-tva-<?= $index ?>"
+                                name="taux_tva[]"
+                                value="<?= sanitize(formatPriceInput($ligne['taux_tva'] ?? 10)) ?>"
+                            >
+                        </div>
                     </div>
                 <?php endforeach; ?>
             </div>

@@ -451,15 +451,32 @@ class FacturationModel
         $operationLabel = self::categorieOperationLabel($document['categorie_operation'] ?? 'mixte');
 
         $rows = '';
+        $ticketRows = '';
         foreach ($lignes as $ligne) {
+            $designation = htmlspecialchars($ligne['designation'] ?? '', ENT_QUOTES, 'UTF-8');
+            $quantite = htmlspecialchars(formatPriceInput($ligne['quantite'] ?? 0), ENT_QUOTES, 'UTF-8');
+            $prixUnitaire = htmlspecialchars(formatPrice($ligne['prix_unitaire_ttc'] ?? 0), ENT_QUOTES, 'UTF-8');
+            $tva = htmlspecialchars(formatPriceInput($ligne['taux_tva'] ?? 0), ENT_QUOTES, 'UTF-8');
+            $totalTtc = htmlspecialchars(formatPrice($ligne['total_ttc'] ?? 0), ENT_QUOTES, 'UTF-8');
+
             $rows .= '<tr>'
-                . '<td>' . htmlspecialchars($ligne['designation'] ?? '', ENT_QUOTES, 'UTF-8') . '</td>'
-                . '<td class="num">' . htmlspecialchars(formatPriceInput($ligne['quantite'] ?? 0), ENT_QUOTES, 'UTF-8') . '</td>'
-                . '<td class="num">' . htmlspecialchars(formatPrice($ligne['prix_unitaire_ttc'] ?? 0), ENT_QUOTES, 'UTF-8') . '</td>'
-                . '<td class="num">' . htmlspecialchars(formatPriceInput($ligne['taux_tva'] ?? 0), ENT_QUOTES, 'UTF-8') . ' %</td>'
-                . '<td class="num">' . htmlspecialchars(formatPrice($ligne['total_ttc'] ?? 0), ENT_QUOTES, 'UTF-8') . '</td>'
+                . '<td data-label="Désignation">' . $designation . '</td>'
+                . '<td data-label="Qté" class="num">' . $quantite . '</td>'
+                . '<td data-label="PU TTC" class="num">' . $prixUnitaire . '</td>'
+                . '<td data-label="TVA" class="num">' . $tva . ' %</td>'
+                . '<td data-label="Total TTC" class="num">' . $totalTtc . '</td>'
                 . '</tr>';
+            $ticketRows .= '<div class="document-ticket-line">'
+                . '<div class="document-ticket-line-main"><strong>' . $designation . '</strong><span>' . $totalTtc . '</span></div>'
+                . '<div class="document-ticket-line-meta"><span>Qté ' . $quantite . '</span><span>PU ' . $prixUnitaire . '</span><span>TVA ' . $tva . ' %</span></div>'
+                . '</div>';
         }
+
+        $linesHtml = $isTicket
+            ? '<div class="document-ticket-lines">' . $ticketRows . '</div>'
+            : '<div class="document-lines"><table><thead><tr>'
+                . '<th>Désignation</th><th class="num">Qté</th><th class="num">PU TTC</th><th class="num">TVA</th><th class="num">Total TTC</th>'
+                . '</tr></thead><tbody>' . $rows . '</tbody></table></div>';
 
         $html = '<article class="document-preview ' . ($isTicket ? 'document-preview-ticket' : '') . '">'
             . '<header class="document-preview-header"><div>'
@@ -486,9 +503,7 @@ class FacturationModel
             . 'Livraison : ' . htmlspecialchars(trim(($document['adresse_livraison'] ?? '') . ', ' . ($document['code_postal_livraison'] ?? '') . ' ' . ($document['ville_livraison'] ?? '')), ENT_QUOTES, 'UTF-8') . '<br>'
             . (!empty($document['option_tva_debits']) ? 'Option TVA sur les débits : oui' : 'Option TVA sur les débits : non')
             . '</p></section>'
-            . '<div class="document-lines"><table><thead><tr>'
-            . '<th>Désignation</th><th class="num">Qté</th><th class="num">PU TTC</th><th class="num">TVA</th><th class="num">Total TTC</th>'
-            . '</tr></thead><tbody>' . $rows . '</tbody></table></div>'
+            . $linesHtml
             . '<section class="document-totals"><div>'
             . (!empty($document['note_publique']) ? '<p>' . nl2br(htmlspecialchars($document['note_publique'], ENT_QUOTES, 'UTF-8')) . '</p>' : '')
             . '</div><dl>'
@@ -647,20 +662,23 @@ class FacturationModel
     {
         return "
             body{margin:0;padding:32px;background:#f7f3ec;color:#111827;font-family:Arial,sans-serif}
-            .document-preview{max-width:920px;margin:0 auto;background:#fff;padding:32px;border:1px solid #ddd}
-            .document-preview-ticket{max-width:430px}
+            .document-preview{width:min(100%,920px);max-width:920px;margin:0 auto;background:#fff;padding:32px;border:1px solid #ddd;box-sizing:border-box}
+            .document-preview-ticket{width:min(100%,430px);max-width:430px}
             .document-preview-header,.document-parties,.document-totals{display:grid;grid-template-columns:1fr 1fr;gap:20px}
             .document-preview-header{border-bottom:2px solid #8B1A2B;padding-bottom:16px}
             .document-brand{margin:0 0 8px;color:#8B1A2B;font-size:24px;font-weight:700}
             address,p{margin:0;line-height:1.45}.document-meta{text-align:right}.document-meta h2{margin:0 0 8px;font-size:28px}
             .document-parties{margin:24px 0}.document-parties h3{margin:0 0 8px;color:#5F6470;font-size:12px;text-transform:uppercase}
-            .document-electronic{margin:24px 0;padding:14px 16px;border:1px solid #ead0d4;background:#FDF6EC}.document-electronic h3{margin:0 0 8px;color:#5F6470;font-size:12px;text-transform:uppercase}.document-electronic p{margin:0;color:#4B5563}
+            .document-electronic{margin:24px 0;padding:14px 16px;border:1px solid #ead0d4;background:#FDF6EC}.document-electronic h3{margin:0 0 8px;color:#5F6470;font-size:12px;text-transform:uppercase}.document-electronic p{margin:0;color:#4B5563;overflow-wrap:anywhere}
             table{width:100%;border-collapse:collapse}th,td{padding:10px 8px;border-bottom:1px solid #e5e7eb}th{color:#5F6470;font-size:12px;text-align:left}
+            .document-ticket-lines{display:grid;border-top:1px solid #e5e7eb}.document-ticket-line{display:grid;gap:6px;padding:12px 0;border-bottom:1px solid #e5e7eb}
+            .document-ticket-line-main{display:flex;align-items:start;justify-content:space-between;gap:14px}.document-ticket-line-main strong{min-width:0}.document-ticket-line-main span{flex:0 0 auto;font-weight:700;white-space:nowrap}
+            .document-ticket-line-meta{display:flex;flex-wrap:wrap;gap:6px 12px;color:#5F6470;font-size:12px}
             .num{text-align:right}.document-totals{margin-top:24px}.document-totals dl{margin:0;justify-self:end;min-width:280px}
             .document-totals dl div{display:flex;justify-content:space-between;gap:24px;padding:6px 0}
             .document-total-main{border-top:2px solid #8B1A2B;color:#8B1A2B;font-weight:700;font-size:18px}
             .document-footer{margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;color:#4B5563;font-size:13px}
-            @media(max-width:700px){body{padding:12px}.document-preview-header,.document-parties,.document-totals{grid-template-columns:1fr}.document-meta{text-align:left}.document-totals dl{justify-self:stretch;min-width:0}}
+            @media(max-width:700px){body{padding:12px}.document-preview{padding:16px}.document-preview-header,.document-parties,.document-totals{grid-template-columns:1fr}.document-meta{text-align:left}.document-totals dl{justify-self:stretch;min-width:0}thead{display:none}table,tbody,tr,td,th{display:block;width:100%}table{min-width:0;border-collapse:separate;border-spacing:0}tbody{display:grid;gap:12px}tr{box-sizing:border-box;padding:12px;border:1px solid #e5e7eb;border-radius:8px;background:#fdf6ec}td{box-sizing:border-box;display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #e5e7eb;text-align:right!important}td:before{content:attr(data-label);flex:0 0 auto;color:#5F6470;font-size:12px;font-weight:700;text-align:left}td:first-child{display:block;padding-top:0;font-weight:700;text-align:left!important}td:first-child:before{content:none}td:last-child{padding-bottom:0;border-bottom:0;color:#8B1A2B;font-weight:700}.document-ticket-line-meta{font-size:12px}}
         ";
     }
 

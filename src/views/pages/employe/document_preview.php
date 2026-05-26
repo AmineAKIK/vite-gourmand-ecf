@@ -105,30 +105,48 @@ $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['
             </p>
         </section>
 
-        <div class="document-lines">
-            <table>
-                <thead>
-                    <tr>
-                        <th>Désignation</th>
-                        <th class="text-end">Qté</th>
-                        <th class="text-end">PU TTC</th>
-                        <th class="text-end">TVA</th>
-                        <th class="text-end">Total TTC</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php foreach ($document['lignes'] ?? [] as $ligne): ?>
+        <?php if ($isTicket): ?>
+            <div class="document-ticket-lines">
+                <?php foreach ($document['lignes'] ?? [] as $ligne): ?>
+                    <div class="document-ticket-line">
+                        <div class="document-ticket-line-main">
+                            <strong><?= sanitize($ligne['designation'] ?? '') ?></strong>
+                            <span><?= sanitize(formatPrice($ligne['total_ttc'] ?? 0)) ?></span>
+                        </div>
+                        <div class="document-ticket-line-meta">
+                            <span>Qté <?= sanitize(formatPriceInput($ligne['quantite'] ?? 0)) ?></span>
+                            <span>PU <?= sanitize(formatPrice($ligne['prix_unitaire_ttc'] ?? 0)) ?></span>
+                            <span>TVA <?= sanitize(formatPriceInput($ligne['taux_tva'] ?? 0)) ?> %</span>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php else: ?>
+            <div class="document-lines">
+                <table>
+                    <thead>
                         <tr>
-                            <td><?= sanitize($ligne['designation'] ?? '') ?></td>
-                            <td class="text-end"><?= sanitize(formatPriceInput($ligne['quantite'] ?? 0)) ?></td>
-                            <td class="text-end"><?= sanitize(formatPrice($ligne['prix_unitaire_ttc'] ?? 0)) ?></td>
-                            <td class="text-end"><?= sanitize(formatPriceInput($ligne['taux_tva'] ?? 0)) ?> %</td>
-                            <td class="text-end"><?= sanitize(formatPrice($ligne['total_ttc'] ?? 0)) ?></td>
+                            <th>Désignation</th>
+                            <th class="text-end">Qté</th>
+                            <th class="text-end">PU TTC</th>
+                            <th class="text-end">TVA</th>
+                            <th class="text-end">Total TTC</th>
                         </tr>
-                    <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($document['lignes'] ?? [] as $ligne): ?>
+                            <tr>
+                                <td data-label="Désignation"><?= sanitize($ligne['designation'] ?? '') ?></td>
+                                <td data-label="Qté" class="text-end"><?= sanitize(formatPriceInput($ligne['quantite'] ?? 0)) ?></td>
+                                <td data-label="PU TTC" class="text-end"><?= sanitize(formatPrice($ligne['prix_unitaire_ttc'] ?? 0)) ?></td>
+                                <td data-label="TVA" class="text-end"><?= sanitize(formatPriceInput($ligne['taux_tva'] ?? 0)) ?> %</td>
+                                <td data-label="Total TTC" class="text-end"><?= sanitize(formatPrice($ligne['total_ttc'] ?? 0)) ?></td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        <?php endif; ?>
 
         <section class="document-totals">
             <div>
