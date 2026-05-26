@@ -134,17 +134,19 @@ $defaultParagraphe = 'Depuis 25 ans, Vite & Gourmand accompagne les particuliers
 
     form.addEventListener('submit', function () { submitted = true; });
 
-    window.addEventListener('beforeunload', function (e) {
-        if (isDirty && !submitted) {
-            e.preventDefault();
-            e.returnValue = '';
-        }
-    });
-
     document.getElementById('btn-annuler').addEventListener('click', function (e) {
-        if (isDirty && !confirm('Des modifications non enregistrées seront perdues. Continuer ?')) {
-            e.preventDefault();
-        }
+        if (!isDirty || submitted) return;
+        e.preventDefault();
+        var target = this.href;
+        var confirmAction = window.vgConfirm || function () { return Promise.resolve(true); };
+        confirmAction({
+            title: 'Quitter sans enregistrer ?',
+            message: 'Des modifications non enregistrées seront perdues.',
+            confirmLabel: 'Quitter',
+            variant: 'warning'
+        }).then(function (ok) {
+            if (ok) window.location.href = target;
+        });
     });
 
     function bindCounter(inputId, countId) {

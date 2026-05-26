@@ -126,6 +126,7 @@ function esc(str) {
 }
 
 let debounceTimer;
+let menusRequestController = null;
 const filtres = document.querySelectorAll('.filtre');
 
 document.getElementById('reset-filtres').addEventListener('click', () => {
@@ -144,6 +145,11 @@ filtres.forEach(f => f.addEventListener('input', () => {
 filtres.forEach(f => f.addEventListener('change', fetchMenus));
 
 function fetchMenus() {
+    if (menusRequestController) {
+        menusRequestController.abort();
+    }
+    menusRequestController = new AbortController();
+    const requestController = menusRequestController;
     const params = new URLSearchParams({
         theme_id:             document.getElementById('filtre-theme').value,
         regime_id:            document.getElementById('filtre-regime').value,
@@ -156,11 +162,12 @@ function fetchMenus() {
     const container = document.getElementById('menus-container');
     container.innerHTML = '<div class="col-12 text-center py-5"><div class="spinner-border text-vg" role="status"><span class="visually-hidden">Chargement...</span></div></div>';
 
-    fetch('/menus?' + params.toString(), {
-        headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    window.vgFetchJson('/menus?' + params.toString(), {
+        signal: requestController.signal
     })
-    .then(r => r.json())
-    .then(menus => {
+    .then(payload => {
+        if (requestController.signal.aborted) return;
+        const menus = Array.isArray(payload) ? payload : (payload.data || []);
         if (menus.length === 0) {
             container.innerHTML = '<div class="col-12 text-center text-muted py-5"><i class="bi bi-search display-4 mb-3 d-block"></i><p>Aucun menu ne correspond à vos critères.</p></div>';
             return;
@@ -205,7 +212,8 @@ function fetchMenus() {
             </div>
         `).join('');
     })
-    .catch(() => {
+    .catch(error => {
+        if (window.vgIsAbortError && window.vgIsAbortError(error)) return;
         container.innerHTML = '<div class="col-12 text-center text-danger py-3">Erreur lors du chargement.</div>';
     });
 }

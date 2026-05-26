@@ -203,6 +203,8 @@ const reductionSeuil   = <?= json_encode(reductionSeuilMontant()) ?>;
 const reductionTaux    = <?= json_encode(reductionTauxPourcentage() / 100) ?>;
 let reqId = 0;
 let livraisonOk = false;
+let livraisonController = null;
+let livraisonDebounceTimer = null;
 
 function checkForm() {
     const date  = dateInput ? dateInput.value.trim() : '';
@@ -217,6 +219,7 @@ async function updateLivraison() {
     const codePostal = codePostalInput ? codePostalInput.value.trim() : '';
 
     if (!adresse || !ville || !codePostal) {
+        if (livraisonController) livraisonController.abort();
         document.getElementById('recap-livraison').textContent = '—';
         document.getElementById('recap-total').textContent = '—';
         livraisonOk = false;
@@ -228,19 +231,13 @@ async function updateLivraison() {
     document.getElementById('recap-total').textContent = '—';
 
     try {
+        if (livraisonController) livraisonController.abort();
+        livraisonController = new AbortController();
         const params = new URLSearchParams({ adresse, ville, code_postal: codePostal });
-        const r = await fetch('/livraison/calcul?' + params.toString(), {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        const data = await window.vgFetchJson('/livraison/calcul?' + params.toString(), {
+            signal: livraisonController.signal
         });
-        const data = await r.json();
         if (id !== reqId) return;
-        if (!r.ok || !data.ok) {
-            document.getElementById('recap-livraison').textContent = data.message || 'Adresse non reconnue';
-            document.getElementById('recap-total').textContent = '—';
-            livraisonOk = false;
-            checkForm();
-            return;
-        }
         const livraison = parseFloat(data.prix);
         const remiseRow = document.getElementById('recap-remise-row');
         let remise = 0;
@@ -256,19 +253,26 @@ async function updateLivraison() {
         livraisonOk = true;
         checkForm();
     } catch (e) {
+        if (window.vgIsAbortError && window.vgIsAbortError(e)) return;
         if (id !== reqId) return;
-        document.getElementById('recap-livraison').textContent = '—';
+        document.getElementById('recap-livraison').textContent = e.message || '—';
         document.getElementById('recap-total').textContent = '—';
         livraisonOk = false;
         checkForm();
     }
 }
 
+function scheduleLivraison() {
+    clearTimeout(livraisonDebounceTimer);
+    livraisonDebounceTimer = setTimeout(updateLivraison, 450);
+}
+
 [adresseInput, villeInput, codePostalInput].forEach(el => {
-    if (el) el.addEventListener('input', updateLivraison);
+    if (el) el.addEventListener('input', scheduleLivraison);
 });
 [dateInput, heureInput].forEach(el => {
     if (el) el.addEventListener('change', checkForm);
 });
+window.addEventListener('load', updateLivraison);
 checkForm();
 </script>

@@ -3704,6 +3704,101 @@ input[type="password"]::-webkit-caps-lock-indicator {
     background-color: var(--vg-creme);
 }
 
+.vg-confirm-dialog {
+    width: min(100% - 1.5rem, 430px);
+    margin-right: auto;
+    margin-left: auto;
+}
+
+.vg-confirm-content {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr);
+    gap: .85rem;
+    padding: 1rem;
+    border: 1px solid rgba(139, 26, 43, .18);
+    box-shadow: 0 24px 70px rgba(17, 24, 39, .28);
+}
+
+.vg-confirm-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.35rem;
+    height: 2.35rem;
+    border-radius: 8px;
+    background: rgba(151, 24, 45, .1);
+    color: var(--vg-bordeaux);
+    font-size: 1.18rem;
+}
+
+.vg-confirm-body {
+    min-width: 0;
+}
+
+.vg-confirm-title {
+    margin: 0 0 .25rem;
+    color: var(--vg-text);
+    font-family: 'Playfair Display', serif;
+    font-size: 1.25rem;
+    font-weight: 700;
+    line-height: 1.18;
+}
+
+.vg-confirm-message {
+    margin: 0;
+    color: var(--vg-muted);
+    font-size: .94rem;
+    line-height: 1.45;
+}
+
+.vg-confirm-actions {
+    display: grid;
+    grid-column: 1 / -1;
+    grid-template-columns: 1fr 1fr;
+    gap: .55rem;
+    padding-top: .2rem;
+}
+
+.vg-confirm-actions .btn {
+    min-height: 40px;
+    white-space: normal;
+}
+
+.vg-confirm-modal--danger .vg-confirm-icon {
+    background: var(--vg-status-danger-bg);
+    color: var(--vg-bordeaux-dark);
+}
+
+.vg-confirm-modal--danger [data-confirm-submit] {
+    background: var(--vg-bordeaux-dark);
+    border-color: var(--vg-bordeaux-dark);
+}
+
+@media (max-width: 360px) {
+    .vg-confirm-dialog {
+        width: min(100% - 1rem, 430px);
+    }
+
+    .vg-confirm-content {
+        gap: .7rem;
+        padding: .85rem;
+    }
+
+    .vg-confirm-icon {
+        width: 2rem;
+        height: 2rem;
+        font-size: 1rem;
+    }
+
+    .vg-confirm-title {
+        font-size: 1.12rem;
+    }
+
+    .vg-confirm-message {
+        font-size: .88rem;
+    }
+}
+
 /* Inputs dans modals et partout */
 .form-control,
 .form-select {

@@ -26,7 +26,7 @@ class MenuController {
                     (int)($m['nombre_personne_minimum'] ?? 0)
                 ),
             ]), MenuModel::getAll($filters));
-            echo json_encode($menus);
+            echo json_encode(['ok' => true, 'data' => $menus]);
             exit;
         }
 

@@ -135,11 +135,13 @@ const submitBtn     = document.querySelector('#form-commande button[type="submit
 const reductionSeuil = <?= json_encode(reductionSeuilMontant()) ?>;
 const reductionTaux = <?= json_encode(reductionTauxPourcentage() / 100) ?>;
 let recapRequestId  = 0;
+let recapController = null;
 
 async function updateRecap() {
     const requestId = ++recapRequestId;
     const opt = menuSelect.options[menuSelect.selectedIndex];
     if (!opt.value) {
+        if (recapController) recapController.abort();
         recapDiv.style.display = 'none';
         if (submitBtn) submitBtn.disabled = false;
         return;
@@ -176,6 +178,7 @@ async function updateRecap() {
     document.getElementById('recap-menu').textContent      = prixMenu.toFixed(2) + ' €';
     document.getElementById('recap-total').textContent     = '—';
     if (!adresse || !ville || !codePostal) {
+        if (recapController) recapController.abort();
         document.getElementById('recap-livraison').textContent = 'Adresse à compléter';
         if (submitBtn) submitBtn.disabled = true;
         return;
@@ -184,36 +187,39 @@ async function updateRecap() {
     if (submitBtn) submitBtn.disabled = true;
 
     try {
+        if (recapController) recapController.abort();
+        recapController = new AbortController();
         const params = new URLSearchParams({
             adresse: adresse,
             ville: ville,
             code_postal: codePostal,
         });
-        const response = await fetch('/livraison/calcul?' + params.toString(), {
-            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        const data = await window.vgFetchJson('/livraison/calcul?' + params.toString(), {
+            signal: recapController.signal
         });
-        const data = await response.json();
         if (requestId !== recapRequestId) return;
-        if (!response.ok || !data.ok) {
-            document.getElementById('recap-livraison').textContent = data.message || 'Adresse non reconnue';
-            document.getElementById('recap-total').textContent     = '—';
-            return;
-        }
         const prixLivraison = parseFloat(data.prix);
         document.getElementById('recap-livraison').textContent = prixLivraison.toFixed(2) + ' €';
         document.getElementById('recap-total').textContent     = (prixMenu + prixLivraison).toFixed(2) + ' €';
         if (submitBtn) submitBtn.disabled = false;
     } catch (e) {
+        if (window.vgIsAbortError && window.vgIsAbortError(e)) return;
         if (requestId !== recapRequestId) return;
-        document.getElementById('recap-livraison').textContent = 'Distance impossible';
+        document.getElementById('recap-livraison').textContent = e.message || 'Distance impossible';
         document.getElementById('recap-total').textContent     = '—';
     }
 }
 
+let recapDebounceTimer = null;
+function scheduleRecap() {
+    clearTimeout(recapDebounceTimer);
+    recapDebounceTimer = setTimeout(updateRecap, 450);
+}
+
 menuSelect.addEventListener('change', updateRecap);
-nbPersonnes.addEventListener('input', updateRecap);
-adresseInput.addEventListener('input', updateRecap);
-villeInput.addEventListener('input', updateRecap);
-codePostalInput.addEventListener('input', updateRecap);
-updateRecap();
+nbPersonnes.addEventListener('input', scheduleRecap);
+adresseInput.addEventListener('input', scheduleRecap);
+villeInput.addEventListener('input', scheduleRecap);
+codePostalInput.addEventListener('input', scheduleRecap);
+window.addEventListener('load', updateRecap);
 </script>
