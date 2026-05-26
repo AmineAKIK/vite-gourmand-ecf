@@ -18,7 +18,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
     <!-- Formulaire de filtres -->
     <div class="filtres-panel commandes-filter-panel p-3 mb-4">
         <form method="GET" action="/employe/commandes" class="commande-filter-form" role="search" aria-label="Filtrer les commandes">
-            <div class="commande-filter-field">
+            <div class="commande-filter-field commande-filter-status">
                 <label for="filtre-statut" class="form-label form-label-sm">Statut</label>
                 <select class="form-select form-select-sm" id="filtre-statut" name="statut" aria-label="Filtrer par statut">
                     <option value="">Tous les statuts (<?= array_sum($statusCounts ?? []) ?>)</option>
@@ -43,7 +43,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                 >
             </div>
 
-            <div class="commande-filter-field">
+            <div class="commande-filter-field commande-filter-period">
                 <label for="filtre-periode" class="form-label form-label-sm">Période</label>
                 <select class="form-select form-select-sm" id="filtre-periode" name="periode" aria-label="Filtrer par période">
                     <?php
@@ -65,7 +65,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                 </select>
             </div>
 
-            <div class="commande-filter-field">
+            <div class="commande-filter-field commande-filter-sort">
                 <label for="filtre-tri" class="form-label form-label-sm">Tri</label>
                 <select class="form-select form-select-sm" id="filtre-tri" name="tri" aria-label="Trier les commandes">
                     <?php

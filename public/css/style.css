@@ -1785,9 +1785,29 @@ a:focus {
 
 .commande-filter-form {
     display: grid;
-    grid-template-columns: minmax(170px, .8fr) minmax(310px, 1.45fr) minmax(170px, .72fr) minmax(170px, .72fr) minmax(310px, .9fr);
-    gap: .75rem;
+    grid-template-columns: minmax(170px, 220px) minmax(260px, 1fr) minmax(170px, 220px) minmax(170px, 220px);
+    grid-template-areas:
+        "status search period sort"
+        ". . actions actions";
+    column-gap: 1rem;
+    row-gap: .85rem;
     align-items: end;
+}
+
+.commande-filter-status {
+    grid-area: status;
+}
+
+.commande-filter-search {
+    grid-area: search;
+}
+
+.commande-filter-period {
+    grid-area: period;
+}
+
+.commande-filter-sort {
+    grid-area: sort;
 }
 
 .commande-filter-field {
@@ -1795,13 +1815,20 @@ a:focus {
 }
 
 .commande-filter-actions {
+    grid-area: actions;
     display: grid;
-    grid-template-columns: minmax(94px, .7fr) minmax(110px, 1fr) minmax(120px, 1fr);
+    grid-template-columns: minmax(104px, .85fr) minmax(118px, 1fr) minmax(132px, 1fr);
     gap: .5rem;
+    justify-self: end;
+    width: min(100%, 390px);
 }
 
 .commande-filter-actions .btn {
     min-height: 34px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding-inline: .75rem;
     white-space: nowrap;
 }
 
@@ -1811,11 +1838,18 @@ a:focus {
 
 .commande-advanced-grid {
     display: grid;
-    grid-template-columns: repeat(5, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
     gap: .75rem;
     margin-top: .75rem;
     padding-top: .75rem;
     border-top: 1px solid var(--commandes-panel-border);
+}
+
+@media (min-width: 1500px) {
+    .commande-filter-form {
+        grid-template-columns: minmax(170px, 220px) minmax(260px, 1fr) minmax(170px, 210px) minmax(170px, 210px) minmax(360px, 390px);
+        grid-template-areas: "status search period sort actions";
+    }
 }
 
 .badge-statut {
@@ -2006,22 +2040,35 @@ a:focus {
     margin-top: .25rem;
 }
 
-@media (max-width: 991px) { /* var(--bp-8col) */
-    .commande-filter-form,
-    .commande-advanced-grid {
-        grid-template-columns: 1fr 1fr;
-    }
-
-    .commande-filter-search,
-    .commande-filter-actions,
-    .commande-advanced-filters {
-        grid-column: 1 / -1;
+@media (max-width: 1199px) {
+    .commande-filter-form {
+        grid-template-columns: 1fr;
+        grid-template-areas:
+            "status"
+            "search"
+            "period"
+            "sort"
+            "actions"
+            "advanced";
     }
 
     .commande-filter-actions {
-        grid-template-columns: repeat(3, minmax(0, 1fr));
+        grid-template-columns: 1fr;
+        justify-self: stretch;
+        width: 100%;
     }
 
+    .commande-advanced-filters {
+        grid-area: advanced;
+        grid-column: auto;
+    }
+
+    .commande-advanced-grid {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 991px) { /* var(--bp-8col) */
     .commandes-accordion .accordion-button {
         padding: .95rem 1.05rem !important;
     }
