@@ -37,7 +37,7 @@ class EmployeController
             'menu_id' => $_GET['menu_id'] ?? '',
             'ville' => $_GET['ville'] ?? '',
             'montant' => $_GET['montant'] ?? '',
-            'tri' => $_GET['tri'] ?? 'date_prestation_asc',
+            'tri' => $_GET['tri'] ?? 'date_prestation_desc',
         ];
         if ($filters['periode'] === '' && ($filters['date_debut'] !== '' || $filters['date_fin'] !== '')) {
             $filters['periode'] = 'custom';

@@ -70,8 +70,8 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                 <select class="form-select form-select-sm" id="filtre-tri" name="tri" aria-label="Trier les commandes">
                     <?php
                     $tris = [
+                        'date_prestation_desc' => 'Prestation récente',
                         'date_prestation_asc' => 'Prestation proche',
-                        'date_prestation_desc' => 'Prestation éloignée',
                         'commande_recente' => 'Plus récentes',
                         'montant_desc' => 'Montant décroissant',
                         'montant_asc' => 'Montant croissant',
@@ -79,7 +79,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                     ];
                     ?>
                     <?php foreach ($tris as $value => $label): ?>
-                        <option value="<?= sanitize($value) ?>" <?= ($filters['tri'] ?? 'date_prestation_asc') === $value ? 'selected' : '' ?>>
+                        <option value="<?= sanitize($value) ?>" <?= ($filters['tri'] ?? 'date_prestation_desc') === $value ? 'selected' : '' ?>>
                             <?= sanitize($label) ?>
                         </option>
                     <?php endforeach; ?>
