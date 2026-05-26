@@ -44,27 +44,27 @@
     <?php endif; ?>
 
     <!-- MÉTRIQUES -->
-    <div class="row g-3 mb-4">
-        <div class="col-6 col-lg-3">
-            <div class="card shadow-sm p-3 text-center h-100 d-flex flex-column justify-content-center" style="border:1px solid rgba(0,0,0,.08);">
+    <div class="dashboard-kpi-grid mb-4">
+        <div class="dashboard-kpi dashboard-kpi-square">
+            <div class="card shadow-sm p-3 text-center h-100 d-flex flex-column justify-content-center">
                 <div class="fw-bold text-vg lh-1 mb-1 fs-3"><?= count($commandesAujourdhui ?? []) ?></div>
                 <div class="text-muted small">Aujourd'hui</div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card shadow-sm p-3 text-center h-100 d-flex flex-column justify-content-center" style="border:1px solid rgba(0,0,0,.08);">
+        <div class="dashboard-kpi dashboard-kpi-square">
+            <div class="card shadow-sm p-3 text-center h-100 d-flex flex-column justify-content-center">
                 <div class="fw-bold text-vg lh-1 mb-1 fs-3"><?= count($commandesSemaine ?? []) ?></div>
                 <div class="text-muted small">Cette semaine</div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card shadow-sm p-3 text-center h-100 d-flex flex-column justify-content-center" style="border:1px solid rgba(0,0,0,.08);">
+        <div class="dashboard-kpi dashboard-kpi-wide">
+            <div class="card shadow-sm p-3 h-100 dashboard-kpi-horizontal">
                 <div class="fw-bold text-vg lh-1 mb-1 fs-3"><?= formatPrice($caSemaine ?? 0) ?></div>
                 <div class="text-muted small">CA cette semaine</div>
             </div>
         </div>
-        <div class="col-6 col-lg-3">
-            <div class="card shadow-sm p-3 text-center h-100 d-flex flex-column justify-content-center" style="border:1px solid rgba(0,0,0,.08);">
+        <div class="dashboard-kpi dashboard-kpi-wide">
+            <div class="card shadow-sm p-3 h-100 dashboard-kpi-horizontal">
                 <div class="fw-bold text-vg lh-1 mb-1 fs-3"><?= count($menusActifs ?? []) ?></div>
                 <div class="text-muted small">Menus actifs</div>
             </div>

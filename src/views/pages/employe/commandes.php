@@ -224,20 +224,50 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                     <?php else: ?>
                                         <div class="commande-doc-list mt-2">
                                             <?php foreach ($documentsCommande as $doc): ?>
-                                                <div class="commande-doc-item">
-                                                    <span>
-                                                        <?= sanitize(ucfirst($doc['type_document'] ?? 'document')) ?>
-                                                        <small><?= sanitize($doc['numero_document'] ?: ($doc['statut'] ?? '')) ?></small>
-                                                    </span>
-                                                    <strong><?= sanitize(formatPrice($doc['total_ttc'] ?? 0)) ?></strong>
-                                                    <?php if (!empty($doc['sent_at'])): ?>
-                                                        <i class="bi bi-envelope-check text-success" title="Envoyé"></i>
-                                                    <?php elseif (!empty($doc['archive_path'])): ?>
-                                                        <i class="bi bi-archive text-muted" title="Archivé"></i>
-                                                    <?php endif; ?>
-                                                    <a href="/employe/document/edit?id=<?= (int)$doc['document_id'] ?>" class="btn btn-link btn-sm">Éditer</a>
-                                                    <a href="/employe/document/apercu?id=<?= (int)$doc['document_id'] ?>" class="btn btn-link btn-sm">Aperçu</a>
-                                                </div>
+                                                <?php
+                                                $docType = $doc['type_document'] ?? 'document';
+                                                $docLabel = $docType === 'ticket' ? 'Ticket' : 'Facture';
+                                                $docIcon = $docType === 'ticket' ? 'bi-receipt' : 'bi-file-earmark-text';
+                                                $docStatut = $doc['statut'] ?? 'brouillon';
+                                                $docStatutLabel = $docStatut === 'finalise' ? 'Finalisé' : ucfirst((string)$docStatut);
+                                                ?>
+                                                <article class="commande-doc-item">
+                                                    <div class="commande-doc-top">
+                                                        <span class="commande-doc-type">
+                                                            <i class="bi <?= sanitize($docIcon) ?>" aria-hidden="true"></i>
+                                                            <?= sanitize($docLabel) ?>
+                                                        </span>
+                                                        <span class="commande-doc-status"><?= sanitize($docStatutLabel) ?></span>
+                                                    </div>
+                                                    <div class="commande-doc-bottom">
+                                                        <strong class="commande-doc-price"><?= sanitize(formatPrice($doc['total_ttc'] ?? 0)) ?></strong>
+                                                        <span class="commande-doc-state-icons">
+                                                            <?php if (!empty($doc['sent_at'])): ?>
+                                                                <i class="bi bi-envelope-check text-success" title="Envoyé" aria-label="Envoyé"></i>
+                                                            <?php elseif (!empty($doc['archive_path'])): ?>
+                                                                <i class="bi bi-archive text-muted" title="Archivé" aria-label="Archivé"></i>
+                                                            <?php endif; ?>
+                                                        </span>
+                                                        <span class="commande-doc-icon-actions">
+                                                            <a
+                                                                href="/employe/document/apercu?id=<?= (int)$doc['document_id'] ?>"
+                                                                class="commande-doc-icon-btn"
+                                                                aria-label="Aperçu <?= sanitize(strtolower($docLabel)) ?>"
+                                                                title="Aperçu"
+                                                            >
+                                                                <i class="bi bi-eye" aria-hidden="true"></i>
+                                                            </a>
+                                                            <a
+                                                                href="/employe/document/edit?id=<?= (int)$doc['document_id'] ?>"
+                                                                class="commande-doc-icon-btn"
+                                                                aria-label="Éditer <?= sanitize(strtolower($docLabel)) ?>"
+                                                                title="Éditer"
+                                                            >
+                                                                <i class="bi bi-pencil" aria-hidden="true"></i>
+                                                            </a>
+                                                        </span>
+                                                    </div>
+                                                </article>
                                             <?php endforeach; ?>
                                         </div>
                                     <?php endif; ?>
@@ -272,20 +302,20 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                                             $remiseMenu = max(0, $brutMenu - (float)($ligne['prix_menu'] ?? 0));
                                                         ?>
                                                         <tr>
-                                                            <td><?= sanitize($ligne['menu_titre'] ?? '') ?></td>
-                                                            <td class="text-end"><?= $nbPersonnes ?></td>
-                                                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($brutMenu)) ?></td>
-                                                            <td class="text-end text-nowrap text-success"><?= $remiseMenu > 0 ? '-' . sanitize(formatPrice($remiseMenu)) : '—' ?></td>
-                                                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($ligne['prix_menu'] ?? 0)) ?></td>
-                                                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($ligne['prix_livraison'] ?? 0)) ?></td>
-                                                            <td class="text-end text-nowrap fw-semibold"><?= sanitize(formatPrice($ligne['prix_total_ligne'] ?? 0)) ?></td>
+                                                            <td data-label="Menu"><?= sanitize($ligne['menu_titre'] ?? '') ?></td>
+                                                            <td data-label="Pers." class="text-end"><?= $nbPersonnes ?></td>
+                                                            <td data-label="Brut" class="text-end text-nowrap"><?= sanitize(formatPrice($brutMenu)) ?></td>
+                                                            <td data-label="Remise" class="text-end text-nowrap text-success"><?= $remiseMenu > 0 ? '-' . sanitize(formatPrice($remiseMenu)) : '—' ?></td>
+                                                            <td data-label="Net menu" class="text-end text-nowrap"><?= sanitize(formatPrice($ligne['prix_menu'] ?? 0)) ?></td>
+                                                            <td data-label="Livraison" class="text-end text-nowrap"><?= sanitize(formatPrice($ligne['prix_livraison'] ?? 0)) ?></td>
+                                                            <td data-label="Total" class="text-end text-nowrap fw-semibold"><?= sanitize(formatPrice($ligne['prix_total_ligne'] ?? 0)) ?></td>
                                                         </tr>
                                                     <?php endforeach; ?>
                                                 </tbody>
                                                 <tfoot>
                                                     <tr>
-                                                        <th colspan="6" class="text-end">Total commande</th>
-                                                        <th class="text-end text-nowrap text-vg"><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></th>
+                                                        <th colspan="6" class="text-end commande-total-label">Total commande</th>
+                                                        <th class="text-end text-nowrap text-vg commande-total-value"><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></th>
                                                     </tr>
                                                 </tfoot>
                                             </table>
