@@ -1160,10 +1160,11 @@ a:focus {
     justify-content: space-between;
     flex-wrap: wrap;
     gap: .75rem;
-    background: #fff;
-    border: 1px solid var(--vg-border);
+    background: var(--vg-creme);
+    border: 1px solid rgba(139,26,43,.2);
     border-radius: 8px;
     padding: .875rem 1rem;
+    box-shadow: 0 1px 4px rgba(139,26,43,.08);
 }
 .employe-card-info {
     display: flex;
