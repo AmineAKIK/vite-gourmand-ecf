@@ -5,6 +5,16 @@ $statutsMiseAJour = array_values(array_filter(
     $statuts,
     fn($statut) => $statut !== commandeCancelledStatus()
 ));
+$buildFilterUrl = static function (array $overrides = []) use ($filters): string {
+    $params = array_merge($filters, $overrides);
+    $params = array_filter($params, static fn($value) => $value !== null && $value !== '');
+    return '/employe/commandes' . ($params ? '?' . http_build_query($params) : '');
+};
+$activeAdvancedFilters = !empty($filters['date_debut'])
+    || !empty($filters['date_fin'])
+    || !empty($filters['menu_id'])
+    || !empty($filters['ville'])
+    || !empty($filters['montant']);
 ?>
 <div class="container py-5 commandes-page">
 
@@ -12,37 +22,133 @@ $statutsMiseAJour = array_values(array_filter(
 
     <!-- Formulaire de filtres -->
     <div class="filtres-panel commandes-filter-panel p-3 mb-4">
-        <form method="GET" action="/employe/commandes" class="row g-2 align-items-end" role="search" aria-label="Filtrer les commandes">
-            <div class="col-12 col-lg-3">
-                <label for="filtre-statut" class="form-label form-label-sm">Statut</label>
-                <select class="form-select form-select-sm" id="filtre-statut" name="statut" aria-label="Filtrer par statut">
-                    <option value="">— Tous les statuts —</option>
-                    <?php foreach ($statuts as $s): ?>
-                        <option value="<?= sanitize($s) ?>" <?= ($filters['statut'] ?? '') === $s ? 'selected' : '' ?>>
-                            <?= sanitize(commandeStatusLabel($s)) ?>
+        <nav class="commande-status-filters mb-3" aria-label="Filtrer par statut">
+            <a
+                href="<?= sanitize($buildFilterUrl(['statut' => ''])) ?>"
+                class="commande-status-filter <?= empty($filters['statut']) ? 'is-active' : '' ?>"
+                <?= empty($filters['statut']) ? 'aria-current="page"' : '' ?>
+            >
+                <span>Toutes</span>
+                <strong><?= array_sum($statusCounts ?? []) ?></strong>
+            </a>
+            <?php foreach ($statuts as $s): ?>
+                <a
+                    href="<?= sanitize($buildFilterUrl(['statut' => $s])) ?>"
+                    class="commande-status-filter <?= ($filters['statut'] ?? '') === $s ? 'is-active' : '' ?>"
+                    <?= ($filters['statut'] ?? '') === $s ? 'aria-current="page"' : '' ?>
+                >
+                    <span><?= sanitize(commandeStatusLabel($s)) ?></span>
+                    <strong><?= (int)($statusCounts[$s] ?? 0) ?></strong>
+                </a>
+            <?php endforeach; ?>
+        </nav>
+
+        <form method="GET" action="/employe/commandes" class="commande-filter-form" role="search" aria-label="Filtrer les commandes">
+            <input type="hidden" name="statut" value="<?= sanitize($filters['statut'] ?? '') ?>">
+
+            <div class="commande-filter-field commande-filter-search">
+                <label for="filtre-q" class="form-label form-label-sm">Recherche globale</label>
+                <input
+                    type="text"
+                    class="form-control form-control-sm"
+                    id="filtre-q"
+                    name="q"
+                    value="<?= sanitize($filters['q'] ?? '') ?>"
+                    placeholder="Client, email, téléphone, commande..."
+                    aria-label="Rechercher une commande"
+                >
+            </div>
+
+            <div class="commande-filter-field">
+                <label for="filtre-periode" class="form-label form-label-sm">Période</label>
+                <select class="form-select form-select-sm" id="filtre-periode" name="periode" aria-label="Filtrer par période">
+                    <?php
+                    $periodes = [
+                        '' => 'Toutes les dates',
+                        'today' => "Aujourd'hui",
+                        'tomorrow' => 'Demain',
+                        'week' => '7 prochains jours',
+                        'upcoming' => 'À venir',
+                        'past' => 'Passées',
+                        'custom' => 'Dates personnalisées',
+                    ];
+                    ?>
+                    <?php foreach ($periodes as $value => $label): ?>
+                        <option value="<?= sanitize($value) ?>" <?= ($filters['periode'] ?? '') === $value ? 'selected' : '' ?>>
+                            <?= sanitize($label) ?>
                         </option>
                     <?php endforeach; ?>
                 </select>
             </div>
-            <div class="col-12 col-lg-5">
-                <label for="filtre-client" class="form-label form-label-sm">Rechercher un client</label>
-                <input
-                    type="text"
-                    class="form-control form-control-sm"
-                    id="filtre-client"
-                    name="client"
-                    value="<?= sanitize($filters['client'] ?? '') ?>"
-                    placeholder="Nom ou prénom…"
-                    aria-label="Rechercher par nom de client"
-                >
+
+            <div class="commande-filter-field">
+                <label for="filtre-tri" class="form-label form-label-sm">Tri</label>
+                <select class="form-select form-select-sm" id="filtre-tri" name="tri" aria-label="Trier les commandes">
+                    <?php
+                    $tris = [
+                        'date_prestation_asc' => 'Prestation proche',
+                        'date_prestation_desc' => 'Prestation éloignée',
+                        'commande_recente' => 'Plus récentes',
+                        'montant_desc' => 'Montant décroissant',
+                        'montant_asc' => 'Montant croissant',
+                        'client_asc' => 'Client A-Z',
+                    ];
+                    ?>
+                    <?php foreach ($tris as $value => $label): ?>
+                        <option value="<?= sanitize($value) ?>" <?= ($filters['tri'] ?? 'date_prestation_asc') === $value ? 'selected' : '' ?>>
+                            <?= sanitize($label) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
             </div>
-            <div class="col-12 col-lg-4 d-flex gap-2">
-                <button type="submit" class="btn btn-vg btn-sm flex-grow-1" aria-label="Appliquer les filtres">
+
+            <div class="commande-filter-actions">
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#filtres-avances-commandes" aria-expanded="<?= $activeAdvancedFilters ? 'true' : 'false' ?>" aria-controls="filtres-avances-commandes">
+                    <i class="bi bi-sliders me-1"></i>Avancés
+                </button>
+                <button type="submit" class="btn btn-vg btn-sm" aria-label="Appliquer les filtres">
                     <i class="bi bi-funnel me-1"></i>Filtrer
                 </button>
-                <a href="/employe/commandes" class="btn btn-outline-secondary btn-sm btn-reset-filters flex-grow-1">
+                <a href="/employe/commandes" class="btn btn-outline-secondary btn-sm btn-reset-filters">
                     Réinitialiser
                 </a>
+            </div>
+
+            <div class="collapse commande-advanced-filters <?= $activeAdvancedFilters ? 'show' : '' ?>" id="filtres-avances-commandes">
+                <div class="commande-advanced-grid">
+                    <div>
+                        <label for="filtre-date-debut" class="form-label form-label-sm">Du</label>
+                        <input type="date" class="form-control form-control-sm" id="filtre-date-debut" name="date_debut" value="<?= sanitize($filters['date_debut'] ?? '') ?>">
+                    </div>
+                    <div>
+                        <label for="filtre-date-fin" class="form-label form-label-sm">Au</label>
+                        <input type="date" class="form-control form-control-sm" id="filtre-date-fin" name="date_fin" value="<?= sanitize($filters['date_fin'] ?? '') ?>">
+                    </div>
+                    <div>
+                        <label for="filtre-menu" class="form-label form-label-sm">Menu</label>
+                        <select class="form-select form-select-sm" id="filtre-menu" name="menu_id" aria-label="Filtrer par menu">
+                            <option value="">Tous les menus</option>
+                            <?php foreach ($menus as $menu): ?>
+                                <option value="<?= (int)$menu['menu_id'] ?>" <?= (string)($filters['menu_id'] ?? '') === (string)$menu['menu_id'] ? 'selected' : '' ?>>
+                                    <?= sanitize($menu['titre'] ?? '') ?>
+                                </option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                    <div>
+                        <label for="filtre-ville" class="form-label form-label-sm">Ville</label>
+                        <input type="text" class="form-control form-control-sm" id="filtre-ville" name="ville" value="<?= sanitize($filters['ville'] ?? '') ?>" placeholder="Bordeaux, Pessac...">
+                    </div>
+                    <div>
+                        <label for="filtre-montant" class="form-label form-label-sm">Montant</label>
+                        <select class="form-select form-select-sm" id="filtre-montant" name="montant" aria-label="Filtrer par montant">
+                            <option value="">Tous les montants</option>
+                            <option value="moins_250" <?= ($filters['montant'] ?? '') === 'moins_250' ? 'selected' : '' ?>>Moins de 250 €</option>
+                            <option value="250_1000" <?= ($filters['montant'] ?? '') === '250_1000' ? 'selected' : '' ?>>250 à 1 000 €</option>
+                            <option value="plus_1000" <?= ($filters['montant'] ?? '') === 'plus_1000' ? 'selected' : '' ?>>Plus de 1 000 €</option>
+                        </select>
+                    </div>
+                </div>
             </div>
         </form>
     </div>

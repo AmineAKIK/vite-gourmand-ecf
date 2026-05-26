@@ -1783,6 +1783,94 @@ a:focus {
     box-shadow: 0 8px 22px rgba(44, 44, 44, .05);
 }
 
+.commande-status-filters {
+    display: flex;
+    gap: .5rem;
+    overflow-x: auto;
+    padding-bottom: .25rem;
+    scrollbar-width: thin;
+}
+
+.commande-status-filter {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+    min-height: 38px;
+    padding: .45rem .75rem;
+    border: 1px solid var(--commandes-panel-border);
+    border-radius: 999px;
+    color: var(--vg-muted);
+    background: rgba(255, 255, 255, .45);
+    font-size: .86rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background-color .2s ease, border-color .2s ease, color .2s ease;
+}
+
+.commande-status-filter strong {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.45rem;
+    min-height: 1.45rem;
+    padding: 0 .35rem;
+    border-radius: 999px;
+    background: rgba(139, 26, 43, .08);
+    color: var(--vg-bordeaux);
+    font-size: .75rem;
+    line-height: 1;
+}
+
+.commande-status-filter:hover,
+.commande-status-filter.is-active {
+    border-color: var(--vg-bordeaux);
+    background: var(--vg-bordeaux);
+    color: #fff;
+}
+
+.commande-status-filter:hover strong,
+.commande-status-filter.is-active strong {
+    background: rgba(255, 255, 255, .2);
+    color: #fff;
+}
+
+.commande-filter-form {
+    display: grid;
+    grid-template-columns: minmax(240px, 1.5fr) minmax(170px, .65fr) minmax(180px, .72fr) minmax(300px, .9fr);
+    gap: .75rem;
+    align-items: end;
+}
+
+.commande-filter-field {
+    min-width: 0;
+}
+
+.commande-filter-actions {
+    display: grid;
+    grid-template-columns: minmax(94px, .7fr) minmax(110px, 1fr) minmax(120px, 1fr);
+    gap: .5rem;
+}
+
+.commande-filter-actions .btn {
+    min-height: 34px;
+    white-space: nowrap;
+}
+
+.commande-advanced-filters {
+    grid-column: 1 / -1;
+}
+
+.commande-advanced-grid {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: .75rem;
+    margin-top: .75rem;
+    padding-top: .75rem;
+    border-top: 1px solid var(--commandes-panel-border);
+}
+
 .badge-statut {
     display: inline-flex;
     align-items: center;
@@ -1972,6 +2060,21 @@ a:focus {
 }
 
 @media (max-width: 991px) { /* var(--bp-8col) */
+    .commande-filter-form,
+    .commande-advanced-grid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .commande-filter-search,
+    .commande-filter-actions,
+    .commande-advanced-filters {
+        grid-column: 1 / -1;
+    }
+
+    .commande-filter-actions {
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+
     .commandes-accordion .accordion-button {
         padding: .95rem 1.05rem !important;
     }
@@ -2046,6 +2149,29 @@ a:focus {
     .commande-cancel-form .btn {
         justify-self: stretch;
         min-width: 0;
+    }
+}
+
+@media (max-width: 575px) {
+    .commandes-filter-panel {
+        padding: .85rem !important;
+    }
+
+    .commande-status-filters {
+        margin-right: -.85rem;
+        padding-right: .85rem;
+    }
+
+    .commande-status-filter {
+        min-height: 36px;
+        padding: .4rem .65rem;
+        font-size: .82rem;
+    }
+
+    .commande-filter-form,
+    .commande-advanced-grid,
+    .commande-filter-actions {
+        grid-template-columns: 1fr;
     }
 }
 

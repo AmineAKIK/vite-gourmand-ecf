@@ -142,12 +142,101 @@ class CommandeModel {
         if (!empty($filters['statut'])) {
             $sql .= " AND c.statut = ?"; $params[] = $filters['statut'];
         }
-        if (!empty($filters['client'])) {
+        if (!empty($filters['q'])) {
+            $sql .= " AND (
+                u.nom LIKE ?
+                OR u.prenom LIKE ?
+                OR u.email LIKE ?
+                OR u.telephone LIKE ?
+                OR c.numero_commande LIKE ?
+                OR c.ville_livraison LIKE ?
+                OR EXISTS (
+                    SELECT 1
+                    FROM commande_ligne cl_search
+                    JOIN menu m_search ON m_search.menu_id = cl_search.menu_id
+                    WHERE cl_search.commande_id = c.commande_id
+                    AND m_search.titre LIKE ?
+                )
+            )";
+            $searchLike = '%' . $filters['q'] . '%';
+            array_push($params, ...array_fill(0, 7, $searchLike));
+        }
+        if (!empty($filters['client']) && empty($filters['q'])) {
             $sql .= " AND (u.nom LIKE ? OR u.prenom LIKE ? OR u.email LIKE ?)";
             $clientLike = '%' . $filters['client'] . '%';
             array_push($params, ...array_fill(0, 3, $clientLike));
         }
-        $sql .= " GROUP BY c.commande_id ORDER BY c.date_commande DESC";
+        if (!empty($filters['periode'])) {
+            $today = date('Y-m-d');
+            switch ($filters['periode']) {
+                case 'today':
+                    $sql .= " AND c.date_prestation = ?";
+                    $params[] = $today;
+                    break;
+                case 'tomorrow':
+                    $sql .= " AND c.date_prestation = ?";
+                    $params[] = date('Y-m-d', strtotime('+1 day'));
+                    break;
+                case 'week':
+                    $sql .= " AND c.date_prestation BETWEEN ? AND ?";
+                    $params[] = $today;
+                    $params[] = date('Y-m-d', strtotime('+7 days'));
+                    break;
+                case 'upcoming':
+                    $sql .= " AND c.date_prestation >= ?";
+                    $params[] = $today;
+                    break;
+                case 'past':
+                    $sql .= " AND c.date_prestation < ?";
+                    $params[] = $today;
+                    break;
+            }
+        }
+        if (($filters['periode'] ?? '') === 'custom') {
+            if (!empty($filters['date_debut'])) {
+                $sql .= " AND c.date_prestation >= ?";
+                $params[] = $filters['date_debut'];
+            }
+            if (!empty($filters['date_fin'])) {
+                $sql .= " AND c.date_prestation <= ?";
+                $params[] = $filters['date_fin'];
+            }
+        }
+        if (!empty($filters['menu_id'])) {
+            $sql .= " AND EXISTS (
+                SELECT 1
+                FROM commande_ligne cl_filter
+                WHERE cl_filter.commande_id = c.commande_id
+                AND cl_filter.menu_id = ?
+            )";
+            $params[] = (int)$filters['menu_id'];
+        }
+        if (!empty($filters['ville'])) {
+            $sql .= " AND c.ville_livraison LIKE ?";
+            $params[] = '%' . $filters['ville'] . '%';
+        }
+        if (!empty($filters['montant'])) {
+            switch ($filters['montant']) {
+                case 'moins_250':
+                    $sql .= " AND c.prix_total < 250";
+                    break;
+                case '250_1000':
+                    $sql .= " AND c.prix_total BETWEEN 250 AND 1000";
+                    break;
+                case 'plus_1000':
+                    $sql .= " AND c.prix_total > 1000";
+                    break;
+            }
+        }
+        $orderBy = match ($filters['tri'] ?? '') {
+            'date_prestation_desc' => 'c.date_prestation DESC, c.date_commande DESC',
+            'commande_recente' => 'c.date_commande DESC',
+            'montant_desc' => 'c.prix_total DESC, c.date_prestation ASC',
+            'montant_asc' => 'c.prix_total ASC, c.date_prestation ASC',
+            'client_asc' => 'u.nom ASC, u.prenom ASC, c.date_prestation ASC',
+            default => 'c.date_prestation ASC, c.date_commande DESC',
+        };
+        $sql .= " GROUP BY c.commande_id ORDER BY $orderBy";
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();

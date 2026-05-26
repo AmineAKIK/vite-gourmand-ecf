@@ -29,12 +29,34 @@ class EmployeController
     public function commandes(): void
     {
         $filters = [
-            'statut' => $_GET['statut'] ?? null,
-            'client' => $_GET['client'] ?? null,
+            'statut' => $_GET['statut'] ?? '',
+            'q' => $_GET['q'] ?? ($_GET['client'] ?? ''),
+            'periode' => $_GET['periode'] ?? '',
+            'date_debut' => $_GET['date_debut'] ?? '',
+            'date_fin' => $_GET['date_fin'] ?? '',
+            'menu_id' => $_GET['menu_id'] ?? '',
+            'ville' => $_GET['ville'] ?? '',
+            'montant' => $_GET['montant'] ?? '',
+            'tri' => $_GET['tri'] ?? 'date_prestation_asc',
         ];
+        if ($filters['periode'] === '' && ($filters['date_debut'] !== '' || $filters['date_fin'] !== '')) {
+            $filters['periode'] = 'custom';
+        }
         $commandes = CommandeModel::getAll($filters);
         $statuts   = commandeStatuses();
-        view('pages/employe/commandes', compact('commandes', 'filters', 'statuts'));
+        $menus      = MenuModel::getAll();
+
+        $statusFilters = $filters;
+        $statusFilters['statut'] = '';
+        $statusCounts = array_fill_keys($statuts, 0);
+        foreach (CommandeModel::getAll($statusFilters) as $commande) {
+            $statut = $commande['statut'] ?? '';
+            if (array_key_exists($statut, $statusCounts)) {
+                $statusCounts[$statut]++;
+            }
+        }
+
+        view('pages/employe/commandes', compact('commandes', 'filters', 'statuts', 'menus', 'statusCounts'));
     }
 
     public function updateStatut(): void
