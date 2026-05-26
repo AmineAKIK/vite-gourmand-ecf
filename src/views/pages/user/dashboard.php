@@ -1,4 +1,4 @@
-<?php $pageTitle = 'Mon compte - Vite & Gourmand'; ?>
+<?php $pageTitle = buildPageTitle('Mon compte'); ?>
 <div class="container py-5 account-page">
     <h1 class="mb-4">Bonjour, <?= sanitize($userFull['prenom']) ?> !</h1>
 

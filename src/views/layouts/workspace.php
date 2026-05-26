@@ -3,9 +3,16 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?? 'Vite & Gourmand' ?></title>
+    <title><?= sanitize($pageTitle ?? buildPageTitle()) ?></title>
     <link rel="icon" type="image/png" href="/favicon.png">
     <?php $cspNonce = $GLOBALS['csp_nonce'] ?? ''; ?>
+    <style nonce="<?= $cspNonce ?>">
+        :root {
+            --vg-bordeaux: <?= sanitize(siteColor('couleur_principale')) ?>;
+            --vg-or:       <?= sanitize(siteColor('couleur_secondaire')) ?>;
+            --vg-creme:    <?= sanitize(siteColor('couleur_fond')) ?>;
+        }
+    </style>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="preload" as="style" id="fonts-preload" href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap">
@@ -41,7 +48,7 @@
         <!-- Logo / brand -->
         <div class="workspace-brand">
             <a href="/" class="workspace-brand-link" aria-label="Retour au site">
-                <span class="workspace-brand-name">Vite &amp; Gourmand</span>
+                <span class="workspace-brand-name"><?= sanitize(siteName()) ?></span>
             </a>
             <span class="workspace-role-badge">
                 <?= hasRole(ROLE_ADMIN) ? 'Admin' : 'Employé' ?>
@@ -92,7 +99,7 @@
         <!-- Navbar mobile (< lg) -->
         <nav class="d-lg-none navbar navbar-expand-lg navbar-dark bg-vg sticky-top" aria-label="Navigation back-office mobile">
             <div class="container">
-                <span class="navbar-brand fw-bold mb-0">Vite &amp; Gourmand</span>
+                <span class="navbar-brand fw-bold mb-0"><?= sanitize(siteName()) ?></span>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#workspaceMobileNav" aria-controls="workspaceMobileNav" aria-expanded="false" aria-label="Ouvrir le menu">
                     <span class="navbar-toggler-icon"></span>
                 </button>

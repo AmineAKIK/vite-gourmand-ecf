@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Images du site - Vite & Gourmand';
+$pageTitle = buildPageTitle('Images du site');
 ?>
 <div class="container py-5">
 

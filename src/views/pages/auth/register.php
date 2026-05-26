@@ -1,4 +1,4 @@
-<?php $pageTitle = 'Inscription - Vite & Gourmand'; ?>
+<?php $pageTitle = buildPageTitle('Inscription'); ?>
 <div class="container py-5" style="max-width:600px">
     <div class="card shadow-sm p-4" style="border:1px solid rgba(0,0,0,.08);">
         <h1 class="h3 text-center mb-4 fw-bold">Créer un compte</h1>

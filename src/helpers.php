@@ -390,7 +390,7 @@ function hashPassword(string $password): string {
 }
 
 function deliveryPricingLabel(): string {
-    return 'Livraison gratuite à Bordeaux. '
+    return 'Livraison gratuite à ' . siteCity() . '. '
         . formatPrice(livraisonBase())
         . ' + '
         . number_format(livraisonKm(), 2, ',', ' ')
@@ -462,7 +462,7 @@ function geocodeVille(string $ville): ?array {
     $url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=fr&q=' . urlencode($ville . ', France');
     $context = stream_context_create([
         'http' => [
-            'header' => "User-Agent: ViteGourmand/1.0\r\n",
+            'header' => "User-Agent: " . siteName() . "/1.0\r\n",
             'timeout' => 2,
         ],
     ]);
@@ -535,7 +535,7 @@ function resolveAdresseLivraison(string $adresse, string $ville, string $codePos
     $url = 'https://api-adresse.data.gouv.fr/search/?limit=1&q=' . urlencode($query);
     $context = stream_context_create([
         'http' => [
-            'header' => "User-Agent: ViteGourmand/1.0\r\n",
+            'header' => "User-Agent: " . siteName() . "/1.0\r\n",
             'timeout' => 3,
         ],
     ]);
@@ -577,8 +577,8 @@ function resolveAdresseLivraison(string $adresse, string $ville, string $codePos
 
 function distanceKmDepuisCoordonnees(float $lat2, float $lon2): float {
     $earthRadius = 6371;
-    $lat1 = deg2rad(BORDEAUX_LAT);
-    $lon1 = deg2rad(BORDEAUX_LNG);
+    $lat1 = deg2rad(siteLat());
+    $lon1 = deg2rad(siteLng());
     $lat2 = deg2rad($lat2);
     $lon2 = deg2rad($lon2);
     $deltaLat = $lat2 - $lat1;
@@ -606,8 +606,8 @@ function calculPrixLivraisonAdresse(string $adresse, string $ville, string $code
     }
 
     if (
-        normalizeLocationLabel($resolved['city'] ?? '') === 'bordeaux'
-        && in_array((string)($resolved['postcode'] ?? ''), ['33000', '33100', '33200', '33300', '33800'], true)
+        normalizeLocationLabel($resolved['city'] ?? '') === siteCityNormalized()
+        && in_array((string)($resolved['postcode'] ?? ''), sitePostalCodesFree(), true)
     ) {
         return 0.0;
     }
@@ -615,6 +615,80 @@ function calculPrixLivraisonAdresse(string $adresse, string $ville, string $code
     $distanceKm = distanceKmDepuisCoordonnees((float)$resolved['lat'], (float)$resolved['lng']);
     return round(livraisonBase() + (livraisonKm() * $distanceKm), 2);
 }
+
+// ---------------------------------------------------------------------------
+// White-label helpers — source de vérité : table site_config
+// ---------------------------------------------------------------------------
+
+function siteName(): string {
+    return siteConfigValue('site_nom', 'Mon Traiteur');
+}
+
+function siteSlogan(): string {
+    return siteConfigValue('site_slogan', 'Traiteur');
+}
+
+function siteDomain(): string {
+    return siteConfigValue('site_domaine', $_SERVER['HTTP_HOST'] ?? 'localhost');
+}
+
+function siteEmail(): string {
+    return siteConfigValue('site_email', MAIL_FROM);
+}
+
+function sitePhone(): string {
+    return siteConfigValue('site_telephone', '');
+}
+
+function siteAddress(): string {
+    return siteConfigValue('site_adresse', '');
+}
+
+function sitePostalCode(): string {
+    return siteConfigValue('site_code_postal', '');
+}
+
+function siteCity(): string {
+    return siteConfigValue('site_ville', '');
+}
+
+function siteFullAddress(): string {
+    $parts = array_filter([siteAddress(), sitePostalCode() . ' ' . siteCity()]);
+    return implode(', ', $parts);
+}
+
+function siteColor(string $key = 'couleur_principale'): string {
+    $defaults = [
+        'couleur_principale' => '#8B1A2B',
+        'couleur_secondaire' => '#D4A843',
+        'couleur_fond'       => '#FDF6EC',
+    ];
+    return siteConfigValue($key, $defaults[$key] ?? '#333333');
+}
+
+function siteLat(): float {
+    return (float)siteConfigValue('livraison_lat', BORDEAUX_LAT);
+}
+
+function siteLng(): float {
+    return (float)siteConfigValue('livraison_lng', BORDEAUX_LNG);
+}
+
+function sitePostalCodesFree(): array {
+    $raw = siteConfigValue('livraison_codes_postaux_gratuits', '33000,33100,33200,33300,33800');
+    return array_filter(array_map('trim', explode(',', $raw)));
+}
+
+function siteCityNormalized(): string {
+    return normalizeLocationLabel(siteCity() ?: 'bordeaux');
+}
+
+function buildPageTitle(string $section = ''): string {
+    $name = siteName();
+    return $section ? $section . ' — ' . $name : $name;
+}
+
+// ---------------------------------------------------------------------------
 
 function siteConfigValue(string $key, string|float|int $default): string {
     static $config = null;

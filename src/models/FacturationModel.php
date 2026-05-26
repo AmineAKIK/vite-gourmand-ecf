@@ -490,7 +490,7 @@ class FacturationModel
         $vendeurAdresse = trim($vendeurAdresse, ', ');
 
         $vendeurHtml = '<p class="document-brand">'
-            . htmlspecialchars($entreprise['nom'] ?? 'Vite & Gourmand', ENT_QUOTES, 'UTF-8')
+            . htmlspecialchars($entreprise['nom'] ?? siteName(), ENT_QUOTES, 'UTF-8')
             . '</p><address>';
         if ($vendeurAdresse) {
             $vendeurHtml .= htmlspecialchars($vendeurAdresse, ENT_QUOTES, 'UTF-8') . '<br>';
@@ -772,25 +772,27 @@ class FacturationModel
 
     private static function archiveCss(): string
     {
+        $c1   = siteColor('couleur_principale');
+        $fond = siteColor('couleur_fond');
         return "
             body{margin:0;padding:32px;background:#f7f3ec;color:#111827;font-family:Arial,sans-serif}
             .document-preview{width:min(100%,920px);max-width:920px;margin:0 auto;background:#fff;padding:32px;border:1px solid #ddd;box-sizing:border-box}
             .document-preview-ticket{width:min(100%,430px);max-width:430px}
             .document-preview-header,.document-parties,.document-totals{display:grid;grid-template-columns:1fr 1fr;gap:20px}
-            .document-preview-header{border-bottom:2px solid #8B1A2B;padding-bottom:16px}
-            .document-brand{margin:0 0 8px;color:#8B1A2B;font-size:24px;font-weight:700}
+            .document-preview-header{border-bottom:2px solid {$c1};padding-bottom:16px}
+            .document-brand{margin:0 0 8px;color:{$c1};font-size:24px;font-weight:700}
             address,p{margin:0;line-height:1.45}.document-meta{text-align:right}.document-meta h2{margin:0 0 8px;font-size:28px}
             .document-parties{margin:24px 0}.document-parties h3{margin:0 0 8px;color:#5F6470;font-size:12px;text-transform:uppercase}
-            .document-electronic{margin:24px 0;padding:14px 16px;border:1px solid #ead0d4;background:#FDF6EC}.document-electronic h3{margin:0 0 8px;color:#5F6470;font-size:12px;text-transform:uppercase}.document-electronic p{margin:0;color:#4B5563;overflow-wrap:anywhere}
+            .document-electronic{margin:24px 0;padding:14px 16px;border:1px solid #ead0d4;background:{$fond}}.document-electronic h3{margin:0 0 8px;color:#5F6470;font-size:12px;text-transform:uppercase}.document-electronic p{margin:0;color:#4B5563;overflow-wrap:anywhere}
             table{width:100%;border-collapse:collapse}th,td{padding:10px 8px;border-bottom:1px solid #e5e7eb}th{color:#5F6470;font-size:12px;text-align:left}
             .document-ticket-lines{display:grid;border-top:1px solid #e5e7eb}.document-ticket-line{display:grid;gap:6px;padding:12px 0;border-bottom:1px solid #e5e7eb}
             .document-ticket-line-main{display:flex;align-items:start;justify-content:space-between;gap:14px}.document-ticket-line-main strong{min-width:0}.document-ticket-line-main span{flex:0 0 auto;font-weight:700;white-space:nowrap}
             .document-ticket-line-meta{display:flex;flex-wrap:wrap;gap:6px 12px;color:#5F6470;font-size:12px}
             .num{text-align:right}.document-totals{margin-top:24px}.document-totals dl{margin:0;justify-self:end;min-width:280px}
             .document-totals dl div{display:flex;justify-content:space-between;gap:24px;padding:6px 0}
-            .document-total-main{border-top:2px solid #8B1A2B;color:#8B1A2B;font-weight:700;font-size:18px}
+            .document-total-main{border-top:2px solid {$c1};color:{$c1};font-weight:700;font-size:18px}
             .document-footer{margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;color:#4B5563;font-size:13px}
-            @media(max-width:700px){body{padding:12px}.document-preview{padding:16px}.document-preview-header,.document-parties,.document-totals{grid-template-columns:1fr}.document-meta{text-align:left}.document-totals dl{justify-self:stretch;min-width:0}thead{display:none}table,tbody,tr,td,th{display:block;width:100%}table{min-width:0;border-collapse:separate;border-spacing:0}tbody{display:grid;gap:12px}tr{box-sizing:border-box;padding:12px;border:1px solid #e5e7eb;border-radius:8px;background:#fdf6ec}td{box-sizing:border-box;display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #e5e7eb;text-align:right!important}td:before{content:attr(data-label);flex:0 0 auto;color:#5F6470;font-size:12px;font-weight:700;text-align:left}td:first-child{display:block;padding-top:0;font-weight:700;text-align:left!important}td:first-child:before{content:none}td:last-child{padding-bottom:0;border-bottom:0;color:#8B1A2B;font-weight:700}.document-ticket-line-meta{font-size:12px}}
+            @media(max-width:700px){body{padding:12px}.document-preview{padding:16px}.document-preview-header,.document-parties,.document-totals{grid-template-columns:1fr}.document-meta{text-align:left}.document-totals dl{justify-self:stretch;min-width:0}thead{display:none}table,tbody,tr,td,th{display:block;width:100%}table{min-width:0;border-collapse:separate;border-spacing:0}tbody{display:grid;gap:12px}tr{box-sizing:border-box;padding:12px;border:1px solid #e5e7eb;border-radius:8px;background:{$fond}}td{box-sizing:border-box;display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #e5e7eb;text-align:right!important}td:before{content:attr(data-label);flex:0 0 auto;color:#5F6470;font-size:12px;font-weight:700;text-align:left}td:first-child{display:block;padding-top:0;font-weight:700;text-align:left!important}td:first-child:before{content:none}td:last-child{padding-bottom:0;border-bottom:0;color:{$c1};font-weight:700}.document-ticket-line-meta{font-size:12px}}
         ";
     }
 
@@ -923,7 +925,7 @@ class FacturationModel
     private static function entrepriseSnapshot(): array
     {
         return [
-            'nom'              => siteConfigValue('entreprise_nom',          'Vite & Gourmand'),
+            'nom'              => siteConfigValue('entreprise_nom',          siteName()),
             'siret'            => siteConfigValue('entreprise_siret',        ''),
             'forme_juridique'  => siteConfigValue('entreprise_forme_juridique', ''),
             'adresse'          => siteConfigValue('entreprise_adresse',      ''),

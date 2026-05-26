@@ -1,6 +1,6 @@
 <?php
 // src/views/pages/contact.php
-$pageTitle = 'Contact - Vite & Gourmand';
+$pageTitle = buildPageTitle('Contact');
 ?>
 <div class="container py-5 contact-page">
     <div class="row justify-content-center">
@@ -74,11 +74,11 @@ $pageTitle = 'Contact - Vite & Gourmand';
             <div class="card contact-panel p-4 h-100">
                 <h2 class="h5 fw-bold mb-3"><i class="bi bi-geo-alt me-2 text-vg"></i>Nous trouver</h2>
                 <address class="small">
-                    <strong>Vite &amp; Gourmand</strong><br>
-                    12 rue des Capucins<br>
-                    33000 Bordeaux<br>
-                    <i class="bi bi-telephone me-1"></i>05 56 00 12 34<br>
-                    <i class="bi bi-envelope me-1"></i>contact@vitegourmand.fr
+                    <strong><?= sanitize(siteName()) ?></strong><br>
+                    <?php if (siteAddress()): ?><?= sanitize(siteAddress()) ?><br><?php endif; ?>
+                    <?php if (sitePostalCode() || siteCity()): ?><?= sanitize(sitePostalCode() . ' ' . siteCity()) ?><br><?php endif; ?>
+                    <?php if (sitePhone()): ?><i class="bi bi-telephone me-1"></i><?= sanitize(sitePhone()) ?><br><?php endif; ?>
+                    <?php if (siteEmail()): ?><i class="bi bi-envelope me-1"></i><?= sanitize(siteEmail()) ?><?php endif; ?>
                 </address>
                 <hr>
                 <h2 class="h6 fw-bold mb-2"><i class="bi bi-clock me-2 text-vg"></i>Délai de réponse</h2>

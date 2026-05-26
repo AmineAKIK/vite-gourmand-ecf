@@ -107,7 +107,7 @@ class EmployeController
         $commande        = CommandeModel::getById((int)$document['commande_id']);
         $tauxTvaOptions  = PricingService::tauxTvaActifs();
         $siretMissing    = trim((string)siteConfigValue('entreprise_siret', '')) === '';
-        $pageTitle       = ucfirst($document['type_document']) . ' brouillon - Vite & Gourmand';
+        $pageTitle       = ucfirst($document['type_document']) . ' brouillon — ' . siteName();
         view('pages/employe/document_edit', compact('document', 'commande', 'tauxTvaOptions', 'siretMissing', 'pageTitle'));
     }
 
@@ -216,7 +216,7 @@ class EmployeController
         }
 
         $commande = CommandeModel::getById((int)$document['commande_id']);
-        $pageTitle = 'Aperçu ' . $document['type_document'] . ' - Vite & Gourmand';
+        $pageTitle = buildPageTitle('Aperçu ' . $document['type_document']);
         view('pages/employe/document_preview', compact('document', 'commande', 'pageTitle'));
     }
 

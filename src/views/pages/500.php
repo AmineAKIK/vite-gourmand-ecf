@@ -1,6 +1,6 @@
 <?php
 // src/views/pages/500.php
-$pageTitle = 'Erreur serveur - Vite & Gourmand';
+$pageTitle = buildPageTitle('Erreur serveur');
 ?>
 <div class="container py-5 text-center">
     <div class="row justify-content-center">

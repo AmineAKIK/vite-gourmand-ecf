@@ -1,6 +1,6 @@
 <?php
 // src/views/pages/auth/forgot.php
-$pageTitle = 'Mot de passe oublié - Vite & Gourmand';
+$pageTitle = buildPageTitle('Mot de passe oublié');
 ?>
 <div class="container py-5" style="max-width:480px">
     <div class="card shadow-sm p-4" style="border:1px solid rgba(0,0,0,.08);">

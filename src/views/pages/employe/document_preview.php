@@ -55,7 +55,7 @@ $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['
     <article class="document-preview <?= $isTicket ? 'document-preview-ticket' : '' ?>">
         <header class="document-preview-header">
             <div>
-                <p class="document-brand">Vite &amp; Gourmand</p>
+                <p class="document-brand"><?= sanitize($entreprise['nom'] ?? siteName()) ?></p>
                 <address>
                     <?= sanitize($entreprise['adresse'] ?? 'Bordeaux') ?><br>
                     <?= sanitize($entreprise['email'] ?? MAIL_FROM) ?>

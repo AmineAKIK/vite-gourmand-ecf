@@ -1,6 +1,6 @@
 <?php
 // src/views/pages/employe/menus.php
-$pageTitle = 'Gestion des menus - Vite & Gourmand';
+$pageTitle = buildPageTitle('Gestion des menus');
 
 /* Regroupe les plats par catégorie pour les checkboxes */
 $platsByCategorie = [];

@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Paramètres — Vite & Gourmand';
+$pageTitle = buildPageTitle('Paramètres');
 $cspNonce  = $GLOBALS['csp_nonce'] ?? '';
 
 $cfg = function(string $cle, string $default = '') use ($config): string {
@@ -20,6 +20,148 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
 <div class="params-page row g-4">
 
     <!-- ============================================================
+         SECTION 0 — Identité & charte graphique (WHITE-LABEL)
+    ============================================================ -->
+    <div class="col-12" id="identite">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">
+                <i class="bi bi-palette me-2 text-vg"></i>Identité &amp; charte graphique
+            </div>
+            <div class="card-body">
+                <form method="POST" action="/admin/parametres/modifier">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="_section" value="identite">
+
+                    <h6 class="fw-semibold mb-3">Informations du site</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-medium" for="site_nom">Nom du traiteur <span class="text-danger">*</span></label>
+                            <input type="text" class="form-control" id="site_nom" name="site_nom"
+                                   value="<?= $cfg('site_nom', 'Mon Traiteur') ?>" maxlength="100" required>
+                            <div class="form-text">Affiché dans la navbar, les emails, les factures.</div>
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-medium" for="site_slogan">Slogan / accroche</label>
+                            <input type="text" class="form-control" id="site_slogan" name="site_slogan"
+                                   value="<?= $cfg('site_slogan') ?>" maxlength="100"
+                                   placeholder="Ex : Traiteur lyonnais depuis 1998">
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-medium" for="site_domaine">Nom de domaine</label>
+                            <input type="text" class="form-control" id="site_domaine" name="site_domaine"
+                                   value="<?= $cfg('site_domaine') ?>" maxlength="100"
+                                   placeholder="montraiteur.fr">
+                            <div class="form-text">Affiché dans les mentions légales et CGV.</div>
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-medium" for="site_email">Email de contact public</label>
+                            <input type="email" class="form-control" id="site_email" name="site_email"
+                                   value="<?= $cfg('site_email') ?>" maxlength="150">
+                        </div>
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-medium" for="site_telephone">Téléphone public</label>
+                            <input type="tel" class="form-control" id="site_telephone" name="site_telephone"
+                                   value="<?= $cfg('site_telephone') ?>" maxlength="30">
+                        </div>
+                    </div>
+
+                    <h6 class="fw-semibold mb-3">Adresse du traiteur</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label fw-medium" for="site_adresse">Adresse (rue)</label>
+                            <input type="text" class="form-control" id="site_adresse" name="site_adresse"
+                                   value="<?= $cfg('site_adresse') ?>" maxlength="150">
+                        </div>
+                        <div class="col-6 col-lg-2">
+                            <label class="form-label fw-medium" for="site_code_postal">Code postal</label>
+                            <input type="text" class="form-control" id="site_code_postal" name="site_code_postal"
+                                   value="<?= $cfg('site_code_postal') ?>" maxlength="5" inputmode="numeric">
+                        </div>
+                        <div class="col-6 col-lg-4">
+                            <label class="form-label fw-medium" for="site_ville">Ville</label>
+                            <input type="text" class="form-control" id="site_ville" name="site_ville"
+                                   value="<?= $cfg('site_ville') ?>" maxlength="80">
+                        </div>
+                    </div>
+
+                    <h6 class="fw-semibold mb-3">Charte graphique</h6>
+                    <div class="row g-3 mb-4">
+                        <div class="col-6 col-lg-2">
+                            <label class="form-label fw-medium" for="couleur_principale">Couleur principale</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color" id="couleur_principale_picker"
+                                       value="<?= $cfg('couleur_principale', '#8B1A2B') ?>"
+                                       oninput="document.getElementById('couleur_principale').value=this.value">
+                                <input type="text" class="form-control" id="couleur_principale" name="couleur_principale"
+                                       value="<?= $cfg('couleur_principale', '#8B1A2B') ?>" maxlength="7"
+                                       pattern="^#[0-9A-Fa-f]{6}$"
+                                       oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value))document.getElementById('couleur_principale_picker').value=this.value">
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-2">
+                            <label class="form-label fw-medium" for="couleur_secondaire">Couleur secondaire</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color" id="couleur_secondaire_picker"
+                                       value="<?= $cfg('couleur_secondaire', '#D4A843') ?>"
+                                       oninput="document.getElementById('couleur_secondaire').value=this.value">
+                                <input type="text" class="form-control" id="couleur_secondaire" name="couleur_secondaire"
+                                       value="<?= $cfg('couleur_secondaire', '#D4A843') ?>" maxlength="7"
+                                       pattern="^#[0-9A-Fa-f]{6}$"
+                                       oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value))document.getElementById('couleur_secondaire_picker').value=this.value">
+                            </div>
+                        </div>
+                        <div class="col-6 col-lg-2">
+                            <label class="form-label fw-medium" for="couleur_fond">Couleur de fond</label>
+                            <div class="input-group">
+                                <input type="color" class="form-control form-control-color" id="couleur_fond_picker"
+                                       value="<?= $cfg('couleur_fond', '#FDF6EC') ?>"
+                                       oninput="document.getElementById('couleur_fond').value=this.value">
+                                <input type="text" class="form-control" id="couleur_fond" name="couleur_fond"
+                                       value="<?= $cfg('couleur_fond', '#FDF6EC') ?>" maxlength="7"
+                                       pattern="^#[0-9A-Fa-f]{6}$"
+                                       oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value))document.getElementById('couleur_fond_picker').value=this.value">
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6 align-self-end">
+                            <div class="p-3 rounded d-flex gap-3 align-items-center" style="background:var(--vg-creme)">
+                                <span class="fw-semibold" style="color:var(--vg-bordeaux)">Aperçu en temps réel →</span>
+                                <span class="badge" id="preview-badge" style="background:var(--vg-bordeaux);color:#fff">Couleur principale</span>
+                                <span class="badge" id="preview-badge2" style="background:var(--vg-or);color:#fff">Couleur secondaire</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <h6 class="fw-semibold mb-3">Coordonnées GPS du dépôt (livraison)</h6>
+                    <div class="row g-3 mb-3">
+                        <div class="col-6 col-lg-2">
+                            <label class="form-label fw-medium" for="livraison_lat">Latitude</label>
+                            <input type="number" step="0.0001" class="form-control" id="livraison_lat" name="livraison_lat"
+                                   value="<?= $cfg('livraison_lat', '44.8378') ?>" min="-90" max="90">
+                        </div>
+                        <div class="col-6 col-lg-2">
+                            <label class="form-label fw-medium" for="livraison_lng">Longitude</label>
+                            <input type="number" step="0.0001" class="form-control" id="livraison_lng" name="livraison_lng"
+                                   value="<?= $cfg('livraison_lng', '-0.5792') ?>" min="-180" max="180">
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label fw-medium" for="livraison_codes_postaux_gratuits">Codes postaux livraison gratuite</label>
+                            <input type="text" class="form-control" id="livraison_codes_postaux_gratuits"
+                                   name="livraison_codes_postaux_gratuits"
+                                   value="<?= $cfg('livraison_codes_postaux_gratuits', '33000,33100,33200,33300,33800') ?>"
+                                   maxlength="500" placeholder="33000,33100,33200">
+                            <div class="form-text">Séparés par des virgules. Livraison gratuite pour ces codes postaux de la ville principale.</div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-vg">
+                        <i class="bi bi-save me-1"></i>Enregistrer l'identité
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ============================================================
          SECTION 1 — Informations entreprise
     ============================================================ -->
     <div class="col-12" id="entreprise">
@@ -36,7 +178,7 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                         <div class="col-12 col-lg-6">
                             <label class="form-label fw-medium" for="entreprise_nom">Nom commercial</label>
                             <input type="text" class="form-control" id="entreprise_nom" name="entreprise_nom"
-                                   value="<?= $cfg('entreprise_nom', 'Vite & Gourmand') ?>" maxlength="100">
+                                   value="<?= $cfg('entreprise_nom', siteName()) ?>" maxlength="100">
                         </div>
                         <div class="col-12 col-lg-3">
                             <label class="form-label fw-medium" for="entreprise_siret">
@@ -445,5 +587,26 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
     }
     seuil.addEventListener('input', update);
     taux.addEventListener('input', update);
+}());
+
+// Live preview couleurs charte graphique
+(function () {
+    function bindColor(inputId, pickerId, cssVar, previewId) {
+        var input  = document.getElementById(inputId);
+        var picker = document.getElementById(pickerId);
+        var badge  = previewId ? document.getElementById(previewId) : null;
+        if (!input) return;
+        function apply(val) {
+            if (/^#[0-9A-Fa-f]{6}$/.test(val)) {
+                document.documentElement.style.setProperty(cssVar, val);
+                if (badge) badge.style.background = val;
+            }
+        }
+        input.addEventListener('input', function () { apply(this.value); });
+        if (picker) picker.addEventListener('input', function () { apply(this.value); });
+    }
+    bindColor('couleur_principale', 'couleur_principale_picker', '--vg-bordeaux', 'preview-badge');
+    bindColor('couleur_secondaire', 'couleur_secondaire_picker', '--vg-or', 'preview-badge2');
+    bindColor('couleur_fond',       'couleur_fond_picker',       '--vg-creme', null);
 }());
 </script>

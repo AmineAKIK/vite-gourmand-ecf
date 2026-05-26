@@ -1,5 +1,5 @@
 <?php
-$pageTitle = sanitize($menu['titre']) . ' - Vite & Gourmand';
+$pageTitle = buildPageTitle(sanitize($menu['titre']));
 $prixParPersonne = (float)($menu['prix_par_personne'] ?? 0);
 $nombrePersonneMinimum = (int)($menu['nombre_personne_minimum'] ?? 1);
 $prixMinimum = $prixParPersonne * $nombrePersonneMinimum;

@@ -1,4 +1,4 @@
-<?php $pageTitle = 'Votre panier - Vite & Gourmand'; ?>
+<?php $pageTitle = buildPageTitle('Votre panier'); ?>
 <div class="container py-5 panier-page" style="max-width:900px">
 
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">

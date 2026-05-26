@@ -1,6 +1,6 @@
 <?php
 // src/views/pages/auth/login.php
-$pageTitle = 'Connexion - Vite & Gourmand';
+$pageTitle = buildPageTitle('Connexion');
 ?>
 <div class="container py-5" style="max-width:450px">
     <div class="card shadow-sm p-4" style="border:1px solid rgba(0,0,0,.08);">

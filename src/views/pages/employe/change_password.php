@@ -1,4 +1,4 @@
-<?php $pageTitle = 'Changer mon mot de passe — Vite & Gourmand'; ?>
+<?php $pageTitle = buildPageTitle('Changer mon mot de passe'); ?>
 
 <div class="container py-5" style="max-width:480px">
     <div class="card shadow-sm p-4" style="border:1px solid rgba(0,0,0,.08);">

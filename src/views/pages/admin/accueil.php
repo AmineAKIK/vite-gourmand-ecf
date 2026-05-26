@@ -1,12 +1,12 @@
 <?php
-$pageTitle = "Personnaliser l'accueil — Vite & Gourmand";
+$pageTitle = buildPageTitle("Personnaliser l'accueil");
 $cspNonce  = $GLOBALS['csp_nonce'] ?? '';
 
 $cfg = function(string $cle, string $default = '') use ($config): string {
     return sanitize($config[$cle] ?? $default);
 };
 
-$defaultParagraphe = 'Depuis 25 ans, Vite & Gourmand accompagne les particuliers et les professionnels avec une cuisine traiteur généreuse, raffinée et préparée à Bordeaux.';
+$defaultParagraphe = '';
 ?>
 
 <?php partial('partials/page_title_bar', ['icon' => 'bi-brush', 'title' => "Personnaliser l'accueil"]); ?>

@@ -23,8 +23,8 @@ class CommandeController {
 
         $distance = distanceKmDepuisCoordonnees((float)$adresseResolue['lat'], (float)$adresseResolue['lng']);
         $prix = (
-            normalizeLocationLabel($adresseResolue['city'] ?? '') === 'bordeaux'
-            && in_array((string)($adresseResolue['postcode'] ?? ''), ['33000', '33100', '33200', '33300', '33800'], true)
+            normalizeLocationLabel($adresseResolue['city'] ?? '') === siteCityNormalized()
+            && in_array((string)($adresseResolue['postcode'] ?? ''), sitePostalCodesFree(), true)
         ) ? 0.0 : round(livraisonBase() + (livraisonKm() * $distance), 2);
         echo json_encode([
             'ok' => true,

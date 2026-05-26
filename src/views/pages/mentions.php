@@ -1,6 +1,18 @@
 <?php
 // src/views/pages/mentions.php
-$pageTitle = 'Mentions légales - Vite & Gourmand';
+$pageTitle = buildPageTitle('Mentions légales');
+
+$nom      = siteConfigValue('entreprise_nom',          siteName());
+$forme    = siteConfigValue('entreprise_forme_juridique', '');
+$adresse  = siteConfigValue('entreprise_adresse',       siteAddress());
+$cp       = siteConfigValue('entreprise_code_postal',   sitePostalCode());
+$ville    = siteConfigValue('entreprise_ville',         siteCity());
+$tel      = siteConfigValue('entreprise_telephone',     sitePhone());
+$email    = siteConfigValue('entreprise_email',         siteEmail());
+$siret    = siteConfigValue('entreprise_siret',         '');
+$tvaIntra = siteConfigValue('entreprise_tva_intracom',  '');
+$domaine  = siteDomain();
+$nomFull  = trim($nom . ($forme ? ' ' . $forme : ''));
 ?>
 <div class="container py-5">
     <div class="row justify-content-center">
@@ -14,37 +26,30 @@ $pageTitle = 'Mentions légales - Vite & Gourmand';
             </nav>
 
             <h1 class="fw-bold mb-4">Mentions légales</h1>
-            <p class="text-muted small">Dernière mise à jour : 1er janvier 2025</p>
 
             <hr class="mb-4">
 
             <section class="mb-5" aria-labelledby="editeur">
                 <h2 id="editeur" class="h4 fw-bold text-vg">1. Éditeur du site</h2>
-                <p>Le site <strong>vitegourmand.fr</strong> est édité par :</p>
+                <p>Le site <strong><?= sanitize($domaine) ?></strong> est édité par :</p>
                 <address>
-                    <strong>Vite &amp; Gourmand SARL</strong><br>
-                    12 rue des Capucins<br>
-                    33000 Bordeaux — France<br>
-                    Tél. : 05 56 00 12 34<br>
-                    Email : contact@vitegourmand.fr<br>
-                    <br>
-                    <strong>SIRET :</strong> 812 345 678 00023<br>
-                    <strong>RCS Bordeaux :</strong> 812 345 678<br>
-                    <strong>Capital social :</strong> 10 000 €<br>
-                    <strong>TVA intracommunautaire :</strong> FR 12 812345678<br>
-                    <br>
-                    Directrice de la publication : <strong>Julie Mercier</strong>
+                    <strong><?= sanitize($nomFull) ?></strong><br>
+                    <?php if ($adresse): ?><?= sanitize($adresse) ?><br><?php endif; ?>
+                    <?php if ($cp || $ville): ?><?= sanitize(trim($cp . ' ' . $ville)) ?> — France<br><?php endif; ?>
+                    <?php if ($tel): ?>Tél. : <?= sanitize($tel) ?><br><?php endif; ?>
+                    <?php if ($email): ?>Email : <?= sanitize($email) ?><br><?php endif; ?>
+                    <?php if ($siret): ?><br><strong>SIRET :</strong> <?= sanitize($siret) ?><br><?php endif; ?>
+                    <?php if ($tvaIntra): ?><strong>TVA intracommunautaire :</strong> <?= sanitize($tvaIntra) ?><br><?php endif; ?>
                 </address>
             </section>
 
             <section class="mb-5" aria-labelledby="hebergeur">
                 <h2 id="hebergeur" class="h4 fw-bold text-vg">2. Hébergeur</h2>
                 <address>
-                    <strong>OVHcloud</strong><br>
-                    2 rue Kellermann<br>
-                    59100 Roubaix — France<br>
-                    Tél. : 1007 (service client OVH)<br>
-                    Site : <a href="https://www.ovhcloud.com" rel="noopener noreferrer" target="_blank">www.ovhcloud.com</a>
+                    <strong>Railway</strong><br>
+                    340 Pine Street, Suite 1802<br>
+                    San Francisco, CA 94104 — États-Unis<br>
+                    Site : <a href="https://railway.app" rel="noopener noreferrer" target="_blank">railway.app</a>
                 </address>
             </section>
 
@@ -52,26 +57,26 @@ $pageTitle = 'Mentions légales - Vite & Gourmand';
                 <h2 id="propriete" class="h4 fw-bold text-vg">3. Propriété intellectuelle</h2>
                 <p>
                     L'ensemble du contenu de ce site (textes, images, logos, photographies, vidéos, etc.)
-                    est la propriété exclusive de <strong>Vite &amp; Gourmand SARL</strong> ou de ses partenaires,
+                    est la propriété exclusive de <strong><?= sanitize($nomFull) ?></strong> ou de ses partenaires,
                     et est protégé par le droit d'auteur conformément aux articles L.111-1 et suivants du
                     Code de la propriété intellectuelle.
                 </p>
                 <p>
                     Toute reproduction, représentation, modification, publication ou adaptation de tout ou
                     partie des éléments du site, quel que soit le moyen ou le procédé utilisé, est interdite
-                    sans l'autorisation écrite préalable de Vite &amp; Gourmand.
+                    sans l'autorisation écrite préalable de <?= sanitize($nom) ?>.
                 </p>
             </section>
 
             <section class="mb-5" aria-labelledby="responsabilite">
                 <h2 id="responsabilite" class="h4 fw-bold text-vg">4. Responsabilité</h2>
                 <p>
-                    Vite &amp; Gourmand s'efforce de maintenir les informations publiées sur ce site exactes
+                    <?= sanitize($nom) ?> s'efforce de maintenir les informations publiées sur ce site exactes
                     et à jour. Cependant, l'entreprise ne peut garantir l'exactitude, la précision ou
                     l'exhaustivité des informations mises à disposition sur ce site.
                 </p>
                 <p>
-                    En conséquence, Vite &amp; Gourmand décline toute responsabilité pour tout dommage
+                    En conséquence, <?= sanitize($nom) ?> décline toute responsabilité pour tout dommage
                     résultant de l'utilisation des informations contenues sur ce site ou de l'accès à
                     des sites tiers via des liens hypertextes.
                 </p>
@@ -96,7 +101,9 @@ $pageTitle = 'Mentions légales - Vite & Gourmand';
                     Elles ne sont jamais cédées à des tiers à des fins commerciales.
                 </p>
                 <p>
-                    <strong>Responsable du traitement :</strong> Julie Mercier — contact@vitegourmand.fr<br>
+                    <?php if ($email): ?>
+                    <strong>Responsable du traitement :</strong> <?= sanitize($nom) ?> — <?= sanitize($email) ?><br>
+                    <?php endif; ?>
                     <strong>Durée de conservation :</strong> 3 ans à compter de la dernière commande.<br>
                     <strong>Réclamations :</strong> vous pouvez adresser une réclamation à la
                     <a href="https://www.cnil.fr" rel="noopener noreferrer" target="_blank">CNIL</a>.
@@ -116,7 +123,7 @@ $pageTitle = 'Mentions légales - Vite & Gourmand';
                 <h2 id="droit" class="h4 fw-bold text-vg">7. Droit applicable</h2>
                 <p>
                     Les présentes mentions légales sont régies par le droit français. En cas de litige,
-                    et à défaut de résolution amiable, les tribunaux compétents de <strong>Bordeaux</strong>
+                    et à défaut de résolution amiable, les tribunaux compétents de <strong><?= sanitize($ville ?: 'France') ?></strong>
                     seront saisis.
                 </p>
             </section>

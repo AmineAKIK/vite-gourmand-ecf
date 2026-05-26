@@ -1,4 +1,4 @@
-<?php $pageTitle = 'Tableau de bord — Vite & Gourmand'; ?>
+<?php $pageTitle = buildPageTitle('Tableau de bord'); ?>
 
 <div class="container py-4 workspace-dashboard">
 

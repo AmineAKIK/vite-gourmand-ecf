@@ -1,6 +1,6 @@
 <?php
 // src/views/pages/admin/stats.php
-$pageTitle = 'Statistiques CA - Vite & Gourmand';
+$pageTitle = buildPageTitle('Statistiques CA');
 
 $isAssujetti  = ($regimeTva ?? 'assujetti') === 'assujetti';
 

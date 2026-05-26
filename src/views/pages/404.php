@@ -1,6 +1,6 @@
 <?php
 // src/views/pages/404.php
-$pageTitle = 'Page introuvable - Vite & Gourmand';
+$pageTitle = buildPageTitle('Page introuvable');
 ?>
 <div class="container py-5 text-center">
     <div class="row justify-content-center">

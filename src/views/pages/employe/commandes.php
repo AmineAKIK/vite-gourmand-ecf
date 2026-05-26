@@ -1,6 +1,6 @@
 <?php
 // src/views/pages/employe/commandes.php
-$pageTitle = 'Gestion des commandes - Vite & Gourmand';
+$pageTitle = buildPageTitle('Gestion des commandes');
 $statutsMiseAJour = array_values(array_filter(
     $statuts,
     fn($statut) => $statut !== commandeCancelledStatus()

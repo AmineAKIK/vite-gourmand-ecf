@@ -1,6 +1,6 @@
 <?php
 // src/views/pages/employe/horaires.php
-$pageTitle = 'Gestion des horaires - Vite & Gourmand';
+$pageTitle = buildPageTitle('Gestion des horaires');
 ?>
 <div class="container py-5 employe-horaires-page">
 

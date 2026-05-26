@@ -3,16 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $pageTitle ?? 'Vite & Gourmand' ?></title>
+    <title><?= sanitize($pageTitle ?? buildPageTitle()) ?></title>
     <link rel="icon" type="image/png" href="/favicon.png">
-    <meta property="og:title" content="Vite & Gourmand — Traiteur à Bordeaux">
-    <meta property="og:description" content="Traiteur bordelais depuis 25 ans. Découvrez nos menus et commandez en ligne pour tous vos événements.">
+    <meta property="og:title" content="<?= sanitize(siteName()) ?> — <?= sanitize(siteSlogan()) ?>">
+    <meta property="og:description" content="<?= sanitize(siteSlogan()) ?>. Découvrez nos menus et commandez en ligne pour tous vos événements.">
     <meta property="og:image" content="/og/ogvg.png">
     <meta property="og:type" content="website">
     <?php foreach (($preloadImages ?? []) as $image): ?>
         <link rel="preload" as="image" href="<?= sanitize($image) ?>">
     <?php endforeach; ?>
     <?php $cspNonce = $GLOBALS['csp_nonce'] ?? ''; ?>
+    <style nonce="<?= $cspNonce ?>">
+        :root {
+            --vg-bordeaux: <?= sanitize(siteColor('couleur_principale')) ?>;
+            --vg-or:       <?= sanitize(siteColor('couleur_secondaire')) ?>;
+            --vg-creme:    <?= sanitize(siteColor('couleur_fond')) ?>;
+        }
+    </style>
     <!-- Preconnect Google Fonts pour réduire la latence -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -36,9 +43,9 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
 ?>
 <nav class="navbar navbar-expand-xl navbar-dark bg-vg sticky-top site-navbar" role="navigation" aria-label="Navigation principale">
     <div class="container">
-        <a class="navbar-brand fw-bold" href="/" aria-label="Retour à l'accueil Vite et Gourmand">
-            <span class="site-brand-name">Vite &amp; Gourmand</span>
-            <span class="site-brand-kicker d-none d-xl-block">Traiteur bordelais</span>
+        <a class="navbar-brand fw-bold" href="/" aria-label="Retour à l'accueil <?= sanitize(siteName()) ?>">
+            <span class="site-brand-name"><?= sanitize(siteName()) ?></span>
+            <span class="site-brand-kicker d-none d-xl-block"><?= sanitize(siteSlogan()) ?></span>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Ouvrir le menu">
             <span class="navbar-toggler-icon"></span>

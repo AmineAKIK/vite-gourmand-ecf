@@ -1,6 +1,6 @@
 <?php
 // src/views/pages/employe/avis.php
-$pageTitle = 'Modération des avis - Vite & Gourmand';
+$pageTitle = buildPageTitle('Modération des avis');
 ?>
 <div class="container py-5">
 

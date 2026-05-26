@@ -1,6 +1,6 @@
 <?php
 // src/views/pages/commande/suivi.php
-$pageTitle = 'Suivi de commande #' . sanitize($commande['numero_commande'] ?? '') . ' - Vite & Gourmand';
+$pageTitle = buildPageTitle('Suivi commande #' . sanitize($commande['numero_commande'] ?? ''));
 ?>
 <div class="container py-5">
 

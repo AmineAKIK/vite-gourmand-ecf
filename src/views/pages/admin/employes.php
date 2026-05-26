@@ -1,6 +1,6 @@
 <?php
 // src/views/pages/admin/employes.php
-$pageTitle = 'Gestion des employés - Vite & Gourmand';
+$pageTitle = buildPageTitle('Gestion des employés');
 ?>
 <div class="container py-5">
 

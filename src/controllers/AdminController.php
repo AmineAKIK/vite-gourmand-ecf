@@ -167,6 +167,22 @@ class AdminController {
 
         // Field definitions keyed by section
         $allFields = [
+            'identite' => [
+                'site_nom'                        => ['type' => 'string',  'max' => 100],
+                'site_slogan'                     => ['type' => 'string',  'max' => 100],
+                'site_domaine'                    => ['type' => 'string',  'max' => 100],
+                'site_email'                      => ['type' => 'email'],
+                'site_telephone'                  => ['type' => 'string',  'max' => 30],
+                'site_adresse'                    => ['type' => 'string',  'max' => 150],
+                'site_code_postal'                => ['type' => 'cp'],
+                'site_ville'                      => ['type' => 'string',  'max' => 80],
+                'couleur_principale'              => ['type' => 'couleur'],
+                'couleur_secondaire'              => ['type' => 'couleur'],
+                'couleur_fond'                    => ['type' => 'couleur'],
+                'livraison_lat'                   => ['type' => 'coord'],
+                'livraison_lng'                   => ['type' => 'coord'],
+                'livraison_codes_postaux_gratuits'=> ['type' => 'string',  'max' => 500],
+            ],
             'entreprise' => [
                 'entreprise_nom'             => ['type' => 'string',  'max' => 100],
                 'entreprise_siret'           => ['type' => 'siret'],
@@ -245,6 +261,22 @@ class AdminController {
                 case 'enum':
                     if (!in_array($raw, $rules['values'] ?? [], true)) {
                         flash('error', "Valeur invalide pour le champ '$cle'.");
+                        redirect('/admin/parametres#' . $section);
+                    }
+                    SiteConfigModel::set($cle, $raw);
+                    break;
+
+                case 'couleur':
+                    if ($raw !== '' && !preg_match('/^#[0-9A-Fa-f]{6}$/', $raw)) {
+                        flash('error', "La couleur '$cle' doit être au format #RRGGBB.");
+                        redirect('/admin/parametres#' . $section);
+                    }
+                    SiteConfigModel::set($cle, $raw);
+                    break;
+
+                case 'coord':
+                    if ($raw !== '' && (!is_numeric($raw) || (float)$raw < -180 || (float)$raw > 180)) {
+                        flash('error', "La coordonnée '$cle' est invalide.");
                         redirect('/admin/parametres#' . $section);
                     }
                     SiteConfigModel::set($cle, $raw);
@@ -407,7 +439,7 @@ class AdminController {
         $config    = SiteConfigModel::getAll();
         $regimeTva = PricingService::regimeTva();
         $synthese  = StatsService::getSynthese();
-        $pageTitle = 'Comptabilité — Vite & Gourmand';
+        $pageTitle = buildPageTitle('Comptabilité');
         view('pages/admin/comptabilite', compact('config', 'regimeTva', 'synthese', 'pageTitle'));
     }
 

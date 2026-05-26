@@ -24,7 +24,8 @@ define('STRIPE_WEBHOOK_SECRET', $_ENV['STRIPE_WEBHOOK_SECRET'] ?? '');
 
 define('BREVO_API_KEY', $_ENV['BREVO_API_KEY'] ?? '');
 define('MAIL_FROM',     $_ENV['MAIL_FROM']     ?? 'noreply@vitegourmand.fr');
-define('MAIL_FROM_NAME','Vite & Gourmand');
+// MAIL_FROM_NAME est un fallback — la vraie valeur vient de siteName() (table site_config)
+define('MAIL_FROM_NAME', $_ENV['MAIL_FROM_NAME'] ?? 'Mon Traiteur');
 
 define('BASE_URL', $_ENV['BASE_URL'] ?? 'http://localhost:8080');
 define('APP_ENV', $_ENV['APP_ENV'] ?? 'production');

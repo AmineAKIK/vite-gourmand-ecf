@@ -1,5 +1,5 @@
 <?php
-$pageTitle = 'Nos Menus - Vite & Gourmand';
+$pageTitle = buildPageTitle('Nos Menus');
 $selectedGuests = max(0, (int)($filters['nb_personnes'] ?? 0));
 ?>
 <div class="container py-5 menus-page">
