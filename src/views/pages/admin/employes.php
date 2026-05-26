@@ -92,67 +92,49 @@ $pageTitle = 'Gestion des employés - Vite & Gourmand';
             </div>
         </div>
 
-        <!-- Tableau des employés -->
+        <!-- Liste des employés -->
         <div class="col-lg-8">
             <?php if (empty($employes)): ?>
                 <div class="alert alert-info">Aucun employé enregistré.</div>
             <?php else: ?>
-                <div class="card shadow-sm" style="border:1px solid rgba(0,0,0,.08);">
-                    <div class="table-responsive">
-                        <table class="table table-hover align-middle mb-0" aria-label="Liste des employés">
-                            <thead>
-                                <tr style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
-                                    <th scope="col" class="ps-3 text-vg fw-semibold">Prénom / Nom</th>
-                                    <th scope="col" class="text-vg fw-semibold d-none d-xl-table-cell">Email</th>
-                                    <th scope="col" class="text-vg fw-semibold">Statut</th>
-                                    <th scope="col" class="text-vg fw-semibold pe-3">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php foreach ($employes as $employe): ?>
-                                <tr>
-                                    <td class="fw-medium ps-3"><?= sanitize(personFullName($employe)) ?></td>
-                                    <td class="text-muted d-none d-xl-table-cell" style="word-break:break-all;max-width:200px;"><?= sanitize($employe['email'] ?? '') ?></td>
-                                    <td>
-                                        <?php if ($employe['actif'] ?? false): ?>
-                                            <span class="badge bg-success">Actif</span>
-                                        <?php else: ?>
-                                            <span class="badge bg-secondary">Inactif</span>
-                                        <?php endif; ?>
-                                    </td>
-                                    <td class="pe-3 text-nowrap">
-                                        <div class="d-flex gap-2">
-                                            <form method="POST" action="/admin/employe/desactiver" class="form-confirm">
-                                                <?= csrfField() ?>
-                                                <input type="hidden" name="employe_id" value="<?= (int)($employe['utilisateur_id'] ?? 0) ?>">
-                                                <input type="hidden" name="actif" value="<?= ($employe['actif'] ?? false) ? '0' : '1' ?>">
-                                                <?php if ($employe['actif'] ?? false): ?>
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                        aria-label="Désactiver le compte de <?= sanitize(personFullName($employe)) ?>">
-                                                        <i class="bi bi-person-x me-1"></i>Désactiver
-                                                    </button>
-                                                <?php else: ?>
-                                                    <button type="submit" class="btn btn-sm btn-outline-success"
-                                                        aria-label="Réactiver le compte de <?= sanitize(personFullName($employe)) ?>">
-                                                        <i class="bi bi-person-check me-1"></i>Réactiver
-                                                    </button>
-                                                <?php endif; ?>
-                                            </form>
-                                            <form method="POST" action="/admin/employe/supprimer" class="form-confirm">
-                                                <?= csrfField() ?>
-                                                <input type="hidden" name="employe_id" value="<?= (int)($employe['utilisateur_id'] ?? 0) ?>">
-                                                <button type="submit" class="btn btn-sm btn-danger"
-                                                    aria-label="Supprimer définitivement le compte de <?= sanitize(personFullName($employe)) ?>">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                </tr>
-                                <?php endforeach; ?>
-                            </tbody>
-                        </table>
+                <div class="employe-list">
+                    <?php foreach ($employes as $employe): ?>
+                    <div class="employe-card">
+                        <div class="employe-card-info">
+                            <span class="fw-semibold"><?= sanitize(personFullName($employe)) ?></span>
+                            <span class="text-muted small"><?= sanitize($employe['email'] ?? '') ?></span>
+                        </div>
+                        <div class="employe-card-actions">
+                            <?php if ($employe['actif'] ?? false): ?>
+                                <span class="badge bg-success">Actif</span>
+                            <?php else: ?>
+                                <span class="badge bg-secondary">Inactif</span>
+                            <?php endif; ?>
+                            <form method="POST" action="/admin/employe/desactiver" class="form-confirm">
+                                <?= csrfField() ?>
+                                <input type="hidden" name="employe_id" value="<?= (int)($employe['utilisateur_id'] ?? 0) ?>">
+                                <input type="hidden" name="actif" value="<?= ($employe['actif'] ?? false) ? '0' : '1' ?>">
+                                <?php if ($employe['actif'] ?? false): ?>
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">
+                                        <i class="bi bi-person-x me-1"></i>Désactiver
+                                    </button>
+                                <?php else: ?>
+                                    <button type="submit" class="btn btn-sm btn-outline-success">
+                                        <i class="bi bi-person-check me-1"></i>Réactiver
+                                    </button>
+                                <?php endif; ?>
+                            </form>
+                            <form method="POST" action="/admin/employe/supprimer" class="form-confirm">
+                                <?= csrfField() ?>
+                                <input type="hidden" name="employe_id" value="<?= (int)($employe['utilisateur_id'] ?? 0) ?>">
+                                <button type="submit" class="btn btn-sm btn-outline-danger"
+                                    aria-label="Supprimer définitivement le compte de <?= sanitize(personFullName($employe)) ?>">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                        </div>
                     </div>
+                    <?php endforeach; ?>
                 </div>
             <?php endif; ?>
         </div>

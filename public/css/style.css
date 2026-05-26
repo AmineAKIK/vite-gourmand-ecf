@@ -1148,6 +1148,37 @@ a:focus {
 /* Section background alternée */
 .bg-creme { background-color: var(--vg-creme); }
 
+/* Liste employés */
+.employe-list {
+    display: flex;
+    flex-direction: column;
+    gap: .5rem;
+}
+.employe-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: .75rem;
+    background: #fff;
+    border: 1px solid var(--vg-border);
+    border-radius: 8px;
+    padding: .875rem 1rem;
+}
+.employe-card-info {
+    display: flex;
+    flex-direction: column;
+    gap: .1rem;
+    min-width: 0;
+}
+.employe-card-actions {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: .5rem;
+    flex-shrink: 0;
+}
+
 /* Suivi commande */
 .suivi-panel {
     background: #fff;
