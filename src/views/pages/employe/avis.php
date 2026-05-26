@@ -21,7 +21,7 @@ $pageTitle = 'Modération des avis - Vite & Gourmand';
     <?php endif; ?>
 
     <!-- Onglets filtre -->
-    <ul class="nav nav-tabs mb-4">
+    <ul class="nav nav-tabs avis-filter-tabs mb-4">
         <li class="nav-item">
             <a class="nav-link <?= $filtre === 'en_attente' ? 'active fw-bold' : '' ?>" href="/employe/avis?filtre=en_attente">
                 En attente
@@ -101,8 +101,8 @@ $pageTitle = 'Modération des avis - Vite & Gourmand';
                         <input type="hidden" name="afficher_accueil" value="<?= !empty($a['afficher_accueil']) ? '0' : '1' ?>">
                         <input type="hidden" name="filtre" value="<?= sanitize($filtre) ?>">
                         <button type="submit" class="btn <?= !empty($a['afficher_accueil']) ? 'btn-outline-secondary' : 'btn-vg-outline' ?> btn-sm">
-                            <i class="bi <?= !empty($a['afficher_accueil']) ? 'bi-eye-slash' : 'bi-house-heart' ?> me-1"></i>
-                            <?= !empty($a['afficher_accueil']) ? 'Retirer de l\'accueil' : 'Afficher sur l\'accueil' ?>
+                            <i class="bi <?= !empty($a['afficher_accueil']) ? 'bi-eye-slash' : 'bi-eye' ?> me-1"></i>
+                            <?= !empty($a['afficher_accueil']) ? 'Masquer' : 'Afficher' ?>
                         </button>
                     </form>
                     <?php endif; ?>

@@ -2,16 +2,16 @@
 // src/views/pages/employe/horaires.php
 $pageTitle = 'Gestion des horaires - Vite & Gourmand';
 ?>
-<div class="container py-5">
+<div class="container py-5 employe-horaires-page">
 
     <?php partial('partials/page_title_bar', ['icon' => 'bi-clock', 'title' => 'Gestion des horaires']); ?>
 
-    <div class="card shadow-sm" style="border:1px solid rgba(0,0,0,.08); max-width:700px;">
+    <div class="card shadow-sm employe-horaires-card" style="border:1px solid rgba(0,0,0,.08); max-width:700px;">
         <form method="POST" action="/employe/horaires/modifier" novalidate>
             <?= csrfField() ?>
 
             <div class="table-responsive">
-                <table class="table align-middle mb-0" aria-label="Horaires d'ouverture">
+                <table class="table align-middle mb-0 employe-horaires-table" aria-label="Horaires d'ouverture">
                     <thead>
                         <tr style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
                             <th scope="col" class="ps-3 text-vg fw-semibold">Jour</th>
@@ -22,8 +22,8 @@ $pageTitle = 'Gestion des horaires - Vite & Gourmand';
                     <tbody>
                         <?php foreach ($horaires as $h): ?>
                         <tr>
-                            <td class="fw-semibold ps-3"><?= sanitize($h['jour']) ?></td>
-                            <td>
+                            <td data-label="Jour" class="fw-semibold ps-3 employe-horaire-day"><?= sanitize($h['jour']) ?></td>
+                            <td data-label="Ouverture">
                                 <input
                                     type="text"
                                     class="form-control form-control-sm"
@@ -33,7 +33,7 @@ $pageTitle = 'Gestion des horaires - Vite & Gourmand';
                                     aria-label="Heure d'ouverture - <?= sanitize($h['jour']) ?>"
                                 >
                             </td>
-                            <td class="pe-3">
+                            <td data-label="Fermeture" class="pe-3">
                                 <input
                                     type="text"
                                     class="form-control form-control-sm"
@@ -49,7 +49,7 @@ $pageTitle = 'Gestion des horaires - Vite & Gourmand';
                 </table>
             </div>
 
-            <div class="d-flex gap-2 p-3 border-top" style="border-color:rgba(0,0,0,.08)!important;">
+            <div class="d-flex gap-2 p-3 border-top employe-horaires-actions" style="border-color:rgba(0,0,0,.08)!important;">
                 <button type="submit" class="btn btn-vg" aria-label="Enregistrer les horaires">
                     <i class="bi bi-check-lg me-1"></i>Enregistrer les horaires
                 </button>

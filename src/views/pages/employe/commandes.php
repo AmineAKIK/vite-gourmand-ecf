@@ -237,17 +237,19 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                                             <i class="bi <?= sanitize($docIcon) ?>" aria-hidden="true"></i>
                                                             <?= sanitize($docLabel) ?>
                                                         </span>
+                                                        <?php if (!empty($doc['sent_at'])): ?>
+                                                            <span class="commande-doc-state-icons">
+                                                                <i class="bi bi-envelope-check text-success" title="Envoyé" aria-label="Envoyé"></i>
+                                                            </span>
+                                                        <?php elseif (!empty($doc['archive_path'])): ?>
+                                                            <span class="commande-doc-state-icons">
+                                                                <i class="bi bi-archive text-muted" title="Archivé" aria-label="Archivé"></i>
+                                                            </span>
+                                                        <?php endif; ?>
                                                         <span class="commande-doc-status"><?= sanitize($docStatutLabel) ?></span>
                                                     </div>
                                                     <div class="commande-doc-bottom">
                                                         <strong class="commande-doc-price"><?= sanitize(formatPrice($doc['total_ttc'] ?? 0)) ?></strong>
-                                                        <span class="commande-doc-state-icons">
-                                                            <?php if (!empty($doc['sent_at'])): ?>
-                                                                <i class="bi bi-envelope-check text-success" title="Envoyé" aria-label="Envoyé"></i>
-                                                            <?php elseif (!empty($doc['archive_path'])): ?>
-                                                                <i class="bi bi-archive text-muted" title="Archivé" aria-label="Archivé"></i>
-                                                            <?php endif; ?>
-                                                        </span>
                                                         <span class="commande-doc-icon-actions">
                                                             <a
                                                                 href="/employe/document/apercu?id=<?= (int)$doc['document_id'] ?>"

@@ -8,7 +8,7 @@ foreach ($plats as $plat) {
     $platsByCategorie[$plat['categorie']][] = $plat;
 }
 ?>
-<div class="container py-5">
+<div class="container py-5 employe-menus-page">
 
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
         <h1 class="h3 fw-bold mb-0">
@@ -30,9 +30,9 @@ foreach ($plats as $plat) {
     <?php if (empty($menus)): ?>
         <div class="alert alert-info">Aucun menu enregistré.</div>
     <?php else: ?>
-        <div class="card shadow-sm mb-0" style="border:1px solid rgba(0,0,0,.08);">
+        <div class="card shadow-sm mb-0 employe-menu-card" style="border:1px solid rgba(0,0,0,.08);">
             <div class="table-responsive">
-                <table class="table table-hover align-middle mb-0" aria-label="Liste des menus">
+                <table class="table table-hover align-middle mb-0 employe-menus-table" aria-label="Liste des menus">
                     <thead>
                         <tr style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
                             <th scope="col" class="ps-3 text-vg fw-semibold">Titre</th>
@@ -47,14 +47,14 @@ foreach ($plats as $plat) {
                     <tbody>
                         <?php foreach ($menus as $menu): ?>
                         <tr>
-                            <td class="fw-semibold ps-3"><?= sanitize($menu['titre'] ?? '') ?></td>
-                            <td class="text-muted d-none d-lg-table-cell"><?= sanitize($menu['theme']  ?? '—') ?></td>
-                            <td class="text-muted d-none d-lg-table-cell"><?= sanitize($menu['regime'] ?? '—') ?></td>
-                            <td class="text-muted d-none d-lg-table-cell"><?= (int)($menu['nombre_personne_minimum'] ?? 0) ?></td>
-                            <td class="text-nowrap">
+                            <td data-label="Titre" class="fw-semibold ps-3 employe-menu-title"><?= sanitize($menu['titre'] ?? '') ?></td>
+                            <td data-label="Thème" class="text-muted d-none d-lg-table-cell"><?= sanitize($menu['theme']  ?? '—') ?></td>
+                            <td data-label="Régime" class="text-muted d-none d-lg-table-cell"><?= sanitize($menu['regime'] ?? '—') ?></td>
+                            <td data-label="Min pers." class="text-muted d-none d-lg-table-cell"><?= (int)($menu['nombre_personne_minimum'] ?? 0) ?></td>
+                            <td data-label="Prix / pers." class="text-nowrap employe-menu-price">
                                 <span class="fw-semibold text-vg"><?= sanitize(formatPrice($menu['prix_par_personne'] ?? 0)) ?></span>
                             </td>
-                            <td class="text-nowrap d-none d-lg-table-cell">
+                            <td data-label="Stock" class="text-nowrap d-none d-lg-table-cell">
                                 <?php $stock = $menu['quantite_restante']; ?>
                                 <?php if ($stock === null): ?>
                                     <span class="badge bg-secondary">Illimité</span>
@@ -64,7 +64,7 @@ foreach ($plats as $plat) {
                                     </span>
                                 <?php endif; ?>
                             </td>
-                            <td class="pe-3 text-nowrap">
+                            <td data-label="Actions" class="pe-3 text-nowrap employe-menu-actions">
                                 <button
                                     class="btn btn-sm btn-vg-outline me-1"
                                     data-bs-toggle="modal"
@@ -102,7 +102,7 @@ foreach ($plats as $plat) {
                 </div>
                 <ul class="list-group list-group-flush">
                     <?php foreach ($platsGroupe as $plat): ?>
-                    <li class="list-group-item d-flex align-items-center justify-content-between gap-3 py-2 px-3">
+                    <li class="list-group-item d-flex align-items-center justify-content-between gap-3 py-2 px-3 employe-plat-item">
                         <div class="flex-grow-1">
                             <div class="fw-medium"><?= sanitize($plat['titre']) ?></div>
                             <?php if (!empty($plat['allergenes'])): ?>

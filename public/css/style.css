@@ -1200,6 +1200,19 @@ a:focus {
     flex-direction: column;
     gap: .75rem;
 }
+
+.avis-filter-tabs {
+    flex-wrap: nowrap;
+}
+
+.avis-filter-tabs .nav-item {
+    min-width: 0;
+}
+
+.avis-filter-tabs .nav-link {
+    white-space: nowrap;
+}
+
 .avis-moderation-card {
     background: var(--vg-creme);
     border: 1px solid var(--vg-border);
@@ -1230,6 +1243,20 @@ a:focus {
     gap: .5rem;
     padding-top: .5rem;
     border-top: 1px solid var(--vg-border);
+}
+
+/* Back-office menus / horaires */
+.employe-menu-card .table-responsive,
+.employe-horaires-card .table-responsive {
+    border-radius: 8px;
+}
+
+.employe-menu-actions {
+    white-space: nowrap;
+}
+
+.employe-horaires-card {
+    overflow: hidden;
 }
 
 /* Avis étoiles */
@@ -2048,7 +2075,14 @@ a:focus {
     font-size: .84rem;
 }
 
-.commande-doc-top,
+.commande-doc-top {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    align-items: center;
+    gap: .45rem;
+    min-width: 0;
+}
+
 .commande-doc-bottom {
     display: flex;
     align-items: center;
@@ -2098,6 +2132,7 @@ a:focus {
 .commande-doc-state-icons {
     min-width: 1rem;
     justify-content: center;
+    font-size: .86rem;
 }
 
 .commande-doc-icon-actions {
@@ -2915,6 +2950,216 @@ a:focus {
 }
 
 @media (max-width: 575px) {
+    .employe-menus-page > .d-flex {
+        align-items: stretch !important;
+    }
+
+    .employe-menus-page > .d-flex > div {
+        display: grid !important;
+        grid-template-columns: 1fr;
+        width: 100%;
+    }
+
+    .employe-menus-page > .d-flex .btn {
+        width: 100%;
+        min-height: 38px;
+    }
+
+    .employe-menu-card .table-responsive,
+    .employe-horaires-card .table-responsive {
+        overflow: visible;
+    }
+
+    .employe-menus-table,
+    .employe-menus-table thead,
+    .employe-menus-table tbody,
+    .employe-menus-table tr,
+    .employe-menus-table td,
+    .employe-menus-table th,
+    .employe-horaires-table,
+    .employe-horaires-table thead,
+    .employe-horaires-table tbody,
+    .employe-horaires-table tr,
+    .employe-horaires-table td,
+    .employe-horaires-table th {
+        display: block;
+        width: 100%;
+    }
+
+    .employe-menus-table thead,
+    .employe-horaires-table thead {
+        display: none;
+    }
+
+    .employe-menus-table tbody,
+    .employe-horaires-table tbody {
+        display: grid;
+        gap: .75rem;
+        padding: .75rem;
+    }
+
+    .employe-menus-table tr,
+    .employe-horaires-table tr {
+        border: 1px solid rgba(139, 26, 43, .14);
+        border-radius: 8px;
+        background: rgba(255, 255, 255, .42);
+        overflow: hidden;
+    }
+
+    .employe-menus-table td,
+    .employe-horaires-table td {
+        border-bottom: 0;
+        padding: .45rem .75rem !important;
+    }
+
+    .employe-menus-table td:not(.employe-menu-title):not(.employe-menu-actions),
+    .employe-horaires-table td:not(.employe-horaire-day) {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: .75rem;
+    }
+
+    .employe-menus-table td:not(.employe-menu-title):not(.employe-menu-actions)::before,
+    .employe-horaires-table td:not(.employe-horaire-day)::before {
+        content: attr(data-label);
+        flex: 0 0 auto;
+        color: var(--vg-muted);
+        font-size: .78rem;
+        font-weight: 700;
+    }
+
+    .employe-menus-table .d-none,
+    .employe-horaires-table .d-none {
+        display: flex !important;
+    }
+
+    .employe-menu-title,
+    .employe-horaire-day {
+        padding-top: .75rem !important;
+        color: var(--vg-text);
+        font-size: 1rem;
+        line-height: 1.25;
+    }
+
+    .employe-menu-price {
+        font-size: .96rem;
+    }
+
+    .employe-menu-actions {
+        display: flex !important;
+        gap: .5rem;
+        padding-top: .65rem !important;
+        border-top: 1px solid rgba(139, 26, 43, .12);
+    }
+
+    .employe-menu-actions::before {
+        content: none;
+    }
+
+    .employe-menu-actions .btn,
+    .employe-menu-actions form {
+        flex: 1 1 0;
+    }
+
+    .employe-menu-actions .btn {
+        width: 100%;
+        min-height: 36px;
+    }
+
+    .employe-plat-item {
+        align-items: stretch !important;
+        flex-direction: column;
+    }
+
+    .employe-plat-item > .d-flex {
+        display: grid !important;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .employe-plat-item > .d-flex .btn {
+        width: 100%;
+        min-height: 36px;
+    }
+
+    .avis-moderation-card {
+        padding: .85rem;
+    }
+
+    .avis-filter-tabs {
+        display: grid;
+        grid-template-columns: repeat(3, minmax(0, 1fr));
+        gap: .35rem;
+        border-bottom: 0;
+    }
+
+    .avis-filter-tabs .nav-item {
+        width: 100%;
+    }
+
+    .avis-filter-tabs .nav-link {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 38px;
+        width: 100%;
+        border: 1px solid var(--vg-border);
+        border-radius: 8px;
+        padding: .45rem .25rem;
+        text-align: center;
+        font-size: .88rem;
+        line-height: 1.1;
+    }
+
+    .avis-filter-tabs .nav-link.active {
+        border-color: var(--vg-bordeaux);
+        background: rgba(151, 24, 45, .08);
+        color: var(--vg-bordeaux);
+    }
+
+    .avis-filter-tabs .badge {
+        margin-left: .25rem !important;
+    }
+
+    .avis-moderation-actions {
+        align-items: stretch;
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .avis-moderation-actions form,
+    .avis-moderation-actions .btn {
+        width: 100%;
+    }
+
+    .avis-moderation-actions form.ms-auto {
+        margin-left: 0 !important;
+    }
+
+    .employe-horaires-card {
+        max-width: none !important;
+    }
+
+    .employe-horaires-table td:not(.employe-horaire-day) {
+        align-items: start;
+        flex-direction: column;
+        gap: .25rem;
+    }
+
+    .employe-horaires-table .form-control {
+        width: 100%;
+    }
+
+    .employe-horaires-actions {
+        display: grid !important;
+        grid-template-columns: 1fr;
+    }
+
+    .employe-horaires-actions .btn {
+        width: 100%;
+        min-height: 40px;
+    }
+
     .document-preview {
         padding: .95rem;
     }
