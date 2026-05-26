@@ -181,6 +181,8 @@ CREATE TABLE document_facturation (
     created_by           INT,
     created_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     updated_at           DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    finalized_at         DATETIME,
+    finalized_by         INT,
     FOREIGN KEY (commande_id) REFERENCES commande(commande_id) ON DELETE CASCADE,
     FOREIGN KEY (created_by) REFERENCES utilisateur(utilisateur_id)
 );
@@ -198,6 +200,13 @@ CREATE TABLE document_facturation_ligne (
     total_ttc            DECIMAL(10,2) NOT NULL DEFAULT 0,
     ordre                INT NOT NULL DEFAULT 0,
     FOREIGN KEY (document_id) REFERENCES document_facturation(document_id) ON DELETE CASCADE
+);
+
+CREATE TABLE document_sequence (
+    type_document   VARCHAR(20) NOT NULL,
+    annee           INT NOT NULL,
+    dernier_numero  INT NOT NULL DEFAULT 0,
+    PRIMARY KEY (type_document, annee)
 );
 
 -- ============================================

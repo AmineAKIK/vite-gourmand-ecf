@@ -2,6 +2,8 @@
 // src/views/pages/employe/document_edit.php
 $typeLabel = ($document['type_document'] ?? '') === 'ticket' ? 'ticket de caisse' : 'facture';
 $previewUrl = '/employe/document/apercu?id=' . (int)$document['document_id'];
+$isFinalise = ($document['statut'] ?? '') === 'finalise';
+$documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['document_id']);
 ?>
 <div class="container py-5 facturation-page">
 
@@ -19,14 +21,15 @@ $previewUrl = '/employe/document/apercu?id=' . (int)$document['document_id'];
     <form method="POST" action="/employe/document/modifier" class="facturation-editor">
         <?= csrfField() ?>
         <input type="hidden" name="document_id" value="<?= (int)$document['document_id'] ?>">
+        <fieldset class="facturation-fieldset" <?= $isFinalise ? 'disabled' : '' ?>>
 
         <section class="facturation-panel">
             <div class="facturation-panel-header">
                 <div>
                     <h2>Informations</h2>
-                    <p>Document brouillon lié à la commande <?= sanitize($commande['numero_commande'] ?? '') ?>.</p>
+                    <p><?= sanitize($documentRef) ?> lié à la commande <?= sanitize($commande['numero_commande'] ?? '') ?>.</p>
                 </div>
-                <span class="badge-statut statut-en_attente"><?= sanitize($document['statut'] ?? 'brouillon') ?></span>
+                <span class="badge-statut <?= $isFinalise ? 'statut-accepte' : 'statut-en_attente' ?>"><?= $isFinalise ? 'Finalisé' : 'Brouillon' ?></span>
             </div>
 
             <div class="facturation-grid">
@@ -90,7 +93,7 @@ $previewUrl = '/employe/document/apercu?id=' . (int)$document['document_id'];
                     <div class="facturation-line">
                         <input type="text" class="form-control form-control-sm" name="designation[]" value="<?= sanitize($ligne['designation'] ?? '') ?>" placeholder="Désignation">
                         <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="quantite[]" value="<?= sanitize(formatPriceInput($ligne['quantite'] ?? 1)) ?>" aria-label="Quantité ligne <?= $index + 1 ?>">
-                        <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="prix_unitaire_ttc[]" value="<?= sanitize($prixUnitaireTtc === '' ? '' : formatPriceInput($prixUnitaireTtc)) ?>" aria-label="Prix unitaire TTC ligne <?= $index + 1 ?>">
+                        <input type="number" step="0.01" class="form-control form-control-sm" name="prix_unitaire_ttc[]" value="<?= sanitize($prixUnitaireTtc === '' ? '' : formatPriceInput($prixUnitaireTtc)) ?>" aria-label="Prix unitaire TTC ligne <?= $index + 1 ?>">
                         <input type="number" step="0.01" min="0" class="form-control form-control-sm" name="taux_tva[]" value="<?= sanitize(formatPriceInput($ligne['taux_tva'] ?? 10)) ?>" aria-label="Taux TVA ligne <?= $index + 1 ?>">
                     </div>
                 <?php endforeach; ?>
@@ -115,11 +118,28 @@ $previewUrl = '/employe/document/apercu?id=' . (int)$document['document_id'];
                     <span>TVA <?= sanitize(formatPrice($document['total_tva'] ?? 0)) ?></span>
                     <strong>TTC <?= sanitize(formatPrice($document['total_ttc'] ?? 0)) ?></strong>
                 </div>
-                <button type="submit" class="btn btn-vg">
-                    <i class="bi bi-save me-1"></i>Enregistrer le brouillon
-                </button>
+                <?php if ($isFinalise): ?>
+                    <p class="facturation-locked-note mb-0">
+                        <i class="bi bi-lock me-1"></i>Document finalisé et verrouillé.
+                    </p>
+                <?php else: ?>
+                    <div class="facturation-submit-actions">
+                        <button type="submit" class="btn btn-outline-secondary">
+                            <i class="bi bi-save me-1"></i>Enregistrer
+                        </button>
+                        <button
+                            type="submit"
+                            class="btn btn-vg"
+                            formaction="/employe/document/finaliser"
+                            data-confirm="Finaliser ce document ? Il recevra un numéro définitif et ne sera plus modifiable."
+                        >
+                            <i class="bi bi-lock me-1"></i>Finaliser
+                        </button>
+                    </div>
+                <?php endif; ?>
             </div>
         </section>
+        </fieldset>
     </form>
 
 </div>

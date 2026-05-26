@@ -33,6 +33,8 @@ class FacturationModel
                 created_by INT,
                 created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
                 updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+                finalized_at DATETIME NULL,
+                finalized_by INT NULL,
                 INDEX idx_document_facturation_commande (commande_id),
                 INDEX idx_document_facturation_type (type_document),
                 INDEX idx_document_facturation_statut (statut)
@@ -54,6 +56,16 @@ class FacturationModel
                 INDEX idx_document_facturation_ligne_document (document_id)
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
         ");
+        $db->exec("
+            CREATE TABLE IF NOT EXISTS document_sequence (
+                type_document VARCHAR(20) NOT NULL,
+                annee INT NOT NULL,
+                dernier_numero INT NOT NULL DEFAULT 0,
+                PRIMARY KEY (type_document, annee)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+        ");
+        self::addColumnIfMissing('document_facturation', 'finalized_at', 'DATETIME NULL');
+        self::addColumnIfMissing('document_facturation', 'finalized_by', 'INT NULL');
     }
 
     public static function listByCommandeIds(array $commandeIds): array
@@ -117,6 +129,10 @@ class FacturationModel
         if ($existing) {
             return (int)$existing['document_id'];
         }
+        $finalized = self::findFinalizedForCommande($commandeId, $type);
+        if ($finalized) {
+            return (int)$finalized['document_id'];
+        }
 
         $commande = CommandeModel::getById($commandeId);
         if (!$commande) {
@@ -134,8 +150,13 @@ class FacturationModel
         $lignes = [];
 
         foreach ($lignesCommande as $index => $ligne) {
-            $designation = ($ligne['menu_titre'] ?? 'Menu') . ' - ' . (int)($ligne['nombre_personne'] ?? 1) . ' pers.';
-            $ttc = (float)($ligne['prix_menu'] ?? 0);
+            $nbPersonnes = (int)($ligne['nombre_personne'] ?? 1);
+            $designation = ($ligne['menu_titre'] ?? 'Menu') . ' - ' . $nbPersonnes . ' pers.';
+            $menuNetTtc = (float)($ligne['prix_menu'] ?? 0);
+            $menuBrutTtc = !empty($ligne['prix_par_personne'])
+                ? round((float)$ligne['prix_par_personne'] * $nbPersonnes, 2)
+                : $menuNetTtc;
+            $ttc = $menuBrutTtc;
             $computed = self::lineTotals(1, $ttc, self::DEFAULT_TVA);
             $lignes[] = [
                 'designation' => $designation,
@@ -151,6 +172,28 @@ class FacturationModel
             $totals['ht'] += $computed['total_ht'];
             $totals['tva'] += $computed['total_tva'];
             $totals['ttc'] += $computed['total_ttc'];
+
+            $remiseTtc = round($menuBrutTtc - $menuNetTtc, 2);
+            if ($remiseTtc > 0.01) {
+                $remiseLabel = reductionTauxPourcentage() > 0
+                    ? 'Réduction volume (' . formatPriceInput(reductionTauxPourcentage()) . ' %)'
+                    : 'Réduction volume';
+                $remiseComputed = self::lineTotals(1, -$remiseTtc, self::DEFAULT_TVA);
+                $lignes[] = [
+                    'designation' => $remiseLabel . ' - ' . ($ligne['menu_titre'] ?? 'Menu'),
+                    'quantite' => 1,
+                    'prix_unitaire_ttc' => -$remiseTtc,
+                    'prix_unitaire_ht' => $remiseComputed['unit_ht'],
+                    'taux_tva' => self::DEFAULT_TVA,
+                    'total_ht' => $remiseComputed['total_ht'],
+                    'total_tva' => $remiseComputed['total_tva'],
+                    'total_ttc' => $remiseComputed['total_ttc'],
+                    'ordre' => count($lignes) + 1,
+                ];
+                $totals['ht'] += $remiseComputed['total_ht'];
+                $totals['tva'] += $remiseComputed['total_tva'];
+                $totals['ttc'] += $remiseComputed['total_ttc'];
+            }
 
             $livraisonTtc = (float)($ligne['prix_livraison'] ?? 0);
             if ($livraisonTtc > 0) {
@@ -170,6 +213,25 @@ class FacturationModel
                 $totals['tva'] += $livraisonComputed['total_tva'];
                 $totals['ttc'] += $livraisonComputed['total_ttc'];
             }
+        }
+
+        $ecartCommande = round((float)($commande['prix_total'] ?? 0) - $totals['ttc'], 2);
+        if (abs($ecartCommande) > 0.01) {
+            $adjustment = self::lineTotals(1, $ecartCommande, self::DEFAULT_TVA);
+            $lignes[] = [
+                'designation' => 'Ajustement tarification commande',
+                'quantite' => 1,
+                'prix_unitaire_ttc' => $ecartCommande,
+                'prix_unitaire_ht' => $adjustment['unit_ht'],
+                'taux_tva' => self::DEFAULT_TVA,
+                'total_ht' => $adjustment['total_ht'],
+                'total_tva' => $adjustment['total_tva'],
+                'total_ttc' => $adjustment['total_ttc'],
+                'ordre' => count($lignes) + 1,
+            ];
+            $totals['ht'] += $adjustment['total_ht'];
+            $totals['tva'] += $adjustment['total_tva'];
+            $totals['ttc'] += $adjustment['total_ttc'];
         }
 
         $db = Database::getConnection();
@@ -269,6 +331,49 @@ class FacturationModel
         }
     }
 
+    public static function finalizeDraft(int $documentId, ?int $finalizedBy): string
+    {
+        self::ensureSchema();
+        $db = Database::getConnection();
+        $db->beginTransaction();
+        try {
+            $stmt = $db->prepare("SELECT * FROM document_facturation WHERE document_id = ? FOR UPDATE");
+            $stmt->execute([$documentId]);
+            $document = $stmt->fetch();
+            if (!$document) {
+                throw new InvalidArgumentException('Document introuvable.');
+            }
+            if (($document['statut'] ?? '') !== 'brouillon') {
+                throw new InvalidArgumentException('Ce document est déjà finalisé.');
+            }
+
+            $lignesStmt = $db->prepare("SELECT ligne_document_id FROM document_facturation_ligne WHERE document_id = ? LIMIT 1");
+            $lignesStmt->execute([$documentId]);
+            $lignes = $lignesStmt->fetch();
+            if (!$lignes) {
+                throw new InvalidArgumentException('Impossible de finaliser un document sans lignes.');
+            }
+            if (trim((string)($document['client_nom'] ?? '')) === '') {
+                throw new InvalidArgumentException('Le nom du client est obligatoire avant finalisation.');
+            }
+
+            $numero = self::nextNumeroDocument($db, $document['type_document'], $document['date_emission'] ?? date('Y-m-d'));
+            $update = $db->prepare("
+                UPDATE document_facturation
+                SET statut = 'finalise', numero_document = ?, finalized_at = NOW(), finalized_by = ?
+                WHERE document_id = ?
+            ");
+            $update->execute([$numero, $finalizedBy, $documentId]);
+            $db->commit();
+            return $numero;
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     private static function findDraftForCommande(int $commandeId, string $type): ?array
     {
         $stmt = Database::getConnection()->prepare("
@@ -280,6 +385,63 @@ class FacturationModel
         ");
         $stmt->execute([$commandeId, $type]);
         return $stmt->fetch() ?: null;
+    }
+
+    private static function findFinalizedForCommande(int $commandeId, string $type): ?array
+    {
+        $stmt = Database::getConnection()->prepare("
+            SELECT *
+            FROM document_facturation
+            WHERE commande_id = ? AND type_document = ? AND statut = 'finalise'
+            ORDER BY finalized_at DESC, document_id DESC
+            LIMIT 1
+        ");
+        $stmt->execute([$commandeId, $type]);
+        return $stmt->fetch() ?: null;
+    }
+
+    private static function nextNumeroDocument(PDO $db, string $type, string $dateEmission): string
+    {
+        self::assertType($type);
+        $timestamp = strtotime($dateEmission) ?: time();
+        $annee = (int)date('Y', $timestamp);
+        $prefix = $type === 'ticket' ? 'TCK' : 'FAC';
+
+        $stmt = $db->prepare("
+            SELECT dernier_numero
+            FROM document_sequence
+            WHERE type_document = ? AND annee = ?
+            FOR UPDATE
+        ");
+        $stmt->execute([$type, $annee]);
+        $current = $stmt->fetchColumn();
+        $next = $current === false ? 1 : ((int)$current + 1);
+
+        if ($current === false) {
+            $insert = $db->prepare("INSERT INTO document_sequence (type_document, annee, dernier_numero) VALUES (?,?,?)");
+            $insert->execute([$type, $annee, $next]);
+        } else {
+            $update = $db->prepare("UPDATE document_sequence SET dernier_numero = ? WHERE type_document = ? AND annee = ?");
+            $update->execute([$next, $type, $annee]);
+        }
+
+        return sprintf('%s-%d-%04d', $prefix, $annee, $next);
+    }
+
+    private static function addColumnIfMissing(string $table, string $column, string $definition): void
+    {
+        $db = Database::getConnection();
+        $stmt = $db->prepare("
+            SELECT COUNT(*)
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+            AND TABLE_NAME = ?
+            AND COLUMN_NAME = ?
+        ");
+        $stmt->execute([$table, $column]);
+        if ((int)$stmt->fetchColumn() === 0) {
+            $db->exec("ALTER TABLE `$table` ADD COLUMN `$column` $definition");
+        }
     }
 
     private static function replaceLignes(int $documentId, array $lignes): void
@@ -323,7 +485,7 @@ class FacturationModel
             }
 
             $quantite = max(0.01, (float)str_replace(',', '.', (string)($quantites[$index] ?? 1)));
-            $prixTtc = max(0, (float)str_replace(',', '.', (string)($prixUnitaires[$index] ?? 0)));
+            $prixTtc = (float)str_replace(',', '.', (string)($prixUnitaires[$index] ?? 0));
             $tva = max(0, (float)str_replace(',', '.', (string)($tauxTva[$index] ?? self::DEFAULT_TVA)));
             $computed = self::lineTotals($quantite, $prixTtc, $tva);
 

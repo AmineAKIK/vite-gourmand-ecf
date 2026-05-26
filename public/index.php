@@ -133,6 +133,7 @@ $routes = [
         '/employe/commande/statut'   => ['EmployeController', 'updateStatut'],
         '/employe/document/creer'     => ['EmployeController', 'createDocument'],
         '/employe/document/modifier'  => ['EmployeController', 'updateDocument'],
+        '/employe/document/finaliser' => ['EmployeController', 'finalizeDocument'],
         '/employe/menu/creer'        => ['EmployeController', 'createMenu'],
         '/employe/menu/modifier'     => ['EmployeController', 'updateMenu'],
         '/employe/menu/supprimer'    => ['EmployeController', 'deleteMenu'],

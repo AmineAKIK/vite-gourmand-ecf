@@ -4,6 +4,8 @@ $type = $document['type_document'] ?? 'facture';
 $isTicket = $type === 'ticket';
 $typeLabel = $isTicket ? 'Ticket de caisse' : 'Facture';
 $entreprise = $document['entreprise'] ?? [];
+$isFinalise = ($document['statut'] ?? '') === 'finalise';
+$documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['document_id']);
 ?>
 <div class="container py-5 facturation-page">
 
@@ -29,8 +31,11 @@ $entreprise = $document['entreprise'] ?? [];
             </div>
             <div class="document-meta">
                 <h2><?= sanitize($typeLabel) ?></h2>
-                <p>Brouillon #<?= (int)$document['document_id'] ?></p>
+                <p><?= sanitize($documentRef) ?></p>
                 <p><?= sanitize(formatDateFr($document['date_emission'] ?? null)) ?></p>
+                <?php if ($isFinalise && !empty($document['finalized_at'])): ?>
+                    <p>Finalisé le <?= sanitize(formatDateTimeFr($document['finalized_at'])) ?></p>
+                <?php endif; ?>
             </div>
         </header>
 
@@ -49,7 +54,7 @@ $entreprise = $document['entreprise'] ?? [];
                 <p>
                     <?= sanitize($commande['numero_commande'] ?? '') ?><br>
                     Prestation : <?= sanitize(formatDateFr($document['date_prestation'] ?? null)) ?><br>
-                    Statut document : <?= sanitize($document['statut'] ?? 'brouillon') ?>
+                    Statut document : <?= $isFinalise ? 'finalisé' : 'brouillon' ?>
                 </p>
             </div>
         </section>

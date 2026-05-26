@@ -2234,6 +2234,14 @@ a:focus {
     gap: 1rem;
 }
 
+.facturation-fieldset {
+    display: grid;
+    gap: 1rem;
+    min-width: 0;
+    padding: 0;
+    border: 0;
+}
+
 .facturation-panel {
     background: var(--facturation-panel-bg);
     border: 1px solid var(--facturation-panel-border);
@@ -2299,6 +2307,18 @@ a:focus {
     justify-content: space-between;
     gap: 1rem;
     margin-top: 1rem;
+}
+
+.facturation-submit-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .5rem;
+    justify-content: flex-end;
+}
+
+.facturation-locked-note {
+    color: var(--vg-bordeaux);
+    font-weight: 700;
 }
 
 .facturation-total-preview {
@@ -2460,8 +2480,13 @@ a:focus {
         flex-direction: column;
     }
 
-    .facturation-submit .btn {
+    .facturation-submit .btn,
+    .facturation-submit-actions {
         width: 100%;
+    }
+
+    .facturation-submit-actions {
+        flex-direction: column;
     }
 
     .document-meta {

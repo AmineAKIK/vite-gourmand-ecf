@@ -111,7 +111,28 @@ class EmployeController
             redirect('/employe/document/edit?id=' . $documentId);
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
-            redirect('/employe/document/edit?id=' . $documentId);
+            redirect($documentId ? '/employe/document/edit?id=' . $documentId : '/employe/commandes');
+        }
+    }
+
+    public function finalizeDocument(): void
+    {
+        verifyCsrf();
+
+        $documentId = (int)($_POST['document_id'] ?? 0);
+        try {
+            if (isset($_POST['designation'])) {
+                $document = FacturationModel::getById($documentId);
+                if ($document && ($document['statut'] ?? '') === 'brouillon') {
+                    FacturationModel::updateDraft($documentId, $_POST);
+                }
+            }
+            $numero = FacturationModel::finalizeDraft($documentId, currentUser()['id'] ?? null);
+            flash('success', 'Document finalisé : ' . $numero . '.');
+            redirect('/employe/document/apercu?id=' . $documentId);
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+            redirect($documentId ? '/employe/document/edit?id=' . $documentId : '/employe/commandes');
         }
     }
 

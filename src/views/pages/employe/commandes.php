@@ -227,7 +227,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                                 <div class="commande-doc-item">
                                                     <span>
                                                         <?= sanitize(ucfirst($doc['type_document'] ?? 'document')) ?>
-                                                        <small><?= sanitize($doc['statut'] ?? '') ?></small>
+                                                        <small><?= sanitize($doc['numero_document'] ?: ($doc['statut'] ?? '')) ?></small>
                                                     </span>
                                                     <strong><?= sanitize(formatPrice($doc['total_ttc'] ?? 0)) ?></strong>
                                                     <a href="/employe/document/edit?id=<?= (int)$doc['document_id'] ?>" class="btn btn-link btn-sm">Éditer</a>
@@ -250,16 +250,27 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                                     <tr>
                                                         <th>Menu</th>
                                                         <th class="text-end">Pers.</th>
-                                                        <th class="text-end">Menu</th>
+                                                        <th class="text-end">Brut</th>
+                                                        <th class="text-end">Remise</th>
+                                                        <th class="text-end">Net menu</th>
                                                         <th class="text-end">Livraison</th>
                                                         <th class="text-end">Total</th>
                                                     </tr>
                                                 </thead>
                                                 <tbody>
                                                     <?php foreach ($lignesCommande as $ligne): ?>
+                                                        <?php
+                                                            $nbPersonnes = (int)($ligne['nombre_personne'] ?? 0);
+                                                            $brutMenu = !empty($ligne['prix_par_personne'])
+                                                                ? round((float)$ligne['prix_par_personne'] * $nbPersonnes, 2)
+                                                                : (float)($ligne['prix_menu'] ?? 0);
+                                                            $remiseMenu = max(0, $brutMenu - (float)($ligne['prix_menu'] ?? 0));
+                                                        ?>
                                                         <tr>
                                                             <td><?= sanitize($ligne['menu_titre'] ?? '') ?></td>
-                                                            <td class="text-end"><?= (int)($ligne['nombre_personne'] ?? 0) ?></td>
+                                                            <td class="text-end"><?= $nbPersonnes ?></td>
+                                                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($brutMenu)) ?></td>
+                                                            <td class="text-end text-nowrap text-success"><?= $remiseMenu > 0 ? '-' . sanitize(formatPrice($remiseMenu)) : '—' ?></td>
                                                             <td class="text-end text-nowrap"><?= sanitize(formatPrice($ligne['prix_menu'] ?? 0)) ?></td>
                                                             <td class="text-end text-nowrap"><?= sanitize(formatPrice($ligne['prix_livraison'] ?? 0)) ?></td>
                                                             <td class="text-end text-nowrap fw-semibold"><?= sanitize(formatPrice($ligne['prix_total_ligne'] ?? 0)) ?></td>
@@ -268,7 +279,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                                 </tbody>
                                                 <tfoot>
                                                     <tr>
-                                                        <th colspan="4" class="text-end">Total commande</th>
+                                                        <th colspan="6" class="text-end">Total commande</th>
                                                         <th class="text-end text-nowrap text-vg"><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></th>
                                                     </tr>
                                                 </tfoot>

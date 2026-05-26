@@ -76,7 +76,7 @@ class CommandeModel {
     public static function getLignes(int $commandeId): array {
         $db   = Database::getConnection();
         $stmt = $db->prepare("
-            SELECT cl.*, m.titre AS menu_titre
+            SELECT cl.*, m.titre AS menu_titre, m.prix_par_personne, m.nombre_personne_minimum
             FROM commande_ligne cl
             JOIN menu m ON m.menu_id = cl.menu_id
             WHERE cl.commande_id = ?
@@ -94,7 +94,7 @@ class CommandeModel {
 
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         $stmt = Database::getConnection()->prepare("
-            SELECT cl.*, m.titre AS menu_titre
+            SELECT cl.*, m.titre AS menu_titre, m.prix_par_personne, m.nombre_personne_minimum
             FROM commande_ligne cl
             JOIN menu m ON m.menu_id = cl.menu_id
             WHERE cl.commande_id IN ($placeholders)
