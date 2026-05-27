@@ -12,13 +12,13 @@ SET NAMES utf8mb4;
 
 INSERT IGNORE INTO site_config (cle, valeur) VALUES
     -- Identité
-    ('entreprise_nom',          'Vite & Gourmand'),
+    ('entreprise_nom',          'Mon Traiteur'),
     ('entreprise_siret',        ''),       -- SIRET 14 chiffres — obligatoire sur facture
     ('entreprise_forme_juridique', ''),    -- ex: SARL, EI, SAS, Auto-entrepreneur
     -- Adresse complète
     ('entreprise_adresse',      ''),
     ('entreprise_code_postal',  ''),
-    ('entreprise_ville',        'Bordeaux'),
+    ('entreprise_ville',        ''),
     -- Contact
     ('entreprise_telephone',    ''),
     ('entreprise_email',        ''),       -- si différent de MAIL_FROM

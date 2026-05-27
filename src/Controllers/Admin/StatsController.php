@@ -2,6 +2,7 @@
 
 namespace App\Controllers\Admin;
 
+use App\Config\SiteConfig;
 use App\Models\MenuModel;
 use App\Services\PricingService;
 use App\Services\StatsService;
@@ -32,7 +33,7 @@ class StatsController
         $dateFin   = sanitize($_GET['date_fin']   ?? '');
         $rows      = StatsService::getExportRows($dateDebut, $dateFin);
 
-        $filename = 'ca_vite_gourmand_' . date('Y-m-d') . '.csv';
+        $filename = 'ca_' . SiteConfig::slug() . '_' . date('Y-m-d') . '.csv';
         header('Content-Type: text/csv; charset=UTF-8');
         header('Content-Disposition: attachment; filename="' . $filename . '"');
         header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -98,7 +99,7 @@ class StatsController
         switch ($format) {
 
             case 'lignes':
-                header('Content-Disposition: attachment; filename="journal_lignes_vg' . $periodSuffix . '.csv"');
+                header('Content-Disposition: attachment; filename="journal_lignes_' . SiteConfig::slug() . $periodSuffix . '.csv"');
                 $headers = [
                     'N° commande', 'Date comptabilisation', 'Date prestation',
                     'Ville', 'Client', 'Email', 'Menu', 'Personnes',
@@ -127,7 +128,7 @@ class StatsController
                 break;
 
             case 'mensuel':
-                header('Content-Disposition: attachment; filename="ca_mensuel_vg' . $periodSuffix . '.csv"');
+                header('Content-Disposition: attachment; filename="ca_mensuel_' . SiteConfig::slug() . $periodSuffix . '.csv"');
                 $headers = ['Mois', 'Commandes', 'Personnes', 'Panier moyen TTC', 'CA TTC'];
                 if ($isAssujetti) { $headers[] = 'CA HT'; $headers[] = 'TVA collectée'; }
                 fputcsv($out, $headers, ';');
@@ -146,7 +147,7 @@ class StatsController
                 break;
 
             default: // 'commandes'
-                header('Content-Disposition: attachment; filename="journal_commandes_vg' . $periodSuffix . '.csv"');
+                header('Content-Disposition: attachment; filename="journal_commandes_' . SiteConfig::slug() . $periodSuffix . '.csv"');
                 $headers = [
                     'N° commande', 'Date comptabilisation', 'Date prestation',
                     'Ville', 'Client', 'Email', 'Personnes', 'Total TTC',

@@ -4,10 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= sanitize($pageTitle ?? buildPageTitle()) ?></title>
-    <link rel="icon" type="image/png" href="/favicon.png">
+    <?php $siteLogo = \App\Config\SiteConfig::logoUrl(); ?>
+    <?php if ($siteLogo): ?>
+        <link rel="icon" type="image/png" href="<?= sanitize($siteLogo) ?>">
+    <?php else: ?>
+        <link rel="icon" type="image/png" href="/favicon.png">
+    <?php endif; ?>
     <meta property="og:title" content="<?= sanitize(siteName()) ?> — <?= sanitize(siteSlogan()) ?>">
     <meta property="og:description" content="<?= sanitize(siteSlogan()) ?>. Découvrez nos menus et commandez en ligne pour tous vos événements.">
-    <meta property="og:image" content="/og/ogvg.png">
+    <meta property="og:image" content="<?= sanitize($siteLogo ?? '/og/og-default.png') ?>">
     <meta property="og:type" content="website">
     <?php foreach (($preloadImages ?? []) as $image): ?>
         <link rel="preload" as="image" href="<?= sanitize($image) ?>">
@@ -44,8 +49,12 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
 <nav class="navbar navbar-expand-xl navbar-dark bg-vg sticky-top site-navbar" role="navigation" aria-label="Navigation principale">
     <div class="container">
         <a class="navbar-brand fw-bold" href="/" aria-label="Retour à l'accueil <?= sanitize(siteName()) ?>">
-            <span class="site-brand-name"><?= sanitize(siteName()) ?></span>
-            <span class="site-brand-kicker d-none d-xl-block"><?= sanitize(siteSlogan()) ?></span>
+            <?php if ($siteLogo): ?>
+                <img src="<?= sanitize($siteLogo) ?>" alt="<?= sanitize(siteName()) ?>" class="site-brand-logo">
+            <?php else: ?>
+                <span class="site-brand-name"><?= sanitize(siteName()) ?></span>
+                <span class="site-brand-kicker d-none d-xl-block"><?= sanitize(siteSlogan()) ?></span>
+            <?php endif; ?>
         </a>
         <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="Ouvrir le menu">
             <span class="navbar-toggler-icon"></span>
@@ -161,10 +170,18 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
                 </ul>
             </section>
         </div>
+        <div class="text-center mt-3 pt-3 border-top border-secondary">
+            <small class="text-muted" style="font-size:.7rem;opacity:.6;">
+                Propulsé par <a href="<?= APP_VENDOR_URL ?>" target="_blank" rel="noopener" class="text-muted"><?= APP_NAME ?></a> v<?= APP_VERSION ?>
+            </small>
+        </div>
     </div>
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" nonce="<?= $cspNonce ?>"></script>
 <script src="/js/app.js?v=20260526-03" nonce="<?= $cspNonce ?>"></script>
+<?php if (!\App\Config\License::isValid()): ?>
+<?= \App\Config\License::banner() ?>
+<?php endif; ?>
 </body>
 </html>

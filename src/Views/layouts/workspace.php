@@ -4,7 +4,12 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= sanitize($pageTitle ?? buildPageTitle()) ?></title>
-    <link rel="icon" type="image/png" href="/favicon.png">
+    <?php $siteLogo = \App\Config\SiteConfig::logoUrl(); ?>
+    <?php if ($siteLogo): ?>
+        <link rel="icon" type="image/png" href="<?= sanitize($siteLogo) ?>">
+    <?php else: ?>
+        <link rel="icon" type="image/png" href="/favicon.png">
+    <?php endif; ?>
     <?php $cspNonce = $GLOBALS['csp_nonce'] ?? ''; ?>
     <style nonce="<?= $cspNonce ?>">
         :root {
@@ -48,7 +53,11 @@
         <!-- Logo / brand -->
         <div class="workspace-brand">
             <a href="/" class="workspace-brand-link" aria-label="Retour au site">
-                <span class="workspace-brand-name"><?= sanitize(siteName()) ?></span>
+                <?php if ($siteLogo): ?>
+                    <img src="<?= sanitize($siteLogo) ?>" alt="<?= sanitize(siteName()) ?>" class="workspace-brand-logo">
+                <?php else: ?>
+                    <span class="workspace-brand-name"><?= sanitize(siteName()) ?></span>
+                <?php endif; ?>
             </a>
             <span class="workspace-role-badge">
                 <?= hasRole(ROLE_ADMIN) ? 'Admin' : 'Employé' ?>
@@ -89,6 +98,9 @@
                 <i class="bi bi-person-circle workspace-nav-icon"></i>
                 <span><?= sanitize(currentUser()['prenom'] ?? '') ?> <?= sanitize(currentUser()['nom'] ?? '') ?></span>
             </div>
+            <div class="workspace-vendor">
+                <a href="<?= APP_VENDOR_URL ?>" target="_blank" rel="noopener"><?= APP_NAME ?> v<?= APP_VERSION ?></a>
+            </div>
         </div>
 
     </aside>
@@ -99,7 +111,11 @@
         <!-- Navbar mobile (< lg) -->
         <nav class="d-lg-none navbar navbar-expand-lg navbar-dark bg-vg sticky-top" aria-label="Navigation back-office mobile">
             <div class="container">
-                <span class="navbar-brand fw-bold mb-0"><?= sanitize(siteName()) ?></span>
+                <?php if ($siteLogo): ?>
+                    <img src="<?= sanitize($siteLogo) ?>" alt="<?= sanitize(siteName()) ?>" class="site-brand-logo">
+                <?php else: ?>
+                    <span class="navbar-brand fw-bold mb-0"><?= sanitize(siteName()) ?></span>
+                <?php endif; ?>
                 <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#workspaceMobileNav" aria-controls="workspaceMobileNav" aria-expanded="false" aria-label="Ouvrir le menu">
                     <span class="navbar-toggler-icon"></span>
                 </button>
@@ -137,5 +153,8 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" nonce="<?= $cspNonce ?>"></script>
 <script src="/js/app.js?v=20260526-03" nonce="<?= $cspNonce ?>"></script>
+<?php if (!\App\Config\License::isValid()): ?>
+<?= \App\Config\License::banner() ?>
+<?php endif; ?>
 </body>
 </html>

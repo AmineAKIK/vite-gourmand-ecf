@@ -75,6 +75,10 @@ class ParametresController
                 'reduction_seuil'  => ['type' => 'decimal', 'min' => 0],
                 'reduction_taux'   => ['type' => 'int',     'min' => 0, 'max' => 100],
             ],
+            'legal' => [
+                'cgv_contenu'      => ['type' => 'string', 'max' => 20000],
+                'mentions_contenu' => ['type' => 'string', 'max' => 20000],
+            ],
         ];
 
         $fields = $allFields[$section] ?? $allFields['tarification'];
@@ -273,7 +277,7 @@ class ParametresController
     {
         verifyCsrf();
 
-        foreach (['hero', 'preparation'] as $cle) {
+        foreach (['logo', 'hero', 'preparation'] as $cle) {
             $file = $_FILES[$cle] ?? null;
             if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
                 continue;

@@ -271,6 +271,13 @@ a:focus {
         line-height: 1;
     }
 
+    .site-brand-logo {
+        max-height: 44px;
+        max-width: 180px;
+        width: auto;
+        object-fit: contain;
+    }
+
     .site-brand-kicker {
         margin-top: .34rem;
         color: var(--vg-or-light);
@@ -4053,6 +4060,14 @@ input[type="password"]::-webkit-caps-lock-indicator {
     display: block;
 }
 
+.workspace-brand-logo {
+    max-height: 48px;
+    max-width: 160px;
+    width: auto;
+    object-fit: contain;
+    filter: brightness(0) invert(1);
+}
+
 .workspace-role-badge {
     font-size: .65rem;
     font-weight: 600;
@@ -4137,6 +4152,19 @@ input[type="password"]::-webkit-caps-lock-indicator {
     color: rgba(255,255,255,.55);
     font-size: .8rem;
     margin-bottom: .5rem;
+}
+
+.workspace-vendor {
+    font-size: .65rem;
+    opacity: .35;
+    text-align: center;
+}
+.workspace-vendor a {
+    color: rgba(255,255,255,.6);
+    text-decoration: none;
+}
+.workspace-vendor a:hover {
+    opacity: .8;
 }
 
 

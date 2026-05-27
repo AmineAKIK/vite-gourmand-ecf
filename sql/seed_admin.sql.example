@@ -1,9 +1,9 @@
 -- ============================================
--- VITE & GOURMAND - Compte administrateur initial
+-- Compte administrateur initial
 -- ============================================
 -- CE FICHIER NE DOIT JAMAIS ÊTRE COMMITÉ avec de vraies valeurs.
 -- Copier ce fichier vers sql/seed_admin.sql, remplacer les valeurs,
--- puis exécuter manuellement APRÈS avoir exécuté schema.sql.
+-- puis exécuter manuellement APRÈS avoir exécuté schema.sql + migrations.
 --
 -- Générer un hash bcrypt :
 --   php -r "echo password_hash('VotreMotDePasse!1', PASSWORD_BCRYPT, ['cost' => 12]);"
@@ -11,13 +11,13 @@
 
 INSERT INTO utilisateur (email, password, prenom, nom, telephone, adresse, ville, code_postal, role_id)
 VALUES (
-    'admin@vitegourmand.fr',
+    'admin@montraiteur.fr',
     '$2y$12$REMPLACER_PAR_UN_VRAI_HASH_BCRYPT_GENERE_LOCALEMENT',
-    'José',
-    'Admin',
+    'Prénom',
+    'Nom',
     '0600000000',
-    '1 Rue de la Restauration',
-    'Bordeaux',
-    '33000',
+    '1 Rue de votre choix',
+    'Votre Ville',
+    '00000',
     3
 );

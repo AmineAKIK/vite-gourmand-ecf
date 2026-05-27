@@ -6,7 +6,7 @@ $pageTitle = buildPageTitle();
 <!-- HERO -->
 <section class="hero hero-home text-center" aria-label="Présentation de l'entreprise">
     <img
-        src="<?= sanitize($heroUrl ?? '/images/hero-traiteur-bordeaux.webp') ?>"
+        src="<?= sanitize($heroUrl ?? '/images/hero-traiteur.webp') ?>"
         class="hero-bg"
         alt=""
         aria-hidden="true"
@@ -30,9 +30,9 @@ $pageTitle = buildPageTitle();
         <div class="row g-4 align-items-center">
             <div class="col-lg-5">
                 <img
-                    src="<?= sanitize($preparationUrl ?? '/images/preparation-traiteur.webp') ?>"
+                    src="<?= sanitize($preparationUrl ?? '/images/preparation-traiteur-generique.webp') ?>"
                     class="img-fluid professional-img"
-                    alt="Préparation de bouchées traiteur par l'équipe Vite et Gourmand"
+                    alt="Préparation traiteur"
                     loading="lazy"
                     decoding="async"
                     width="1000"
@@ -50,7 +50,7 @@ $pageTitle = buildPageTitle();
                         <div class="p-3">
                             <i class="bi bi-award display-5 text-vg mb-3"></i>
                             <h3 class="h5">25 ans d'expérience</h3>
-                            <p class="text-muted">Julie et José coordonnent chaque prestation avec rigueur, ponctualité et sens du détail.</p>
+                            <p class="text-muted">Notre équipe coordonne chaque prestation avec rigueur, ponctualité et sens du détail.</p>
                         </div>
                     </div>
                     <div class="col-12 col-lg-4">

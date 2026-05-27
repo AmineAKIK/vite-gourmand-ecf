@@ -209,7 +209,7 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                         <div class="col-12 col-lg-4">
                             <label class="form-label fw-medium" for="entreprise_ville">Ville</label>
                             <input type="text" class="form-control" id="entreprise_ville" name="entreprise_ville"
-                                   value="<?= $cfg('entreprise_ville', 'Bordeaux') ?>" maxlength="80">
+                                   value="<?= $cfg('entreprise_ville', '') ?>" maxlength="80">
                         </div>
                         <div class="col-12 col-lg-5">
                             <label class="form-label fw-medium" for="entreprise_telephone">Téléphone</label>
@@ -565,6 +565,64 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
         </div>
     </div>
 
+    <!-- ============================================================
+         SECTION 5 — Pages légales (CGV & Mentions)
+    ============================================================ -->
+    <div class="col-12" id="legal">
+        <div class="card shadow-sm">
+            <div class="card-header fw-semibold">
+                <i class="bi bi-file-text me-2 text-vg"></i>Pages légales
+            </div>
+            <div class="card-body">
+                <p class="text-muted mb-4">
+                    Si ces champs sont remplis, votre contenu personnalisé remplace le texte généré automatiquement sur <a href="/cgv" target="_blank">/cgv</a> et <a href="/mentions" target="_blank">/mentions</a>.
+                    Laissez vide pour conserver le texte généré depuis vos paramètres entreprise.
+                </p>
+                <form method="POST" action="/admin/parametres/modifier">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="_section" value="legal">
+                    <div class="row g-4">
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label fw-medium" for="cgv_contenu">Conditions Générales de Vente</label>
+                            <textarea
+                                id="cgv_contenu"
+                                name="cgv_contenu"
+                                class="form-control"
+                                rows="12"
+                                maxlength="20000"
+                                placeholder="Laissez vide pour afficher le texte généré automatiquement."
+                            ><?= $cfg('cgv_contenu') ?></textarea>
+                            <div class="d-flex justify-content-between mt-1">
+                                <div class="form-text">Texte brut. Les sauts de ligne sont conservés.</div>
+                                <small class="text-muted"><span id="count-cgv">0</span>/20 000</small>
+                            </div>
+                        </div>
+                        <div class="col-12 col-lg-6">
+                            <label class="form-label fw-medium" for="mentions_contenu">Mentions légales</label>
+                            <textarea
+                                id="mentions_contenu"
+                                name="mentions_contenu"
+                                class="form-control"
+                                rows="12"
+                                maxlength="20000"
+                                placeholder="Laissez vide pour afficher le texte généré automatiquement."
+                            ><?= $cfg('mentions_contenu') ?></textarea>
+                            <div class="d-flex justify-content-between mt-1">
+                                <div class="form-text">Texte brut. Les sauts de ligne sont conservés.</div>
+                                <small class="text-muted"><span id="count-mentions">0</span>/20 000</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <button type="submit" class="btn btn-vg">
+                            <i class="bi bi-save me-1"></i>Enregistrer les pages légales
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div><!-- /.row -->
 
 <script nonce="<?= $cspNonce ?>">
@@ -608,5 +666,19 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
     bindColor('couleur_principale', 'couleur_principale_picker', '--vg-bordeaux', 'preview-badge');
     bindColor('couleur_secondaire', 'couleur_secondaire_picker', '--vg-or', 'preview-badge2');
     bindColor('couleur_fond',       'couleur_fond_picker',       '--vg-creme', null);
+}());
+
+// Compteurs pages légales
+(function () {
+    function bindCounter(inputId, countId) {
+        var el  = document.getElementById(inputId);
+        var cnt = document.getElementById(countId);
+        if (!el || !cnt) return;
+        function update() { cnt.textContent = el.value.length.toLocaleString('fr-FR'); }
+        update();
+        el.addEventListener('input', update);
+    }
+    bindCounter('cgv_contenu',      'count-cgv');
+    bindCounter('mentions_contenu', 'count-mentions');
 }());
 </script>

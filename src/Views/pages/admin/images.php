@@ -10,6 +10,34 @@ $pageTitle = buildPageTitle('Images du site');
 
         <div class="row g-4">
 
+            <!-- Logo -->
+            <div class="col-12">
+                <div class="card border-0 shadow-sm p-4" style="background:var(--vg-creme);">
+                    <h2 class="h5 fw-bold mb-1">
+                        <i class="bi bi-image-fill me-2 text-vg"></i>Logo du site
+                    </h2>
+                    <p class="text-muted small mb-3">Utilisé dans la navbar, le favicon et l'aperçu des réseaux sociaux. Si absent, le nom du site s'affiche à la place.</p>
+                    <div class="d-flex align-items-center gap-4 mb-3">
+                        <?php if (!empty($images['logo'])): ?>
+                            <img src="<?= sanitize(imageUrl($images['logo'])) ?>"
+                                 alt="Logo actuel"
+                                 id="preview-logo"
+                                 style="max-height:80px;max-width:200px;object-fit:contain;background:#fff;padding:8px;border-radius:8px;border:1px solid #ddd;">
+                        <?php else: ?>
+                            <div id="preview-logo" class="d-flex align-items-center justify-content-center text-muted"
+                                 style="height:80px;width:200px;background:#fff;border:1px dashed #ccc;border-radius:8px;font-size:13px;">
+                                Aucun logo
+                            </div>
+                        <?php endif; ?>
+                    </div>
+                    <label for="logo" class="form-label fw-medium">Uploader un logo</label>
+                    <input type="file" class="form-control image-picker" id="logo" name="logo"
+                           accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>"
+                           data-preview="preview-logo">
+                    <div class="form-text"><?= sanitize(MenuAdminService::acceptedImageFormatsLabel()) ?> — Format recommandé : PNG transparent, min. 300×100 px</div>
+                </div>
+            </div>
+
             <!-- Hero -->
             <div class="col-12 col-lg-6">
                 <div class="card border-0 shadow-sm p-4" style="background:var(--vg-creme);">

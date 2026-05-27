@@ -33,7 +33,7 @@ $defaultParagraphe = '';
                     rows="2"
                     maxlength="60"
                     required
-                ><?= $cfg('hero_sous_titre', 'Traiteur bordelais depuis 25 ans') ?></textarea>
+                ><?= $cfg('hero_sous_titre', '') ?></textarea>
                 <div class="d-flex justify-content-between">
                     <div class="form-text">Accroche courte, mise en valeur en couleur dorée.</div>
                     <small class="text-muted mt-1"><span id="count-sous-titre">0</span>/60</small>
@@ -71,7 +71,7 @@ $defaultParagraphe = '';
                 </div>
                 <div class="card-body">
                     <img
-                        src="<?= sanitize(imageUrl($images['hero'] ?? null, 'images/hero-traiteur-bordeaux.webp')) ?>"
+                        src="<?= sanitize(imageUrl($images['hero'] ?? null, 'images/hero-traiteur.webp')) ?>"
                         alt="Image hero actuelle"
                         class="img-fluid rounded mb-3"
                         style="max-height:200px;width:100%;object-fit:cover;"
@@ -93,7 +93,7 @@ $defaultParagraphe = '';
                 </div>
                 <div class="card-body">
                     <img
-                        src="<?= sanitize(imageUrl($images['preparation'] ?? null, 'images/preparation-traiteur.webp')) ?>"
+                        src="<?= sanitize(imageUrl($images['preparation'] ?? null, 'images/preparation-traiteur-generique.webp')) ?>"
                         alt="Image équipe actuelle"
                         class="img-fluid rounded mb-3"
                         style="max-height:200px;width:100%;object-fit:cover;"

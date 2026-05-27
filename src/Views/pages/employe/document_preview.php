@@ -57,7 +57,7 @@ $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['
             <div>
                 <p class="document-brand"><?= sanitize($entreprise['nom'] ?? siteName()) ?></p>
                 <address>
-                    <?= sanitize($entreprise['adresse'] ?? 'Bordeaux') ?><br>
+                    <?= sanitize($entreprise['adresse'] ?? '') ?><br>
                     <?= sanitize($entreprise['email'] ?? MAIL_FROM) ?>
                 </address>
             </div>

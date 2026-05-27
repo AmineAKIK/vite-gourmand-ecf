@@ -3,6 +3,7 @@
 namespace App\Config;
 
 use App\Models\SiteConfigModel;
+use App\Models\SiteImageModel;
 
 class SiteConfig
 {
@@ -112,6 +113,23 @@ class SiteConfig
     {
         $rate = (float)self::get('reduction_taux', REDUCTION_TAUX * 100);
         return min(100.0, max(0.0, $rate));
+    }
+
+    public static function logoUrl(): ?string
+    {
+        try {
+            $url = SiteImageModel::get('logo');
+            return $url ?: null;
+        } catch (\Throwable) {
+            return null;
+        }
+    }
+
+    public static function slug(): string
+    {
+        $name = strtolower(self::name());
+        $name = preg_replace('/[\s\-]+/', '_', $name);
+        return preg_replace('/[^a-z0-9_]/', '', $name) ?: 'traiteur';
     }
 
     public static function deliveryPricingLabel(): string

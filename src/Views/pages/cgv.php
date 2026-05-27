@@ -1,7 +1,33 @@
 <?php
 // src/views/pages/cgv.php
 $pageTitle = buildPageTitle('Conditions Générales de Vente');
-
+?>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <nav aria-label="Fil d'Ariane">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Conditions générales de vente</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+<?php if (!empty($cgvContenu)): ?>
+<div class="container py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <h1 class="fw-bold mb-2">Conditions générales de vente</h1>
+            <hr class="mb-4">
+            <div class="legal-custom-content">
+                <?= nl2br(sanitize($cgvContenu)) ?>
+            </div>
+        </div>
+    </div>
+</div>
+<?php else: ?>
+<?php
 $nom     = siteConfigValue('entreprise_nom',          siteName());
 $forme   = siteConfigValue('entreprise_forme_juridique', '');
 $email   = siteConfigValue('entreprise_email',         siteEmail());
@@ -14,7 +40,7 @@ $livraisonKm   = livraisonKm();
 $seuil         = reductionSeuilMontant();
 $taux          = reductionTauxPourcentage();
 ?>
-<div class="container py-5">
+<div class="container py-3">
     <div class="row justify-content-center">
         <div class="col-lg-9">
 
@@ -184,3 +210,4 @@ $taux          = reductionTauxPourcentage();
         </div>
     </div>
 </div>
+<?php endif; ?>

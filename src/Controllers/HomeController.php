@@ -10,8 +10,8 @@ class HomeController {
     public function index(): void {
         $avisValides   = AvisModel::getHomepage();
         $siteImages    = SiteImageModel::getAll();
-        $heroUrl       = imageUrl($siteImages['hero']        ?? null, 'images/hero-traiteur-bordeaux.webp');
-        $preparationUrl = imageUrl($siteImages['preparation'] ?? null, 'images/preparation-traiteur.webp');
+        $heroUrl        = imageUrl($siteImages['hero']        ?? null, 'images/hero-traiteur.webp');
+        $preparationUrl = imageUrl($siteImages['preparation'] ?? null, 'images/preparation-traiteur-generique.webp');
         $preloadImages   = [$heroUrl];
         $heroSousTitre   = SiteConfigModel::get('hero_sous_titre', siteSlogan());
         $heroParagraphe  = SiteConfigModel::get('hero_paragraphe', '');

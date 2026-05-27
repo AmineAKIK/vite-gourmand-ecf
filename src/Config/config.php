@@ -29,6 +29,9 @@ define('MAIL_FROM_NAME', $_ENV['MAIL_FROM_NAME'] ?? 'Mon Traiteur');
 
 define('BASE_URL', $_ENV['BASE_URL'] ?? 'http://localhost:8080');
 define('APP_ENV', $_ENV['APP_ENV'] ?? 'production');
+define('APP_VERSION', '1.0.0');
+define('APP_NAME', 'Tugères');
+define('APP_VENDOR_URL', 'https://tugeres.fr');
 
 if (APP_ENV !== 'development') {
     ini_set('display_errors', '0');

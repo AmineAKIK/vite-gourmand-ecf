@@ -1,5 +1,7 @@
 -- ============================================
--- VITE & GOURMAND - Base de données relationnelle
+-- TUGÈRES — Schéma de base de données
+-- Copyright (c) 2025 Mohamed Amine AKIK — AkikSystems
+-- https://tugeres.fr — contact@akiksystems.com
 -- ============================================
 -- Ce fichier contient uniquement le schéma et les données de référence.
 -- Pour le compte administrateur initial, voir sql/seed_admin.sql.example

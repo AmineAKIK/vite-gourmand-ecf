@@ -1,7 +1,33 @@
 <?php
 // src/views/pages/mentions.php
 $pageTitle = buildPageTitle('Mentions légales');
-
+?>
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <nav aria-label="Fil d'Ariane">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item"><a href="/">Accueil</a></li>
+                    <li class="breadcrumb-item active" aria-current="page">Mentions légales</li>
+                </ol>
+            </nav>
+        </div>
+    </div>
+</div>
+<?php if (!empty($mentionsContenu)): ?>
+<div class="container py-3">
+    <div class="row justify-content-center">
+        <div class="col-lg-9">
+            <h1 class="fw-bold mb-4">Mentions légales</h1>
+            <hr class="mb-4">
+            <div class="legal-custom-content">
+                <?= nl2br(sanitize($mentionsContenu)) ?>
+            </div>
+        </div>
+    </div>
+</div>
+<?php else: ?>
+<?php
 $nom      = siteConfigValue('entreprise_nom',          siteName());
 $forme    = siteConfigValue('entreprise_forme_juridique', '');
 $adresse  = siteConfigValue('entreprise_adresse',       siteAddress());
@@ -14,7 +40,7 @@ $tvaIntra = siteConfigValue('entreprise_tva_intracom',  '');
 $domaine  = siteDomain();
 $nomFull  = trim($nom . ($forme ? ' ' . $forme : ''));
 ?>
-<div class="container py-5">
+<div class="container py-3">
     <div class="row justify-content-center">
         <div class="col-lg-9">
 
@@ -131,3 +157,4 @@ $nomFull  = trim($nom . ($forme ? ' ' . $forme : ''));
         </div>
     </div>
 </div>
+<?php endif; ?>

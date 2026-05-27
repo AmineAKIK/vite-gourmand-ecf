@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Config\Database;
+use App\Config\SiteConfig;
 use InvalidArgumentException;
 use PDO;
 use RuntimeException;
@@ -492,7 +493,7 @@ class FacturationModel
         $vendeurAdresse = trim(
             ($entreprise['adresse'] ?? '') . ', '
             . ($entreprise['code_postal'] ?? '') . ' '
-            . ($entreprise['ville'] ?? 'Bordeaux')
+            . ($entreprise['ville'] ?? '')
         );
         $vendeurAdresse = trim($vendeurAdresse, ', ');
 
@@ -664,7 +665,7 @@ class FacturationModel
         }
 
         return [
-            'format' => 'vite_gourmand_e_invoice_preparation_v1',
+            'format' => self::eInvoiceFormatSlug(),
             'ready_for_platform_mapping' => empty($warnings),
             'warnings' => $warnings,
             'document' => [
@@ -937,7 +938,7 @@ class FacturationModel
             'forme_juridique'  => siteConfigValue('entreprise_forme_juridique', ''),
             'adresse'          => siteConfigValue('entreprise_adresse',      ''),
             'code_postal'      => siteConfigValue('entreprise_code_postal',  ''),
-            'ville'            => siteConfigValue('entreprise_ville',        'Bordeaux'),
+            'ville'            => siteConfigValue('entreprise_ville',        ''),
             'telephone'        => siteConfigValue('entreprise_telephone',    ''),
             'email'            => siteConfigValue('entreprise_email',        MAIL_FROM),
             'tva_intracom'     => siteConfigValue('entreprise_tva_intracom', ''),
@@ -993,5 +994,10 @@ class FacturationModel
     private static function dateOrNull(string $date): ?string
     {
         return preg_match('/^\d{4}-\d{2}-\d{2}$/', $date) ? $date : null;
+    }
+
+    private static function eInvoiceFormatSlug(): string
+    {
+        return SiteConfig::slug() . '_e_invoice_v1';
     }
 }
