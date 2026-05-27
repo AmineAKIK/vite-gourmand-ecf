@@ -1,7 +1,28 @@
 <?php
-// public/index.php - Point d'entrée unique
 
-require_once __DIR__ . '/../src/config/config.php';
+require_once __DIR__ . '/../src/Config/config.php';
+
+use App\Config\Database;
+use App\Controllers\AuthController;
+use App\Controllers\AvisController;
+use App\Controllers\CommandeController;
+use App\Controllers\ContactController;
+use App\Controllers\HomeController;
+use App\Controllers\MenuController;
+use App\Controllers\PageController;
+use App\Controllers\PaiementController;
+use App\Controllers\PanierController;
+use App\Controllers\StripeController;
+use App\Controllers\UserController;
+use App\Controllers\Admin\DashboardController;
+use App\Controllers\Admin\EmployeAdminController;
+use App\Controllers\Admin\ParametresController;
+use App\Controllers\Admin\StatsController;
+use App\Controllers\Workspace\AvisAdminController;
+use App\Controllers\Workspace\DocumentController;
+use App\Controllers\Workspace\EmployeController;
+use App\Controllers\Workspace\HoraireController;
+use App\Controllers\Workspace\MenuAdminController;
 
 session_set_cookie_params([
     'lifetime' => 0,
@@ -40,20 +61,8 @@ header("Content-Security-Policy: "
     . "connect-src 'self'; "
     . "frame-ancestors 'none';"
 );
-require_once __DIR__ . '/../src/config/Database.php';
-require_once __DIR__ . '/../src/helpers.php';
 
-// Autoload simplifié
-spl_autoload_register(function($class) {
-    $paths = [
-        __DIR__ . '/../src/controllers/' . $class . '.php',
-        __DIR__ . '/../src/models/'      . $class . '.php',
-        __DIR__ . '/../src/services/'    . $class . '.php',
-    ];
-    foreach ($paths as $path) {
-        if (file_exists($path)) { require_once $path; return; }
-    }
-});
+require_once __DIR__ . '/../src/helpers.php';
 
 $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri    = rtrim($uri, '/') ?: '/';
@@ -74,104 +83,104 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 $routes = [
     'GET'  => [
-        '/'                    => ['HomeController',    'index'],
-        '/menus'               => ['MenuController',    'index'],
-        '/menus/detail'        => ['MenuController',    'detail'],
-        '/livraison/calcul'    => ['CommandeController','calculLivraison'],
-        '/connexion'           => ['AuthController',    'loginForm'],
-        '/inscription'         => ['AuthController',    'registerForm'],
-        '/deconnexion'         => ['AuthController',    'logout'],
-        '/mot-de-passe-oublie' => ['AuthController',    'forgotForm'],
-        '/reinitialiser'       => ['AuthController',    'resetForm'],
-        '/contact'             => ['ContactController', 'index'],
-        '/mentions-legales'    => ['PageController',    'mentions'],
-        '/cgv'                 => ['PageController',    'cgv'],
+        '/'                    => [HomeController::class,    'index'],
+        '/menus'               => [MenuController::class,    'index'],
+        '/menus/detail'        => [MenuController::class,    'detail'],
+        '/livraison/calcul'    => [CommandeController::class,'calculLivraison'],
+        '/connexion'           => [AuthController::class,    'loginForm'],
+        '/inscription'         => [AuthController::class,    'registerForm'],
+        '/deconnexion'         => [AuthController::class,    'logout'],
+        '/mot-de-passe-oublie' => [AuthController::class,    'forgotForm'],
+        '/reinitialiser'       => [AuthController::class,    'resetForm'],
+        '/contact'             => [ContactController::class, 'index'],
+        '/mentions-legales'    => [PageController::class,    'mentions'],
+        '/cgv'                 => [PageController::class,    'cgv'],
     ],
     'POST' => [
-        '/connexion'           => ['AuthController',    'login'],
-        '/inscription'         => ['AuthController',    'register'],
-        '/mot-de-passe-oublie' => ['AuthController',    'forgot'],
-        '/reinitialiser'       => ['AuthController',    'reset'],
-        '/contact'             => ['ContactController', 'send'],
-        '/stripe/webhook'      => ['StripeController',  'webhook'],
+        '/connexion'           => [AuthController::class,    'login'],
+        '/inscription'         => [AuthController::class,    'register'],
+        '/mot-de-passe-oublie' => [AuthController::class,    'forgot'],
+        '/reinitialiser'       => [AuthController::class,    'reset'],
+        '/contact'             => [ContactController::class, 'send'],
+        '/stripe/webhook'      => [StripeController::class,  'webhook'],
     ],
     'GET_AUTH' => [
-        '/mon-compte'          => ['UserController',    'dashboard'],
-        '/panier'              => ['PanierController',  'view'],
-        '/commande/suivi'      => ['CommandeController','suivi'],
-        '/stripe/checkout'     => ['StripeController',  'checkout'],
-        '/stripe/success'      => ['StripeController',  'success'],
-        '/stripe/cancel'       => ['StripeController',  'cancel'],
+        '/mon-compte'          => [UserController::class,    'dashboard'],
+        '/panier'              => [PanierController::class,  'view'],
+        '/commande/suivi'      => [CommandeController::class,'suivi'],
+        '/stripe/checkout'     => [StripeController::class,  'checkout'],
+        '/stripe/success'      => [StripeController::class,  'success'],
+        '/stripe/cancel'       => [StripeController::class,  'cancel'],
     ],
     'POST_AUTH' => [
-        '/mon-compte/modifier'  => ['UserController', 'update'],
-        '/mon-compte/supprimer' => ['UserController', 'deleteAccount'],
-        '/panier/ajouter'      => ['PanierController', 'add'],
-        '/panier/retirer'      => ['PanierController', 'remove'],
-        '/panier/vider'        => ['PanierController', 'clear'],
-        '/commande'            => ['CommandeController','create'],
-        '/commande/modifier'   => ['CommandeController','update'],
-        '/commande/annuler'    => ['CommandeController','cancel'],
-        '/avis'                => ['AvisController',    'create'],
+        '/mon-compte/modifier'  => [UserController::class,  'update'],
+        '/mon-compte/supprimer' => [UserController::class,  'deleteAccount'],
+        '/panier/ajouter'      => [PanierController::class,  'add'],
+        '/panier/retirer'      => [PanierController::class,  'remove'],
+        '/panier/vider'        => [PanierController::class,  'clear'],
+        '/commande'            => [CommandeController::class,'create'],
+        '/commande/modifier'   => [CommandeController::class,'update'],
+        '/commande/annuler'    => [CommandeController::class,'cancel'],
+        '/avis'                => [AvisController::class,    'create'],
     ],
     'GET_EMPLOYE' => [
-        '/employe'                        => ['EmployeController', 'dashboard'],
-        '/employe/commandes'              => ['EmployeController', 'commandes'],
-        '/employe/menus'                  => ['EmployeController', 'menus'],
-        '/employe/avis'                   => ['EmployeController', 'avis'],
-        '/employe/horaires'               => ['EmployeController', 'horaires'],
-        '/employe/document/edit'          => ['EmployeController', 'editDocument'],
-        '/employe/document/apercu'        => ['EmployeController', 'previewDocument'],
-        '/employe/document/export'        => ['EmployeController', 'exportDocument'],
-        '/employe/changer-mot-de-passe'   => ['EmployeController', 'changePasswordForm'],
+        '/employe'                        => [EmployeController::class,    'dashboard'],
+        '/employe/commandes'              => [EmployeController::class,    'commandes'],
+        '/employe/menus'                  => [MenuAdminController::class,  'index'],
+        '/employe/avis'                   => [AvisAdminController::class,  'index'],
+        '/employe/horaires'               => [HoraireController::class,    'index'],
+        '/employe/document/edit'          => [DocumentController::class,   'edit'],
+        '/employe/document/apercu'        => [DocumentController::class,   'preview'],
+        '/employe/document/export'        => [DocumentController::class,   'export'],
+        '/employe/changer-mot-de-passe'   => [EmployeController::class,    'changePasswordForm'],
     ],
     'GET_ADMIN' => [
-        '/admin'               => ['AdminController',   'dashboard'],
-        '/admin/employes'      => ['AdminController',   'employes'],
-        '/admin/stats'              => ['AdminController',   'stats'],
-        '/admin/stats/export'       => ['AdminController',   'exportStats'],
-        '/admin/comptabilite'       => ['AdminController',   'comptabilite'],
-        '/admin/comptabilite/export'=> ['AdminController',   'exportComptabilite'],
-        '/admin/accueil'       => ['AdminController',   'accueil'],
-        '/admin/images'        => ['AdminController',   'images'],
-        '/admin/parametres'    => ['AdminController',   'parametres'],
+        '/admin'                     => [DashboardController::class,  'index'],
+        '/admin/employes'            => [EmployeAdminController::class,'index'],
+        '/admin/stats'               => [StatsController::class,      'stats'],
+        '/admin/stats/export'        => [StatsController::class,      'exportStats'],
+        '/admin/comptabilite'        => [StatsController::class,      'comptabilite'],
+        '/admin/comptabilite/export' => [StatsController::class,      'exportComptabilite'],
+        '/admin/accueil'             => [ParametresController::class, 'accueil'],
+        '/admin/images'              => [ParametresController::class, 'images'],
+        '/admin/parametres'          => [ParametresController::class, 'index'],
     ],
     'POST_EMPLOYE' => [
-        '/employe/paiement/enregistrer'  => ['PaiementController', 'enregistrer'],
-        '/employe/paiement/supprimer'    => ['PaiementController', 'supprimer'],
-        '/employe/changer-mot-de-passe'  => ['EmployeController', 'changePassword'],
-        '/employe/commande/statut'   => ['EmployeController', 'updateStatut'],
-        '/employe/document/creer'     => ['EmployeController', 'createDocument'],
-        '/employe/document/modifier'  => ['EmployeController', 'updateDocument'],
-        '/employe/document/finaliser' => ['EmployeController', 'finalizeDocument'],
-        '/employe/document/archiver'  => ['EmployeController', 'archiveDocument'],
-        '/employe/document/envoyer'   => ['EmployeController', 'sendDocument'],
-        '/employe/menu/creer'        => ['EmployeController', 'createMenu'],
-        '/employe/menu/modifier'     => ['EmployeController', 'updateMenu'],
-        '/employe/menu/supprimer'    => ['EmployeController', 'deleteMenu'],
-        '/employe/avis/valider'      => ['EmployeController', 'validerAvis'],
-        '/employe/avis/accueil'      => ['EmployeController', 'toggleAvisAccueil'],
-        '/employe/avis/supprimer'    => ['EmployeController', 'supprimerAvis'],
-        '/employe/horaires/modifier' => ['EmployeController', 'updateHoraires'],
-        '/employe/plat/creer'           => ['EmployeController', 'createPlat'],
-        '/employe/plat/modifier'        => ['EmployeController', 'updatePlat'],
-        '/employe/plat/supprimer'       => ['EmployeController', 'deletePlat'],
-        '/employe/menu/image/supprimer' => ['EmployeController', 'deleteMenuImage'],
+        '/employe/paiement/enregistrer'  => [PaiementController::class,   'enregistrer'],
+        '/employe/paiement/supprimer'    => [PaiementController::class,   'supprimer'],
+        '/employe/changer-mot-de-passe'  => [EmployeController::class,    'changePassword'],
+        '/employe/commande/statut'       => [EmployeController::class,    'updateStatut'],
+        '/employe/document/creer'        => [DocumentController::class,   'create'],
+        '/employe/document/modifier'     => [DocumentController::class,   'update'],
+        '/employe/document/finaliser'    => [DocumentController::class,   'finalize'],
+        '/employe/document/archiver'     => [DocumentController::class,   'archive'],
+        '/employe/document/envoyer'      => [DocumentController::class,   'send'],
+        '/employe/menu/creer'            => [MenuAdminController::class,  'createMenu'],
+        '/employe/menu/modifier'         => [MenuAdminController::class,  'updateMenu'],
+        '/employe/menu/supprimer'        => [MenuAdminController::class,  'deleteMenu'],
+        '/employe/avis/valider'          => [AvisAdminController::class,  'valider'],
+        '/employe/avis/accueil'          => [AvisAdminController::class,  'toggleAccueil'],
+        '/employe/avis/supprimer'        => [AvisAdminController::class,  'supprimer'],
+        '/employe/horaires/modifier'     => [HoraireController::class,    'update'],
+        '/employe/plat/creer'            => [MenuAdminController::class,  'createPlat'],
+        '/employe/plat/modifier'         => [MenuAdminController::class,  'updatePlat'],
+        '/employe/plat/supprimer'        => [MenuAdminController::class,  'deletePlat'],
+        '/employe/menu/image/supprimer'  => [MenuAdminController::class,  'deleteMenuImage'],
     ],
     'POST_ADMIN' => [
-        '/admin/employe/creer'      => ['AdminController', 'createEmploye'],
-        '/admin/employe/desactiver' => ['AdminController', 'disableEmploye'],
-        '/admin/employe/supprimer'  => ['AdminController', 'deleteEmploye'],
-        '/admin/accueil/modifier'      => ['AdminController', 'updateAccueil'],
-        '/admin/images/modifier'       => ['AdminController', 'updateImages'],
-        '/admin/parametres/modifier'   => ['AdminController', 'updateParametres'],
-        '/admin/taux-tva/creer'        => ['AdminController', 'createTauxTva'],
-        '/admin/taux-tva/toggle'       => ['AdminController', 'toggleTauxTva'],
-        '/admin/taux-tva/defaut'       => ['AdminController', 'setDefaultTauxTva'],
+        '/admin/employe/creer'       => [EmployeAdminController::class, 'create'],
+        '/admin/employe/desactiver'  => [EmployeAdminController::class, 'disable'],
+        '/admin/employe/supprimer'   => [EmployeAdminController::class, 'delete'],
+        '/admin/accueil/modifier'    => [ParametresController::class,   'updateAccueil'],
+        '/admin/images/modifier'     => [ParametresController::class,   'updateImages'],
+        '/admin/parametres/modifier' => [ParametresController::class,   'update'],
+        '/admin/taux-tva/creer'      => [ParametresController::class,   'createTauxTva'],
+        '/admin/taux-tva/toggle'     => [ParametresController::class,   'toggleTauxTva'],
+        '/admin/taux-tva/defaut'     => [ParametresController::class,   'setDefaultTauxTva'],
     ],
 ];
 
-function resolveRoute($routes, $method, $uri): ?array {
+function resolveRoute(array $routes, string $method, string $uri): ?array {
     if (isset($routes[$method][$uri])) return $routes[$method][$uri];
 
     if ($method === 'GET' && isset($routes['GET_AUTH'][$uri])) {
