@@ -28,7 +28,7 @@ $pageTitle = buildPageTitle('Gestion des employés');
                                 required
                                 aria-required="true"
                                 autocomplete="off"
-                                placeholder="prenom.nom@vitegourmand.fr"
+                                placeholder="prenom.nom@<?= sanitize(siteDomain()) ?>"
                             >
                         </div>
 
