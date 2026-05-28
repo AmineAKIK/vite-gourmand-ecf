@@ -4,6 +4,8 @@ require_once __DIR__ . '/../src/Config/config.php';
 
 use App\Config\Database;
 use App\Controllers\AuthController;
+use App\Controllers\CronController;
+use App\Controllers\DevisController;
 use App\Controllers\AvisController;
 use App\Controllers\CommandeController;
 use App\Controllers\ContactController;
@@ -86,6 +88,8 @@ $method = $_SERVER['REQUEST_METHOD'];
 $routes = [
     'GET'  => [
         '/'                    => [HomeController::class,    'index'],
+        '/cron/rappels'        => [CronController::class,    'rappels'],
+        '/devis/accepter'      => [DevisController::class,   'accepter'],
         '/menus'               => [MenuController::class,    'index'],
         '/menus/detail'        => [MenuController::class,    'detail'],
         '/livraison/calcul'    => [CommandeController::class,'calculLivraison'],
@@ -100,6 +104,7 @@ $routes = [
         '/cgv'                 => [PageController::class,    'cgv'],
     ],
     'POST' => [
+        '/devis/accepter'      => [DevisController::class,   'accepter'],
         '/connexion'           => [AuthController::class,    'login'],
         '/inscription'         => [AuthController::class,    'register'],
         '/mot-de-passe-oublie' => [AuthController::class,    'forgot'],
@@ -136,6 +141,7 @@ $routes = [
         '/employe/document/edit'          => [DocumentController::class,   'edit'],
         '/employe/document/apercu'        => [DocumentController::class,   'preview'],
         '/employe/document/export'        => [DocumentController::class,   'export'],
+        '/employe/document/pdf'           => [DocumentController::class,   'exportPdf'],
         '/employe/changer-mot-de-passe'   => [EmployeController::class,    'changePasswordForm'],
     ],
     'GET_ADMIN' => [
@@ -158,8 +164,9 @@ $routes = [
         '/employe/document/finaliser'      => [DocumentController::class,   'finalize'],
         '/employe/document/archiver'       => [DocumentController::class,   'archive'],
         '/employe/document/envoyer'        => [DocumentController::class,   'send'],
-        '/employe/document/accepter-devis' => [DocumentController::class,   'accepterDevis'],
-        '/employe/document/refuser-devis'  => [DocumentController::class,   'refuserDevis'],
+        '/employe/document/accepter-devis'  => [DocumentController::class,   'accepterDevis'],
+        '/employe/document/refuser-devis'   => [DocumentController::class,   'refuserDevis'],
+        '/employe/document/signer-devis'    => [DocumentController::class,   'envoyerSignature'],
         '/employe/menu/creer'            => [MenuAdminController::class,  'createMenu'],
         '/employe/menu/modifier'         => [MenuAdminController::class,  'updateMenu'],
         '/employe/menu/supprimer'        => [MenuAdminController::class,  'deleteMenu'],

@@ -84,6 +84,10 @@ class ParametresController
                 'cgv_contenu'      => ['type' => 'string', 'max' => 20000],
                 'mentions_contenu' => ['type' => 'string', 'max' => 20000],
             ],
+            'avance' => [
+                'cron_secret_token' => ['type' => 'string', 'max' => 128],
+                'devis_template'    => ['type' => 'enum', 'values' => ['sobre', 'premium']],
+            ],
         ];
 
         $fields = $allFields[$section] ?? $allFields['tarification'];

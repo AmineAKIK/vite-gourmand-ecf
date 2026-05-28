@@ -110,6 +110,25 @@ class DocumentController
         }
     }
 
+    public function envoyerSignature(): void
+    {
+        verifyCsrf();
+
+        $documentId = (int)($_POST['document_id'] ?? 0);
+        try {
+            $document = FacturationModel::getById($documentId);
+            if (!$document) throw new \InvalidArgumentException('Document introuvable.');
+
+            $token       = FacturationModel::generateSignatureToken($documentId);
+            $signatureUrl = rtrim(BASE_URL, '/') . '/devis/accepter?token=' . urlencode($token);
+            MailService::sendDevisSignatureRequest($document, $signatureUrl);
+            flash('success', 'Email de signature envoyé au client.');
+        } catch (\Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect($documentId ? '/employe/document/apercu?id=' . $documentId : '/employe/commandes');
+    }
+
     public function accepterDevis(): void
     {
         verifyCsrf();
@@ -167,6 +186,32 @@ class DocumentController
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
             redirect($documentId ? '/employe/document/apercu?id=' . $documentId : '/employe/commandes');
+        }
+    }
+
+    public function exportPdf(): void
+    {
+        $documentId = (int)($_GET['id'] ?? 0);
+        try {
+            $document = FacturationModel::getById($documentId);
+            if (!$document) {
+                throw new \InvalidArgumentException('Document introuvable.');
+            }
+            $relativePath    = $document['pdf_path'] ?: FacturationModel::generatePdf($documentId);
+            $absolutePath    = dirname(__DIR__, 3) . '/public/' . ltrim($relativePath, '/');
+            if (!is_file($absolutePath)) {
+                $relativePath = FacturationModel::generatePdf($documentId);
+                $absolutePath = dirname(__DIR__, 3) . '/public/' . ltrim($relativePath, '/');
+            }
+            $numero   = $document['numero_document'] ?: ('document-' . $documentId);
+            $filename = preg_replace('/[^A-Z0-9_.-]+/i', '-', $numero) . '.pdf';
+            header('Content-Type: application/pdf');
+            header('Content-Disposition: attachment; filename="' . $filename . '"');
+            header('Content-Length: ' . filesize($absolutePath));
+            readfile($absolutePath);
+        } catch (Throwable $e) {
+            http_response_code(500);
+            echo 'Erreur génération PDF : ' . htmlspecialchars($e->getMessage());
         }
     }
 

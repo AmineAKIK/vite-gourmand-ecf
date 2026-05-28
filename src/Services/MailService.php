@@ -332,6 +332,34 @@ class MailService
         }
     }
 
+    private static function documentAttachment(array $document, string $htmlAbsolutePath): array
+    {
+        $numero  = $document['numero_document'] ?: ('document-' . (int)$document['document_id']);
+        $safeRef = preg_replace('/[^A-Z0-9_-]+/i', '-', $numero) ?: 'document';
+
+        $pdfRelative = $document['pdf_path'] ?? null;
+        $pdfAbsolute = $pdfRelative
+            ? dirname(__DIR__, 2) . '/public/' . ltrim($pdfRelative, '/')
+            : null;
+
+        if ($pdfAbsolute && is_file($pdfAbsolute)) {
+            return ['name' => $safeRef . '.pdf', 'content' => base64_encode(file_get_contents($pdfAbsolute))];
+        }
+
+        // Essaie de générer le PDF à la volée
+        try {
+            $relativePdf  = \App\Models\FacturationModel::generatePdf((int)$document['document_id']);
+            $absolutePdf  = dirname(__DIR__, 2) . '/public/' . ltrim($relativePdf, '/');
+            if (is_file($absolutePdf)) {
+                return ['name' => $safeRef . '.pdf', 'content' => base64_encode(file_get_contents($absolutePdf))];
+            }
+        } catch (\Throwable) {
+            // fallback HTML si DomPDF échoue
+        }
+
+        return ['name' => $safeRef . '.html', 'content' => base64_encode(file_get_contents($htmlAbsolutePath))];
+    }
+
     public static function sendDocumentFacturation(array $document, array $commande, string $archiveAbsolutePath): void
     {
         $email = trim((string)($document['client_email'] ?? ''));
@@ -344,7 +372,6 @@ class MailService
 
         $typeLabel = ($document['type_document'] ?? '') === 'ticket' ? 'ticket de caisse' : 'facture';
         $numero    = $document['numero_document'] ?: ('document #' . (int)$document['document_id']);
-        $filename  = preg_replace('/[^A-Z0-9_-]+/i', '-', $numero) ?: 'document';
         $ctx       = self::ctx();
 
         self::send(
@@ -353,10 +380,7 @@ class MailService
             self::wrap(ucfirst($typeLabel) . ' disponible', self::bodyDocument($document, $commande, $typeLabel, $numero, $ctx), $ctx),
             ucfirst($typeLabel) . " {$numero} — total " . Formatter::price($document['total_ttc'] ?? 0),
             null,
-            [[
-                'name'    => $filename . '.html',
-                'content' => base64_encode(file_get_contents($archiveAbsolutePath)),
-            ]]
+            [self::documentAttachment($document, $archiveAbsolutePath)]
         );
     }
 
@@ -402,9 +426,8 @@ class MailService
             throw new \RuntimeException('Archive du devis introuvable.');
         }
 
-        $numero   = $document['numero_document'] ?: ('devis #' . (int)$document['document_id']);
-        $filename = preg_replace('/[^A-Z0-9_-]+/i', '-', $numero) ?: 'devis';
-        $ctx      = self::ctx();
+        $numero = $document['numero_document'] ?: ('devis #' . (int)$document['document_id']);
+        $ctx    = self::ctx();
 
         self::send(
             $email,
@@ -414,11 +437,88 @@ class MailService
             . "Total estimé : " . Formatter::price($document['total_ttc'] ?? 0)
             . ". Ce devis est valable 30 jours.",
             null,
-            [[
-                'name'    => $filename . '.html',
-                'content' => base64_encode(file_get_contents($archiveAbsolutePath)),
-            ]]
+            [self::documentAttachment($document, $archiveAbsolutePath)]
         );
+    }
+
+    public static function sendDevisSignatureRequest(array $document, string $signatureUrl): void
+    {
+        $email = trim((string)($document['client_email'] ?? ''));
+        if (!$email) {
+            throw new \InvalidArgumentException('Email client manquant.');
+        }
+
+        $ctx       = self::ctx();
+        $numero    = $document['numero_document'] ?: ('devis #' . (int)$document['document_id']);
+        $nomClient = htmlspecialchars($document['client_nom'] ?? '', ENT_QUOTES, 'UTF-8');
+        $safeNum   = htmlspecialchars($numero, ENT_QUOTES, 'UTF-8');
+        $name      = htmlspecialchars($ctx['name'],  ENT_QUOTES, 'UTF-8');
+        $color     = htmlspecialchars($ctx['color'], ENT_QUOTES, 'UTF-8');
+        $safeUrl   = htmlspecialchars($signatureUrl, ENT_QUOTES, 'UTF-8');
+        $total     = Formatter::price($document['total_ttc'] ?? 0);
+
+        $validite = '';
+        if (!empty($document['date_emission'])) {
+            $validite = date('d/m/Y', strtotime($document['date_emission'] . ' +30 days'));
+        }
+
+        $body = "<p>Bonjour {$nomClient},</p>"
+              . "<p>Votre devis <strong>{$safeNum}</strong> d'un montant de <strong style='color:{$color}'>{$total}</strong>"
+              . ($validite ? " est valable jusqu'au <strong>{$validite}</strong>" : '')
+              . ".</p>"
+              . "<p>Pour l'accepter électroniquement, cliquez sur le bouton ci-dessous :</p>"
+              . "<p style='text-align:center;margin:28px 0'>"
+              . "<a href='{$safeUrl}' style='background:{$color};color:#fff;padding:14px 32px;"
+              . "border-radius:6px;text-decoration:none;font-weight:700;display:inline-block;font-size:15px'>"
+              . "✍ Accepter ce devis</a></p>"
+              . "<p style='font-size:12px;color:#6b7280'>Ce lien est à usage unique et sécurisé. "
+              . "Si vous n'êtes pas à l'origine de cette demande, ignorez ce message.</p>"
+              . "<p>Merci de votre confiance,<br>L'équipe {$name}</p>";
+
+        self::send(
+            $email,
+            'Signature de votre devis ' . $numero,
+            self::wrap('Acceptation de devis', $body, $ctx),
+            "Bonjour {$document['client_nom']}, votre devis {$numero} attend votre acceptation : {$signatureUrl}"
+        );
+    }
+
+    public static function sendRappelPrestation(string $email, string $prenom, array $commande, int $joursRestants): void
+    {
+        try {
+            $ctx        = self::ctx();
+            $numero     = $commande['numero_commande'] ?? '';
+            $dateStr    = isset($commande['date_prestation'])
+                ? date('d/m/Y', strtotime($commande['date_prestation']))
+                : '';
+            $safePrenom = htmlspecialchars($prenom,  ENT_QUOTES, 'UTF-8');
+            $safeNum    = htmlspecialchars($numero,  ENT_QUOTES, 'UTF-8');
+            $safeDate   = htmlspecialchars($dateStr, ENT_QUOTES, 'UTF-8');
+            $name       = htmlspecialchars($ctx['name'],  ENT_QUOTES, 'UTF-8');
+            $color      = htmlspecialchars($ctx['color'], ENT_QUOTES, 'UTF-8');
+            $safeEmail  = htmlspecialchars($ctx['email'], ENT_QUOTES, 'UTF-8');
+
+            $delaiLabel = $joursRestants === 1 ? 'demain' : "dans {$joursRestants} jours";
+            $body = "<p>Bonjour {$safePrenom},</p>"
+                  . "<p>Votre prestation <strong>{$safeNum}</strong> est prévue <strong>{$delaiLabel}</strong>"
+                  . ($safeDate ? " le <strong>{$safeDate}</strong>" : '') . ".</p>"
+                  . "<p>Tout est bien préparé de notre côté. Pour toute question de dernière minute, "
+                  . "contactez-nous à <a href='mailto:{$safeEmail}'>{$safeEmail}</a>.</p>"
+                  . "<p style='text-align:center;margin:24px 0'>"
+                  . "<a href='" . htmlspecialchars(BASE_URL . '/commande/suivi', ENT_QUOTES, 'UTF-8') . "' "
+                  . "style='background:{$color};color:#fff;padding:12px 28px;border-radius:6px;text-decoration:none;display:inline-block'>"
+                  . "Voir ma commande</a></p>"
+                  . "<p>À très bientôt,<br>L'équipe {$name}</p>";
+
+            self::send(
+                $email,
+                'Rappel : votre prestation ' . ($joursRestants === 1 ? 'demain' : "dans {$joursRestants} jours"),
+                self::wrap('Votre prestation approche', $body, $ctx),
+                "Rappel : prestation {$numero} le {$dateStr} ({$delaiLabel})."
+            );
+        } catch (Throwable $e) {
+            error_log('Erreur mail rappel prestation : ' . $e->getMessage());
+        }
     }
 
     private static function bodyDevis(array $document, array $commande, string $numero, array $ctx): string

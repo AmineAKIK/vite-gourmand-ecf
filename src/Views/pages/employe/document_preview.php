@@ -12,6 +12,8 @@ $typeLabel = match ($type) {
 $entreprise   = $document['entreprise'] ?? [];
 $isFinalise   = ($document['statut'] ?? '') === 'finalise';
 $statutDevis  = $document['statut_devis'] ?? null;
+$signedAt     = $document['signed_at'] ?? null;
+$hasToken     = !empty($document['token_signature']);
 $documentRef  = $document['numero_document'] ?: ('Brouillon #' . (int)$document['document_id']);
 ?>
 <div class="container py-5 facturation-page">
@@ -25,6 +27,9 @@ $documentRef  = $document['numero_document'] ?: ('Brouillon #' . (int)$document[
         <button type="button" class="btn btn-vg btn-sm" data-print-document>
             <i class="bi bi-printer me-1"></i>Imprimer
         </button>
+        <a href="/employe/document/pdf?id=<?= (int)$document['document_id'] ?>" class="btn btn-outline-secondary btn-sm" <?= $isFinalise ? '' : 'aria-disabled="true" tabindex="-1" style="pointer-events:none;opacity:.5"' ?>>
+            <i class="bi bi-file-earmark-pdf me-1"></i>PDF
+        </a>
         <?php if ($isFinalise): ?>
             <a href="/employe/document/export?id=<?= (int)$document['document_id'] ?>" class="btn btn-outline-secondary btn-sm">
                 <i class="bi bi-braces me-1"></i>Export JSON
@@ -49,6 +54,13 @@ $documentRef  = $document['numero_document'] ?: ('Brouillon #' . (int)$document[
                 </a>
             <?php endif; ?>
             <?php if ($isDevis && $statutDevis === null): ?>
+                <form method="POST" action="/employe/document/signer-devis" class="d-inline" data-confirm="Envoyer un email de signature électronique au client ?">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="document_id" value="<?= (int)$document['document_id'] ?>">
+                    <button type="submit" class="btn btn-outline-primary btn-sm">
+                        <i class="bi bi-pen me-1"></i>Envoyer pour signature
+                    </button>
+                </form>
                 <form method="POST" action="/employe/document/accepter-devis" class="d-inline" data-confirm="Marquer ce devis comme accepté par le client ?">
                     <?= csrfField() ?>
                     <input type="hidden" name="document_id" value="<?= (int)$document['document_id'] ?>">
@@ -73,10 +85,14 @@ $documentRef  = $document['numero_document'] ?: ('Brouillon #' . (int)$document[
             <span><i class="bi bi-archive me-1"></i><?= !empty($document['archive_path']) ? 'Archivé' : 'Archive à générer' ?></span>
             <span><i class="bi bi-envelope me-1"></i><?= !empty($document['sent_at']) ? 'Envoyé le ' . sanitize(formatDateTimeFr($document['sent_at'])) : 'Non envoyé' ?></span>
             <?php if ($isDevis): ?>
-                <?php if ($statutDevis === 'accepte'): ?>
+                <?php if ($signedAt): ?>
+                    <span class="text-success fw-semibold"><i class="bi bi-pen-fill me-1"></i>Signé électroniquement le <?= sanitize(formatDateTimeFr($signedAt)) ?></span>
+                <?php elseif ($statutDevis === 'accepte'): ?>
                     <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Accepté le <?= sanitize(formatDateFr($document['date_decision_devis'] ?? null)) ?></span>
                 <?php elseif ($statutDevis === 'refuse'): ?>
                     <span class="text-danger fw-semibold"><i class="bi bi-x-circle-fill me-1"></i>Refusé le <?= sanitize(formatDateFr($document['date_decision_devis'] ?? null)) ?></span>
+                <?php elseif ($hasToken): ?>
+                    <span class="text-info fw-semibold"><i class="bi bi-envelope-check me-1"></i>En attente de signature</span>
                 <?php else: ?>
                     <span class="text-warning fw-semibold"><i class="bi bi-hourglass-split me-1"></i>En attente de décision</span>
                 <?php endif; ?>

@@ -62,6 +62,11 @@ $activeTab = $_GET['tab'] ?? 'identite';
             <i class="bi bi-file-text me-1"></i>Pages légales
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link <?= $activeTab === 'avance' ? 'active' : '' ?>" id="tab-avance" data-bs-toggle="tab" data-bs-target="#pane-avance" type="button" role="tab">
+            <i class="bi bi-gear-wide-connected me-1"></i>Avancé
+        </button>
+    </li>
 </ul>
 
 <div class="tab-content params-tab-content">
@@ -828,7 +833,64 @@ $activeTab = $_GET['tab'] ?? 'identite';
         </div>
     </div>
 
+    <div class="tab-pane fade <?= $activeTab === 'avance' ? 'show active' : '' ?>" id="pane-avance" role="tabpanel">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="h5 mb-3">Rappels automatiques (Cron)</h2>
+                <p class="text-muted small mb-3">
+                    Configurez un cron job Railway pointant sur
+                    <code><?= htmlspecialchars(BASE_URL) ?>/cron/rappels?token=VOTRE_TOKEN</code>
+                    avec la commande <code>curl -s "URL"</code>, planifié chaque matin à 07h00.
+                </p>
+                <form method="POST" action="/admin/parametres/modifier">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="_section" value="avance">
+                    <div class="row g-3">
+                        <div class="col-12 col-lg-4">
+                            <label class="form-label fw-medium" for="devis_template">Template devis</label>
+                            <select class="form-select" id="devis_template" name="devis_template">
+                                <option value="sobre" <?= ($config['devis_template'] ?? 'sobre') === 'sobre' ? 'selected' : '' ?>>Sobre (comptable)</option>
+                                <option value="premium" <?= ($config['devis_template'] ?? '') === 'premium' ? 'selected' : '' ?>>Premium (commercial, 2 colonnes)</option>
+                            </select>
+                            <div class="form-text">Le template premium affiche un en-tête coloré aux couleurs de la charte.</div>
+                        </div>
+                        <div class="col-12 col-lg-8">
+                            <label class="form-label fw-medium" for="cron_secret_token">Token secret cron</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control font-monospace" id="cron_secret_token"
+                                       name="cron_secret_token"
+                                       value="<?= htmlspecialchars($config['cron_secret_token'] ?? '') ?>"
+                                       maxlength="128" placeholder="Laisser vide pour désactiver">
+                                <button type="button" class="btn btn-outline-secondary" id="btn-gen-token"
+                                        title="Générer un token aléatoire">
+                                    <i class="bi bi-arrow-repeat"></i>
+                                </button>
+                            </div>
+                            <div class="form-text">Chaîne aléatoire longue — utilisée comme clé secrète dans l'URL cron.</div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-vg mt-3">
+                        <i class="bi bi-save me-1"></i>Enregistrer
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
 </div><!-- /.tab-content -->
+<script nonce="<?= cspNonce() ?>">
+(function () {
+    var btn = document.getElementById('btn-gen-token');
+    if (btn) {
+        btn.addEventListener('click', function () {
+            var arr = new Uint8Array(32);
+            crypto.getRandomValues(arr);
+            document.getElementById('cron_secret_token').value =
+                Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
+        });
+    }
+}());
+</script>
 
 <script nonce="<?= $cspNonce ?>">
 (function () {

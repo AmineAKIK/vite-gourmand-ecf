@@ -96,6 +96,10 @@ class FacturationModel
         self::addColumnIfMissing('document_facturation', 'document_acompte_id', 'INT NULL DEFAULT NULL');
         self::addColumnIfMissing('document_facturation', 'statut_devis', "ENUM('accepte','refuse') NULL DEFAULT NULL");
         self::addColumnIfMissing('document_facturation', 'date_decision_devis', 'DATETIME NULL DEFAULT NULL');
+        self::addColumnIfMissing('document_facturation', 'pdf_path', 'VARCHAR(255) NULL DEFAULT NULL');
+        self::addColumnIfMissing('document_facturation', 'token_signature', 'VARCHAR(64) NULL DEFAULT NULL');
+        self::addColumnIfMissing('document_facturation', 'signed_at', 'DATETIME NULL DEFAULT NULL');
+        self::addColumnIfMissing('document_facturation', 'signed_ip', 'VARCHAR(45) NULL DEFAULT NULL');
     }
 
     public static function listByCommandeIds(array $commandeIds): array
@@ -463,6 +467,47 @@ class FacturationModel
         }
     }
 
+    public static function generateSignatureToken(int $documentId): string
+    {
+        self::ensureSchema();
+        $db = Database::getConnection();
+        $stmt = $db->prepare("SELECT type_document, statut FROM document_facturation WHERE document_id = ?");
+        $stmt->execute([$documentId]);
+        $doc = $stmt->fetch();
+        if (!$doc) throw new \InvalidArgumentException('Document introuvable.');
+        if ($doc['type_document'] !== 'devis') throw new \InvalidArgumentException('Seuls les devis peuvent être signés.');
+        if ($doc['statut'] !== 'finalise') throw new \InvalidArgumentException('Seuls les devis finalisés peuvent être signés.');
+
+        $token = bin2hex(random_bytes(32));
+        $db->prepare("UPDATE document_facturation SET token_signature = ? WHERE document_id = ?")
+           ->execute([$token, $documentId]);
+        return $token;
+    }
+
+    public static function signDevis(string $token, string $ip): array
+    {
+        self::ensureSchema();
+        $db = Database::getConnection();
+        $stmt = $db->prepare("SELECT * FROM document_facturation WHERE token_signature = ? AND type_document = 'devis' AND statut = 'finalise'");
+        $stmt->execute([$token]);
+        $doc = $stmt->fetch();
+        if (!$doc) throw new \InvalidArgumentException('Lien de signature invalide ou expiré.');
+        if ($doc['signed_at'] !== null) throw new \InvalidArgumentException('Ce devis a déjà été signé.');
+
+        $db->prepare("UPDATE document_facturation SET signed_at = NOW(), signed_ip = ?, statut_devis = 'accepte', date_decision_devis = NOW() WHERE document_id = ?")
+           ->execute([$ip, $doc['document_id']]);
+
+        return $doc;
+    }
+
+    public static function getBySignatureToken(string $token): ?array
+    {
+        self::ensureSchema();
+        $stmt = Database::getConnection()->prepare("SELECT * FROM document_facturation WHERE token_signature = ?");
+        $stmt->execute([$token]);
+        return $stmt->fetch() ?: null;
+    }
+
     public static function acceptDevis(int $documentId): void
     {
         self::ensureSchema();
@@ -524,6 +569,43 @@ class FacturationModel
         $relativePath = 'uploads/facturation/' . basename($filename);
         $stmt = Database::getConnection()->prepare("UPDATE document_facturation SET archive_path = ? WHERE document_id = ?");
         $stmt->execute([$relativePath, $documentId]);
+        return $relativePath;
+    }
+
+    public static function generatePdf(int $documentId): string
+    {
+        self::ensureSchema();
+        $document = self::getById($documentId);
+        if (!$document) {
+            throw new \InvalidArgumentException('Document introuvable.');
+        }
+        if (($document['statut'] ?? '') !== 'finalise') {
+            throw new \InvalidArgumentException('Seuls les documents finalisés peuvent être exportés en PDF.');
+        }
+
+        $pdfPath = self::pdfFilename($document);
+        $dir = dirname($pdfPath);
+        if (!is_dir($dir) && !mkdir($dir, 0775, true) && !is_dir($dir)) {
+            throw new \RuntimeException('Impossible de créer le dossier PDF.');
+        }
+
+        $html = self::renderDocumentHtml($document, true);
+
+        $options = new \Dompdf\Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', false);
+        $options->set('defaultFont', 'DejaVu Sans');
+        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf->loadHtml($html, 'UTF-8');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+        file_put_contents($pdfPath, $dompdf->output());
+
+        $relativePath = 'uploads/facturation/' . basename($pdfPath);
+        Database::getConnection()
+            ->prepare("UPDATE document_facturation SET pdf_path = ? WHERE document_id = ?")
+            ->execute([$relativePath, $documentId]);
+
         return $relativePath;
     }
 
@@ -715,11 +797,171 @@ class FacturationModel
             return $html;
         }
 
+        // Template premium pour les devis si activé
+        if ($isDevis && SiteConfig::get('devis_template', 'sobre') === 'premium') {
+            return self::renderDevisPremiumStandalone($document);
+        }
+
         return '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>'
             . htmlspecialchars($documentRef, ENT_QUOTES, 'UTF-8')
             . '</title><style>'
             . self::archiveCss()
             . '</style></head><body>' . $html . '</body></html>';
+    }
+
+    private static function renderDevisPremiumStandalone(array $document): string
+    {
+        $entreprise  = $document['entreprise'] ?? (json_decode($document['entreprise_snapshot'] ?? '{}', true) ?: []);
+        $c1          = siteColor('couleur_principale');
+        $c2          = siteColor('couleur_secondaire');
+        $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['document_id']);
+        $lignes      = $document['lignes'] ?? self::getLignes((int)$document['document_id']);
+        $nomEntreprise = htmlspecialchars($entreprise['nom'] ?? siteName(), ENT_QUOTES, 'UTF-8');
+        $nomClient   = htmlspecialchars($document['client_nom'] ?? '', ENT_QUOTES, 'UTF-8');
+        $dateEmis    = htmlspecialchars(formatDateFr($document['date_emission'] ?? null), ENT_QUOTES, 'UTF-8');
+        $datePresta  = htmlspecialchars(formatDateFr($document['date_prestation'] ?? null), ENT_QUOTES, 'UTF-8');
+        $safeRef     = htmlspecialchars($documentRef, ENT_QUOTES, 'UTF-8');
+        $regimeTva   = $entreprise['regime_tva'] ?? 'assujetti';
+        $isAssujetti = $regimeTva === 'assujetti';
+
+        $validite = '';
+        if (!empty($document['date_emission'])) {
+            $validite = date('d/m/Y', strtotime($document['date_emission'] . ' +30 days'));
+        }
+
+        $rowsHtml = '';
+        foreach ($lignes as $ligne) {
+            $designation = htmlspecialchars($ligne['designation'] ?? '', ENT_QUOTES, 'UTF-8');
+            $quantite    = htmlspecialchars(formatPriceInput($ligne['quantite'] ?? 0), ENT_QUOTES, 'UTF-8');
+            $totalTtc    = htmlspecialchars(formatPrice($ligne['total_ttc'] ?? 0), ENT_QUOTES, 'UTF-8');
+            if ($isAssujetti) {
+                $puHt    = htmlspecialchars(formatPrice($ligne['prix_unitaire_ht'] ?? 0), ENT_QUOTES, 'UTF-8');
+                $tva     = htmlspecialchars(formatPriceInput($ligne['taux_tva'] ?? 0), ENT_QUOTES, 'UTF-8');
+                $totalHt = htmlspecialchars(formatPrice($ligne['total_ht'] ?? 0), ENT_QUOTES, 'UTF-8');
+                $rowsHtml .= "<tr><td>{$designation}</td><td class='num'>{$quantite}</td><td class='num'>{$puHt}</td><td class='num'>{$tva}&nbsp;%</td><td class='num'>{$totalHt}</td><td class='num'>{$totalTtc}</td></tr>";
+            } else {
+                $puTtc   = htmlspecialchars(formatPrice($ligne['prix_unitaire_ttc'] ?? 0), ENT_QUOTES, 'UTF-8');
+                $rowsHtml .= "<tr><td>{$designation}</td><td class='num'>{$quantite}</td><td class='num'>{$puTtc}</td><td class='num'>{$totalTtc}</td></tr>";
+            }
+        }
+
+        $colHeaders = $isAssujetti
+            ? '<th>Désignation</th><th class="num">Qté</th><th class="num">PU HT</th><th class="num">TVA %</th><th class="num">Total HT</th><th class="num">Total TTC</th>'
+            : '<th>Désignation</th><th class="num">Qté</th><th class="num">PU TTC</th><th class="num">Total TTC</th>';
+
+        $totauxHtml = '';
+        if ($isAssujetti) {
+            $totauxHtml .= '<tr><td>Total HT</td><td>' . htmlspecialchars(formatPrice($document['total_ht'] ?? 0), ENT_QUOTES, 'UTF-8') . '</td></tr>'
+                . '<tr><td>TVA</td><td>' . htmlspecialchars(formatPrice($document['total_tva'] ?? 0), ENT_QUOTES, 'UTF-8') . '</td></tr>';
+        }
+        $totauxHtml .= '<tr class="total-main"><td>Total TTC</td><td>' . htmlspecialchars(formatPrice($document['total_ttc'] ?? 0), ENT_QUOTES, 'UTF-8') . '</td></tr>';
+
+        $noteHtml = !empty($document['note_publique'])
+            ? '<div class="note"><p>' . nl2br(htmlspecialchars($document['note_publique'], ENT_QUOTES, 'UTF-8')) . '</p></div>'
+            : '';
+
+        $mentionHtml = !empty($document['mention_legale'])
+            ? '<footer class="prem-footer">' . nl2br(htmlspecialchars($document['mention_legale'], ENT_QUOTES, 'UTF-8')) . '</footer>'
+            : '';
+
+        $adresseVendeur = trim(
+            ($entreprise['adresse'] ?? '') . ', ' . ($entreprise['code_postal'] ?? '') . ' ' . ($entreprise['ville'] ?? ''),
+            ', '
+        );
+
+        return '<!DOCTYPE html><html lang="fr"><head><meta charset="UTF-8"><title>Devis ' . $safeRef . '</title>'
+            . '<style>' . self::devisPremiumCss($c1, $c2) . '</style></head><body>'
+            . '<div class="prem-page">'
+
+            // En-tête coloré
+            . '<header class="prem-header">'
+            . '<div class="prem-header-brand"><span class="prem-brand-name">' . $nomEntreprise . '</span>'
+            . ($adresseVendeur ? '<span class="prem-brand-addr">' . htmlspecialchars($adresseVendeur, ENT_QUOTES, 'UTF-8') . '</span>' : '')
+            . (!empty($entreprise['telephone']) ? '<span>' . htmlspecialchars($entreprise['telephone'], ENT_QUOTES, 'UTF-8') . '</span>' : '')
+            . '<span>' . htmlspecialchars($entreprise['email'] ?? MAIL_FROM, ENT_QUOTES, 'UTF-8') . '</span>'
+            . '</div>'
+            . '<div class="prem-header-ref">'
+            . '<div class="prem-doc-type">DEVIS</div>'
+            . '<div class="prem-doc-ref">' . $safeRef . '</div>'
+            . '<div class="prem-doc-date">Émis le ' . $dateEmis . '</div>'
+            . ($validite ? '<div class="prem-doc-date">Valable jusqu\'au <strong>' . htmlspecialchars($validite, ENT_QUOTES, 'UTF-8') . '</strong></div>' : '')
+            . '</div>'
+            . '</header>'
+
+            // Bande décorative
+            . '<div class="prem-band"></div>'
+
+            // Parties
+            . '<section class="prem-parties">'
+            . '<div class="prem-party"><h3>Client</h3>'
+            . '<p><strong>' . $nomClient . '</strong><br>'
+            . htmlspecialchars($document['client_adresse'] ?? '', ENT_QUOTES, 'UTF-8') . '<br>'
+            . htmlspecialchars(trim(($document['client_code_postal'] ?? '') . ' ' . ($document['client_ville'] ?? '')), ENT_QUOTES, 'UTF-8') . '<br>'
+            . htmlspecialchars($document['client_email'] ?? '', ENT_QUOTES, 'UTF-8')
+            . '</p></div>'
+            . '<div class="prem-party"><h3>Prestation</h3>'
+            . '<p>Date : ' . $datePresta . '<br>'
+            . 'Lieu : ' . htmlspecialchars(trim(($document['adresse_livraison'] ?? '') . ' ' . ($document['ville_livraison'] ?? '')), ENT_QUOTES, 'UTF-8')
+            . '</p></div>'
+            . '</section>'
+
+            // Tableau des lignes
+            . '<section class="prem-lines">'
+            . '<table><thead><tr>' . $colHeaders . '</tr></thead><tbody>' . $rowsHtml . '</tbody></table>'
+            . '</section>'
+
+            // Totaux + note
+            . '<section class="prem-totals">'
+            . $noteHtml
+            . '<table class="totaux-table"><tbody>' . $totauxHtml . '</tbody></table>'
+            . '</section>'
+
+            // Conditions
+            . '<section class="prem-conditions">'
+            . '<p>Ce devis est valable 30 jours. Pour l\'accepter, retournez-le signé avec la mention « Bon pour accord ».</p>'
+            . '</section>'
+
+            . $mentionHtml
+            . '</div></body></html>';
+    }
+
+    private static function devisPremiumCss(string $c1, string $c2): string
+    {
+        $c1e = htmlspecialchars($c1, ENT_QUOTES, 'UTF-8');
+        $c2e = htmlspecialchars($c2 ?: $c1, ENT_QUOTES, 'UTF-8');
+        return "
+            *{box-sizing:border-box;margin:0;padding:0}
+            body{background:#f4f4f4;font-family:Arial,Helvetica,sans-serif;font-size:13px;color:#1a1a2e}
+            .prem-page{width:min(100%,900px);max-width:900px;margin:24px auto;background:#fff;box-shadow:0 4px 24px rgba(0,0,0,.08);border-radius:6px;overflow:hidden}
+            .prem-header{display:flex;justify-content:space-between;align-items:flex-start;background:{$c1e};color:#fff;padding:32px 36px}
+            .prem-header-brand{display:flex;flex-direction:column;gap:4px}
+            .prem-brand-name{font-size:22px;font-weight:700;letter-spacing:.02em}
+            .prem-brand-addr,.prem-header-brand span{font-size:12px;opacity:.85}
+            .prem-header-ref{text-align:right}
+            .prem-doc-type{font-size:28px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+            .prem-doc-ref{font-size:15px;margin-top:4px;opacity:.9}
+            .prem-doc-date{font-size:12px;opacity:.8;margin-top:2px}
+            .prem-band{height:6px;background:{$c2e}}
+            .prem-parties{display:grid;grid-template-columns:1fr 1fr;gap:24px;padding:24px 36px;border-bottom:1px solid #eee}
+            .prem-party h3{font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:{$c1e};margin-bottom:8px;font-weight:700}
+            .prem-party p{line-height:1.6;color:#374151}
+            .prem-lines{padding:0 36px}
+            .prem-lines table{width:100%;border-collapse:collapse;margin:20px 0}
+            .prem-lines thead{background:{$c1e};color:#fff}
+            .prem-lines thead th{padding:10px 8px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em}
+            .prem-lines tbody tr:nth-child(even){background:#f8f9fa}
+            .prem-lines tbody td{padding:10px 8px;border-bottom:1px solid #e5e7eb;font-size:13px}
+            .num{text-align:right}
+            .prem-totals{display:flex;justify-content:space-between;align-items:flex-start;padding:16px 36px 24px;gap:24px}
+            .note{flex:1;max-width:400px;background:#fffbeb;border-left:3px solid {$c2e};padding:12px 16px;border-radius:4px;font-size:12px;color:#4b5563}
+            .totaux-table{min-width:260px;border-collapse:collapse}
+            .totaux-table td{padding:7px 12px;font-size:13px;color:#374151}
+            .totaux-table td:last-child{text-align:right;font-weight:600}
+            .total-main td{border-top:2px solid {$c1e};color:{$c1e};font-size:16px;font-weight:700;padding-top:10px}
+            .prem-conditions{padding:0 36px 20px;font-size:12px;color:#6b7280;font-style:italic}
+            .prem-footer{padding:16px 36px;background:#f9fafb;border-top:1px solid #e5e7eb;font-size:11px;color:#6b7280;line-height:1.5}
+            @media(max-width:680px){.prem-header{flex-direction:column;gap:16px}.prem-header-ref{text-align:left}.prem-parties{grid-template-columns:1fr}.prem-totals{flex-direction:column}.totaux-table{width:100%}}
+        ";
     }
 
     public static function eInvoicingPayload(int $documentId): array
@@ -858,6 +1100,13 @@ class FacturationModel
         $ref = $document['numero_document'] ?: ('DOC-' . (int)$document['document_id']);
         $safeRef = preg_replace('/[^A-Z0-9_-]+/i', '-', $ref) ?: ('document-' . (int)$document['document_id']);
         return dirname(__DIR__, 2) . '/public/uploads/facturation/' . $safeRef . '.html';
+    }
+
+    private static function pdfFilename(array $document): string
+    {
+        $ref = $document['numero_document'] ?: ('DOC-' . (int)$document['document_id']);
+        $safeRef = preg_replace('/[^A-Z0-9_-]+/i', '-', $ref) ?: ('document-' . (int)$document['document_id']);
+        return dirname(__DIR__, 2) . '/public/uploads/facturation/' . $safeRef . '.pdf';
     }
 
     private static function archiveCss(): string
