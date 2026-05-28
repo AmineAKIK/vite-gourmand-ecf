@@ -70,13 +70,15 @@ $uri    = rtrim($uri, '/') ?: '/';
 // Healthcheck — réponse avant tout dispatch applicatif
 if ($uri === '/health') {
     header('Content-Type: application/json; charset=UTF-8');
+    $dbStatus = 'unknown';
     try {
         Database::getConnection()->query('SELECT 1');
-        echo json_encode(['status' => 'ok', 'db' => 'ok', 'ts' => time()]);
+        $dbStatus = 'ok';
     } catch (\Throwable) {
-        http_response_code(503);
-        echo json_encode(['status' => 'error', 'db' => 'down', 'ts' => time()]);
+        $dbStatus = 'down';
     }
+    // Toujours 200 — Railway ne doit pas tuer le container si la DB est lente au cold start
+    echo json_encode(['status' => 'ok', 'db' => $dbStatus, 'ts' => time()]);
     exit;
 }
 $method = $_SERVER['REQUEST_METHOD'];
