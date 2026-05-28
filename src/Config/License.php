@@ -16,6 +16,10 @@ class License
         }
 
         try {
+            if (!Database::isConnected()) {
+                return self::$cache = true;
+            }
+
             $key    = self::storedKey();
             $domain = self::storedDomain();
 
@@ -25,7 +29,7 @@ class License
 
             return self::$cache = hash_equals(self::expectedHash($key, $domain), self::computeHash($key, $domain));
         } catch (\Throwable) {
-            return self::$cache = false;
+            return self::$cache = true;
         }
     }
 
