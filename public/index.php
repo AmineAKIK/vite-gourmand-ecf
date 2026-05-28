@@ -144,7 +144,6 @@ $routes = [
         '/admin/comptabilite'        => [StatsController::class,      'comptabilite'],
         '/admin/comptabilite/export' => [StatsController::class,      'exportComptabilite'],
         '/admin/accueil'             => [ParametresController::class, 'accueil'],
-        '/admin/images'              => [ParametresController::class, 'images'],
         '/admin/parametres'          => [ParametresController::class, 'index'],
     ],
     'POST_EMPLOYE' => [
@@ -174,7 +173,6 @@ $routes = [
         '/admin/employe/desactiver'  => [EmployeAdminController::class, 'disable'],
         '/admin/employe/supprimer'   => [EmployeAdminController::class, 'delete'],
         '/admin/accueil/modifier'    => [ParametresController::class,   'updateAccueil'],
-        '/admin/images/modifier'     => [ParametresController::class,   'updateImages'],
         '/admin/parametres/modifier' => [ParametresController::class,   'update'],
         '/admin/taux-tva/creer'      => [ParametresController::class,   'createTauxTva'],
         '/admin/taux-tva/toggle'     => [ParametresController::class,   'toggleTauxTva'],

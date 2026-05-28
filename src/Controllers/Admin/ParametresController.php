@@ -267,30 +267,4 @@ class ParametresController
         redirect('/admin/accueil');
     }
 
-    public function images(): void
-    {
-        $images = SiteImageModel::getAll();
-        view('pages/admin/images', compact('images'));
-    }
-
-    public function updateImages(): void
-    {
-        verifyCsrf();
-
-        foreach (['logo', 'hero', 'preparation'] as $cle) {
-            $file = $_FILES[$cle] ?? null;
-            if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
-                continue;
-            }
-            $url = MenuAdminService::uploadSiteImage($file, 'site/' . $cle);
-            if (!$url) {
-                flash('error', 'Erreur lors de l\'upload de l\'image "' . $cle . '".');
-                redirect('/admin/images');
-            }
-            SiteImageModel::set($cle, $url);
-        }
-
-        flash('success', 'Images du site mises à jour.');
-        redirect('/admin/images');
-    }
 }
