@@ -52,29 +52,9 @@ class Migrator
             $tables   = $db->query("SHOW TABLES")->fetchAll(\PDO::FETCH_COLUMN);
             $hasUsers = in_array('utilisateur', $tables, true);
 
-            // Si la DB a déjà des tables mais schema_migrations vient d'être créée,
-            // on suppose que toutes les migrations <= 031 ont déjà été jouées manuellement.
-            // On les marque appliquées pour éviter de les rejouer sur une DB existante.
-            $alreadyTracked = $db->query("SELECT COUNT(*) FROM schema_migrations")->fetchColumn();
-            if (!$alreadyTracked && count($tables) > 1) {
-                $dir   = dirname(__DIR__, 2) . '/sql/migrations';
-                $files = glob($dir . '/[0-9]*.sql') ?: [];
-                natsort($files);
-                // Marquer comme déjà appliquées toutes les migrations présentes dans le repo
-                // sauf les 5 dernières (032+) qui sont les nouvelles migrations SaaS
-                $allNames = array_map('basename', $files);
-                // Identifier la première migration non encore dans schema.sql (032+)
-                // On marque comme "déjà jouées" toutes celles qui existaient avant sprint 5
-                $newMigrations = ['032_rate_limit.sql', '033_email_verification.sql',
-                                  '034_notifications.sql', '035_plan.sql'];
-                foreach ($allNames as $mName) {
-                    if (!in_array($mName, $newMigrations, true)) {
-                        $db->prepare("INSERT IGNORE INTO schema_migrations (migration) VALUES (?)")
-                           ->execute([$mName]);
-                    }
-                }
-                error_log('[Migrator] DB existante détectée — migrations historiques marquées, application des nouvelles seulement');
-            }
+            // Rien à pré-remplir : toutes les migrations non encore dans schema_migrations
+            // seront jouées normalement. Les erreurs idempotentes (colonne déjà présente,
+            // table déjà existante) sont silencieuses — sûr sur une DB existante.
 
             if (!$hasUsers) {
                 $schemaFile = dirname(__DIR__, 2) . '/sql/schema.sql';
