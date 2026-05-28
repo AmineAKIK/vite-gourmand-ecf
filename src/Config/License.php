@@ -3,6 +3,7 @@
 namespace App\Config;
 
 use App\Config\Database;
+use App\Models\SiteConfigModel;
 
 class License
 {
