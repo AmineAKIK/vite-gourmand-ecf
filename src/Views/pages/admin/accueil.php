@@ -61,10 +61,33 @@ $defaultParagraphe = '';
         </div>
     </div>
 
-    <!-- IMAGES — côte à côte -->
+    <!-- IMAGES — 3 cartes -->
     <div class="row g-4 mb-4">
 
-        <div class="col-12 col-lg-6">
+        <div class="col-12 col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold">
+                    <i class="bi bi-image me-2 text-vg"></i>Logo
+                </div>
+                <div class="card-body">
+                    <?php $logoUrl = $images['logo'] ?? null; ?>
+                    <?php if ($logoUrl): ?>
+                        <img src="<?= sanitize($logoUrl) ?>" alt="Logo actuel"
+                             class="img-fluid rounded mb-3"
+                             style="max-height:80px;object-fit:contain;">
+                    <?php else: ?>
+                        <p class="text-muted small mb-3">Aucun logo — le nom du site s'affiche à la place.</p>
+                    <?php endif; ?>
+                    <label for="logo" class="form-label fw-medium">Uploader un logo</label>
+                    <input type="file" class="form-control image-picker" id="logo" name="logo"
+                           accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>"
+                           data-preview="preview-logo">
+                    <div class="form-text"><?= sanitize(\App\Services\MenuAdminService::acceptedImageFormatsLabel()) ?> — PNG transparent recommandé, min. 300×100 px</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold">
                     <i class="bi bi-card-image me-2 text-vg"></i>Image de fond (bannière)
@@ -86,7 +109,7 @@ $defaultParagraphe = '';
             </div>
         </div>
 
-        <div class="col-12 col-lg-6">
+        <div class="col-12 col-lg-4">
             <div class="card shadow-sm h-100">
                 <div class="card-header fw-semibold">
                     <i class="bi bi-camera me-2 text-vg"></i>Image section "Notre équipe"
