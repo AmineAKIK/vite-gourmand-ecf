@@ -87,6 +87,7 @@ class Migrator
                 $sql = file_get_contents($file);
                 if ($sql === false) continue;
 
+                self::repairKnownPartialMigration($db, $name);
                 self::applyMigration($db, $name, $sql);
             }
 
@@ -191,5 +192,51 @@ class Migrator
         );
         $stmt->execute([$table]);
         return (int)$stmt->fetchColumn() > 0;
+    }
+
+    private static function repairKnownPartialMigration(\PDO $db, string $name): void
+    {
+        if ($name !== '031_recettes_ingredients.sql') {
+            return;
+        }
+
+        if (!self::tableExists($db, 'ingredient') || self::columnExists($db, 'ingredient', 'ingredient_id')) {
+            return;
+        }
+
+        $backup = self::uniqueLegacyTableName($db, 'ingredient');
+        try {
+            $db->exec("RENAME TABLE `ingredient` TO `" . str_replace('`', '``', $backup) . "`");
+            error_log('[Migrator] 031_recettes_ingredients.sql : table ingredient incompatible sauvegardée en ' . $backup);
+        } catch (\Throwable $e) {
+            error_log('[Migrator] 031_recettes_ingredients.sql : impossible de sauvegarder ingredient incompatible : ' . $e->getMessage());
+        }
+    }
+
+    private static function columnExists(\PDO $db, string $table, string $column): bool
+    {
+        $stmt = $db->prepare(
+            "SELECT COUNT(*)
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = ?
+               AND COLUMN_NAME = ?"
+        );
+        $stmt->execute([$table, $column]);
+        return (int)$stmt->fetchColumn() > 0;
+    }
+
+    private static function uniqueLegacyTableName(\PDO $db, string $table): string
+    {
+        $base = $table . '_legacy_' . date('YmdHis');
+        $candidate = $base;
+        $suffix = 1;
+
+        while (self::tableExists($db, $candidate)) {
+            $candidate = $base . '_' . $suffix;
+            $suffix++;
+        }
+
+        return $candidate;
     }
 }
