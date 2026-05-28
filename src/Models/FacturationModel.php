@@ -102,6 +102,22 @@ class FacturationModel
         self::addColumnIfMissing('document_facturation', 'signed_ip', 'VARCHAR(45) NULL DEFAULT NULL');
     }
 
+    public static function search(string $q, int $limit = 20): array
+    {
+        self::ensureSchema();
+        $like = '%' . $q . '%';
+        $stmt = Database::getConnection()->prepare("
+            SELECT document_id, commande_id, type_document, statut, numero_document,
+                   date_emission, client_nom, client_email, total_ttc
+            FROM document_facturation
+            WHERE numero_document LIKE ? OR client_nom LIKE ? OR client_email LIKE ?
+            ORDER BY updated_at DESC
+            LIMIT ?
+        ");
+        $stmt->execute([$like, $like, $like, $limit]);
+        return $stmt->fetchAll();
+    }
+
     public static function listByCommandeIds(array $commandeIds): array
     {
         self::ensureSchema();

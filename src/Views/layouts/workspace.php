@@ -95,6 +95,22 @@
 
         <!-- Footer sidebar -->
         <div class="workspace-sidebar-footer">
+            <form class="workspace-search-form" method="GET" action="/employe/recherche" role="search">
+                <div class="input-group input-group-sm">
+                    <input class="form-control workspace-search-input" type="search" name="q"
+                           placeholder="Rechercher…" aria-label="Recherche globale"
+                           value="<?= sanitize($_GET['q'] ?? '') ?>" minlength="2">
+                    <button class="btn workspace-search-btn" type="submit" aria-label="Rechercher">
+                        <i class="bi bi-search"></i>
+                    </button>
+                </div>
+            </form>
+            <a href="/employe/notifications" class="workspace-nav-item workspace-notif-link" id="sidebar-notif-link"
+               aria-label="Notifications" <?= routeIsActive('/employe/notifications') ? 'aria-current="page"' : '' ?>>
+                <i class="bi bi-bell workspace-nav-icon"></i>
+                <span>Notifications</span>
+                <span class="badge bg-warning text-dark ms-auto workspace-notif-badge d-none" id="notif-badge" aria-live="polite"></span>
+            </a>
             <div class="workspace-user">
                 <i class="bi bi-person-circle workspace-nav-icon"></i>
                 <span><?= sanitize(currentUser()['prenom'] ?? '') ?> <?= sanitize(currentUser()['nom'] ?? '') ?></span>
@@ -121,6 +137,17 @@
                     <span class="navbar-toggler-icon"></span>
                 </button>
                 <div class="collapse navbar-collapse" id="workspaceMobileNav">
+                    <form class="d-flex mt-2 mb-1 px-2" method="GET" action="/employe/recherche" role="search">
+                        <div class="input-group input-group-sm">
+                            <input class="form-control" type="search" name="q" placeholder="Rechercher…"
+                                   aria-label="Recherche globale"
+                                   value="<?= sanitize($_GET['q'] ?? '') ?>"
+                                   minlength="2">
+                            <button class="btn btn-outline-light" type="submit" aria-label="Lancer la recherche">
+                                <i class="bi bi-search"></i>
+                            </button>
+                        </div>
+                    </form>
                     <ul class="navbar-nav w-100 mt-1">
                         <?php foreach (workspaceNavItems() as $item):
                             if (!empty($item['separator'])): ?>
@@ -137,6 +164,12 @@
                         </li>
                         <?php endforeach; ?>
                         <li><hr style="border-color:rgba(255,255,255,.2);margin:.25rem 0;"></li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/employe/notifications">
+                                <i class="bi bi-bell me-2"></i>Notifications
+                                <span class="badge bg-warning text-dark ms-1 workspace-notif-badge-mobile d-none" id="notif-badge-mobile"></span>
+                            </a>
+                        </li>
                         <li class="nav-item"><a class="nav-link" href="/">Retour au site</a></li>
                         <li class="nav-item"><a class="nav-link" href="/deconnexion">Déconnexion</a></li>
                     </ul>
@@ -154,5 +187,33 @@
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" nonce="<?= $cspNonce ?>"></script>
 <script src="/js/app.js?v=20260526-03" nonce="<?= $cspNonce ?>"></script>
+<script nonce="<?= $cspNonce ?>">
+(function () {
+    var badge       = document.getElementById('notif-badge');
+    var badgeMobile = document.getElementById('notif-badge-mobile');
+
+    function updateBadge(count) {
+        [badge, badgeMobile].forEach(function (el) {
+            if (!el) return;
+            if (count > 0) {
+                el.textContent = count > 99 ? '99+' : count;
+                el.classList.remove('d-none');
+            } else {
+                el.classList.add('d-none');
+            }
+        });
+    }
+
+    function fetchCount() {
+        fetch('/employe/notifications/count', { credentials: 'same-origin' })
+            .then(function (r) { return r.ok ? r.json() : null; })
+            .then(function (data) { if (data) updateBadge(data.count); })
+            .catch(function () {});
+    }
+
+    fetchCount();
+    setInterval(fetchCount, 60000);
+}());
+</script>
 </body>
 </html>

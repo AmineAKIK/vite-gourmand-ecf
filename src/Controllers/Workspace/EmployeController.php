@@ -7,6 +7,7 @@ use App\Domain\OrderStatus;
 use App\Models\AvisModel;
 use App\Models\CommandeModel;
 use App\Models\IngredientModel;
+use App\Models\NotificationModel;
 use App\Models\UserModel;
 use App\Security\Guard;
 use App\Services\MailService;
@@ -208,8 +209,42 @@ class EmployeController
             MailService::sendMaterielRelance($userCommande['email'], $userCommande['prenom']);
         }
 
+        // Notification in-app au client
+        if ($ancienStatut !== $statut && $userCommande) {
+            NotificationModel::notifyClientStatutCommande(
+                $commandeId,
+                (int)$commande['utilisateur_id'],
+                $commande['numero_commande'] ?? '',
+                $statut
+            );
+        }
+
         flash('success', 'Statut mis à jour.');
         redirect('/employe/commandes');
+    }
+
+    public function recherche(): void
+    {
+        $q = trim(sanitize($_GET['q'] ?? ''));
+
+        $commandes  = [];
+        $clients    = [];
+        $documents  = [];
+
+        if (strlen($q) >= 2) {
+            // Commandes : cherche par numero_commande, prenom, nom, ville
+            $commandes = CommandeModel::getAll(['q' => $q]);
+
+            // Clients : cherche par nom, prenom, email
+            $clients = UserModel::search($q);
+
+            // Documents (factures/devis) : cherche par numero_document ou client
+            try {
+                $documents = \App\Models\FacturationModel::search($q);
+            } catch (\Throwable) {}
+        }
+
+        view('pages/employe/recherche', compact('q', 'commandes', 'clients', 'documents'));
     }
 
     public function changePasswordForm(): void

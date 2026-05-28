@@ -6,7 +6,14 @@
         <!-- Mes commandes -->
         <div class="col-lg-8">
             <section class="account-panel p-4 h-100">
-                <h2 class="h4 mb-3">Mes commandes</h2>
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h2 class="h4 mb-0">Mes commandes</h2>
+                    <?php if (!empty($commandes)): ?>
+                    <a href="/mon-compte/export-commandes" class="btn btn-sm btn-vg-outline">
+                        <i class="bi bi-download me-1" aria-hidden="true"></i>Exporter CSV
+                    </a>
+                    <?php endif; ?>
+                </div>
                 <?php if (empty($commandes)): ?>
                     <div class="alert alert-info mb-0">
                         Vous n'avez pas encore de commande.

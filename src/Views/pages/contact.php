@@ -27,6 +27,7 @@ $pageTitle = buildPageTitle('Contact');
                             aria-required="true"
                             maxlength="150"
                             placeholder="Ex : Demande de devis mariage"
+                            value="<?= sanitize($sujet ?? '') ?>"
                         >
                     </div>
 

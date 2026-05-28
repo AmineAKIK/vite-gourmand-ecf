@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Config\Database;
 use App\Domain\OrderStatus;
+use App\Models\NotificationModel;
 use RuntimeException;
 use Throwable;
 
@@ -84,6 +85,15 @@ class CommandeModel
 
             self::addHistorique($commandeId, null, OrderStatus::initial(), 'Commande passée', $commandeData['utilisateur_id']);
             $db->commit();
+
+            // Notification employés/admins (hors transaction — fail silencieux)
+            $clientNom = trim(($commandeData['prenom'] ?? '') . ' ' . ($commandeData['nom'] ?? ''));
+            NotificationModel::notifyEmployesNouvelleCommande(
+                $commandeId,
+                $commandeData['numero_commande'],
+                $clientNom ?: 'Client'
+            );
+
             return $commandeId;
         } catch (Throwable $e) {
             if ($db->inTransaction()) {

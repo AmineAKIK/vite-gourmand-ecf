@@ -131,6 +131,9 @@ class StripeController {
 
         // Enregistrer le paiement Stripe
         $user = currentUser();
+
+        // Consommation stock ingrédients (fail silencieux si recettes non configurées)
+        try { \App\Models\StockModel::consommerPourCommande($commandeId, (int)$user['id']); } catch (\Throwable) {}
         \PaiementModel::create([
             'commande_id'   => $commandeId,
             'type_paiement' => 'paiement_unique',

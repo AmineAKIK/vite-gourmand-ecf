@@ -149,6 +149,21 @@ class UserModel {
         $db->prepare("UPDATE password_reset SET used=1 WHERE token=?")->execute([$token]);
     }
 
+    public static function search(string $q, int $limit = 20): array {
+        $db   = Database::getConnection();
+        $like = '%' . $q . '%';
+        $stmt = $db->prepare("
+            SELECT u.utilisateur_id, u.prenom, u.nom, u.email, u.telephone, u.ville, r.libelle AS role_libelle
+            FROM utilisateur u
+            JOIN role r ON r.role_id = u.role_id
+            WHERE u.role_id = ? AND (u.prenom LIKE ? OR u.nom LIKE ? OR u.email LIKE ?)
+            ORDER BY u.nom, u.prenom
+            LIMIT ?
+        ");
+        $stmt->execute([ROLE_ID_USER, $like, $like, $like, $limit]);
+        return $stmt->fetchAll();
+    }
+
     public static function deleteEmploye(int $id): void {
         $db = Database::getConnection();
         // Détache l'employé de l'historique avant suppression (contrainte FK sans ON DELETE)

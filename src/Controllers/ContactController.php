@@ -8,7 +8,8 @@ class ContactController
 {
     public function index(): void
     {
-        view('pages/contact');
+        $sujet = sanitize($_GET['sujet'] ?? '');
+        view('pages/contact', compact('sujet'));
     }
 
     public function send(): void

@@ -4145,6 +4145,32 @@ input[type="password"]::-webkit-caps-lock-indicator {
     border-top: 1px solid rgba(255,255,255,.08);
 }
 
+.workspace-search-form {
+    margin-bottom: .75rem;
+}
+.workspace-search-input {
+    background: rgba(255,255,255,.1);
+    border-color: rgba(255,255,255,.2);
+    color: #fff;
+    font-size: .8rem;
+}
+.workspace-search-input::placeholder { color: rgba(255,255,255,.45); }
+.workspace-search-input:focus {
+    background: rgba(255,255,255,.15);
+    border-color: rgba(255,255,255,.4);
+    color: #fff;
+    box-shadow: none;
+}
+.workspace-search-btn {
+    background: rgba(255,255,255,.1);
+    border-color: rgba(255,255,255,.2);
+    color: rgba(255,255,255,.8);
+}
+.workspace-search-btn:hover {
+    background: rgba(255,255,255,.2);
+    color: #fff;
+}
+
 .workspace-user {
     display: flex;
     align-items: center;

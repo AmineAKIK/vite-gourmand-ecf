@@ -172,6 +172,9 @@ class CommandeController {
             redirect('/panier');
         }
 
+        // Consommation stock ingrédients (fail silencieux si recettes non configurées)
+        try { \App\Models\StockModel::consommerPourCommande($commandeId, (int)$user['id']); } catch (\Throwable) {}
+
         $userFull = UserModel::findById($user['id']);
         MailService::sendCommandeConfirmation($userFull['email'], $commandeData, $panier);
 

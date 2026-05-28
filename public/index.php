@@ -25,6 +25,7 @@ use App\Controllers\Workspace\DocumentController;
 use App\Controllers\Workspace\EmployeController;
 use App\Controllers\Workspace\HoraireController;
 use App\Controllers\Workspace\MenuAdminController;
+use App\Controllers\Workspace\NotificationController;
 use App\Controllers\Workspace\RecetteController;
 
 session_set_cookie_params([
@@ -115,16 +116,17 @@ $routes = [
         '/stripe/webhook'      => [StripeController::class,  'webhook'],
     ],
     'GET_AUTH' => [
-        '/mon-compte'          => [UserController::class,    'dashboard'],
-        '/panier'              => [PanierController::class,  'view'],
-        '/commande/suivi'      => [CommandeController::class,'suivi'],
-        '/stripe/checkout'     => [StripeController::class,  'checkout'],
-        '/stripe/success'      => [StripeController::class,  'success'],
-        '/stripe/cancel'       => [StripeController::class,  'cancel'],
+        '/mon-compte'                    => [UserController::class,    'dashboard'],
+        '/mon-compte/export-commandes'   => [UserController::class,    'exportCommandes'],
+        '/panier'                        => [PanierController::class,  'view'],
+        '/commande/suivi'                => [CommandeController::class,'suivi'],
+        '/stripe/checkout'               => [StripeController::class,  'checkout'],
+        '/stripe/success'                => [StripeController::class,  'success'],
+        '/stripe/cancel'                 => [StripeController::class,  'cancel'],
     ],
     'POST_AUTH' => [
-        '/mon-compte/modifier'  => [UserController::class,  'update'],
-        '/mon-compte/supprimer' => [UserController::class,  'deleteAccount'],
+        '/mon-compte/modifier'           => [UserController::class,  'update'],
+        '/mon-compte/supprimer'          => [UserController::class,  'deleteAccount'],
         '/panier/ajouter'      => [PanierController::class,  'add'],
         '/panier/retirer'      => [PanierController::class,  'remove'],
         '/panier/vider'        => [PanierController::class,  'clear'],
@@ -146,6 +148,9 @@ $routes = [
         '/employe/document/export'        => [DocumentController::class,   'export'],
         '/employe/document/pdf'           => [DocumentController::class,   'exportPdf'],
         '/employe/changer-mot-de-passe'   => [EmployeController::class,    'changePasswordForm'],
+        '/employe/notifications'          => [NotificationController::class,'index'],
+        '/employe/notifications/count'    => [NotificationController::class,'count'],
+        '/employe/recherche'              => [EmployeController::class,     'recherche'],
     ],
     'GET_ADMIN' => [
         '/admin'                     => [DashboardController::class,  'index'],
@@ -161,6 +166,7 @@ $routes = [
         '/employe/paiement/enregistrer'  => [PaiementController::class,   'enregistrer'],
         '/employe/paiement/supprimer'    => [PaiementController::class,   'supprimer'],
         '/employe/changer-mot-de-passe'  => [EmployeController::class,    'changePassword'],
+        '/employe/notifications/lire'    => [NotificationController::class,'markRead'],
         '/employe/commande/statut'       => [EmployeController::class,    'updateStatut'],
         '/employe/document/creer'          => [DocumentController::class,   'create'],
         '/employe/document/modifier'       => [DocumentController::class,   'update'],
