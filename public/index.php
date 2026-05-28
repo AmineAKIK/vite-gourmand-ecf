@@ -128,6 +128,7 @@ $routes = [
     'GET_EMPLOYE' => [
         '/employe'                        => [EmployeController::class,    'dashboard'],
         '/employe/commandes'              => [EmployeController::class,    'commandes'],
+        '/employe/commandes/calendrier'   => [EmployeController::class,    'calendrierJson'],
         '/employe/menus'                  => [MenuAdminController::class,  'index'],
         '/employe/avis'                   => [AvisAdminController::class,  'index'],
         '/employe/horaires'               => [HoraireController::class,    'index'],

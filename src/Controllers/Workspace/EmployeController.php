@@ -82,6 +82,56 @@ class EmployeController
         ));
     }
 
+    public function calendrierJson(): void
+    {
+        header('Content-Type: application/json; charset=utf-8');
+
+        $start = sanitize($_GET['start'] ?? '');
+        $end   = sanitize($_GET['end']   ?? '');
+
+        $filters = ['periode' => 'custom'];
+        if (preg_match('/^\d{4}-\d{2}-\d{2}/', $start)) {
+            $filters['date_debut'] = substr($start, 0, 10);
+        }
+        if (preg_match('/^\d{4}-\d{2}-\d{2}/', $end)) {
+            $filters['date_fin'] = substr($end, 0, 10);
+        }
+
+        $commandes = CommandeModel::getAll($filters);
+
+        $colorMap = [
+            'en_attente'    => '#f59e0b',
+            'accepte'       => '#10b981',
+            'en_preparation'=> '#3b82f6',
+            'livre'         => '#6366f1',
+            'annule'        => '#ef4444',
+            'termine'       => '#6b7280',
+        ];
+
+        $events = [];
+        foreach ($commandes as $cmd) {
+            $statut = $cmd['statut'] ?? 'en_attente';
+            $client = trim(($cmd['prenom'] ?? '') . ' ' . ($cmd['nom'] ?? ''));
+            $events[] = [
+                'id'              => (int)$cmd['commande_id'],
+                'title'           => $client . ' — ' . ($cmd['ville_livraison'] ?? ''),
+                'start'           => $cmd['date_prestation'],
+                'color'           => $colorMap[$statut] ?? '#8B1A2B',
+                'extendedProps'   => [
+                    'statut'          => $statut,
+                    'numero'          => $cmd['numero_commande'] ?? '',
+                    'menu'            => $cmd['menu_titre'] ?? '',
+                    'heure'           => $cmd['heure_livraison'] ?? '',
+                    'prix'            => (float)($cmd['prix_total'] ?? 0),
+                    'commande_id'     => (int)$cmd['commande_id'],
+                ],
+            ];
+        }
+
+        echo json_encode($events, JSON_UNESCAPED_UNICODE);
+        exit;
+    }
+
     public function updateStatut(): void
     {
         verifyCsrf();

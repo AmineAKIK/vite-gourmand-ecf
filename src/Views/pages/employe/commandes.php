@@ -137,6 +137,26 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
         </form>
     </div>
 
+    <!-- Toggle vue Liste / Calendrier -->
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <div class="btn-group" role="group" aria-label="Mode d'affichage">
+            <button type="button" class="btn btn-sm btn-vg active" id="btn-vue-liste" aria-pressed="true">
+                <i class="bi bi-list-ul me-1"></i>Liste
+            </button>
+            <button type="button" class="btn btn-sm btn-vg-outline" id="btn-vue-calendrier" aria-pressed="false">
+                <i class="bi bi-calendar3 me-1"></i>Calendrier
+            </button>
+        </div>
+        <span class="text-muted small" id="vue-label-count"><?= count($commandes) ?> commande<?= count($commandes) > 1 ? 's' : '' ?></span>
+    </div>
+
+    <!-- Vue Calendrier -->
+    <div id="vue-calendrier" class="mb-4" style="display:none">
+        <div id="fullcalendar" style="background:#fff;padding:16px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.08)"></div>
+    </div>
+
+    <!-- Vue Liste -->
+    <div id="vue-liste">
     <!-- Tableau commandes -->
     <?php if (empty($commandes)): ?>
         <div class="alert alert-info">Aucune commande ne correspond aux critères.</div>
@@ -620,5 +640,100 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
             <?php endforeach; ?>
         </div><!-- /accordion -->
     <?php endif; ?>
+    </div><!-- /#vue-liste -->
 
 </div>
+
+<!-- FullCalendar -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" nonce="<?= cspNonce() ?>">
+<script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js" nonce="<?= cspNonce() ?>"></script>
+<script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/locales/fr.global.min.js" nonce="<?= cspNonce() ?>"></script>
+
+<script nonce="<?= cspNonce() ?>">
+(function () {
+    const btnListe      = document.getElementById('btn-vue-liste');
+    const btnCal        = document.getElementById('btn-vue-calendrier');
+    const vueListe      = document.getElementById('vue-liste');
+    const vueCal        = document.getElementById('vue-calendrier');
+    const labelCount    = document.getElementById('vue-label-count');
+
+    let calInstance = null;
+
+    const statutColors = {
+        en_attente:     '#f59e0b',
+        accepte:        '#10b981',
+        en_preparation: '#3b82f6',
+        livre:          '#6366f1',
+        annule:         '#ef4444',
+        termine:        '#6b7280',
+    };
+
+    function initCalendar() {
+        if (calInstance) return;
+        const el = document.getElementById('fullcalendar');
+        calInstance = new FullCalendar.Calendar(el, {
+            locale: 'fr',
+            initialView: 'dayGridMonth',
+            headerToolbar: {
+                left:   'prev,next today',
+                center: 'title',
+                right:  'dayGridMonth,timeGridWeek,listWeek',
+            },
+            height: 'auto',
+            events: {
+                url: '/employe/commandes/calendrier',
+                method: 'GET',
+                failure: () => { labelCount.textContent = 'Erreur de chargement'; },
+            },
+            eventClick: function (info) {
+                const p = info.event.extendedProps;
+                const url = '/employe/commandes#commande-' + p.commande_id;
+                btnListe.click();
+                window.location.hash = '#commande-' + p.commande_id;
+            },
+            eventDidMount: function (info) {
+                const p = info.event.extendedProps;
+                info.el.title =
+                    info.event.title + '\n' +
+                    'Heure : ' + (p.heure || '—') + '\n' +
+                    'Menu : ' + (p.menu || '—') + '\n' +
+                    'Total : ' + new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(p.prix);
+            },
+            loading: function (isLoading) {
+                labelCount.textContent = isLoading ? 'Chargement…' : '';
+            },
+            eventsSet: function (events) {
+                labelCount.textContent = events.length + ' commande' + (events.length > 1 ? 's' : '');
+            },
+            noEventsContent: 'Aucune commande sur cette période.',
+        });
+        calInstance.render();
+    }
+
+    btnCal.addEventListener('click', function () {
+        vueListe.style.display  = 'none';
+        vueCal.style.display    = '';
+        btnCal.classList.add('active');
+        btnCal.setAttribute('aria-pressed', 'true');
+        btnListe.classList.remove('active');
+        btnListe.setAttribute('aria-pressed', 'false');
+        initCalendar();
+        localStorage.setItem('commandes_vue', 'calendrier');
+    });
+
+    btnListe.addEventListener('click', function () {
+        vueCal.style.display    = 'none';
+        vueListe.style.display  = '';
+        btnListe.classList.add('active');
+        btnListe.setAttribute('aria-pressed', 'true');
+        btnCal.classList.remove('active');
+        btnCal.setAttribute('aria-pressed', 'false');
+        localStorage.setItem('commandes_vue', 'liste');
+    });
+
+    // Restaurer la dernière vue
+    if (localStorage.getItem('commandes_vue') === 'calendrier') {
+        btnCal.click();
+    }
+})();
+</script>
