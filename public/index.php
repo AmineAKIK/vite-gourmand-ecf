@@ -85,6 +85,19 @@ if ($uri === '/health') {
     echo json_encode(['status' => 'ok', 'db' => $dbStatus, 'ts' => time()]);
     exit;
 }
+// Suspension instance SaaS — bloque toutes les routes sauf déconnexion et health
+if (!in_array($uri, ['/deconnexion', '/connexion'], true)) {
+    try {
+        if (\App\Config\PlanConfig::isSuspended()) {
+            http_response_code(503);
+            view('pages/suspended');
+            exit;
+        }
+    } catch (\Throwable) {
+        // Fail-open : ne pas bloquer si site_config indisponible
+    }
+}
+
 $method = $_SERVER['REQUEST_METHOD'];
 
 $routes = [

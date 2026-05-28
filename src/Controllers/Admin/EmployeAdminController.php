@@ -2,6 +2,7 @@
 
 namespace App\Controllers\Admin;
 
+use App\Config\PlanConfig;
 use App\Models\UserModel;
 use App\Services\MailService;
 
@@ -36,6 +37,13 @@ class EmployeAdminController
         }
         if (UserModel::findByEmail($email)) {
             flash('error', 'Email déjà utilisé.');
+            redirect('/admin/employes');
+        }
+
+        try {
+            PlanConfig::checkEmployesQuota();
+        } catch (\RuntimeException $e) {
+            flash('error', $e->getMessage());
             redirect('/admin/employes');
         }
 

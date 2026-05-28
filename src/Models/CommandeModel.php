@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Config\Database;
+use App\Config\PlanConfig;
 use App\Domain\OrderStatus;
 use App\Models\NotificationModel;
 use RuntimeException;
@@ -20,6 +21,9 @@ class CommandeModel
      *   remise_appliquee, taux_tva_id
      */
     public static function create(array $commandeData, array $lignes): int {
+        // Vérification quota plan SaaS (fail-open si DB indisponible)
+        PlanConfig::checkCommandesQuota();
+
         $db = Database::getConnection();
         $db->beginTransaction();
         try {

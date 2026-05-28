@@ -33,6 +33,57 @@
 <a href="#workspace-content" class="skip-link visually-hidden-focusable">Aller au contenu</a>
 
 <!-- FLASH MESSAGES (hors sidebar) -->
+<?php
+// Bandeau plan SaaS — visible uniquement pour l'admin, seulement si plan non-premium
+if (hasRole(ROLE_ADMIN)) {
+    try {
+        $__plan      = \App\Config\PlanConfig::current();
+        $__planLabel = \App\Config\PlanConfig::label();
+        $__maxCmd    = \App\Config\PlanConfig::maxCommandesMois();
+        $__maxEmp    = \App\Config\PlanConfig::maxEmployes();
+        $__cmdMonth  = 0;
+        if ($__maxCmd > 0) {
+            $row = db()->fetchOne(
+                "SELECT COUNT(*) AS n FROM commande WHERE date_commande >= DATE_FORMAT(NOW(), '%Y-%m-01') AND statut != 'annulee'",
+                []
+            );
+            $__cmdMonth = (int)($row['n'] ?? 0);
+        }
+        $__showPlanBanner = ($__plan !== 'premium');
+        $__quotaWarning   = $__maxCmd > 0 && $__cmdMonth >= (int)($__maxCmd * 0.8);
+    } catch (\Throwable) {
+        $__showPlanBanner = false;
+        $__quotaWarning   = false;
+    }
+}
+?>
+<?php if (!empty($__showPlanBanner) && hasRole(ROLE_ADMIN)): ?>
+<div class="workspace-flash workspace-plan-banner alert alert-info m-0 rounded-0 border-0 d-flex align-items-center justify-content-between py-2" role="status">
+    <div class="container-fluid d-flex align-items-center gap-3 flex-wrap">
+        <span>
+            <i class="bi bi-award me-1"></i>
+            Plan actuel : <strong><?= sanitize($__planLabel) ?></strong>
+            <?php if ($__maxCmd > 0): ?>
+            — <?= $__cmdMonth ?>/<?= $__maxCmd ?> commandes ce mois
+            <?php endif; ?>
+            <?php if ($__maxEmp > 0): ?>
+            — max <?= $__maxEmp ?> employé<?= $__maxEmp > 1 ? 's' : '' ?>
+            <?php endif; ?>
+        </span>
+        <a href="/admin/parametres#plan" class="btn btn-sm btn-outline-primary ms-auto text-nowrap">
+            <i class="bi bi-arrow-up-circle me-1"></i>Changer de plan
+        </a>
+    </div>
+</div>
+<?php endif; ?>
+<?php if (!empty($__quotaWarning) && hasRole(ROLE_ADMIN)): ?>
+<div class="workspace-flash alert alert-warning m-0 rounded-0 border-0" role="alert">
+    <div class="container-fluid"><i class="bi bi-exclamation-triangle me-2"></i>
+    Quota commandes bientôt atteint : <?= $__cmdMonth ?>/<?= $__maxCmd ?> ce mois.
+    <a href="/admin/parametres#plan" class="alert-link">Passer au plan supérieur</a> pour éviter les blocages.
+    </div>
+</div>
+<?php endif; ?>
 <?php if ($msg = getFlash('success')): ?>
 <div class="workspace-flash alert alert-success alert-dismissible fade show m-0 rounded-0 border-0" role="alert" aria-live="polite">
     <div class="container-fluid"><i class="bi bi-check-circle me-2"></i><?= sanitize($msg) ?>
