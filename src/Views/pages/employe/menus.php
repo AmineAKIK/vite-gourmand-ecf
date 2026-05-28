@@ -257,10 +257,10 @@ foreach ($plats as $plat) {
                         <div class="col-12">
                             <label for="creer-images" class="form-label">Photos du menu <span class="text-danger" aria-hidden="true">*</span></label>
                             <input type="file" class="form-control image-picker" id="creer-images" name="images[]"
-                                   multiple accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>"
+                                   multiple accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>"
                                    required aria-required="true"
                                    aria-label="Galerie d'images du menu (obligatoire)">
-                            <div class="form-text"><?= sanitize(MenuAdminService::acceptedImageFormatsLabel()) ?> — Au moins une photo obligatoire</div>
+                            <div class="form-text"><?= sanitize(\App\Services\MenuAdminService::acceptedImageFormatsLabel()) ?> — Au moins une photo obligatoire</div>
                             <div class="image-preview-container d-flex flex-wrap gap-2 mt-2"></div>
                         </div>
 
@@ -425,9 +425,9 @@ foreach ($plats as $plat) {
                         <div class="col-12">
                             <label for="modif-images-<?= (int)$menu['menu_id'] ?>" class="form-label">Ajouter des photos</label>
                             <input type="file" class="form-control image-picker" id="modif-images-<?= (int)$menu['menu_id'] ?>" name="images[]"
-                                   multiple accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>"
+                                   multiple accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>"
                                    aria-label="Galerie d'images du menu">
-                            <div class="form-text"><?= sanitize(MenuAdminService::acceptedImageFormatsLabel()) ?></div>
+                            <div class="form-text"><?= sanitize(\App\Services\MenuAdminService::acceptedImageFormatsLabel()) ?></div>
                             <div class="image-preview-container d-flex flex-wrap gap-2 mt-2"></div>
                             <?php $imagesMenu = $imagesByMenu[(int)$menu['menu_id']] ?? []; ?>
                             <?php if (!empty($imagesMenu)): ?>

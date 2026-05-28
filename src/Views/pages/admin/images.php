@@ -32,9 +32,9 @@ $pageTitle = buildPageTitle('Images du site');
                     </div>
                     <label for="logo" class="form-label fw-medium">Uploader un logo</label>
                     <input type="file" class="form-control image-picker" id="logo" name="logo"
-                           accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>"
+                           accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>"
                            data-preview="preview-logo">
-                    <div class="form-text"><?= sanitize(MenuAdminService::acceptedImageFormatsLabel()) ?> — Format recommandé : PNG transparent, min. 300×100 px</div>
+                    <div class="form-text"><?= sanitize(\App\Services\MenuAdminService::acceptedImageFormatsLabel()) ?> — Format recommandé : PNG transparent, min. 300×100 px</div>
                 </div>
             </div>
 
@@ -55,9 +55,9 @@ $pageTitle = buildPageTitle('Images du site');
                     </div>
                     <label for="hero" class="form-label fw-medium">Remplacer l'image</label>
                     <input type="file" class="form-control image-picker" id="hero" name="hero"
-                           accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>"
+                           accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>"
                            data-preview="preview-hero">
-                    <div class="form-text"><?= sanitize(MenuAdminService::acceptedImageFormatsLabel()) ?> — Format recommandé : 1920×600 px</div>
+                    <div class="form-text"><?= sanitize(\App\Services\MenuAdminService::acceptedImageFormatsLabel()) ?> — Format recommandé : 1920×600 px</div>
                 </div>
             </div>
 
@@ -78,9 +78,9 @@ $pageTitle = buildPageTitle('Images du site');
                     </div>
                     <label for="preparation" class="form-label fw-medium">Remplacer l'image</label>
                     <input type="file" class="form-control image-picker" id="preparation" name="preparation"
-                           accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>"
+                           accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>"
                            data-preview="preview-preparation">
-                    <div class="form-text"><?= sanitize(MenuAdminService::acceptedImageFormatsLabel()) ?> — Format recommandé : 1000×700 px</div>
+                    <div class="form-text"><?= sanitize(\App\Services\MenuAdminService::acceptedImageFormatsLabel()) ?> — Format recommandé : 1000×700 px</div>
                 </div>
             </div>
 

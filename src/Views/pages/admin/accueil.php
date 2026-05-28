@@ -79,9 +79,9 @@ $defaultParagraphe = '';
                     >
                     <label for="hero" class="form-label fw-medium">Remplacer l'image</label>
                     <input type="file" class="form-control image-picker" id="hero" name="hero"
-                           accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>"
+                           accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>"
                            data-preview="preview-hero">
-                    <div class="form-text"><?= sanitize(MenuAdminService::acceptedImageFormatsLabel()) ?> — Recommandé : 1920×600 px</div>
+                    <div class="form-text"><?= sanitize(\App\Services\MenuAdminService::acceptedImageFormatsLabel()) ?> — Recommandé : 1920×600 px</div>
                 </div>
             </div>
         </div>
@@ -101,9 +101,9 @@ $defaultParagraphe = '';
                     >
                     <label for="preparation" class="form-label fw-medium">Remplacer l'image</label>
                     <input type="file" class="form-control image-picker" id="preparation" name="preparation"
-                           accept="<?= sanitize(MenuAdminService::acceptedImageMimeTypes()) ?>"
+                           accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>"
                            data-preview="preview-preparation">
-                    <div class="form-text"><?= sanitize(MenuAdminService::acceptedImageFormatsLabel()) ?> — Recommandé : 1000×700 px</div>
+                    <div class="form-text"><?= sanitize(\App\Services\MenuAdminService::acceptedImageFormatsLabel()) ?> — Recommandé : 1000×700 px</div>
                 </div>
             </div>
         </div>
