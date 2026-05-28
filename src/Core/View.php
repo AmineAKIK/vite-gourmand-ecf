@@ -125,8 +125,7 @@ class View
         $dashMatch = $isAdmin ? '/admin' : '/employe';
         $items[] = ['href' => $dashHref, 'label' => 'Tableau de bord', 'icon' => 'bi-speedometer2', 'match' => $dashMatch, 'exact' => true];
 
-        $items[] = ['href' => '/employe/commandes', 'label' => 'Commandes',    'icon' => 'bi-list-check',   'match' => '/employe/commandes*'];
-        $items[] = ['href' => '/employe/document',  'label' => 'Documents',    'icon' => 'bi-file-earmark-text', 'match' => '/employe/document*'];
+        $items[] = ['href' => '/employe/commandes', 'label' => 'Commandes',    'icon' => 'bi-list-check',   'match' => ['/employe/commandes*', '/employe/document*']];
         $items[] = ['href' => '/employe/menus',     'label' => 'Menus & Plats','icon' => 'bi-journal-text', 'match' => '/employe/menus*'];
         $items[] = ['href' => '/employe/avis',      'label' => 'Avis clients', 'icon' => 'bi-star',         'match' => '/employe/avis*'];
 
