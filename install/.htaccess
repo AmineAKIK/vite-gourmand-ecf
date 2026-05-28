@@ -1,0 +1,15 @@
+# Protection du dossier install/
+#
+# - En production, ce dossier doit être inaccessible depuis le web.
+# - Sur Railway / Docker avec PHP built-in server, le document root est public/ —
+#   ce dossier n'est donc pas accessible par défaut.
+# - Sur Apache (VPS), ce .htaccess bloque tout accès HTTP une fois installé.
+
+# Bloquer tout accès par défaut
+<IfModule mod_authz_core.c>
+    Require all denied
+</IfModule>
+<IfModule !mod_authz_core.c>
+    Order deny,allow
+    Deny from all
+</IfModule>
