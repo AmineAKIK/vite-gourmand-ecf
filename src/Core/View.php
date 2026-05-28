@@ -125,18 +125,16 @@ class View
         $dashMatch = $isAdmin ? '/admin' : '/employe';
         $items[] = ['href' => $dashHref, 'label' => 'Tableau de bord', 'icon' => 'bi-speedometer2', 'match' => $dashMatch, 'exact' => true];
 
-        $items[] = ['href' => '/employe/commandes', 'label' => 'Commandes',      'icon' => 'bi-list-check',   'match' => ['/employe/commandes*', '/employe/document*']];
-        $items[] = ['href' => '/employe/menus',     'label' => 'Menus et plats', 'icon' => 'bi-journal-text', 'match' => '/employe/menus*'];
-        $items[] = ['href' => '/employe/avis',      'label' => 'Avis clients',   'icon' => 'bi-star',         'match' => '/employe/avis*'];
-        $items[] = ['href' => '/employe/horaires',  'label' => 'Horaires',       'icon' => 'bi-clock',        'match' => '/employe/horaires*'];
+        $items[] = ['href' => '/employe/commandes', 'label' => 'Commandes',    'icon' => 'bi-list-check',   'match' => '/employe/commandes*'];
+        $items[] = ['href' => '/employe/document',  'label' => 'Documents',    'icon' => 'bi-file-earmark-text', 'match' => '/employe/document*'];
+        $items[] = ['href' => '/employe/menus',     'label' => 'Menus & Plats','icon' => 'bi-journal-text', 'match' => '/employe/menus*'];
+        $items[] = ['href' => '/employe/avis',      'label' => 'Avis clients', 'icon' => 'bi-star',         'match' => '/employe/avis*'];
 
         if ($isAdmin) {
             $items[] = ['separator' => true];
-            $items[] = ['href' => '/admin/employes',     'label' => 'Employés',        'icon' => 'bi-people',   'match' => '/admin/employes*'];
-            $items[] = ['href' => '/admin/stats',        'label' => 'Statistiques CA', 'icon' => 'bi-graph-up', 'match' => '/admin/stats*'];
-            $items[] = ['href' => '/admin/comptabilite', 'label' => 'Comptabilité',    'icon' => 'bi-archive',  'match' => '/admin/comptabilite*'];
-            $items[] = ['href' => '/admin/accueil',      'label' => "Page d'accueil",  'icon' => 'bi-brush',    'match' => '/admin/accueil*'];
-            $items[] = ['href' => '/admin/parametres',   'label' => 'Paramètres',      'icon' => 'bi-sliders',  'match' => '/admin/parametres*'];
+            $items[] = ['href' => '/admin/employes',   'label' => 'Équipe',      'icon' => 'bi-people',  'match' => '/admin/employes*'];
+            $items[] = ['href' => '/admin/stats',      'label' => 'Finances',    'icon' => 'bi-graph-up','match' => ['/admin/stats*', '/admin/comptabilite*']];
+            $items[] = ['href' => '/admin/parametres', 'label' => 'Paramètres', 'icon' => 'bi-sliders', 'match' => ['/admin/parametres*', '/admin/accueil*']];
         }
 
         return $items;

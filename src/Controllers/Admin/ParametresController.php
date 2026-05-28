@@ -2,6 +2,7 @@
 
 namespace App\Controllers\Admin;
 
+use App\Models\HoraireModel;
 use App\Models\SiteConfigModel;
 use App\Models\SiteImageModel;
 use App\Services\MenuAdminService;
@@ -16,7 +17,9 @@ class ParametresController
         $tousLesToux = db()->fetchAll(
             'SELECT * FROM taux_tva ORDER BY actif DESC, taux ASC, libelle ASC'
         );
-        view('pages/admin/parametres', compact('config', 'tauxTva', 'tousLesToux'));
+        $images   = SiteImageModel::getAll();
+        $horaires = HoraireModel::getAll();
+        view('pages/admin/parametres', compact('config', 'tauxTva', 'tousLesToux', 'images', 'horaires'));
     }
 
     public function update(): void
@@ -225,9 +228,7 @@ class ParametresController
 
     public function accueil(): void
     {
-        $images = SiteImageModel::getAll();
-        $config = SiteConfigModel::getAll();
-        view('pages/admin/accueil', compact('images', 'config'));
+        \App\Core\View::redirect('/admin/parametres?tab=personnalisation');
     }
 
     public function updateAccueil(): void
@@ -239,11 +240,11 @@ class ParametresController
 
         if (mb_strlen($sousTitre) > 60) {
             flash('error', 'Le sous-titre ne peut pas dépasser 60 caractères.');
-            redirect('/admin/accueil');
+            redirect('/admin/parametres#personnalisation');
         }
         if (mb_strlen($paragraphe) > 200) {
             flash('error', 'Le paragraphe ne peut pas dépasser 200 caractères.');
-            redirect('/admin/accueil');
+            redirect('/admin/parametres#personnalisation');
         }
 
         SiteConfigModel::set('hero_sous_titre', $sousTitre);
@@ -259,12 +260,12 @@ class ParametresController
                 SiteImageModel::set($cle, $url);
             } else {
                 flash('error', 'Erreur lors de l\'upload de l\'image "' . $cle . '".');
-                redirect('/admin/accueil');
+                redirect('/admin/parametres#personnalisation');
             }
         }
 
         flash('success', 'Page d\'accueil mise à jour.');
-        redirect('/admin/accueil');
+        redirect('/admin/parametres#personnalisation');
     }
 
 }

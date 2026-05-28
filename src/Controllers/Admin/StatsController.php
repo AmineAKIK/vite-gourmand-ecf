@@ -20,9 +20,10 @@ class StatsController
         $caMensuel = StatsService::getCaMensuel(24, $dateDebut, $dateFin);
         $menus     = MenuModel::getAll();
         $regimeTva = PricingService::regimeTva();
+        $config    = \App\Models\SiteConfigModel::getAll();
 
-        view('pages/admin/stats', compact(
-            'caStats', 'synthese', 'caMensuel', 'menus', 'regimeTva',
+        view('pages/admin/finances', compact(
+            'caStats', 'synthese', 'caMensuel', 'menus', 'regimeTva', 'config',
             'menuFilter', 'dateDebut', 'dateFin'
         ));
     }
@@ -70,11 +71,8 @@ class StatsController
 
     public function comptabilite(): void
     {
-        $config    = \App\Models\SiteConfigModel::getAll();
-        $regimeTva = PricingService::regimeTva();
-        $synthese  = StatsService::getSynthese();
-        $pageTitle = buildPageTitle('Comptabilité');
-        view('pages/admin/comptabilite', compact('config', 'regimeTva', 'synthese', 'pageTitle'));
+        // Comptabilité est maintenant un onglet de la page Finances
+        \App\Core\View::redirect('/admin/stats?tab=comptabilite');
     }
 
     public function exportComptabilite(): void

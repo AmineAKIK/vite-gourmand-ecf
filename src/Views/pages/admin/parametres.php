@@ -6,27 +6,71 @@ $cfg = function(string $cle, string $default = '') use ($config): string {
     return sanitize($config[$cle] ?? $default);
 };
 
-$regimeTva          = $config['regime_tva'] ?? 'assujetti';
-$reductionSeuil     = (float)($config['reduction_seuil'] ?? 100);
-$reductionTaux      = (float)($config['reduction_taux']  ?? 10);
-$reductionExample   = max(120, $reductionSeuil);
-$reductionExAmt     = $reductionExample * $reductionTaux / 100;
+$regimeTva        = $config['regime_tva'] ?? 'assujetti';
+$reductionSeuil   = (float)($config['reduction_seuil'] ?? 100);
+$reductionTaux    = (float)($config['reduction_taux']  ?? 10);
+$reductionExample = max(120, $reductionSeuil);
+$reductionExAmt   = $reductionExample * $reductionTaux / 100;
 
 $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', 'general' => 'Général'];
+
+// Onglet actif depuis l'ancre (hash transmis via query param si besoin) ou défaut
+$activeTab = $_GET['tab'] ?? 'identite';
 ?>
 
 <?php partial('partials/page_title_bar', ['icon' => 'bi-sliders', 'title' => 'Paramètres']); ?>
 
-<div class="params-page row g-4">
+<!-- Navigation onglets -->
+<ul class="nav nav-tabs mb-4 flex-nowrap overflow-auto params-tabs" id="paramsTabs" role="tablist" style="white-space:nowrap;">
+    <li class="nav-item" role="presentation">
+        <button class="nav-link <?= $activeTab === 'identite' ? 'active' : '' ?>" id="tab-identite" data-bs-toggle="tab" data-bs-target="#pane-identite" type="button" role="tab">
+            <i class="bi bi-palette me-1"></i>Identité
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link <?= $activeTab === 'personnalisation' ? 'active' : '' ?>" id="tab-personnalisation" data-bs-toggle="tab" data-bs-target="#pane-personnalisation" type="button" role="tab">
+            <i class="bi bi-brush me-1"></i>Personnalisation
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link <?= $activeTab === 'horaires' ? 'active' : '' ?>" id="tab-horaires" data-bs-toggle="tab" data-bs-target="#pane-horaires" type="button" role="tab">
+            <i class="bi bi-clock me-1"></i>Horaires
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link <?= $activeTab === 'entreprise' ? 'active' : '' ?>" id="tab-entreprise" data-bs-toggle="tab" data-bs-target="#pane-entreprise" type="button" role="tab">
+            <i class="bi bi-building me-1"></i>Entreprise
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link <?= $activeTab === 'fiscal' ? 'active' : '' ?>" id="tab-fiscal" data-bs-toggle="tab" data-bs-target="#pane-fiscal" type="button" role="tab">
+            <i class="bi bi-percent me-1"></i>Fiscal &amp; TVA
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link <?= $activeTab === 'tarification' ? 'active' : '' ?>" id="tab-tarification" data-bs-toggle="tab" data-bs-target="#pane-tarification" type="button" role="tab">
+            <i class="bi bi-truck me-1"></i>Tarification
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link <?= $activeTab === 'paiement' ? 'active' : '' ?>" id="tab-paiement" data-bs-toggle="tab" data-bs-target="#pane-paiement" type="button" role="tab">
+            <i class="bi bi-credit-card me-1"></i>Paiement
+        </button>
+    </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link <?= $activeTab === 'legal' ? 'active' : '' ?>" id="tab-legal" data-bs-toggle="tab" data-bs-target="#pane-legal" type="button" role="tab">
+            <i class="bi bi-file-text me-1"></i>Pages légales
+        </button>
+    </li>
+</ul>
 
-    <!-- ============================================================
-         SECTION 0 — Identité & charte graphique (WHITE-LABEL)
-    ============================================================ -->
-    <div class="col-12" id="identite">
+<div class="tab-content params-tab-content">
+
+    <!-- ================================================================
+         ONGLET 1 — Identité & charte graphique
+    ================================================================ -->
+    <div class="tab-pane fade <?= $activeTab === 'identite' ? 'show active' : '' ?>" id="pane-identite" role="tabpanel">
         <div class="card shadow-sm">
-            <div class="card-header fw-semibold">
-                <i class="bi bi-palette me-2 text-vg"></i>Identité &amp; charte graphique
-            </div>
             <div class="card-body">
                 <form method="POST" action="/admin/parametres/modifier">
                     <?= csrfField() ?>
@@ -124,9 +168,9 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                         </div>
                         <div class="col-12 col-lg-6 align-self-end">
                             <div class="p-3 rounded d-flex gap-3 align-items-center" style="background:var(--vg-creme)">
-                                <span class="fw-semibold" style="color:var(--vg-bordeaux)">Aperçu en temps réel →</span>
-                                <span class="badge" id="preview-badge" style="background:var(--vg-bordeaux);color:#fff">Couleur principale</span>
-                                <span class="badge" id="preview-badge2" style="background:var(--vg-or);color:#fff">Couleur secondaire</span>
+                                <span class="fw-semibold" style="color:var(--vg-bordeaux)">Aperçu →</span>
+                                <span class="badge" id="preview-badge" style="background:var(--vg-bordeaux);color:#fff">Principale</span>
+                                <span class="badge" id="preview-badge2" style="background:var(--vg-or);color:#fff">Secondaire</span>
                             </div>
                         </div>
                     </div>
@@ -149,7 +193,7 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                                    name="livraison_codes_postaux_gratuits"
                                    value="<?= $cfg('livraison_codes_postaux_gratuits', '33000,33100,33200,33300,33800') ?>"
                                    maxlength="500" placeholder="33000,33100,33200">
-                            <div class="form-text">Séparés par des virgules. Livraison gratuite pour ces codes postaux de la ville principale.</div>
+                            <div class="form-text">Séparés par des virgules.</div>
                         </div>
                     </div>
 
@@ -161,14 +205,187 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
         </div>
     </div>
 
-    <!-- ============================================================
-         SECTION 1 — Informations entreprise
-    ============================================================ -->
-    <div class="col-12" id="entreprise">
-        <div class="card shadow-sm">
-            <div class="card-header fw-semibold">
-                <i class="bi bi-building me-2 text-vg"></i>Informations entreprise
+    <!-- ================================================================
+         ONGLET 2 — Personnalisation (images + textes hero)
+    ================================================================ -->
+    <div class="tab-pane fade <?= $activeTab === 'personnalisation' ? 'show active' : '' ?>" id="pane-personnalisation" role="tabpanel">
+        <form method="POST" action="/admin/accueil/modifier" enctype="multipart/form-data" novalidate>
+            <?= csrfField() ?>
+
+            <!-- Textes hero -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header fw-semibold">
+                    <i class="bi bi-type me-2 text-vg"></i>Textes de la page d'accueil
+                </div>
+                <div class="card-body d-flex flex-column gap-4">
+                    <div>
+                        <label class="form-label fw-medium" for="hero_sous_titre">
+                            Sous-titre <span class="text-danger">*</span>
+                            <small class="text-muted fw-normal ms-1">— affiché en doré</small>
+                        </label>
+                        <textarea id="hero_sous_titre" name="hero_sous_titre" class="form-control"
+                                  rows="2" maxlength="60" required><?= $cfg('hero_sous_titre') ?></textarea>
+                        <div class="d-flex justify-content-between">
+                            <div class="form-text">Accroche courte, mise en valeur en couleur dorée.</div>
+                            <small class="text-muted mt-1"><span id="count-sous-titre">0</span>/60</small>
+                        </div>
+                    </div>
+                    <div>
+                        <label class="form-label fw-medium" for="hero_paragraphe">
+                            Paragraphe d'introduction
+                            <small class="text-muted fw-normal ms-1">— affiché en blanc</small>
+                        </label>
+                        <textarea id="hero_paragraphe" name="hero_paragraphe" class="form-control"
+                                  rows="3" maxlength="200"><?= $cfg('hero_paragraphe') ?></textarea>
+                        <div class="d-flex justify-content-between">
+                            <div class="form-text">Appuie sur Entrée pour créer un saut de ligne.</div>
+                            <small class="text-muted mt-1"><span id="count-paragraphe">0</span>/200</small>
+                        </div>
+                    </div>
+                </div>
             </div>
+
+            <!-- Images -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header fw-semibold">
+                    <i class="bi bi-images me-2 text-vg"></i>Images du site
+                </div>
+                <div class="card-body">
+                    <div class="row g-4">
+
+                        <!-- Logo navbar -->
+                        <div class="col-12 col-lg-4">
+                            <p class="fw-medium mb-2">Logo navbar</p>
+                            <?php $logoUrl = $images['logo'] ?? null; ?>
+                            <?php if ($logoUrl): ?>
+                                <img src="<?= sanitize($logoUrl) ?>" alt="Logo actuel"
+                                     class="img-fluid rounded mb-2" style="max-height:60px;object-fit:contain;display:block;">
+                            <?php else: ?>
+                                <p class="text-muted small mb-2">Aucun logo — le nom du site s'affiche.</p>
+                            <?php endif; ?>
+                            <input type="file" class="form-control image-picker" name="logo" id="logo-input"
+                                   accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>">
+                            <div class="form-text"><?= sanitize(\App\Services\MenuAdminService::acceptedImageFormatsLabel()) ?> — PNG transparent recommandé, min. 300×100 px</div>
+                        </div>
+
+                        <!-- Favicon -->
+                        <div class="col-12 col-lg-4">
+                            <p class="fw-medium mb-2">Favicon (onglet navigateur)</p>
+                            <?php $faviconUrl = $images['favicon'] ?? null; ?>
+                            <?php if ($faviconUrl): ?>
+                                <img src="<?= sanitize($faviconUrl) ?>" alt="Favicon actuel"
+                                     class="rounded mb-2" style="width:32px;height:32px;object-fit:contain;display:block;">
+                            <?php else: ?>
+                                <p class="text-muted small mb-2">Aucun favicon — favicon par défaut utilisé.</p>
+                            <?php endif; ?>
+                            <input type="file" class="form-control" name="favicon"
+                                   accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>">
+                            <div class="form-text">PNG ou ICO — carré, 32×32 ou 64×64 px</div>
+                        </div>
+
+                        <!-- OG image -->
+                        <div class="col-12 col-lg-4">
+                            <p class="fw-medium mb-2">Image de partage (og:image)</p>
+                            <?php $ogUrl = $images['og_image'] ?? null; ?>
+                            <?php if ($ogUrl): ?>
+                                <img src="<?= sanitize($ogUrl) ?>" alt="og:image actuelle"
+                                     class="img-fluid rounded mb-2" style="max-height:80px;width:100%;object-fit:cover;" id="preview-og_image">
+                            <?php else: ?>
+                                <p class="text-muted small mb-2">Aucune — image par défaut utilisée.</p>
+                            <?php endif; ?>
+                            <input type="file" class="form-control image-picker" name="og_image"
+                                   accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>"
+                                   data-preview="preview-og_image">
+                            <div class="form-text"><?= sanitize(\App\Services\MenuAdminService::acceptedImageFormatsLabel()) ?> — 1200×630 px recommandé</div>
+                        </div>
+
+                        <!-- Image hero -->
+                        <div class="col-12 col-lg-6">
+                            <p class="fw-medium mb-2">Image de fond (bannière)</p>
+                            <img src="<?= sanitize(imageUrl($images['hero'] ?? null, 'images/hero-traiteur.webp')) ?>"
+                                 alt="Image hero actuelle" class="img-fluid rounded mb-2"
+                                 style="max-height:160px;width:100%;object-fit:cover;" id="preview-hero">
+                            <input type="file" class="form-control image-picker" name="hero"
+                                   accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>"
+                                   data-preview="preview-hero">
+                            <div class="form-text"><?= sanitize(\App\Services\MenuAdminService::acceptedImageFormatsLabel()) ?> — 1920×600 px recommandé</div>
+                        </div>
+
+                        <!-- Image équipe -->
+                        <div class="col-12 col-lg-6">
+                            <p class="fw-medium mb-2">Image section "Notre équipe"</p>
+                            <img src="<?= sanitize(imageUrl($images['preparation'] ?? null, 'images/preparation-traiteur-generique.webp')) ?>"
+                                 alt="Image équipe actuelle" class="img-fluid rounded mb-2"
+                                 style="max-height:160px;width:100%;object-fit:cover;" id="preview-preparation">
+                            <input type="file" class="form-control image-picker" name="preparation"
+                                   accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>"
+                                   data-preview="preview-preparation">
+                            <div class="form-text"><?= sanitize(\App\Services\MenuAdminService::acceptedImageFormatsLabel()) ?> — 1000×700 px recommandé</div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+            <button type="submit" class="btn btn-vg">
+                <i class="bi bi-save me-1"></i>Enregistrer la personnalisation
+            </button>
+        </form>
+    </div>
+
+    <!-- ================================================================
+         ONGLET 3 — Horaires
+    ================================================================ -->
+    <div class="tab-pane fade <?= $activeTab === 'horaires' ? 'show active' : '' ?>" id="pane-horaires" role="tabpanel">
+        <div class="card shadow-sm" style="max-width:700px;">
+            <form method="POST" action="/employe/horaires/modifier" novalidate>
+                <?= csrfField() ?>
+                <div class="table-responsive">
+                    <table class="table align-middle mb-0" aria-label="Horaires d'ouverture">
+                        <thead>
+                            <tr style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
+                                <th scope="col" class="ps-3 text-vg fw-semibold">Jour</th>
+                                <th scope="col" class="text-vg fw-semibold">Ouverture</th>
+                                <th scope="col" class="text-vg fw-semibold pe-3">Fermeture</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php foreach ($horaires as $h): ?>
+                            <tr>
+                                <td class="fw-semibold ps-3"><?= sanitize($h['jour']) ?></td>
+                                <td>
+                                    <input type="text" class="form-control form-control-sm"
+                                           name="horaires[<?= (int)$h['horaire_id'] ?>][ouverture]"
+                                           value="<?= sanitize($h['heure_ouverture'] ?? '') ?>"
+                                           placeholder="Fermé"
+                                           aria-label="Heure d'ouverture - <?= sanitize($h['jour']) ?>">
+                                </td>
+                                <td class="pe-3">
+                                    <input type="text" class="form-control form-control-sm"
+                                           name="horaires[<?= (int)$h['horaire_id'] ?>][fermeture]"
+                                           value="<?= sanitize($h['heure_fermeture'] ?? '') ?>"
+                                           placeholder="18:00"
+                                           aria-label="Heure de fermeture - <?= sanitize($h['jour']) ?>">
+                                </td>
+                            </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+                <div class="d-flex gap-2 p-3 border-top">
+                    <button type="submit" class="btn btn-vg">
+                        <i class="bi bi-save me-1"></i>Enregistrer les horaires
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ================================================================
+         ONGLET 4 — Informations entreprise
+    ================================================================ -->
+    <div class="tab-pane fade <?= $activeTab === 'entreprise' ? 'show active' : '' ?>" id="pane-entreprise" role="tabpanel">
+        <div class="card shadow-sm">
             <div class="card-body">
                 <form method="POST" action="/admin/parametres/modifier">
                     <?= csrfField() ?>
@@ -181,19 +398,15 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                                    value="<?= $cfg('entreprise_nom', siteName()) ?>" maxlength="100">
                         </div>
                         <div class="col-12 col-lg-3">
-                            <label class="form-label fw-medium" for="entreprise_siret">
-                                SIRET <span class="text-danger">*</span>
-                            </label>
+                            <label class="form-label fw-medium" for="entreprise_siret">SIRET <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="entreprise_siret" name="entreprise_siret"
-                                   value="<?= $cfg('entreprise_siret') ?>" maxlength="14" inputmode="numeric"
-                                   placeholder="14 chiffres">
+                                   value="<?= $cfg('entreprise_siret') ?>" maxlength="14" inputmode="numeric" placeholder="14 chiffres">
                             <div class="form-text">Obligatoire pour finaliser des factures.</div>
                         </div>
                         <div class="col-12 col-lg-3">
                             <label class="form-label fw-medium" for="entreprise_forme_juridique">Forme juridique</label>
                             <input type="text" class="form-control" id="entreprise_forme_juridique" name="entreprise_forme_juridique"
-                                   value="<?= $cfg('entreprise_forme_juridique') ?>" maxlength="60"
-                                   placeholder="EI, EURL, SARL…">
+                                   value="<?= $cfg('entreprise_forme_juridique') ?>" maxlength="60" placeholder="EI, EURL, SARL…">
                         </div>
 
                         <div class="col-12">
@@ -209,7 +422,7 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                         <div class="col-12 col-lg-4">
                             <label class="form-label fw-medium" for="entreprise_ville">Ville</label>
                             <input type="text" class="form-control" id="entreprise_ville" name="entreprise_ville"
-                                   value="<?= $cfg('entreprise_ville', '') ?>" maxlength="80">
+                                   value="<?= $cfg('entreprise_ville') ?>" maxlength="80">
                         </div>
                         <div class="col-12 col-lg-5">
                             <label class="form-label fw-medium" for="entreprise_telephone">Téléphone</label>
@@ -225,23 +438,20 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                         <div class="col-12 col-lg-6">
                             <label class="form-label fw-medium" for="entreprise_tva_intracom">N° TVA intracommunautaire</label>
                             <input type="text" class="form-control" id="entreprise_tva_intracom" name="entreprise_tva_intracom"
-                                   value="<?= $cfg('entreprise_tva_intracom') ?>" maxlength="20"
-                                   placeholder="FR12345678901">
-                            <div class="form-text">Laissez vide si non assujetti à la TVA.</div>
+                                   value="<?= $cfg('entreprise_tva_intracom') ?>" maxlength="20" placeholder="FR12345678901">
+                            <div class="form-text">Laissez vide si non assujetti.</div>
                         </div>
 
-                        <div class="col-12"><hr class="my-1"><small class="text-muted fw-semibold">Coordonnées bancaires (virements)</small></div>
+                        <div class="col-12"><hr class="my-1"><small class="text-muted fw-semibold">Coordonnées bancaires</small></div>
                         <div class="col-12 col-lg-5">
                             <label class="form-label fw-medium" for="banque_iban">IBAN</label>
                             <input type="text" class="form-control" id="banque_iban" name="banque_iban"
-                                   value="<?= $cfg('banque_iban') ?>" maxlength="34"
-                                   placeholder="FR76 1234 5678 9012 3456 7890 123">
+                                   value="<?= $cfg('banque_iban') ?>" maxlength="34" placeholder="FR76 1234 …">
                         </div>
                         <div class="col-12 col-lg-3">
                             <label class="form-label fw-medium" for="banque_bic">BIC / SWIFT</label>
                             <input type="text" class="form-control" id="banque_bic" name="banque_bic"
-                                   value="<?= $cfg('banque_bic') ?>" maxlength="11"
-                                   placeholder="BNPAFRPPXXX">
+                                   value="<?= $cfg('banque_bic') ?>" maxlength="11" placeholder="BNPAFRPPXXX">
                         </div>
                         <div class="col-12 col-lg-4">
                             <label class="form-label fw-medium" for="banque_nom_banque">Nom de la banque</label>
@@ -260,17 +470,12 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
         </div>
     </div>
 
-    <!-- ============================================================
-         SECTION 2 — Régime fiscal + TVA
-    ============================================================ -->
-    <div class="col-12" id="fiscal">
-        <div class="card shadow-sm">
-            <div class="card-header fw-semibold">
-                <i class="bi bi-percent me-2 text-vg"></i>Régime fiscal et TVA
-            </div>
+    <!-- ================================================================
+         ONGLET 5 — Régime fiscal & TVA
+    ================================================================ -->
+    <div class="tab-pane fade <?= $activeTab === 'fiscal' ? 'show active' : '' ?>" id="pane-fiscal" role="tabpanel">
+        <div class="card shadow-sm mb-4">
             <div class="card-body">
-
-                <!-- Régime + mentions légales -->
                 <form method="POST" action="/admin/parametres/modifier" class="mb-4">
                     <?= csrfField() ?>
                     <input type="hidden" name="_section" value="fiscal">
@@ -282,9 +487,6 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                                 <option value="assujetti"     <?= $regimeTva === 'assujetti'     ? 'selected' : '' ?>>Assujetti à la TVA</option>
                                 <option value="non_assujetti" <?= $regimeTva === 'non_assujetti' ? 'selected' : '' ?>>Non assujetti (art. 293 B CGI)</option>
                             </select>
-                            <div class="form-text">
-                                En franchise de base : aucune TVA collectée ni facturée.
-                            </div>
                         </div>
                     </div>
 
@@ -293,7 +495,6 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                             <label class="form-label fw-medium" for="mention_facture">Mention pied de facture</label>
                             <textarea class="form-control form-control-sm" id="mention_facture" name="mention_facture"
                                       rows="3" maxlength="500"><?= $cfg('mention_facture') ?></textarea>
-                            <div class="form-text">Texte imprimé en bas de chaque facture finalisée.</div>
                         </div>
                         <div class="col-12 col-lg-4">
                             <label class="form-label fw-medium" for="mention_ticket">Mention pied de ticket</label>
@@ -314,10 +515,9 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                     </div>
                 </form>
 
-                <hr id="tva">
+                <hr>
                 <h6 class="fw-semibold mb-3">Taux de TVA</h6>
 
-                <!-- Tableau des taux -->
                 <div class="table-responsive mb-3">
                     <table class="table table-sm align-middle mb-0">
                         <thead>
@@ -343,14 +543,13 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                                 <td><span class="badge bg-secondary"><?= sanitize($categorieLabels[$t['categorie']] ?? $t['categorie']) ?></span></td>
                                 <td class="text-center">
                                     <?php if ($t['par_defaut']): ?>
-                                        <i class="bi bi-check-circle-fill text-success" title="Par défaut pour cette catégorie"></i>
+                                        <i class="bi bi-check-circle-fill text-success"></i>
                                     <?php else: ?>
                                         <form method="POST" action="/admin/taux-tva/defaut" class="d-inline">
                                             <?= csrfField() ?>
                                             <input type="hidden" name="taux_id"   value="<?= (int)$t['taux_id'] ?>">
                                             <input type="hidden" name="categorie" value="<?= sanitize($t['categorie']) ?>">
-                                            <button type="submit" class="btn btn-link btn-sm p-0 text-muted"
-                                                    title="Définir par défaut pour <?= sanitize($categorieLabels[$t['categorie']] ?? '') ?>">
+                                            <button type="submit" class="btn btn-link btn-sm p-0 text-muted" title="Définir par défaut">
                                                 <i class="bi bi-circle"></i>
                                             </button>
                                         </form>
@@ -363,21 +562,18 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                                         <input type="hidden" name="actif"   value="<?= $t['actif'] ? '0' : '1' ?>">
                                         <button type="submit" class="btn btn-link btn-sm p-0"
                                                 title="<?= $t['actif'] ? 'Désactiver' : 'Activer' ?>"
-                                                <?= $t['par_defaut'] ? 'disabled title="Taux par défaut — ne peut pas être désactivé"' : '' ?>>
+                                                <?= $t['par_defaut'] ? 'disabled' : '' ?>>
                                             <i class="bi <?= $t['actif'] ? 'bi-toggle-on text-success' : 'bi-toggle-off text-muted' ?>"></i>
                                         </button>
                                     </form>
                                 </td>
-                                <td class="text-end text-nowrap small text-muted">
-                                    id <?= (int)$t['taux_id'] ?>
-                                </td>
+                                <td class="text-end text-nowrap small text-muted">id <?= (int)$t['taux_id'] ?></td>
                             </tr>
                             <?php endforeach; ?>
                         </tbody>
                     </table>
                 </div>
 
-                <!-- Ajouter un taux -->
                 <details>
                     <summary class="btn btn-outline-secondary btn-sm mb-3">
                         <i class="bi bi-plus-circle me-1"></i>Ajouter un taux de TVA
@@ -388,7 +584,7 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                             <div class="col-12 col-lg-5">
                                 <label class="form-label form-label-sm">Libellé <span class="text-danger">*</span></label>
                                 <input type="text" class="form-control form-control-sm" name="libelle"
-                                       placeholder="Ex. Taux spécial alcools 20%" required maxlength="80">
+                                       placeholder="Ex. Taux spécial 20%" required maxlength="80">
                             </div>
                             <div class="col-6 col-lg-2">
                                 <label class="form-label form-label-sm">Taux (%) <span class="text-danger">*</span></label>
@@ -416,19 +612,15 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                         </div>
                     </form>
                 </details>
-
             </div>
         </div>
     </div>
 
-    <!-- ============================================================
-         SECTION 3 — Livraison & Réduction
-    ============================================================ -->
-    <div class="col-12 col-lg-6" id="tarification">
-        <div class="card shadow-sm h-100">
-            <div class="card-header fw-semibold">
-                <i class="bi bi-truck me-2 text-vg"></i>Livraison &amp; Réduction
-            </div>
+    <!-- ================================================================
+         ONGLET 6 — Tarification
+    ================================================================ -->
+    <div class="tab-pane fade <?= $activeTab === 'tarification' ? 'show active' : '' ?>" id="pane-tarification" role="tabpanel">
+        <div class="card shadow-sm" style="max-width:700px;">
             <div class="card-body">
                 <form method="POST" action="/admin/parametres/modifier">
                     <?= csrfField() ?>
@@ -468,7 +660,6 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                                        value="<?= $cfg('reduction_seuil', '100.00') ?>" required>
                                 <span class="input-group-text">€</span>
                             </div>
-                            <div class="form-text">Seuil TTC à atteindre pour déclencher la réduction.</div>
                         </div>
                         <div class="col-6">
                             <label class="form-label fw-medium" for="reduction_taux">Taux (%)</label>
@@ -499,14 +690,11 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
         </div>
     </div>
 
-    <!-- ============================================================
-         SECTION 4 — Conditions de paiement
-    ============================================================ -->
-    <div class="col-12 col-lg-6" id="paiement">
-        <div class="card shadow-sm h-100">
-            <div class="card-header fw-semibold">
-                <i class="bi bi-credit-card me-2 text-vg"></i>Conditions de paiement
-            </div>
+    <!-- ================================================================
+         ONGLET 7 — Conditions de paiement
+    ================================================================ -->
+    <div class="tab-pane fade <?= $activeTab === 'paiement' ? 'show active' : '' ?>" id="pane-paiement" role="tabpanel">
+        <div class="card shadow-sm" style="max-width:700px;">
             <div class="card-body">
                 <form method="POST" action="/admin/parametres/modifier">
                     <?= csrfField() ?>
@@ -531,7 +719,6 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                                        value="<?= $cfg('delai_paiement_jours', '30') ?>">
                                 <span class="input-group-text">jours</span>
                             </div>
-                            <div class="form-text">Mentionné sur les factures (ex. 30 jours à réception).</div>
                         </div>
                         <div class="col-12 col-lg-6">
                             <label class="form-label fw-medium" for="penalites_retard_taux">Pénalités de retard (%/an)</label>
@@ -541,7 +728,7 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                                        value="<?= $cfg('penalites_retard_taux', '12.00') ?>">
                                 <span class="input-group-text">%</span>
                             </div>
-                            <div class="form-text">Légalement obligatoire sur les factures B2B (art. L.441-10 Code de commerce).</div>
+                            <div class="form-text">Légalement obligatoire sur les factures B2B.</div>
                         </div>
                         <div class="col-12 col-lg-6">
                             <label class="form-label fw-medium" for="indemnite_recouvrement">Indemnité forfaitaire (€)</label>
@@ -551,7 +738,7 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                                        value="<?= $cfg('indemnite_recouvrement', '40.00') ?>">
                                 <span class="input-group-text">€</span>
                             </div>
-                            <div class="form-text">Forfait légal de recouvrement en cas de retard (décret n° 2012-1115).</div>
+                            <div class="form-text">Forfait légal de recouvrement en cas de retard.</div>
                         </div>
                     </div>
 
@@ -565,17 +752,15 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
         </div>
     </div>
 
-    <!-- ============================================================
-         SECTION 5 — Pages légales (CGV & Mentions)
-    ============================================================ -->
-    <div class="col-12" id="legal">
+    <!-- ================================================================
+         ONGLET 8 — Pages légales
+    ================================================================ -->
+    <div class="tab-pane fade <?= $activeTab === 'legal' ? 'show active' : '' ?>" id="pane-legal" role="tabpanel">
         <div class="card shadow-sm">
-            <div class="card-header fw-semibold">
-                <i class="bi bi-file-text me-2 text-vg"></i>Pages légales
-            </div>
             <div class="card-body">
                 <p class="text-muted mb-4">
-                    Si ces champs sont remplis, votre contenu personnalisé remplace le texte généré automatiquement sur <a href="/cgv" target="_blank">/cgv</a> et <a href="/mentions" target="_blank">/mentions</a>.
+                    Si ces champs sont remplis, votre contenu personnalisé remplace le texte généré automatiquement sur
+                    <a href="/cgv" target="_blank">/cgv</a> et <a href="/mentions-legales" target="_blank">/mentions-legales</a>.
                     Laissez vide pour conserver le texte généré depuis vos paramètres entreprise.
                 </p>
                 <form method="POST" action="/admin/parametres/modifier">
@@ -584,31 +769,21 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
                     <div class="row g-4">
                         <div class="col-12 col-lg-6">
                             <label class="form-label fw-medium" for="cgv_contenu">Conditions Générales de Vente</label>
-                            <textarea
-                                id="cgv_contenu"
-                                name="cgv_contenu"
-                                class="form-control"
-                                rows="12"
-                                maxlength="20000"
-                                placeholder="Laissez vide pour afficher le texte généré automatiquement."
-                            ><?= $cfg('cgv_contenu') ?></textarea>
+                            <textarea id="cgv_contenu" name="cgv_contenu" class="form-control"
+                                      rows="14" maxlength="20000"
+                                      placeholder="Laissez vide pour le texte généré automatiquement."><?= $cfg('cgv_contenu') ?></textarea>
                             <div class="d-flex justify-content-between mt-1">
-                                <div class="form-text">Texte brut. Les sauts de ligne sont conservés.</div>
+                                <div class="form-text">Les sauts de ligne sont conservés.</div>
                                 <small class="text-muted"><span id="count-cgv">0</span>/20 000</small>
                             </div>
                         </div>
                         <div class="col-12 col-lg-6">
                             <label class="form-label fw-medium" for="mentions_contenu">Mentions légales</label>
-                            <textarea
-                                id="mentions_contenu"
-                                name="mentions_contenu"
-                                class="form-control"
-                                rows="12"
-                                maxlength="20000"
-                                placeholder="Laissez vide pour afficher le texte généré automatiquement."
-                            ><?= $cfg('mentions_contenu') ?></textarea>
+                            <textarea id="mentions_contenu" name="mentions_contenu" class="form-control"
+                                      rows="14" maxlength="20000"
+                                      placeholder="Laissez vide pour le texte généré automatiquement."><?= $cfg('mentions_contenu') ?></textarea>
                             <div class="d-flex justify-content-between mt-1">
-                                <div class="form-text">Texte brut. Les sauts de ligne sont conservés.</div>
+                                <div class="form-text">Les sauts de ligne sont conservés.</div>
                                 <small class="text-muted"><span id="count-mentions">0</span>/20 000</small>
                             </div>
                         </div>
@@ -623,32 +798,30 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
         </div>
     </div>
 
-</div><!-- /.row -->
+</div><!-- /.tab-content -->
 
 <script nonce="<?= $cspNonce ?>">
 (function () {
-    var seuil    = document.getElementById('reduction_seuil');
-    var taux     = document.getElementById('reduction_taux');
-    var pSeuil   = document.getElementById('prev-seuil');
-    var pTaux    = document.getElementById('prev-taux');
-    var pCommande = document.getElementById('prev-commande');
-    var pMontant = document.getElementById('prev-montant');
-    if (!seuil || !taux) return;
-    function update() {
-        var s = parseFloat(seuil.value) || 0;
-        var t = parseFloat(taux.value)  || 0;
-        var total = Math.max(s + 20, s * 1.2, 120);
-        if (pSeuil)    pSeuil.textContent    = s.toFixed(2) + ' €';
-        if (pTaux)     pTaux.textContent     = t.toFixed(0) + '%';
-        if (pCommande) pCommande.textContent = total.toFixed(2) + ' €';
-        if (pMontant)  pMontant.textContent  = (total * t / 100).toFixed(2) + ' €';
-    }
-    seuil.addEventListener('input', update);
-    taux.addEventListener('input', update);
-}());
+    // Persiste l'onglet actif dans l'URL (hash → query param pour le PHP côté serveur)
+    var tabs = document.querySelectorAll('#paramsTabs [data-bs-toggle="tab"]');
+    tabs.forEach(function (btn) {
+        btn.addEventListener('shown.bs.tab', function () {
+            var pane = btn.getAttribute('data-bs-target').replace('#pane-', '');
+            history.replaceState(null, '', '?tab=' + pane);
+        });
+    });
 
-// Live preview couleurs charte graphique
-(function () {
+    // Activation auto depuis #hash dans l'URL (ex: redirect avec #horaires)
+    var hash = window.location.hash.replace('#', '');
+    if (hash) {
+        var target = document.querySelector('[data-bs-target="#pane-' + hash + '"]');
+        if (target) {
+            var tab = new bootstrap.Tab(target);
+            tab.show();
+        }
+    }
+
+    // Aperçu couleurs en temps réel
     function bindColor(inputId, pickerId, cssVar, previewId) {
         var input  = document.getElementById(inputId);
         var picker = document.getElementById(pickerId);
@@ -666,10 +839,29 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
     bindColor('couleur_principale', 'couleur_principale_picker', '--vg-bordeaux', 'preview-badge');
     bindColor('couleur_secondaire', 'couleur_secondaire_picker', '--vg-or', 'preview-badge2');
     bindColor('couleur_fond',       'couleur_fond_picker',       '--vg-creme', null);
-}());
 
-// Compteurs pages légales
-(function () {
+    // Exemple réduction
+    var seuil    = document.getElementById('reduction_seuil');
+    var taux     = document.getElementById('reduction_taux');
+    var pSeuil   = document.getElementById('prev-seuil');
+    var pTaux    = document.getElementById('prev-taux');
+    var pCommande = document.getElementById('prev-commande');
+    var pMontant = document.getElementById('prev-montant');
+    if (seuil && taux) {
+        function updateReduc() {
+            var s = parseFloat(seuil.value) || 0;
+            var t = parseFloat(taux.value)  || 0;
+            var total = Math.max(s + 20, s * 1.2, 120);
+            if (pSeuil)    pSeuil.textContent    = s.toFixed(2) + ' €';
+            if (pTaux)     pTaux.textContent     = t.toFixed(0) + '%';
+            if (pCommande) pCommande.textContent = total.toFixed(2) + ' €';
+            if (pMontant)  pMontant.textContent  = (total * t / 100).toFixed(2) + ' €';
+        }
+        seuil.addEventListener('input', updateReduc);
+        taux.addEventListener('input', updateReduc);
+    }
+
+    // Compteurs textareas
     function bindCounter(inputId, countId) {
         var el  = document.getElementById(inputId);
         var cnt = document.getElementById(countId);
@@ -680,5 +872,20 @@ $categorieLabels = ['menu' => 'Menu / prestation', 'livraison' => 'Livraison', '
     }
     bindCounter('cgv_contenu',      'count-cgv');
     bindCounter('mentions_contenu', 'count-mentions');
+    bindCounter('hero_sous_titre',  'count-sous-titre');
+    bindCounter('hero_paragraphe',  'count-paragraphe');
+
+    // Prévisualisation images à l'upload
+    document.querySelectorAll('input[data-preview]').forEach(function (input) {
+        input.addEventListener('change', function () {
+            if (!input.files[0]) return;
+            var reader = new FileReader();
+            reader.onload = function (e) {
+                var preview = document.getElementById(input.dataset.preview);
+                if (preview) preview.src = e.target.result;
+            };
+            reader.readAsDataURL(input.files[0]);
+        });
+    });
 }());
 </script>

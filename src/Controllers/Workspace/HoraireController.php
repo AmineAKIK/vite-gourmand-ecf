@@ -8,8 +8,7 @@ class HoraireController
 {
     public function index(): void
     {
-        $horaires = HoraireModel::getAll();
-        view('pages/employe/horaires', compact('horaires'));
+        \App\Core\View::redirect('/admin/parametres?tab=horaires');
     }
 
     public function update(): void
@@ -19,6 +18,6 @@ class HoraireController
         HoraireModel::updateMany($_POST['horaires'] ?? []);
 
         flash('success', 'Horaires mis à jour.');
-        redirect('/employe/horaires');
+        redirect('/admin/parametres#horaires');
     }
 }
