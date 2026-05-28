@@ -153,7 +153,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                 $totalEncaisse     = (float)($paiementsSynthese['total_encaisse'] ?? 0);
                 $prixTotal         = (float)($cmd['prix_total'] ?? 0);
                 $soldeRestant      = max(0, round($prixTotal - $totalEncaisse, 2));
-                $statutPaiement    = PaiementModel::statutPaiement($totalEncaisse, $prixTotal);
+                $statutPaiement    = \App\Models\PaiementModel::statutPaiement($totalEncaisse, $prixTotal);
                 $peutAnnuler = $statutActuel !== commandeCancelledStatus()
                     && commandeCanTransition($statutActuel, commandeCancelledStatus());
             ?>

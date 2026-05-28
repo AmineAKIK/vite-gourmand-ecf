@@ -68,7 +68,7 @@
                             <span class="badge bg-vg me-2" style="background:var(--vg-bordeaux)!important">1</span>
                             Informations client
                         </h2>
-                        <?php $user = currentUser(); $userFull = \UserModel::findById($user['id']); ?>
+                        <?php $user = currentUser(); $userFull = \App\Models\UserModel::findById($user['id']); ?>
                         <div class="row g-3">
                             <div class="col-12 col-lg-6">
                                 <label class="form-label">Prénom</label>
