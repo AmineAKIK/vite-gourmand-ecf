@@ -136,6 +136,7 @@ class View
             $items[] = ['href' => '/admin/stats',        'label' => 'Statistiques CA', 'icon' => 'bi-graph-up', 'match' => '/admin/stats*'];
             $items[] = ['href' => '/admin/comptabilite', 'label' => 'Comptabilité',    'icon' => 'bi-archive',  'match' => '/admin/comptabilite*'];
             $items[] = ['href' => '/admin/accueil',      'label' => "Page d'accueil",  'icon' => 'bi-brush',    'match' => '/admin/accueil*'];
+            $items[] = ['href' => '/admin/images',       'label' => 'Images & Logo',   'icon' => 'bi-image',    'match' => '/admin/images*'];
             $items[] = ['href' => '/admin/parametres',   'label' => 'Paramètres',      'icon' => 'bi-sliders',  'match' => '/admin/parametres*'];
         }
 
