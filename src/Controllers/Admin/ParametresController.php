@@ -249,7 +249,7 @@ class ParametresController
         SiteConfigModel::set('hero_sous_titre', $sousTitre);
         SiteConfigModel::set('hero_paragraphe', $paragraphe);
 
-        foreach (['logo', 'hero', 'preparation'] as $cle) {
+        foreach (['logo', 'favicon', 'og_image', 'hero', 'preparation'] as $cle) {
             $file = $_FILES[$cle] ?? null;
             if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
                 continue;

@@ -4,15 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= sanitize($pageTitle ?? buildPageTitle()) ?></title>
-    <?php $siteLogo = \App\Config\SiteConfig::logoUrl(); ?>
-    <?php if ($siteLogo): ?>
-        <link rel="icon" type="image/png" href="<?= sanitize($siteLogo) ?>">
+    <?php $siteLogo   = \App\Config\SiteConfig::logoUrl(); ?>
+    <?php $siteFavicon = \App\Models\SiteImageModel::get('favicon'); ?>
+    <?php $siteOgImage = \App\Models\SiteImageModel::get('og_image'); ?>
+    <?php if ($siteFavicon): ?>
+        <link rel="icon" type="image/png" href="<?= sanitize($siteFavicon) ?>">
     <?php else: ?>
         <link rel="icon" type="image/png" href="/favicon.png">
     <?php endif; ?>
     <meta property="og:title" content="<?= sanitize(siteName()) ?> — <?= sanitize(siteSlogan()) ?>">
     <meta property="og:description" content="<?= sanitize(siteSlogan()) ?>. Découvrez nos menus et commandez en ligne pour tous vos événements.">
-    <meta property="og:image" content="<?= sanitize($siteLogo ?? '/og/og-default.png') ?>">
+    <meta property="og:image" content="<?= sanitize($siteOgImage ?: '/og/og-default.png') ?>">
     <meta property="og:type" content="website">
     <?php foreach (($preloadImages ?? []) as $image): ?>
         <link rel="preload" as="image" href="<?= sanitize($image) ?>">

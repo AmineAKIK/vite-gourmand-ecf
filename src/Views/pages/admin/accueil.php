@@ -131,6 +131,52 @@ $defaultParagraphe = '';
             </div>
         </div>
 
+        <div class="col-12 col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold">
+                    <i class="bi bi-browser-chrome me-2 text-vg"></i>Favicon (onglet navigateur)
+                </div>
+                <div class="card-body">
+                    <?php $faviconUrl = $images['favicon'] ?? null; ?>
+                    <?php if ($faviconUrl): ?>
+                        <img src="<?= sanitize($faviconUrl) ?>" alt="Favicon actuel"
+                             class="rounded mb-3"
+                             style="width:32px;height:32px;object-fit:contain;display:block;">
+                    <?php else: ?>
+                        <p class="text-muted small mb-3">Aucun favicon — le favicon par défaut est utilisé.</p>
+                    <?php endif; ?>
+                    <label for="favicon" class="form-label fw-medium">Uploader un favicon</label>
+                    <input type="file" class="form-control" id="favicon" name="favicon"
+                           accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>">
+                    <div class="form-text">PNG ou ICO — carré, idéalement 32×32 px ou 64×64 px</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-12 col-lg-4">
+            <div class="card shadow-sm h-100">
+                <div class="card-header fw-semibold">
+                    <i class="bi bi-share me-2 text-vg"></i>Image de partage (og:image)
+                </div>
+                <div class="card-body">
+                    <?php $ogUrl = $images['og_image'] ?? null; ?>
+                    <?php if ($ogUrl): ?>
+                        <img src="<?= sanitize($ogUrl) ?>" alt="og:image actuelle"
+                             class="img-fluid rounded mb-3"
+                             style="max-height:150px;width:100%;object-fit:cover;"
+                             id="preview-og_image">
+                    <?php else: ?>
+                        <p class="text-muted small mb-3">Aucune image — l'image par défaut sera utilisée lors des partages.</p>
+                    <?php endif; ?>
+                    <label for="og_image" class="form-label fw-medium">Uploader une image de partage</label>
+                    <input type="file" class="form-control image-picker" id="og_image" name="og_image"
+                           accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>"
+                           data-preview="preview-og_image">
+                    <div class="form-text"><?= sanitize(\App\Services\MenuAdminService::acceptedImageFormatsLabel()) ?> — Recommandé : 1200×630 px</div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <div class="d-flex gap-2">

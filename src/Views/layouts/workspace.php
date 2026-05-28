@@ -4,9 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= sanitize($pageTitle ?? buildPageTitle()) ?></title>
-    <?php $siteLogo = \App\Config\SiteConfig::logoUrl(); ?>
-    <?php if ($siteLogo): ?>
-        <link rel="icon" type="image/png" href="<?= sanitize($siteLogo) ?>">
+    <?php $siteLogo    = \App\Config\SiteConfig::logoUrl(); ?>
+    <?php $siteFavicon = \App\Models\SiteImageModel::get('favicon'); ?>
+    <?php if ($siteFavicon): ?>
+        <link rel="icon" type="image/png" href="<?= sanitize($siteFavicon) ?>">
     <?php else: ?>
         <link rel="icon" type="image/png" href="/favicon.png">
     <?php endif; ?>
