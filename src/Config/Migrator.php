@@ -14,8 +14,9 @@ namespace App\Config;
  *   - ADD COLUMN IF NOT EXISTS n'est supporté qu'à partir de MySQL 8.0.29.
  *     Les erreurs 1060 (Duplicate column) et 1091 (Can't DROP non-existent) sont
  *     traitées comme des succès (colonne déjà présente = migration déjà partiellement jouée).
- *   - Les erreurs sur les seeds (tables manquantes avant migration 023) sont loguées
- *     mais ne bloquent pas les migrations suivantes.
+ *   - Une migration qui rencontre une vraie erreur n'est pas marquée comme appliquée.
+ *   - Au démarrage, les migrations déjà marquées sont vérifiées : si une table créée par
+ *     CREATE TABLE IF NOT EXISTS manque, la migration est retirée du tracking et rejouée.
  *
  * Fail-silent : toute erreur non fatale est loguée, jamais propagée.
  */
@@ -68,14 +69,16 @@ class Migrator
                 }
             }
 
+            $dir   = dirname(__DIR__, 2) . '/sql/migrations';
+            $files = glob($dir . '/[0-9]*.sql') ?: [];
+            natsort($files);
+
+            self::reconcileAppliedMigrations($db, $files);
+
             // ── 3. Migrations ────────────────────────────────────────────────
             $applied = array_flip(
                 $db->query("SELECT migration FROM schema_migrations")->fetchAll(\PDO::FETCH_COLUMN)
             );
-
-            $dir   = dirname(__DIR__, 2) . '/sql/migrations';
-            $files = glob($dir . '/[0-9]*.sql') ?: [];
-            natsort($files);
 
             foreach ($files as $file) {
                 $name = basename($file);
@@ -117,11 +120,76 @@ class Migrator
             }
         }
 
-        // Marquer comme appliquée même en cas d'erreur partielle
-        // (les colonnes/tables manquantes seront gérées par ensureSchema() dans les models)
+        if ($hasError) {
+            error_log('[Migrator] ' . $name . ' non marquée comme appliquée (erreur partielle)');
+            return;
+        }
+
         try {
             $db->prepare("INSERT IGNORE INTO schema_migrations (migration) VALUES (?)")
                ->execute([$name]);
         } catch (\Throwable) {}
+    }
+
+    private static function reconcileAppliedMigrations(\PDO $db, array $files): void
+    {
+        $applied = array_flip(
+            $db->query("SELECT migration FROM schema_migrations")->fetchAll(\PDO::FETCH_COLUMN)
+        );
+
+        foreach ($files as $file) {
+            $name = basename($file);
+            if (!isset($applied[$name])) {
+                continue;
+            }
+
+            $sql = file_get_contents($file);
+            if ($sql === false) {
+                continue;
+            }
+
+            $missingTables = [];
+            foreach (self::extractCreatedTables($sql) as $table) {
+                if (!self::tableExists($db, $table)) {
+                    $missingTables[] = $table;
+                }
+            }
+
+            if ($missingTables === []) {
+                continue;
+            }
+
+            try {
+                $db->prepare("DELETE FROM schema_migrations WHERE migration = ?")->execute([$name]);
+                error_log(
+                    '[Migrator] ' . $name . ' sera rejouée, table(s) manquante(s) : ' . implode(', ', $missingTables)
+                );
+            } catch (\Throwable $e) {
+                error_log('[Migrator] impossible de rejouer ' . $name . ' : ' . $e->getMessage());
+            }
+        }
+    }
+
+    private static function extractCreatedTables(string $sql): array
+    {
+        preg_match_all(
+            '/CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+`?([a-zA-Z0-9_]+)`?/i',
+            $sql,
+            $matches
+        );
+
+        return array_values(array_unique($matches[1] ?? []));
+    }
+
+    private static function tableExists(\PDO $db, string $table): bool
+    {
+        $stmt = $db->prepare(
+            "SELECT COUNT(*)
+             FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE()
+               AND TABLE_NAME = ?"
+        );
+        $stmt->execute([$table]);
+        return (int)$stmt->fetchColumn() > 0;
     }
 }
