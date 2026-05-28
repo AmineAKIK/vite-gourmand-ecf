@@ -180,8 +180,5 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js" nonce="<?= $cspNonce ?>"></script>
 <script src="/js/app.js?v=20260526-03" nonce="<?= $cspNonce ?>"></script>
-<?php if (!\App\Config\License::isValid()): ?>
-<?= \App\Config\License::banner() ?>
-<?php endif; ?>
 </body>
 </html>
