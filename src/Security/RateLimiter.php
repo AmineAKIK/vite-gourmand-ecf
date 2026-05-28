@@ -59,10 +59,12 @@ class RateLimiter
                     "Trop de tentatives. Votre accès est temporairement bloqué pour {$reste} minutes."
                 );
             }
+        } catch (\PDOException) {
+            // Table absente ou erreur DB → fail open
         } catch (\RuntimeException $e) {
             throw $e;
         } catch (\Throwable) {
-            // Erreur DB → fail open (ne pas bloquer l'accès)
+            // Fail open
         }
     }
 

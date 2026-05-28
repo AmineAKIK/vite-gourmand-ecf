@@ -27,6 +27,8 @@ class AuthController
 
         try {
             RateLimiter::check($ip, 'login');
+        } catch (\PDOException) {
+            // Table rate_limit absente — fail open, ne pas bloquer la connexion
         } catch (\RuntimeException $e) {
             flash('error', $e->getMessage());
             redirect('/connexion');
@@ -49,7 +51,8 @@ class AuthController
             flash('error', 'Votre compte a été désactivé. Contactez-nous.');
             redirect('/connexion');
         }
-        if (empty($user['email_verified_at'])) {
+        // Vérification email uniquement si la colonne existe (migration 033 appliquée)
+        if (array_key_exists('email_verified_at', $user) && empty($user['email_verified_at'])) {
             flash('error', 'Veuillez confirmer votre adresse email avant de vous connecter. Vérifiez vos spams.');
             redirect('/connexion');
         }
@@ -85,6 +88,8 @@ class AuthController
         $ip = RateLimiter::clientIp();
         try {
             RateLimiter::check($ip, 'register', 3, 3600);
+        } catch (\PDOException) {
+            // Table rate_limit absente — fail open
         } catch (\RuntimeException $e) {
             flash('error', $e->getMessage());
             redirect('/inscription');
