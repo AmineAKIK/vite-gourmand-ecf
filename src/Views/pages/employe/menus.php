@@ -105,9 +105,15 @@ foreach ($plats as $plat) {
                     <li class="list-group-item d-flex align-items-center justify-content-between gap-3 py-2 px-3 employe-plat-item">
                         <div class="flex-grow-1">
                             <div class="fw-medium"><?= sanitize($plat['titre']) ?></div>
-                            <?php if (!empty($plat['allergenes'])): ?>
-                                <small class="text-muted">Allergènes : <?= sanitize($plat['allergenes']) ?></small>
-                            <?php endif; ?>
+                            <?php if (!empty($plat['allergens'])): ?>
+                                <div class="mt-1 d-flex flex-wrap gap-1">
+                                    <?php foreach ($plat['allergens'] as $al): ?>
+                                    <span class="badge rounded-pill text-bg-warning" title="<?= sanitize($al['libelle']) ?>">
+                                        <?= $al['emoji'] ?> <?= sanitize($al['libelle']) ?>
+                                    </span>
+                                    <?php endforeach ?>
+                                </div>
+                            <?php endif ?>
                         </div>
                         <div class="d-flex gap-1 flex-shrink-0">
                             <button class="btn btn-sm btn-vg-outline"
@@ -167,13 +173,25 @@ foreach ($plats as $plat) {
                             </select>
                         </div>
                         <div class="mb-3">
-                            <label for="al_plat_<?= (int)$plat['plat_id'] ?>" class="form-label">Allergènes</label>
-                            <input type="text" class="form-control tag-input"
-                                   id="al_plat_<?= (int)$plat['plat_id'] ?>"
-                                   name="allergenes"
-                                   value="<?= sanitize($plat['allergenes'] ?? '') ?>"
-                                   placeholder="ex : Gluten, Lait, Œufs">
-                            <div class="form-text">Séparez les allergènes par des virgules.</div>
+                            <label class="form-label">Allergènes <small class="text-muted fw-normal">(règlement INCO 1169/2011)</small></label>
+                            <?php
+                            $platAllergenIds = array_column($plat['allergens'] ?? [], 'allergen_id');
+                            ?>
+                            <div class="d-flex flex-wrap gap-2">
+                                <?php foreach ($allergens as $al): ?>
+                                <div class="form-check form-check-inline m-0">
+                                    <input class="form-check-input" type="checkbox"
+                                           id="al_<?= (int)$plat['plat_id'] ?>_<?= (int)$al['allergen_id'] ?>"
+                                           name="allergen_ids[]"
+                                           value="<?= (int)$al['allergen_id'] ?>"
+                                           <?= in_array((int)$al['allergen_id'], $platAllergenIds, true) ? 'checked' : '' ?>>
+                                    <label class="form-check-label small"
+                                           for="al_<?= (int)$plat['plat_id'] ?>_<?= (int)$al['allergen_id'] ?>">
+                                        <?= $al['emoji'] ?> <?= sanitize($al['libelle']) ?>
+                                    </label>
+                                </div>
+                                <?php endforeach ?>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -314,10 +332,21 @@ foreach ($plats as $plat) {
                         </select>
                     </div>
                     <div class="mb-3">
-                        <label for="plat-allergenes" class="form-label">Allergènes</label>
-                        <input type="text" class="form-control tag-input" id="plat-allergenes" name="allergenes"
-                               placeholder="ex : Gluten, Lait, Œufs">
-                        <div class="form-text">Séparez les allergènes par des virgules.</div>
+                        <label class="form-label">Allergènes <small class="text-muted fw-normal">(règlement INCO 1169/2011)</small></label>
+                        <div class="d-flex flex-wrap gap-2">
+                            <?php foreach ($allergens as $al): ?>
+                            <div class="form-check form-check-inline m-0">
+                                <input class="form-check-input" type="checkbox"
+                                       id="new_al_<?= (int)$al['allergen_id'] ?>"
+                                       name="allergen_ids[]"
+                                       value="<?= (int)$al['allergen_id'] ?>">
+                                <label class="form-check-label small"
+                                       for="new_al_<?= (int)$al['allergen_id'] ?>">
+                                    <?= $al['emoji'] ?> <?= sanitize($al['libelle']) ?>
+                                </label>
+                            </div>
+                            <?php endforeach ?>
+                        </div>
                     </div>
                 </div>
                 <div class="modal-footer">

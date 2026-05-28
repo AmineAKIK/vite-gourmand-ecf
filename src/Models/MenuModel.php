@@ -99,7 +99,7 @@ class MenuModel {
     public static function getPlats(int $menuId): array {
         $db   = Database::getConnection();
         $stmt = $db->prepare("
-            SELECT p.plat_id, p.titre, p.allergenes, p.categorie_id, cp.libelle AS categorie
+            SELECT p.plat_id, p.titre, p.categorie_id, cp.libelle AS categorie
             FROM plat p
             JOIN menu_plat mp ON mp.plat_id = p.plat_id
             JOIN categorie_plat cp ON cp.categorie_id = p.categorie_id
@@ -107,7 +107,8 @@ class MenuModel {
             ORDER BY cp.libelle, p.titre
         ");
         $stmt->execute([$menuId]);
-        return $stmt->fetchAll();
+        $plats = $stmt->fetchAll();
+        return self::enrichWithAllergens($db, $plats);
     }
 
     public static function create(array $data): int {
@@ -158,12 +159,14 @@ class MenuModel {
     }
 
     public static function getPlatsForAdmin(): array {
-        return Database::getConnection()->query("
-            SELECT p.plat_id, p.titre, p.allergenes, p.categorie_id, cp.libelle AS categorie
+        $db    = Database::getConnection();
+        $plats = $db->query("
+            SELECT p.plat_id, p.titre, p.categorie_id, cp.libelle AS categorie
             FROM plat p
             JOIN categorie_plat cp ON cp.categorie_id = p.categorie_id
             ORDER BY cp.libelle, p.titre
         ")->fetchAll();
+        return self::enrichWithAllergens($db, $plats);
     }
 
     public static function getCategories(): array {
@@ -223,17 +226,51 @@ class MenuModel {
             ->execute([$imageId]);
     }
 
+    public static function getAllergens(): array {
+        return Database::getConnection()
+            ->query("SELECT * FROM allergen ORDER BY ordre ASC")
+            ->fetchAll();
+    }
+
+    public static function getPlatAllergenIds(int $platId): array {
+        $stmt = Database::getConnection()->prepare(
+            "SELECT allergen_id FROM plat_allergen WHERE plat_id = ?"
+        );
+        $stmt->execute([$platId]);
+        return array_column($stmt->fetchAll(), 'allergen_id');
+    }
+
+    public static function syncPlatAllergens(int $platId, array $allergenIds): void {
+        $db = Database::getConnection();
+        $db->prepare("DELETE FROM plat_allergen WHERE plat_id = ?")->execute([$platId]);
+        if (empty($allergenIds)) {
+            return;
+        }
+        $ids = array_values(array_unique(array_map('intval', $allergenIds)));
+        $placeholders = implode(',', array_fill(0, count($ids), '(?,?)'));
+        $params = [];
+        foreach ($ids as $id) {
+            $params[] = $platId;
+            $params[] = $id;
+        }
+        $db->prepare("INSERT IGNORE INTO plat_allergen (plat_id, allergen_id) VALUES $placeholders")
+           ->execute($params);
+    }
+
     public static function createPlat(array $data): int {
         $db = Database::getConnection();
-        $stmt = $db->prepare("INSERT INTO plat (titre, categorie_id, allergenes) VALUES (?, ?, ?)");
-        $stmt->execute([$data['titre'], $data['categorie_id'], $data['allergenes'] ?? '']);
-        return (int)$db->lastInsertId();
+        $stmt = $db->prepare("INSERT INTO plat (titre, categorie_id) VALUES (?, ?)");
+        $stmt->execute([$data['titre'], $data['categorie_id']]);
+        $platId = (int)$db->lastInsertId();
+        self::syncPlatAllergens($platId, $data['allergen_ids'] ?? []);
+        return $platId;
     }
 
     public static function updatePlat(int $id, array $data): void {
         Database::getConnection()
-            ->prepare("UPDATE plat SET titre=?, categorie_id=?, allergenes=? WHERE plat_id=?")
-            ->execute([$data['titre'], $data['categorie_id'], $data['allergenes'] ?? '', $id]);
+            ->prepare("UPDATE plat SET titre=?, categorie_id=? WHERE plat_id=?")
+            ->execute([$data['titre'], $data['categorie_id'], $id]);
+        self::syncPlatAllergens($id, $data['allergen_ids'] ?? []);
     }
 
     public static function platIsUsed(int $platId): bool {
@@ -248,7 +285,32 @@ class MenuModel {
             ->execute([$platId]);
     }
 
-    private static function insertMenuPlats(PDO $db, int $menuId, array $platIds): void {
+    private static function enrichWithAllergens(\PDO $db, array $plats): array {
+        if (empty($plats)) {
+            return $plats;
+        }
+        $ids = array_column($plats, 'plat_id');
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $db->prepare("
+            SELECT pa.plat_id, a.allergen_id, a.code, a.libelle, a.emoji
+            FROM plat_allergen pa
+            JOIN allergen a ON a.allergen_id = pa.allergen_id
+            WHERE pa.plat_id IN ($placeholders)
+            ORDER BY a.ordre ASC
+        ");
+        $stmt->execute($ids);
+        $byPlat = [];
+        foreach ($stmt->fetchAll() as $row) {
+            $byPlat[(int)$row['plat_id']][] = $row;
+        }
+        foreach ($plats as &$plat) {
+            $plat['allergens'] = $byPlat[(int)$plat['plat_id']] ?? [];
+        }
+        unset($plat);
+        return $plats;
+    }
+
+    private static function insertMenuPlats(\PDO $db, int $menuId, array $platIds): void {
         $platIds = array_values(array_unique(array_map('intval', $platIds)));
         if (empty($platIds)) return;
         $placeholders = implode(',', array_fill(0, count($platIds), '(?, ?)'));

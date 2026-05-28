@@ -54,7 +54,7 @@ class MenuAdminService
         $payload = [
             'titre'        => trim($source['titre'] ?? ''),
             'categorie_id' => (int)($source['categorie_id'] ?? 0),
-            'allergenes'   => trim($source['allergenes'] ?? ''),
+            'allergen_ids' => array_values(array_map('intval', (array)($source['allergen_ids'] ?? []))),
         ];
 
         if (!$payload['titre'] || !$payload['categorie_id']) {

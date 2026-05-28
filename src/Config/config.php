@@ -49,8 +49,6 @@ define('ROLE_ADMIN', 'administrateur');
 define('ROLE_ID_USER', 1);
 define('ROLE_ID_EMPLOYE', 2);
 define('ROLE_ID_ADMIN', 3);
-define('BORDEAUX_LAT', 44.8378);
-define('BORDEAUX_LNG', -0.5792);
 define('LIVRAISON_BASE', 5.00);
 define('LIVRAISON_KM',   0.59);
 // Valeurs de repli si site_config est indisponible. Source de vérité = table site_config.

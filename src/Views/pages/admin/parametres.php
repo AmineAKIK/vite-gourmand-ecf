@@ -176,22 +176,46 @@ $activeTab = $_GET['tab'] ?? 'identite';
                     </div>
 
                     <h6 class="fw-semibold mb-3">Coordonnées GPS du dépôt (livraison)</h6>
+                    <?php
+                        $latVal = $config['livraison_lat'] ?? '';
+                        $lngVal = $config['livraison_lng'] ?? '';
+                        $geoOk  = ($latVal !== '' && $latVal !== '0' && $lngVal !== '' && $lngVal !== '0');
+                    ?>
+                    <?php if (!$geoOk): ?>
+                    <div class="alert alert-warning d-flex align-items-start gap-2 mb-3" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                        <div>
+                            <strong>Livraison non configurée.</strong>
+                            Renseignez la latitude et la longitude de votre dépôt pour activer le calcul de livraison.
+                            Trouvez vos coordonnées sur <a href="https://www.google.com/maps" target="_blank" rel="noopener">Google Maps</a>
+                            (clic droit → « C'est ici »).
+                        </div>
+                    </div>
+                    <?php endif ?>
                     <div class="row g-3 mb-3">
                         <div class="col-6 col-lg-2">
                             <label class="form-label fw-medium" for="livraison_lat">Latitude</label>
                             <input type="number" step="0.0001" class="form-control" id="livraison_lat" name="livraison_lat"
-                                   value="<?= $cfg('livraison_lat', '44.8378') ?>" min="-90" max="90">
+                                   value="<?= htmlspecialchars($latVal) ?>" min="-90" max="90"
+                                   placeholder="ex: 44.8378">
                         </div>
                         <div class="col-6 col-lg-2">
                             <label class="form-label fw-medium" for="livraison_lng">Longitude</label>
                             <input type="number" step="0.0001" class="form-control" id="livraison_lng" name="livraison_lng"
-                                   value="<?= $cfg('livraison_lng', '-0.5792') ?>" min="-180" max="180">
+                                   value="<?= htmlspecialchars($lngVal) ?>" min="-180" max="180"
+                                   placeholder="ex: -0.5792">
+                        </div>
+                        <div class="col-6 col-lg-2">
+                            <label class="form-label fw-medium" for="livraison_rayon_max_km">Rayon max (km)</label>
+                            <input type="number" class="form-control" id="livraison_rayon_max_km" name="livraison_rayon_max_km"
+                                   value="<?= (int)($config['livraison_rayon_max_km'] ?? 50) ?>" min="1" max="500">
+                            <div class="form-text">Au-delà, commande refusée.</div>
                         </div>
                         <div class="col-12 col-lg-6">
                             <label class="form-label fw-medium" for="livraison_codes_postaux_gratuits">Codes postaux livraison gratuite</label>
                             <input type="text" class="form-control" id="livraison_codes_postaux_gratuits"
                                    name="livraison_codes_postaux_gratuits"
-                                   value="<?= $cfg('livraison_codes_postaux_gratuits', '33000,33100,33200,33300,33800') ?>"
+                                   value="<?= htmlspecialchars($config['livraison_codes_postaux_gratuits'] ?? '') ?>"
                                    maxlength="500" placeholder="33000,33100,33200">
                             <div class="form-text">Séparés par des virgules.</div>
                         </div>

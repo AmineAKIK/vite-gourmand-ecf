@@ -164,6 +164,20 @@
                     </div>
                 </div>
 
+                <div class="checkout-section">
+                    <h2 class="checkout-step-title">
+                        <span class="checkout-step-badge">4</span>
+                        <span>
+                            <span class="checkout-step-main">Remarques</span>
+                            <span class="checkout-step-subtitle">Informations utiles pour le traiteur (optionnel)</span>
+                        </span>
+                    </h2>
+                    <textarea class="form-control" name="instructions" id="instructions" rows="3"
+                              maxlength="1000" placeholder="Allergies, accès au lieu de livraison, instructions particulières…"
+                    ><?= sanitize($_SESSION['checkout_instructions'] ?? '') ?></textarea>
+                    <div class="form-text text-end"><span id="instructions-count">0</span>/1000</div>
+                </div>
+
                 <div class="d-grid">
                     <button type="submit" class="btn btn-vg btn-lg" id="btn-finaliser" disabled>
                         <i class="bi bi-cart-check me-2"></i>Finaliser la commande
@@ -313,4 +327,13 @@ function scheduleLivraison() {
 });
 window.addEventListener('load', updateLivraison);
 checkForm();
+
+const instructionsArea = document.getElementById('instructions');
+const instructionsCount = document.getElementById('instructions-count');
+if (instructionsArea && instructionsCount) {
+    instructionsCount.textContent = instructionsArea.value.length;
+    instructionsArea.addEventListener('input', () => {
+        instructionsCount.textContent = instructionsArea.value.length;
+    });
+}
 </script>

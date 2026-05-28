@@ -178,10 +178,12 @@ function siteLng(): float                                   { return SiteConfig:
 function sitePostalCodesFree(): array                       { return SiteConfig::freePostalCodes(); }
 function siteCityNormalized(): string
 {
-    return DeliveryResolver::normalizeLabel(SiteConfig::city() ?: 'bordeaux');
+    return DeliveryResolver::normalizeLabel(SiteConfig::city());
 }
 function livraisonBase(): float                             { return SiteConfig::deliveryBase(); }
 function livraisonKm(): float                               { return SiteConfig::deliveryKm(); }
+function livraisonRayonMaxKm(): int                         { return SiteConfig::deliveryRadiusKm(); }
+function livraisonGeoConfigured(): bool                     { return SiteConfig::isGeoConfigured(); }
 function reductionSeuilMontant(): float                     { return SiteConfig::discountThreshold(); }
 function reductionTauxPourcentage(): float                  { return SiteConfig::discountRate(); }
 function deliveryPricingLabel(): string                     { return SiteConfig::deliveryPricingLabel(); }

@@ -130,13 +130,20 @@ $prixMinimum = $prixParPersonne * $nombrePersonneMinimum;
                         <?php if ($plat['description']): ?>
                             <p class="small text-muted mb-2"><?= sanitize($plat['description']) ?></p>
                         <?php endif; ?>
-                        <?php if ($plat['allergenes']): ?>
-                            <div class="mt-auto">
-                                <small class="text-danger"><i class="bi bi-exclamation-triangle me-1"></i>
-                                    Allergènes : <?= sanitize($plat['allergenes']) ?>
+                        <?php if (!empty($plat['allergens'])): ?>
+                            <div class="mt-auto pt-2">
+                                <small class="text-danger d-block mb-1">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>Contient :
                                 </small>
+                                <div class="d-flex flex-wrap gap-1">
+                                    <?php foreach ($plat['allergens'] as $al): ?>
+                                    <span class="badge rounded-pill text-bg-warning" title="<?= sanitize($al['libelle']) ?>">
+                                        <?= $al['emoji'] ?> <?= sanitize($al['libelle']) ?>
+                                    </span>
+                                    <?php endforeach ?>
+                                </div>
                             </div>
-                        <?php endif; ?>
+                        <?php endif ?>
                     </div>
                 </div>
                 <?php endforeach; ?>

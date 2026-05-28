@@ -80,17 +80,28 @@ class SiteConfig
 
     public static function lat(): float
     {
-        return (float)self::get('livraison_lat', BORDEAUX_LAT);
+        return (float)self::get('livraison_lat', 0.0);
     }
 
     public static function lng(): float
     {
-        return (float)self::get('livraison_lng', BORDEAUX_LNG);
+        return (float)self::get('livraison_lng', 0.0);
+    }
+
+    public static function isGeoConfigured(): bool
+    {
+        return self::lat() !== 0.0 || self::lng() !== 0.0;
+    }
+
+    public static function deliveryRadiusKm(): int
+    {
+        $v = (int)self::get('livraison_rayon_max_km', 50);
+        return $v > 0 ? $v : 50;
     }
 
     public static function freePostalCodes(): array
     {
-        $raw = self::get('livraison_codes_postaux_gratuits', '33000,33100,33200,33300,33800');
+        $raw = self::get('livraison_codes_postaux_gratuits', '');
         return array_values(array_filter(array_map('trim', explode(',', $raw))));
     }
 

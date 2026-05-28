@@ -33,8 +33,8 @@ class CommandeModel
 
             $stmt = $db->prepare("
                 INSERT INTO commande (numero_commande, utilisateur_id, date_prestation,
-                    heure_livraison, adresse_livraison, ville_livraison, code_postal_livraison, prix_total)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    heure_livraison, adresse_livraison, ville_livraison, code_postal_livraison, prix_total, instructions)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
                 $commandeData['numero_commande'],
@@ -45,6 +45,7 @@ class CommandeModel
                 $commandeData['ville_livraison'],
                 $commandeData['code_postal_livraison'],
                 $commandeData['prix_total'],
+                $commandeData['instructions'] ?? null,
             ]);
             $commandeId = (int)$db->lastInsertId();
 
@@ -295,7 +296,7 @@ class CommandeModel
         $db   = Database::getConnection();
         $stmt = $db->prepare("
             UPDATE commande SET date_prestation=?, heure_livraison=?, adresse_livraison=?,
-            ville_livraison=?, code_postal_livraison=?, prix_total=? WHERE commande_id=?
+            ville_livraison=?, code_postal_livraison=?, prix_total=?, instructions=? WHERE commande_id=?
         ");
         $stmt->execute([
             $data['date_prestation'],
@@ -304,6 +305,7 @@ class CommandeModel
             $data['ville_livraison'],
             $data['code_postal_livraison'],
             $data['prix_total'],
+            $data['instructions'] ?? null,
             $id,
         ]);
     }

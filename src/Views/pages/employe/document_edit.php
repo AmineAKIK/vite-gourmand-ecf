@@ -1,6 +1,11 @@
 <?php
 // src/views/pages/employe/document_edit.php
-$typeLabel = ($document['type_document'] ?? '') === 'ticket' ? 'ticket de caisse' : 'facture';
+$typeLabel = match ($document['type_document'] ?? '') {
+    'ticket'  => 'ticket de caisse',
+    'devis'   => 'devis',
+    'acompte' => "facture d'acompte",
+    default   => 'facture',
+};
 $previewUrl = '/employe/document/apercu?id=' . (int)$document['document_id'];
 $isFinalise = ($document['statut'] ?? '') === 'finalise';
 $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['document_id']);
@@ -221,6 +226,23 @@ $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['
                     <label for="mention-legale" class="form-label form-label-sm">Mention / pied de document</label>
                     <textarea class="form-control form-control-sm" id="mention-legale" name="mention_legale" rows="2"><?= sanitize($document['mention_legale'] ?? '') ?></textarea>
                 </div>
+                <?php if (($document['type_document'] ?? '') === 'facture'): ?>
+                <div>
+                    <label for="montant-acompte-verse" class="form-label form-label-sm">Acompte déjà versé (€)</label>
+                    <input type="number" step="0.01" min="0" class="form-control form-control-sm"
+                           id="montant-acompte-verse" name="montant_acompte_verse"
+                           value="<?= sanitize(number_format((float)($document['montant_acompte_verse'] ?? 0), 2, '.', '')) ?>">
+                    <div class="form-text">Pré-rempli si un acompte finalisé existe pour cette commande.</div>
+                </div>
+                <?php endif ?>
+                <?php if (($document['type_document'] ?? '') === 'acompte'): ?>
+                <div class="facturation-grid-wide">
+                    <div class="alert alert-info mb-0 py-2 px-3" role="alert">
+                        <i class="bi bi-info-circle me-1"></i>
+                        Ce montant sera automatiquement déduit lors de la création de la facture définitive.
+                    </div>
+                </div>
+                <?php endif ?>
             </div>
 
             <div class="facturation-submit">

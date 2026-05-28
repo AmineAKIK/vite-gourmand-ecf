@@ -2,6 +2,8 @@
 
 namespace App\Controllers;
 
+use App\Geo\Exception\DeliveryGeoNotConfiguredException;
+use App\Geo\Exception\DeliveryOutOfRangeException;
 use App\Models\CommandeModel;
 use App\Models\UserModel;
 use App\Services\CommandeService;
@@ -21,23 +23,34 @@ class CommandeController {
             return;
         }
 
-        $adresseResolue = resolveAdresseLivraison($adresse, $ville, $codePostal);
-        if (!$adresseResolue) {
+        try {
+            $prix = \App\Geo\DeliveryResolver::computeDeliveryPrice($adresse, $ville, $codePostal);
+        } catch (DeliveryGeoNotConfiguredException $e) {
+            http_response_code(503);
+            echo json_encode(['ok' => false, 'message' => 'Le service de livraison n\'est pas encore configuré. Contactez le traiteur.']);
+            return;
+        } catch (DeliveryOutOfRangeException $e) {
+            http_response_code(422);
+            echo json_encode(['ok' => false, 'message' => $e->getMessage(), 'hors_rayon' => true]);
+            return;
+        }
+
+        if ($prix === null) {
             http_response_code(422);
             echo json_encode(['ok' => false, 'message' => 'Adresse non reconnue ou incohérente avec le code postal.']);
             return;
         }
 
-        $distance = distanceKmDepuisCoordonnees((float)$adresseResolue['lat'], (float)$adresseResolue['lng']);
-        $prix = (
-            normalizeLocationLabel($adresseResolue['city'] ?? '') === siteCityNormalized()
-            && in_array((string)($adresseResolue['postcode'] ?? ''), sitePostalCodesFree(), true)
-        ) ? 0.0 : round(livraisonBase() + (livraisonKm() * $distance), 2);
+        $adresseResolue = resolveAdresseLivraison($adresse, $ville, $codePostal);
+        $distance = $adresseResolue
+            ? distanceKmDepuisCoordonnees((float)$adresseResolue['lat'], (float)$adresseResolue['lng'])
+            : null;
+
         echo json_encode([
-            'ok' => true,
+            'ok'       => true,
             'distance' => $distance,
-            'prix' => $prix,
-            'adresse' => $adresseResolue['label'] ?? null,
+            'prix'     => $prix,
+            'adresse'  => $adresseResolue['label'] ?? null,
         ]);
     }
 
@@ -55,7 +68,7 @@ class CommandeController {
         // Valider les champs de livraison (date, heure, format)
         try {
             CommandeService::validateLivraisonFields($_POST);
-        } catch (InvalidArgumentException $e) {
+        } catch (\InvalidArgumentException $e) {
             flash('error', $e->getMessage());
             redirect('/panier');
         }
@@ -84,7 +97,13 @@ class CommandeController {
         // Calcul complet via PricingService (réduction sur total global, snapshots)
         try {
             $pricing = PricingService::computeOrderTotal($panier, $adresse, $ville, $codePostal);
-        } catch (InvalidArgumentException $e) {
+        } catch (DeliveryOutOfRangeException $e) {
+            flash('error', $e->getMessage());
+            redirect('/panier');
+        } catch (DeliveryGeoNotConfiguredException) {
+            flash('error', 'Le service de livraison n\'est pas encore configuré. Contactez le traiteur.');
+            redirect('/panier');
+        } catch (\InvalidArgumentException $e) {
             flash('error', $e->getMessage());
             redirect('/panier');
         }
@@ -103,6 +122,8 @@ class CommandeController {
 
         $numeroCommande = generateNumeroCommande();
 
+        $instructions = trim(sanitize($_POST['instructions'] ?? ''));
+
         $commandeData = [
             'numero_commande'       => $numeroCommande,
             'utilisateur_id'        => $user['id'],
@@ -113,6 +134,7 @@ class CommandeController {
             'code_postal_livraison' => $codePostal,
             'prix_total'            => $pricing['total_ttc'],
             'prix_livraison'        => $pricing['prix_livraison'],
+            'instructions'          => $instructions ?: null,
         ];
 
         // CB en ligne : stocker les données en session, rediriger vers Stripe
@@ -159,7 +181,7 @@ class CommandeController {
 
         try {
             CommandeService::validateLivraisonFields($_POST);
-        } catch (InvalidArgumentException $e) {
+        } catch (\InvalidArgumentException $e) {
             redirect('/mon-compte?open_modal=modif_' . (int)$commande['commande_id'] . '&modal_error=' . urlencode($e->getMessage()));
         }
 
@@ -178,9 +200,15 @@ class CommandeController {
 
         try {
             $pricing = PricingService::computeOrderTotal($panierItemsFromLignes, $adresse, $ville, $codePostal);
-        } catch (InvalidArgumentException $e) {
+        } catch (DeliveryOutOfRangeException $e) {
+            redirect('/mon-compte?open_modal=modif_' . (int)$commande['commande_id'] . '&modal_error=' . urlencode($e->getMessage()));
+        } catch (DeliveryGeoNotConfiguredException) {
+            redirect('/mon-compte?open_modal=modif_' . (int)$commande['commande_id'] . '&modal_error=' . urlencode('Le service de livraison n\'est pas encore configuré.'));
+        } catch (\InvalidArgumentException $e) {
             redirect('/mon-compte?open_modal=modif_' . (int)$commande['commande_id'] . '&modal_error=' . urlencode($e->getMessage()));
         }
+
+        $instructionsUpdate = trim(sanitize($_POST['instructions'] ?? ''));
 
         $payload = [
             'date_prestation'       => sanitize($_POST['date_prestation']  ?? ''),
@@ -190,6 +218,7 @@ class CommandeController {
             'code_postal_livraison' => $codePostal,
             'prix_total'            => $pricing['total_ttc'],
             'prix_livraison'        => $pricing['prix_livraison'],
+            'instructions'          => $instructionsUpdate ?: null,
         ];
 
         CommandeModel::updateDetails((int)$commande['commande_id'], $payload);

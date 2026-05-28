@@ -42,6 +42,7 @@ class ParametresController
                 'couleur_fond'                     => ['type' => 'couleur'],
                 'livraison_lat'                    => ['type' => 'coord'],
                 'livraison_lng'                    => ['type' => 'coord'],
+                'livraison_rayon_max_km'           => ['type' => 'int',     'min' => 1, 'max' => 500],
                 'livraison_codes_postaux_gratuits' => ['type' => 'string',  'max' => 500],
             ],
             'entreprise' => [

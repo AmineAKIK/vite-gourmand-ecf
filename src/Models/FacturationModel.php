@@ -12,7 +12,7 @@ use Throwable;
 class FacturationModel
 {
     private const DEFAULT_TVA = 10.0;
-    private const TYPES = ['facture', 'ticket'];
+    private const TYPES = ['facture', 'ticket', 'devis', 'acompte'];
 
     public static function ensureSchema(): void
     {
@@ -92,6 +92,8 @@ class FacturationModel
         self::addColumnIfMissing('document_facturation', 'code_postal_livraison', 'VARCHAR(20) NULL');
         self::addColumnIfMissing('document_facturation', 'categorie_operation', "VARCHAR(30) NOT NULL DEFAULT 'mixte'");
         self::addColumnIfMissing('document_facturation', 'option_tva_debits', 'TINYINT(1) NOT NULL DEFAULT 0');
+        self::addColumnIfMissing('document_facturation', 'montant_acompte_verse', 'DECIMAL(10,2) NULL DEFAULT NULL');
+        self::addColumnIfMissing('document_facturation', 'document_acompte_id', 'INT NULL DEFAULT NULL');
     }
 
     public static function listByCommandeIds(array $commandeIds): array
@@ -309,6 +311,17 @@ class FacturationModel
 
             $documentId = (int)$db->lastInsertId();
             self::replaceLignes($documentId, $lignes);
+
+            // Pour une facture : pré-remplir l'acompte versé si un ACP finalisé existe
+            if ($type === 'facture') {
+                $acompteDoc = self::findFinalizedForCommande($commandeId, 'acompte');
+                if ($acompteDoc) {
+                    $montantAcp = (float)($acompteDoc['total_ttc'] ?? 0);
+                    $upd = $db->prepare("UPDATE document_facturation SET montant_acompte_verse = ?, document_acompte_id = ? WHERE document_id = ?");
+                    $upd->execute([$montantAcp, (int)$acompteDoc['document_id'], $documentId]);
+                }
+            }
+
             $db->commit();
             return $documentId;
         } catch (Throwable $e) {
@@ -339,13 +352,20 @@ class FacturationModel
         $db = Database::getConnection();
         $db->beginTransaction();
         try {
+            $rawAcompte = trim((string)($payload['montant_acompte_verse'] ?? ''));
+            $montantAcompte = ($rawAcompte !== '' && is_numeric($rawAcompte) && (float)$rawAcompte >= 0)
+                ? round((float)$rawAcompte, 2)
+                : null;
+
             $stmt = $db->prepare("
                 UPDATE document_facturation
                 SET date_emission = ?, date_prestation = ?, client_nom = ?, client_email = ?,
                     client_telephone = ?, client_adresse = ?, client_ville = ?, client_code_postal = ?,
                     client_siren = ?, adresse_livraison = ?, ville_livraison = ?, code_postal_livraison = ?,
                     categorie_operation = ?, option_tva_debits = ?,
-                    note_publique = ?, mention_legale = ?, total_ht = ?, total_tva = ?, total_ttc = ?
+                    note_publique = ?, mention_legale = ?,
+                    montant_acompte_verse = ?,
+                    total_ht = ?, total_tva = ?, total_ttc = ?
                 WHERE document_id = ?
             ");
             $stmt->execute([
@@ -365,6 +385,7 @@ class FacturationModel
                 !empty($payload['option_tva_debits']) ? 1 : 0,
                 trim((string)($payload['note_publique'] ?? '')),
                 trim((string)($payload['mention_legale'] ?? '')),
+                $montantAcompte,
                 $totals['ht'],
                 $totals['tva'],
                 $totals['ttc'],
@@ -476,9 +497,11 @@ class FacturationModel
         $type        = $document['type_document'] ?? 'facture';
         $isTicket    = $type === 'ticket';
         $isAcompte   = $type === 'acompte';
+        $isDevis     = $type === 'devis';
         $typeLabel   = match ($type) {
             'ticket'  => 'Ticket de caisse',
             'acompte' => "Facture d'acompte",
+            'devis'   => 'Devis',
             default   => 'Facture',
         };
         $entreprise    = $document['entreprise'] ?? (json_decode($document['entreprise_snapshot'] ?? '{}', true) ?: []);
@@ -575,15 +598,17 @@ class FacturationModel
             $totauxHtml .= '<div class="document-tva-non-applicable"><dt>TVA</dt><dd>TVA non applicable, art. 293 B du CGI</dd></div>';
         }
         // Acompte déjà versé (pour factures de solde)
-        if (!$isAcompte && (float)($document['montant_acompte_verse'] ?? 0) > 0) {
-            $totauxHtml .= '<div><dt>Acompte déjà versé</dt><dd>- ' . htmlspecialchars(formatPrice($document['montant_acompte_verse']), ENT_QUOTES, 'UTF-8') . '</dd></div>'
-                . '<div><dt>Solde à régler</dt><dd>' . htmlspecialchars(formatPrice($document['solde_a_regler'] ?? $document['total_ttc']), ENT_QUOTES, 'UTF-8') . '</dd></div>';
+        $montantAcompte = (float)($document['montant_acompte_verse'] ?? 0);
+        if (!$isAcompte && !$isDevis && $montantAcompte > 0) {
+            $solde = round((float)($document['total_ttc'] ?? 0) - $montantAcompte, 2);
+            $totauxHtml .= '<div><dt>Acompte déjà versé</dt><dd>- ' . htmlspecialchars(formatPrice($montantAcompte), ENT_QUOTES, 'UTF-8') . '</dd></div>'
+                . '<div><dt>Solde à régler</dt><dd>' . htmlspecialchars(formatPrice($solde), ENT_QUOTES, 'UTF-8') . '</dd></div>';
         }
         $totauxHtml .= '<div class="document-total-main"><dt>Total TTC</dt><dd>' . htmlspecialchars(formatPrice($document['total_ttc'] ?? 0), ENT_QUOTES, 'UTF-8') . '</dd></div>';
 
         // --- Coordonnées bancaires (si virement renseigné) ---
         $banqueHtml = '';
-        if (!$isTicket && !empty($entreprise['iban'])) {
+        if (!$isTicket && !$isDevis && !empty($entreprise['iban'])) {
             $banqueHtml = '<section class="document-banque"><h3>Règlement par virement</h3><p>'
                 . 'IBAN : ' . htmlspecialchars($entreprise['iban'], ENT_QUOTES, 'UTF-8') . '<br>'
                 . (!empty($entreprise['bic']) ? 'BIC : ' . htmlspecialchars($entreprise['bic'], ENT_QUOTES, 'UTF-8') . '<br>' : '')
@@ -591,9 +616,18 @@ class FacturationModel
                 . '</p></section>';
         }
 
+        // --- Validité devis ---
+        $validiteHtml = '';
+        if ($isDevis) {
+            $validiteHtml = '<section class="document-conditions"><p>'
+                . 'Ce devis est valable 30 jours à compter de sa date d\'émission.'
+                . ' Pour l\'accepter, veuillez nous retourner ce document signé avec la mention « Bon pour accord ».'
+                . '</p></section>';
+        }
+
         // --- Conditions de paiement ---
         $conditionsHtml = '';
-        if (!$isTicket) {
+        if (!$isTicket && !$isDevis) {
             $conditionsHtml = '<section class="document-conditions"><p>'
                 . 'Délai de règlement : ' . htmlspecialchars($delaiPaiement, ENT_QUOTES, 'UTF-8') . ' jours à compter de la date d\'émission.'
                 . (!empty($entreprise['penalites_taux']) && $isAssujetti
@@ -630,6 +664,7 @@ class FacturationModel
             . (!empty($document['note_publique']) ? '<p>' . nl2br(htmlspecialchars($document['note_publique'], ENT_QUOTES, 'UTF-8')) . '</p>' : '')
             . '</div><dl>' . $totauxHtml . '</dl></section>'
             . $banqueHtml
+            . $validiteHtml
             . $conditionsHtml
             . (!empty($document['mention_legale']) ? '<footer class="document-footer">' . nl2br(htmlspecialchars($document['mention_legale'], ENT_QUOTES, 'UTF-8')) . '</footer>' : '')
             . '</article>';
@@ -748,7 +783,12 @@ class FacturationModel
         self::assertType($type);
         $timestamp = strtotime($dateEmission) ?: time();
         $annee = (int)date('Y', $timestamp);
-        $prefix = $type === 'ticket' ? 'TCK' : 'FAC';
+        $prefix = match ($type) {
+            'ticket'  => 'TCK',
+            'devis'   => 'DEV',
+            'acompte' => 'ACP',
+            default   => 'FAC',
+        };
 
         $stmt = $db->prepare("
             SELECT dernier_numero
@@ -966,6 +1006,7 @@ class FacturationModel
         return match ($type) {
             'ticket'  => 'Merci pour votre confiance.',
             'acompte' => "Facture d'acompte. Cet acompte sera déduit de la facture définitive.",
+            'devis'   => "Devis non contractuel. Validité 30 jours. Sous réserve d'acceptation écrite.",
             default   => "Paiement à réception de facture. Tout retard de paiement entraîne des pénalités au taux légal en vigueur.",
         };
     }
@@ -982,6 +1023,7 @@ class FacturationModel
         return match ($type) {
             'ticket'  => 'Brouillon — ticket de caisse non finalisé.',
             'acompte' => "Brouillon — facture d'acompte non finalisée.",
+            'devis'   => 'Brouillon — devis non finalisé.',
             default   => 'Brouillon — facture non finalisée.',
         };
     }

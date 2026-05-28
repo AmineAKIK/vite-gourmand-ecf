@@ -14,10 +14,11 @@ class MenuAdminController
         $regimes      = MenuModel::getRegimes();
         $plats        = MenuModel::getPlatsForAdmin();
         $categories   = MenuModel::getCategories();
+        $allergens    = MenuModel::getAllergens();
         $platsByMenu  = MenuModel::getPlatsByMenu();
         $imagesByMenu = MenuModel::getImagesByMenuIds(array_column($menus, 'menu_id'));
 
-        view('pages/employe/menus', compact('menus', 'themes', 'regimes', 'plats', 'categories', 'platsByMenu', 'imagesByMenu'));
+        view('pages/employe/menus', compact('menus', 'themes', 'regimes', 'plats', 'categories', 'allergens', 'platsByMenu', 'imagesByMenu'));
     }
 
     public function createMenu(): void

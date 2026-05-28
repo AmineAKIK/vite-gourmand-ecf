@@ -202,11 +202,33 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                         <div><dt>Ville</dt><dd><?= sanitize($cmd['ville_livraison'] ?? '—') ?></dd></div>
                                         <div><dt>Commande</dt><dd><code><?= sanitize($cmd['numero_commande'] ?? '') ?></code></dd></div>
                                     </dl>
+                                    <?php if (!empty($cmd['instructions'])): ?>
+                                    <div class="mt-2 p-2 rounded small" style="background:var(--vg-creme);border-left:3px solid var(--vg-or)">
+                                        <strong><i class="bi bi-chat-left-text me-1"></i>Remarques client :</strong>
+                                        <?= nl2br(sanitize($cmd['instructions'])) ?>
+                                    </div>
+                                    <?php endif ?>
                                 </section>
 
                                 <section class="commande-section mt-3">
                                     <h3 class="h6 fw-bold">Documents</h3>
                                     <div class="commande-doc-actions">
+                                        <form method="POST" action="/employe/document/creer">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="commande_id" value="<?= $commandeId ?>">
+                                            <input type="hidden" name="type_document" value="devis">
+                                            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                                <i class="bi bi-file-earmark-plus me-1"></i>Devis
+                                            </button>
+                                        </form>
+                                        <form method="POST" action="/employe/document/creer">
+                                            <?= csrfField() ?>
+                                            <input type="hidden" name="commande_id" value="<?= $commandeId ?>">
+                                            <input type="hidden" name="type_document" value="acompte">
+                                            <button type="submit" class="btn btn-outline-secondary btn-sm">
+                                                <i class="bi bi-file-earmark-check me-1"></i>Acompte
+                                            </button>
+                                        </form>
                                         <form method="POST" action="/employe/document/creer">
                                             <?= csrfField() ?>
                                             <input type="hidden" name="commande_id" value="<?= $commandeId ?>">
@@ -231,9 +253,19 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                         <div class="commande-doc-list mt-2">
                                             <?php foreach ($documentsCommande as $doc): ?>
                                                 <?php
-                                                $docType = $doc['type_document'] ?? 'document';
-                                                $docLabel = $docType === 'ticket' ? 'Ticket' : 'Facture';
-                                                $docIcon = $docType === 'ticket' ? 'bi-receipt' : 'bi-file-earmark-text';
+                                                $docType  = $doc['type_document'] ?? 'document';
+                                                $docLabel = match ($docType) {
+                                                    'ticket'  => 'Ticket',
+                                                    'devis'   => 'Devis',
+                                                    'acompte' => 'Acompte',
+                                                    default   => 'Facture',
+                                                };
+                                                $docIcon  = match ($docType) {
+                                                    'ticket'  => 'bi-receipt',
+                                                    'devis'   => 'bi-file-earmark-plus',
+                                                    'acompte' => 'bi-file-earmark-check',
+                                                    default   => 'bi-file-earmark-text',
+                                                };
                                                 $docStatut = $doc['statut'] ?? 'brouillon';
                                                 $docStatutLabel = $docStatut === 'finalise' ? 'Finalisé' : ucfirst((string)$docStatut);
                                                 ?>
