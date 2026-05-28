@@ -95,6 +95,7 @@ $routes = [
         '/menus/detail'        => [MenuController::class,    'detail'],
         '/livraison/calcul'    => [CommandeController::class,'calculLivraison'],
         '/commande/disponibilite' => [CommandeController::class,'calculDisponibilite'],
+        '/verifier-email'      => [AuthController::class,    'verifyEmail'],
         '/connexion'           => [AuthController::class,    'loginForm'],
         '/inscription'         => [AuthController::class,    'registerForm'],
         '/deconnexion'         => [AuthController::class,    'logout'],

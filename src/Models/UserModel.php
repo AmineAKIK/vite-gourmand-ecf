@@ -6,7 +6,26 @@ use App\Config\Database;
 
 class UserModel {
 
+    public static function ensureSchema(): void
+    {
+        try {
+            $db = Database::getConnection();
+            foreach (['email_verified_at' => 'DATETIME NULL DEFAULT NULL', 'email_verification_token' => 'VARCHAR(64) NULL DEFAULT NULL'] as $col => $def) {
+                $stmt = $db->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'utilisateur' AND COLUMN_NAME = ?");
+                $stmt->execute([$col]);
+                if ((int)$stmt->fetchColumn() === 0) {
+                    $db->exec("ALTER TABLE `utilisateur` ADD COLUMN `{$col}` {$def}");
+                    // Marquer les comptes existants comme vérifiés
+                    if ($col === 'email_verified_at') {
+                        $db->exec("UPDATE utilisateur SET email_verified_at = created_at WHERE email_verified_at IS NULL");
+                    }
+                }
+            }
+        } catch (\Throwable) {}
+    }
+
     public static function findByEmail(string $email): ?array {
+        self::ensureSchema();
         $db   = Database::getConnection();
         $stmt = $db->prepare("
             SELECT u.*, r.libelle AS role_libelle
@@ -33,13 +52,15 @@ class UserModel {
     public static function create(array $data): int {
         $db   = Database::getConnection();
         $stmt = $db->prepare("
-            INSERT INTO utilisateur (email, password, prenom, nom, telephone, adresse, ville, code_postal, role_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO utilisateur (email, password, prenom, nom, telephone, adresse, ville, code_postal, role_id,
+                email_verification_token)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
         $stmt->execute([
             $data['email'], $data['password'], $data['prenom'], $data['nom'],
             $data['telephone'], $data['adresse'], $data['ville'], $data['code_postal'],
-            ROLE_ID_USER
+            ROLE_ID_USER,
+            $data['email_verification_token'] ?? null,
         ]);
         return (int)$db->lastInsertId();
     }
@@ -47,11 +68,35 @@ class UserModel {
     public static function createEmploye(string $email, string $password, string $prenom, string $nom): int {
         $db   = Database::getConnection();
         $stmt = $db->prepare("
-            INSERT INTO utilisateur (email, password, prenom, nom, role_id, actif, must_change_password)
-            VALUES (?, ?, ?, ?, ?, 1, 1)
+            INSERT INTO utilisateur (email, password, prenom, nom, role_id, actif, must_change_password, email_verified_at)
+            VALUES (?, ?, ?, ?, ?, 1, 1, NOW())
         ");
         $stmt->execute([$email, $password, $prenom, $nom, ROLE_ID_EMPLOYE]);
         return (int)$db->lastInsertId();
+    }
+
+    public static function saveEmailVerificationToken(int $id, string $token): void {
+        Database::getConnection()
+            ->prepare("UPDATE utilisateur SET email_verification_token = ? WHERE utilisateur_id = ?")
+            ->execute([$token, $id]);
+    }
+
+    public static function verifyEmail(string $token): ?array {
+        self::ensureSchema();
+        $db   = Database::getConnection();
+        $stmt = $db->prepare(
+            "SELECT utilisateur_id FROM utilisateur
+             WHERE email_verification_token = ? AND email_verified_at IS NULL"
+        );
+        $stmt->execute([$token]);
+        $row = $stmt->fetch();
+        if (!$row) {
+            return null;
+        }
+        $db->prepare(
+            "UPDATE utilisateur SET email_verified_at = NOW(), email_verification_token = NULL WHERE utilisateur_id = ?"
+        )->execute([$row['utilisateur_id']]);
+        return $row;
     }
 
     public static function clearMustChangePassword(int $id): void {

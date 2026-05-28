@@ -52,6 +52,8 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                         'today' => "Aujourd'hui",
                         'tomorrow' => 'Demain',
                         'week' => '7 prochains jours',
+                        'this_month' => 'Ce mois-ci',
+                        'last_month' => 'Mois précédent',
                         'upcoming' => 'À venir',
                         'past' => 'Passées',
                         'custom' => 'Dates personnalisées',
@@ -639,6 +641,16 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
             </div><!-- /accordion-item -->
             <?php endforeach; ?>
         </div><!-- /accordion -->
+    <?php endif; ?>
+
+    <?php if (isset($paginator) && $paginator->totalPages > 1): ?>
+    <div class="mt-4 d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2">
+        <p class="text-muted small mb-0">
+            <?= $paginator->total ?> commande<?= $paginator->total > 1 ? 's' : '' ?>
+            — page <?= $paginator->page ?> / <?= $paginator->totalPages ?>
+        </p>
+        <?= $paginator->renderLinks() ?>
+    </div>
     <?php endif; ?>
     </div><!-- /#vue-liste -->
 

@@ -269,6 +269,31 @@ class MailService
     // Public API
     // ----------------------------------------------------------------
 
+    public static function sendEmailVerification(string $email, string $prenom, string $token): void
+    {
+        try {
+            $ctx  = self::ctx();
+            $link = BASE_URL . '/verifier-email?token=' . $token;
+            $body = '<p>Bonjour <strong>' . htmlspecialchars($prenom, ENT_QUOTES, 'UTF-8') . '</strong>,</p>'
+                . '<p>Merci de vous être inscrit(e) sur <strong>' . htmlspecialchars($ctx['name'], ENT_QUOTES, 'UTF-8') . '</strong>.</p>'
+                . '<p>Cliquez sur le bouton ci-dessous pour confirmer votre adresse email et activer votre compte :</p>'
+                . '<p style="text-align:center;margin:2rem 0;">'
+                . '<a href="' . htmlspecialchars($link, ENT_QUOTES, 'UTF-8') . '" '
+                . 'style="background:' . htmlspecialchars($ctx['color'], ENT_QUOTES, 'UTF-8') . ';color:#fff;padding:.75rem 2rem;border-radius:6px;text-decoration:none;font-weight:600;display:inline-block;">'
+                . 'Confirmer mon adresse email'
+                . '</a></p>'
+                . '<p style="color:#666;font-size:.85rem;">Ce lien est valable 24 heures. Si vous n\'avez pas créé de compte, ignorez cet email.</p>';
+            self::send(
+                $email,
+                'Confirmez votre adresse email — ' . $ctx['name'],
+                self::wrap('Confirmez votre adresse email', $body, $ctx),
+                "Confirmez votre adresse email : {$link}"
+            );
+        } catch (Throwable $e) {
+            error_log('Erreur mail vérification email : ' . $e->getMessage());
+        }
+    }
+
     public static function sendWelcome(string $email, string $prenom): void
     {
         try {

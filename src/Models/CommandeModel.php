@@ -233,6 +233,16 @@ class CommandeModel
                     $sql .= " AND c.date_prestation < ?";
                     $params[] = $today;
                     break;
+                case 'this_month':
+                    $sql .= " AND c.date_prestation BETWEEN ? AND ?";
+                    $params[] = date('Y-m-01');
+                    $params[] = date('Y-m-t');
+                    break;
+                case 'last_month':
+                    $sql .= " AND c.date_prestation BETWEEN ? AND ?";
+                    $params[] = date('Y-m-01', strtotime('first day of last month'));
+                    $params[] = date('Y-m-t', strtotime('last day of last month'));
+                    break;
             }
         }
         if (($filters['periode'] ?? '') === 'custom') {
@@ -280,9 +290,84 @@ class CommandeModel
             default => 'c.date_prestation ASC, c.date_commande DESC',
         };
         $sql .= " GROUP BY c.commande_id ORDER BY $orderBy";
+
+        if (isset($filters['limit']) && (int)$filters['limit'] > 0) {
+            $sql .= " LIMIT " . (int)$filters['limit'];
+            if (isset($filters['offset'])) {
+                $sql .= " OFFSET " . (int)$filters['offset'];
+            }
+        }
+
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();
+    }
+
+    /**
+     * Retourne le nombre total de commandes correspondant aux filtres (sans LIMIT/OFFSET ni tri).
+     * Utilise les mêmes conditions WHERE que getAll().
+     */
+    public static function countAll(array $filters = []): int {
+        $db  = Database::getConnection();
+        $sql = "
+            SELECT COUNT(DISTINCT c.commande_id)
+            FROM commande c
+            JOIN commande_ligne cl ON cl.commande_id = c.commande_id
+            JOIN menu m ON m.menu_id = cl.menu_id
+            JOIN utilisateur u ON u.utilisateur_id = c.utilisateur_id
+            WHERE 1=1
+        ";
+        $params = [];
+        if (!empty($filters['statut'])) {
+            $sql .= " AND c.statut = ?"; $params[] = $filters['statut'];
+        }
+        if (!empty($filters['q'])) {
+            $sql .= " AND (
+                u.nom LIKE ? OR u.prenom LIKE ? OR u.email LIKE ? OR u.telephone LIKE ?
+                OR c.numero_commande LIKE ? OR c.ville_livraison LIKE ?
+                OR EXISTS (
+                    SELECT 1 FROM commande_ligne cl_s JOIN menu m_s ON m_s.menu_id = cl_s.menu_id
+                    WHERE cl_s.commande_id = c.commande_id AND m_s.titre LIKE ?
+                )
+            )";
+            $like = '%' . $filters['q'] . '%';
+            array_push($params, ...array_fill(0, 7, $like));
+        }
+        if (!empty($filters['periode'])) {
+            $today = date('Y-m-d');
+            match ($filters['periode']) {
+                'today'      => ($sql .= " AND c.date_prestation = ?" ) && ($params[] = $today),
+                'tomorrow'   => ($sql .= " AND c.date_prestation = ?" ) && ($params[] = date('Y-m-d', strtotime('+1 day'))),
+                'week'       => ($sql .= " AND c.date_prestation BETWEEN ? AND ?") && array_push($params, $today, date('Y-m-d', strtotime('+7 days'))),
+                'upcoming'   => ($sql .= " AND c.date_prestation >= ?") && ($params[] = $today),
+                'past'       => ($sql .= " AND c.date_prestation < ?")  && ($params[] = $today),
+                'this_month' => ($sql .= " AND c.date_prestation BETWEEN ? AND ?") && array_push($params, date('Y-m-01'), date('Y-m-t')),
+                'last_month' => ($sql .= " AND c.date_prestation BETWEEN ? AND ?") && array_push($params, date('Y-m-01', strtotime('first day of last month')), date('Y-m-t', strtotime('last day of last month'))),
+                default      => null,
+            };
+        }
+        if (($filters['periode'] ?? '') === 'custom') {
+            if (!empty($filters['date_debut'])) { $sql .= " AND c.date_prestation >= ?"; $params[] = $filters['date_debut']; }
+            if (!empty($filters['date_fin']))   { $sql .= " AND c.date_prestation <= ?"; $params[] = $filters['date_fin'];   }
+        }
+        if (!empty($filters['menu_id'])) {
+            $sql .= " AND EXISTS (SELECT 1 FROM commande_ligne cl_f WHERE cl_f.commande_id = c.commande_id AND cl_f.menu_id = ?)";
+            $params[] = (int)$filters['menu_id'];
+        }
+        if (!empty($filters['ville'])) {
+            $sql .= " AND c.ville_livraison LIKE ?"; $params[] = '%' . $filters['ville'] . '%';
+        }
+        if (!empty($filters['montant'])) {
+            match ($filters['montant']) {
+                'moins_250'  => $sql .= " AND c.prix_total < 250",
+                '250_1000'   => $sql .= " AND c.prix_total BETWEEN 250 AND 1000",
+                'plus_1000'  => $sql .= " AND c.prix_total > 1000",
+                default      => null,
+            };
+        }
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        return (int)$stmt->fetchColumn();
     }
 
     public static function countByDate(string $date): int {

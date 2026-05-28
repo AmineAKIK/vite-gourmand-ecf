@@ -2,6 +2,7 @@
 
 namespace App\Controllers\Workspace;
 
+use App\Core\Paginator;
 use App\Domain\OrderStatus;
 use App\Models\AvisModel;
 use App\Models\CommandeModel;
@@ -54,7 +55,16 @@ class EmployeController
             $filters['periode'] = 'custom';
         }
 
-        $commandes   = CommandeModel::getAll($filters);
+        $perPage   = 25;
+        $page      = max(1, (int)($_GET['page'] ?? 1));
+        $total     = CommandeModel::countAll($filters);
+        $paginator = new Paginator($total, $page, $perPage);
+
+        $paginatedFilters            = $filters;
+        $paginatedFilters['limit']   = $perPage;
+        $paginatedFilters['offset']  = $paginator->offset;
+
+        $commandes   = CommandeModel::getAll($paginatedFilters);
         $statuts     = OrderStatus::all();
         $menus       = \App\Models\MenuModel::getAll();
         $commandeIds = array_column($commandes, 'commande_id');
@@ -68,18 +78,18 @@ class EmployeController
         }
         $modesPaiement = \App\Models\PaiementModel::getModePaiements();
 
+        // Counts par statut — sans pagination, sans filtre de statut
         $statusFilters           = $filters;
         $statusFilters['statut'] = '';
         $statusCounts            = array_fill_keys($statuts, 0);
-        foreach (CommandeModel::getAll($statusFilters) as $commande) {
-            $statut = $commande['statut'] ?? '';
-            if (array_key_exists($statut, $statusCounts)) {
-                $statusCounts[$statut]++;
-            }
+        foreach (OrderStatus::all() as $s) {
+            $cf = $statusFilters;
+            $cf['statut'] = $s;
+            $statusCounts[$s] = CommandeModel::countAll($cf);
         }
 
         view('pages/employe/commandes', compact(
-            'commandes', 'filters', 'statuts', 'menus', 'statusCounts',
+            'commandes', 'filters', 'statuts', 'menus', 'statusCounts', 'paginator',
             'lignesByCommande', 'documentsByCommande', 'paiementsByCommande',
             'paiementsHistorique', 'modesPaiement'
         ));
@@ -103,12 +113,14 @@ class EmployeController
         $commandes = CommandeModel::getAll($filters);
 
         $colorMap = [
-            'en_attente'    => '#f59e0b',
-            'accepte'       => '#10b981',
-            'en_preparation'=> '#3b82f6',
-            'livre'         => '#6366f1',
-            'annule'        => '#ef4444',
-            'termine'       => '#6b7280',
+            'en_attente'          => '#f59e0b',
+            'accepte'             => '#10b981',
+            'en_preparation'      => '#3b82f6',
+            'en_cours_livraison'  => '#8b5cf6',
+            'livre'               => '#6366f1',
+            'en_attente_materiel' => '#f97316',
+            'terminee'            => '#6b7280',
+            'annulee'             => '#ef4444',
         ];
 
         $events = [];

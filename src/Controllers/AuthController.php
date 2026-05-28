@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Models\UserModel;
 use App\Security\Password;
+use App\Security\RateLimiter;
 use App\Services\MailService;
 
 class AuthController
@@ -20,8 +21,16 @@ class AuthController
 
     public function login(): void {
         verifyCsrf();
+        $ip       = RateLimiter::clientIp();
         $email    = sanitize($_POST['email'] ?? '');
         $password = $_POST['password'] ?? '';
+
+        try {
+            RateLimiter::check($ip, 'login');
+        } catch (\RuntimeException $e) {
+            flash('error', $e->getMessage());
+            redirect('/connexion');
+        }
 
         if (!$email || !$password) {
             flash('error', 'Veuillez remplir tous les champs.');
@@ -32,6 +41,7 @@ class AuthController
         // Toujours appeler password_verify même si l'user est introuvable — évite le timing attack
         $hash = $user['password'] ?? Password::dummyHash();
         if (!$user || !password_verify($password, $hash)) {
+            RateLimiter::record($ip, 'login');
             flash('error', 'Email ou mot de passe incorrect.');
             redirect('/connexion');
         }
@@ -39,6 +49,12 @@ class AuthController
             flash('error', 'Votre compte a été désactivé. Contactez-nous.');
             redirect('/connexion');
         }
+        if (empty($user['email_verified_at'])) {
+            flash('error', 'Veuillez confirmer votre adresse email avant de vous connecter. Vérifiez vos spams.');
+            redirect('/connexion');
+        }
+
+        RateLimiter::reset($ip, 'login');
 
         session_regenerate_id(true);
         $_SESSION['user'] = [
@@ -66,6 +82,14 @@ class AuthController
 
     public function register(): void {
         verifyCsrf();
+        $ip = RateLimiter::clientIp();
+        try {
+            RateLimiter::check($ip, 'register', 3, 3600);
+        } catch (\RuntimeException $e) {
+            flash('error', $e->getMessage());
+            redirect('/inscription');
+        }
+
         $data = [
             'email'         => sanitize($_POST['email'] ?? ''),
             'prenom'        => sanitize($_POST['prenom'] ?? ''),
@@ -95,14 +119,16 @@ class AuthController
             flash('error', 'Cet email est déjà utilisé.'); redirect('/inscription');
         }
 
+        $token = bin2hex(random_bytes(32));
         $data['password'] = hashPassword($data['password']);
+        $data['email_verification_token'] = $token;
         UserModel::create($data);
 
-        // Mail de bienvenue
-        MailService::sendWelcome($data['email'], $data['prenom']);
+        RateLimiter::record($ip, 'register');
+        MailService::sendEmailVerification($data['email'], $data['prenom'], $token);
 
-        flash('success', 'Compte créé ! Vous pouvez vous connecter.');
-        redirect('/connexion');
+        flash('success', 'Compte créé ! Vérifiez votre boîte email pour activer votre compte.');
+        redirect('/inscription');
     }
 
     public function logout(): void
@@ -114,6 +140,21 @@ class AuthController
         }
         session_destroy();
         redirect('/');
+    }
+
+    public function verifyEmail(): void {
+        $token = sanitize($_GET['token'] ?? '');
+        if (!$token) {
+            flash('error', 'Lien de vérification invalide.');
+            redirect('/connexion');
+        }
+        $row = UserModel::verifyEmail($token);
+        if (!$row) {
+            flash('error', 'Ce lien est invalide ou a déjà été utilisé.');
+            redirect('/connexion');
+        }
+        flash('success', 'Adresse email confirmée ! Vous pouvez maintenant vous connecter.');
+        redirect('/connexion');
     }
 
     public function forgotForm(): void {
