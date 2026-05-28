@@ -285,6 +285,13 @@ class CommandeModel
         return $stmt->fetchAll();
     }
 
+    public static function countByDate(string $date): int {
+        $db = Database::getConnection();
+        $stmt = $db->prepare("SELECT COUNT(*) FROM commande WHERE date_prestation = ? AND statut != 'annule'");
+        $stmt->execute([$date]);
+        return (int)$stmt->fetchColumn();
+    }
+
     public static function updateStatut(int $id, string $statut, ?string $commentaire, int $modifiePar): void {
         $db   = Database::getConnection();
         $old  = self::getById($id);

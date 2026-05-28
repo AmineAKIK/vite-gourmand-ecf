@@ -94,6 +94,8 @@ class FacturationModel
         self::addColumnIfMissing('document_facturation', 'option_tva_debits', 'TINYINT(1) NOT NULL DEFAULT 0');
         self::addColumnIfMissing('document_facturation', 'montant_acompte_verse', 'DECIMAL(10,2) NULL DEFAULT NULL');
         self::addColumnIfMissing('document_facturation', 'document_acompte_id', 'INT NULL DEFAULT NULL');
+        self::addColumnIfMissing('document_facturation', 'statut_devis', "ENUM('accepte','refuse') NULL DEFAULT NULL");
+        self::addColumnIfMissing('document_facturation', 'date_decision_devis', 'DATETIME NULL DEFAULT NULL');
     }
 
     public static function listByCommandeIds(array $commandeIds): array
@@ -459,6 +461,46 @@ class FacturationModel
             }
             throw $e;
         }
+    }
+
+    public static function acceptDevis(int $documentId): void
+    {
+        self::ensureSchema();
+        $db = Database::getConnection();
+        $stmt = $db->prepare("SELECT type_document, statut FROM document_facturation WHERE document_id = ?");
+        $stmt->execute([$documentId]);
+        $doc = $stmt->fetch();
+        if (!$doc) {
+            throw new \InvalidArgumentException('Document introuvable.');
+        }
+        if ($doc['type_document'] !== 'devis') {
+            throw new \InvalidArgumentException('Ce document n\'est pas un devis.');
+        }
+        if ($doc['statut'] !== 'finalise') {
+            throw new \InvalidArgumentException('Seuls les devis finalisés peuvent être acceptés.');
+        }
+        $db->prepare("UPDATE document_facturation SET statut_devis = 'accepte', date_decision_devis = NOW() WHERE document_id = ?")
+           ->execute([$documentId]);
+    }
+
+    public static function refuseDevis(int $documentId): void
+    {
+        self::ensureSchema();
+        $db = Database::getConnection();
+        $stmt = $db->prepare("SELECT type_document, statut FROM document_facturation WHERE document_id = ?");
+        $stmt->execute([$documentId]);
+        $doc = $stmt->fetch();
+        if (!$doc) {
+            throw new \InvalidArgumentException('Document introuvable.');
+        }
+        if ($doc['type_document'] !== 'devis') {
+            throw new \InvalidArgumentException('Ce document n\'est pas un devis.');
+        }
+        if ($doc['statut'] !== 'finalise') {
+            throw new \InvalidArgumentException('Seuls les devis finalisés peuvent être refusés.');
+        }
+        $db->prepare("UPDATE document_facturation SET statut_devis = 'refuse', date_decision_devis = NOW() WHERE document_id = ?")
+           ->execute([$documentId]);
     }
 
     public static function archiveDocument(int $documentId): string

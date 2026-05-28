@@ -151,4 +151,9 @@ class SiteConfig
             . number_format(self::deliveryKm(), 2, ',', ' ')
             . ' €/km au-delà.';
     }
+
+    public static function commandesMaxParJour(): int
+    {
+        return max(0, (int)self::get('commandes_max_par_jour', 0));
+    }
 }

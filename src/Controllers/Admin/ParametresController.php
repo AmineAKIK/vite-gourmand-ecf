@@ -44,6 +44,7 @@ class ParametresController
                 'livraison_lng'                    => ['type' => 'coord'],
                 'livraison_rayon_max_km'           => ['type' => 'int',     'min' => 1, 'max' => 500],
                 'livraison_codes_postaux_gratuits' => ['type' => 'string',  'max' => 500],
+                'commandes_max_par_jour'           => ['type' => 'int',     'min' => 0, 'max' => 999],
             ],
             'entreprise' => [
                 'entreprise_nom'             => ['type' => 'string',  'max' => 100],

@@ -71,8 +71,23 @@ class DocumentController
                     FacturationModel::updateDraft($documentId, $_POST);
                 }
             }
-            $numero = FacturationModel::finalizeDraft($documentId, currentUser()['id'] ?? null);
-            flash('success', 'Document finalisé : ' . $numero . '.');
+            $numero   = FacturationModel::finalizeDraft($documentId, currentUser()['id'] ?? null);
+            $document = FacturationModel::getById($documentId);
+            if ($document && ($document['type_document'] ?? '') === 'devis' && !empty($document['client_email'])) {
+                try {
+                    $relativeArchive = $document['archive_path'] ?: FacturationModel::archiveDocument($documentId);
+                    $absoluteArchive = dirname(__DIR__, 3) . '/public/' . ltrim($relativeArchive, '/');
+                    $commande        = CommandeModel::getById((int)$document['commande_id']);
+                    MailService::sendDevis($document, $commande ?: [], $absoluteArchive);
+                    FacturationModel::markSent($documentId, currentUser()['id'] ?? null);
+                    flash('success', 'Devis finalisé (' . $numero . ') et envoyé au client.');
+                } catch (Throwable $mailErr) {
+                    error_log('sendDevis auto : ' . $mailErr->getMessage());
+                    flash('success', 'Devis finalisé : ' . $numero . '. (envoi email échoué — envoyez manuellement)');
+                }
+            } else {
+                flash('success', 'Document finalisé : ' . $numero . '.');
+            }
             redirect('/employe/document/apercu?id=' . $documentId);
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
@@ -95,6 +110,34 @@ class DocumentController
         }
     }
 
+    public function accepterDevis(): void
+    {
+        verifyCsrf();
+
+        $documentId = (int)($_POST['document_id'] ?? 0);
+        try {
+            FacturationModel::acceptDevis($documentId);
+            flash('success', 'Devis marqué comme accepté.');
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect($documentId ? '/employe/document/apercu?id=' . $documentId : '/employe/commandes');
+    }
+
+    public function refuserDevis(): void
+    {
+        verifyCsrf();
+
+        $documentId = (int)($_POST['document_id'] ?? 0);
+        try {
+            FacturationModel::refuseDevis($documentId);
+            flash('success', 'Devis marqué comme refusé.');
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
+        redirect($documentId ? '/employe/document/apercu?id=' . $documentId : '/employe/commandes');
+    }
+
     public function send(): void
     {
         verifyCsrf();
@@ -112,7 +155,11 @@ class DocumentController
             $relativeArchive = $document['archive_path'] ?: FacturationModel::archiveDocument($documentId);
             $absoluteArchive = dirname(__DIR__, 3) . '/public/' . ltrim($relativeArchive, '/');
             $commande = CommandeModel::getById((int)$document['commande_id']);
-            MailService::sendDocumentFacturation($document, $commande ?: [], $absoluteArchive);
+            if (($document['type_document'] ?? '') === 'devis') {
+                MailService::sendDevis($document, $commande ?: [], $absoluteArchive);
+            } else {
+                MailService::sendDocumentFacturation($document, $commande ?: [], $absoluteArchive);
+            }
             FacturationModel::markSent($documentId, currentUser()['id'] ?? null);
 
             flash('success', 'Document envoyé au client.');

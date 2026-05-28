@@ -392,6 +392,67 @@ class MailService
         }
     }
 
+    public static function sendDevis(array $document, array $commande, string $archiveAbsolutePath): void
+    {
+        $email = trim((string)($document['client_email'] ?? ''));
+        if (!$email) {
+            throw new \InvalidArgumentException('Email client manquant.');
+        }
+        if (!is_file($archiveAbsolutePath)) {
+            throw new \RuntimeException('Archive du devis introuvable.');
+        }
+
+        $numero   = $document['numero_document'] ?: ('devis #' . (int)$document['document_id']);
+        $filename = preg_replace('/[^A-Z0-9_-]+/i', '-', $numero) ?: 'devis';
+        $ctx      = self::ctx();
+
+        self::send(
+            $email,
+            'Votre devis ' . $numero . ' — ' . $ctx['name'],
+            self::wrap('Votre devis est prêt', self::bodyDevis($document, $commande, $numero, $ctx), $ctx),
+            "Bonjour, votre devis {$numero} est disponible en pièce jointe. "
+            . "Total estimé : " . Formatter::price($document['total_ttc'] ?? 0)
+            . ". Ce devis est valable 30 jours.",
+            null,
+            [[
+                'name'    => $filename . '.html',
+                'content' => base64_encode(file_get_contents($archiveAbsolutePath)),
+            ]]
+        );
+    }
+
+    private static function bodyDevis(array $document, array $commande, string $numero, array $ctx): string
+    {
+        $color     = htmlspecialchars($ctx['color'], ENT_QUOTES, 'UTF-8');
+        $name      = htmlspecialchars($ctx['name'],  ENT_QUOTES, 'UTF-8');
+        $nomClient = htmlspecialchars($document['client_nom'] ?? '', ENT_QUOTES, 'UTF-8');
+        $safeNum   = htmlspecialchars($numero, ENT_QUOTES, 'UTF-8');
+        $safeRef   = htmlspecialchars($commande['numero_commande'] ?? '', ENT_QUOTES, 'UTF-8');
+        $total     = Formatter::price($document['total_ttc'] ?? 0);
+        $validite  = htmlspecialchars(
+            isset($document['date_emission'])
+                ? date('d/m/Y', strtotime($document['date_emission'] . ' +30 days'))
+                : '',
+            ENT_QUOTES, 'UTF-8'
+        );
+
+        return "<p>Bonjour {$nomClient},</p>"
+             . "<p>Nous avons le plaisir de vous adresser notre devis relatif à votre demande de prestation"
+             . ($safeRef ? " <strong>{$safeRef}</strong>" : '') . ".</p>"
+             . "<table style='width:100%;border-collapse:collapse;margin:16px 0'>"
+             . "<tr><td style='padding:6px 0;color:#5F6470'>Référence devis</td>"
+             . "<td style='padding:6px 0'><strong>{$safeNum}</strong></td></tr>"
+             . "<tr><td style='padding:6px 0;color:#5F6470'>Montant estimé TTC</td>"
+             . "<td style='padding:6px 0;color:{$color}'><strong>{$total}</strong></td></tr>"
+             . ($validite ? "<tr><td style='padding:6px 0;color:#5F6470'>Valable jusqu'au</td>"
+             . "<td style='padding:6px 0'><strong>{$validite}</strong></td></tr>" : '')
+             . "</table>"
+             . "<p>Le devis détaillé est disponible en pièce jointe. Pour l'accepter ou poser "
+             . "une question, répondez simplement à cet email ou contactez-nous à "
+             . "<a href='mailto:{$ctx['email']}'>{$ctx['email']}</a>.</p>"
+             . "<p>Merci de votre confiance,<br>L'équipe {$name}</p>";
+    }
+
     public static function sendContact(string $titre, string $description, string $emailExp): void
     {
         try {

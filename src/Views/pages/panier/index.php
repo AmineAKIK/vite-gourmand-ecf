@@ -117,6 +117,7 @@
                                 <label for="date_prestation" class="form-label">Date <span class="text-danger">*</span></label>
                                 <input type="date" class="form-control" id="date_prestation" name="date_prestation"
                                        min="<?= sanitize(tomorrowDateInput()) ?>" required>
+                                <div id="dispo-indicator" class="mt-1 small" aria-live="polite"></div>
                             </div>
                             <div class="col-12 col-lg-6">
                                 <label for="heure_livraison" class="form-label">Heure souhaitée <span class="text-danger">*</span></label>
@@ -322,9 +323,32 @@ function scheduleLivraison() {
 [adresseInput, villeInput, codePostalInput].forEach(el => {
     if (el) el.addEventListener('input', scheduleLivraison);
 });
-[dateInput, heureInput].forEach(el => {
-    if (el) el.addEventListener('change', checkForm);
-});
+const dispoIndicator = document.getElementById('dispo-indicator');
+
+async function checkDispo() {
+    const date = dateInput ? dateInput.value.trim() : '';
+    if (!date || !dispoIndicator) { checkForm(); return; }
+    try {
+        const data = await window.vgFetchJson('/commande/disponibilite?date=' + encodeURIComponent(date));
+        if (data.complet) {
+            dispoIndicator.innerHTML = '<span class="text-danger"><i class="bi bi-calendar-x me-1"></i>Date complète — choisissez une autre date.</span>';
+            if (submitBtn) submitBtn.disabled = true;
+        } else if (data.max > 0) {
+            const restant = data.max - data.count;
+            dispoIndicator.innerHTML = '<span class="text-warning"><i class="bi bi-calendar-check me-1"></i>' + restant + ' place(s) restante(s) ce jour.</span>';
+            checkForm();
+        } else {
+            dispoIndicator.innerHTML = '';
+            checkForm();
+        }
+    } catch {
+        dispoIndicator.innerHTML = '';
+        checkForm();
+    }
+}
+
+dateInput && dateInput.addEventListener('change', checkDispo);
+heureInput && heureInput.addEventListener('change', checkForm);
 window.addEventListener('load', updateLivraison);
 checkForm();
 

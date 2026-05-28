@@ -54,6 +54,24 @@ class CommandeController {
         ]);
     }
 
+    public function calculDisponibilite(): void {
+        header('Content-Type: application/json; charset=utf-8');
+        $date = sanitize($_GET['date'] ?? '');
+        if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $date)) {
+            http_response_code(422);
+            echo json_encode(['ok' => false, 'message' => 'Date invalide.']);
+            return;
+        }
+        $count = \App\Models\CommandeModel::countByDate($date);
+        $max   = \App\Config\SiteConfig::commandesMaxParJour();
+        echo json_encode([
+            'ok'     => true,
+            'count'  => $count,
+            'max'    => $max,
+            'complet' => $max > 0 && $count >= $max,
+        ]);
+    }
+
     public function create(): void {
         requireAuth();
         verifyCsrf();

@@ -211,6 +211,12 @@ $activeTab = $_GET['tab'] ?? 'identite';
                                    value="<?= (int)($config['livraison_rayon_max_km'] ?? 50) ?>" min="1" max="500">
                             <div class="form-text">Au-delà, commande refusée.</div>
                         </div>
+                        <div class="col-6 col-lg-2">
+                            <label class="form-label fw-medium" for="commandes_max_par_jour">Commandes max / jour</label>
+                            <input type="number" class="form-control" id="commandes_max_par_jour" name="commandes_max_par_jour"
+                                   value="<?= (int)($config['commandes_max_par_jour'] ?? 0) ?>" min="0" max="999">
+                            <div class="form-text">0 = illimité.</div>
+                        </div>
                         <div class="col-12 col-lg-6">
                             <label class="form-label fw-medium" for="livraison_codes_postaux_gratuits">Codes postaux livraison gratuite</label>
                             <input type="text" class="form-control" id="livraison_codes_postaux_gratuits"

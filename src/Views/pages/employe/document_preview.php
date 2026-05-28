@@ -1,15 +1,22 @@
 <?php
 // src/views/pages/employe/document_preview.php
 $type = $document['type_document'] ?? 'facture';
-$isTicket = $type === 'ticket';
-$typeLabel = $isTicket ? 'Ticket de caisse' : 'Facture';
-$entreprise = $document['entreprise'] ?? [];
-$isFinalise = ($document['statut'] ?? '') === 'finalise';
-$documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['document_id']);
+$isTicket  = $type === 'ticket';
+$isDevis   = $type === 'devis';
+$typeLabel = match ($type) {
+    'ticket'  => 'Ticket de caisse',
+    'devis'   => 'Devis',
+    'acompte' => 'Acompte',
+    default   => 'Facture',
+};
+$entreprise   = $document['entreprise'] ?? [];
+$isFinalise   = ($document['statut'] ?? '') === 'finalise';
+$statutDevis  = $document['statut_devis'] ?? null;
+$documentRef  = $document['numero_document'] ?: ('Brouillon #' . (int)$document['document_id']);
 ?>
 <div class="container py-5 facturation-page">
 
-    <?php partial('partials/page_title_bar', ['icon' => $isTicket ? 'bi-receipt' : 'bi-file-earmark-text', 'title' => 'Aperçu ' . strtolower($typeLabel)]); ?>
+    <?php partial('partials/page_title_bar', ['icon' => $isDevis ? 'bi-file-earmark-plus' : ($isTicket ? 'bi-receipt' : 'bi-file-earmark-text'), 'title' => 'Aperçu ' . strtolower($typeLabel)]); ?>
 
     <div class="facturation-toolbar mb-4">
         <a href="/employe/document/edit?id=<?= (int)$document['document_id'] ?>" class="btn btn-outline-secondary btn-sm">
@@ -41,6 +48,22 @@ $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['
                     <i class="bi bi-box-arrow-up-right me-1"></i>Archive
                 </a>
             <?php endif; ?>
+            <?php if ($isDevis && $statutDevis === null): ?>
+                <form method="POST" action="/employe/document/accepter-devis" class="d-inline" data-confirm="Marquer ce devis comme accepté par le client ?">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="document_id" value="<?= (int)$document['document_id'] ?>">
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="bi bi-check-circle me-1"></i>Accepté
+                    </button>
+                </form>
+                <form method="POST" action="/employe/document/refuser-devis" class="d-inline" data-confirm="Marquer ce devis comme refusé ?">
+                    <?= csrfField() ?>
+                    <input type="hidden" name="document_id" value="<?= (int)$document['document_id'] ?>">
+                    <button type="submit" class="btn btn-outline-danger btn-sm">
+                        <i class="bi bi-x-circle me-1"></i>Refusé
+                    </button>
+                </form>
+            <?php endif; ?>
         <?php endif; ?>
     </div>
 
@@ -49,6 +72,15 @@ $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['
             <span><i class="bi bi-lock me-1"></i>Finalisé</span>
             <span><i class="bi bi-archive me-1"></i><?= !empty($document['archive_path']) ? 'Archivé' : 'Archive à générer' ?></span>
             <span><i class="bi bi-envelope me-1"></i><?= !empty($document['sent_at']) ? 'Envoyé le ' . sanitize(formatDateTimeFr($document['sent_at'])) : 'Non envoyé' ?></span>
+            <?php if ($isDevis): ?>
+                <?php if ($statutDevis === 'accepte'): ?>
+                    <span class="text-success fw-semibold"><i class="bi bi-check-circle-fill me-1"></i>Accepté le <?= sanitize(formatDateFr($document['date_decision_devis'] ?? null)) ?></span>
+                <?php elseif ($statutDevis === 'refuse'): ?>
+                    <span class="text-danger fw-semibold"><i class="bi bi-x-circle-fill me-1"></i>Refusé le <?= sanitize(formatDateFr($document['date_decision_devis'] ?? null)) ?></span>
+                <?php else: ?>
+                    <span class="text-warning fw-semibold"><i class="bi bi-hourglass-split me-1"></i>En attente de décision</span>
+                <?php endif; ?>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 
@@ -87,6 +119,9 @@ $documentRef = $document['numero_document'] ?: ('Brouillon #' . (int)$document['
                     <?= sanitize($commande['numero_commande'] ?? '') ?><br>
                     Prestation : <?= sanitize(formatDateFr($document['date_prestation'] ?? null)) ?><br>
                     Statut document : <?= $isFinalise ? 'finalisé' : 'brouillon' ?>
+                    <?php if ($isDevis && $isFinalise): ?>
+                        — Devis : <?= $statutDevis === 'accepte' ? 'accepté' : ($statutDevis === 'refuse' ? 'refusé' : 'en attente') ?>
+                    <?php endif; ?>
                 </p>
             </div>
         </section>
