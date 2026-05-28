@@ -56,6 +56,12 @@ $activeTab = $_GET['tab'] ?? 'stats';
             <i class="bi bi-archive me-1"></i>Comptabilité
         </button>
     </li>
+    <li class="nav-item" role="presentation">
+        <button class="nav-link <?= $activeTab === 'marges' ? 'active' : '' ?>"
+                id="tab-marges" data-bs-toggle="tab" data-bs-target="#pane-marges" type="button" role="tab">
+            <i class="bi bi-percent me-1"></i>Marges plats
+        </button>
+    </li>
 </ul>
 
 <div class="tab-content">
@@ -483,6 +489,103 @@ $activeTab = $_GET['tab'] ?? 'stats';
             </ul>
         </section>
 
+    </div>
+
+    <!-- ============================================================
+         MARGES PAR PLAT
+    ============================================================ -->
+    <div class="tab-pane fade <?= $activeTab === 'marges' ? 'show active' : '' ?>" id="pane-marges" role="tabpanel">
+
+        <?php if (empty($marges)): ?>
+            <div class="alert alert-info mt-3">
+                <i class="bi bi-info-circle me-2"></i>
+                Aucune donnée de marge disponible. Renseignez des fiches techniques dans
+                <a href="/employe/recettes">Fiches &amp; Stocks</a>.
+            </div>
+        <?php else: ?>
+
+        <p class="text-muted mb-4">Coûts de revient calculés depuis les fiches techniques. Le prix de vente est le tarif minimum du menu contenant chaque plat.</p>
+
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead class="table-light">
+                    <tr>
+                        <th>Plat</th>
+                        <th>Catégorie</th>
+                        <th class="text-end">Coût / portion</th>
+                        <th class="text-end">Prix vente</th>
+                        <th class="text-end">Marge brute</th>
+                        <th class="text-end">Taux marge</th>
+                        <th>Indicateur</th>
+                    </tr>
+                </thead>
+                <tbody>
+                <?php foreach ($marges as $m): ?>
+                <?php
+                    $taux    = $m['taux_marge'];
+                    $couleur = $taux === null ? 'secondary'
+                        : ($taux >= 60 ? 'success' : ($taux >= 35 ? 'warning' : 'danger'));
+                ?>
+                <tr>
+                    <td class="fw-semibold"><?= sanitize($m['titre']) ?></td>
+                    <td class="text-muted small"><?= sanitize($m['categorie']) ?></td>
+                    <td class="text-end"><?= sanitize(formatPrice($m['cout_revient'])) ?></td>
+                    <td class="text-end"><?= $m['prix_vente'] !== null ? sanitize(formatPrice($m['prix_vente'])) : '<span class="text-muted">—</span>' ?></td>
+                    <td class="text-end <?= $m['marge_brute'] !== null && $m['marge_brute'] < 0 ? 'text-danger fw-bold' : '' ?>">
+                        <?= $m['marge_brute'] !== null ? sanitize(formatPrice($m['marge_brute'])) : '—' ?>
+                    </td>
+                    <td class="text-end">
+                        <?php if ($taux !== null): ?>
+                            <span class="fw-bold text-<?= $couleur ?>"><?= $taux ?> %</span>
+                        <?php else: ?>
+                            <span class="text-muted">—</span>
+                        <?php endif; ?>
+                    </td>
+                    <td style="min-width:120px">
+                        <?php if ($taux !== null): ?>
+                        <div class="progress" style="height:8px" title="<?= $taux ?> %">
+                            <div class="progress-bar bg-<?= $couleur ?>" style="width:<?= min(100, max(0, $taux)) ?>%"></div>
+                        </div>
+                        <?php else: ?>
+                        <span class="text-muted small">Prix non défini</span>
+                        <?php endif; ?>
+                    </td>
+                </tr>
+                <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row g-3 mt-3">
+            <?php
+                $nbPlats    = count($marges);
+                $nbAvecTaux = count(array_filter($marges, fn($m) => $m['taux_marge'] !== null));
+                $tauxMoyen  = $nbAvecTaux > 0
+                    ? round(array_sum(array_map(fn($m) => $m['taux_marge'] ?? 0, array_filter($marges, fn($m) => $m['taux_marge'] !== null))) / $nbAvecTaux, 1)
+                    : null;
+                $nbCritiques = count(array_filter($marges, fn($m) => $m['taux_marge'] !== null && $m['taux_marge'] < 35));
+            ?>
+            <div class="col-6 col-lg-3">
+                <article class="stats-kpi-card">
+                    <span class="stats-kpi-label">Plats analysés</span>
+                    <span class="stats-kpi-value"><?= $nbPlats ?></span>
+                </article>
+            </div>
+            <div class="col-6 col-lg-3">
+                <article class="stats-kpi-card">
+                    <span class="stats-kpi-label">Taux de marge moyen</span>
+                    <span class="stats-kpi-value"><?= $tauxMoyen !== null ? $tauxMoyen . ' %' : '—' ?></span>
+                </article>
+            </div>
+            <div class="col-6 col-lg-3">
+                <article class="stats-kpi-card" style="<?= $nbCritiques > 0 ? 'border-color:#ef4444' : '' ?>">
+                    <span class="stats-kpi-label">Plats < 35 % marge</span>
+                    <span class="stats-kpi-value <?= $nbCritiques > 0 ? 'text-danger' : '' ?>"><?= $nbCritiques ?></span>
+                </article>
+            </div>
+        </div>
+
+        <?php endif; ?>
     </div>
 
 </div><!-- /.tab-content -->

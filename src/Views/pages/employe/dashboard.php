@@ -49,6 +49,17 @@
     </div>
     <?php endif; ?>
 
+<?php if (!empty($alertesStock)): ?>
+    <div class="alert alert-warning d-flex align-items-start gap-2 mb-4 shadow-sm">
+        <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+        <div>
+            <strong><?= count($alertesStock) ?> ingrédient(s) sous le seuil de stock :</strong>
+            <?= implode(', ', array_map(fn($a) => sanitize($a['libelle']) . ' (' . sanitize(formatPriceInput($a['stock_courant'])) . ' ' . sanitize($a['unite']) . ')', $alertesStock)) ?>
+            — <a href="/employe/recettes?tab=stocks" class="alert-link fw-semibold">Gérer les stocks</a>
+        </div>
+    </div>
+<?php endif; ?>
+
     <!-- MÉTRIQUES -->
     <div class="row g-3 mb-4">
         <div class="col-6 col-lg-4">

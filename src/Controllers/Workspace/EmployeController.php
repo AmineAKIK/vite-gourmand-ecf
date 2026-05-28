@@ -5,6 +5,7 @@ namespace App\Controllers\Workspace;
 use App\Domain\OrderStatus;
 use App\Models\AvisModel;
 use App\Models\CommandeModel;
+use App\Models\IngredientModel;
 use App\Models\UserModel;
 use App\Security\Guard;
 use App\Services\MailService;
@@ -20,6 +21,8 @@ class EmployeController
         $toutesCommandes    = CommandeModel::getAll();
         $commandesEnAttente = CommandeModel::getAll(['statut' => 'en_attente']);
         $avisEnAttente      = AvisModel::getPending();
+        $alertesStock       = [];
+        try { $alertesStock = IngredientModel::getSousSeuilAlerte(); } catch (\Throwable) {}
         $activiteRecente    = array_slice(CommandeModel::getAll(['tri' => 'date_prestation_desc']), 0, 5);
 
         $today        = date('Y-m-d');
@@ -30,7 +33,7 @@ class EmployeController
         view('pages/employe/dashboard', compact(
             'commandesEnAttente', 'avisEnAttente',
             'commandesAujourdhui', 'commandesSemaine',
-            'activiteRecente'
+            'activiteRecente', 'alertesStock'
         ));
     }
 

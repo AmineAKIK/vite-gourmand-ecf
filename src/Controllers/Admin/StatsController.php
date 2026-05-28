@@ -4,6 +4,7 @@ namespace App\Controllers\Admin;
 
 use App\Config\SiteConfig;
 use App\Models\MenuModel;
+use App\Models\RecetteModel;
 use App\Services\PricingService;
 use App\Services\StatsService;
 
@@ -21,10 +22,16 @@ class StatsController
         $menus     = MenuModel::getAll();
         $regimeTva = PricingService::regimeTva();
         $config    = \App\Models\SiteConfigModel::getAll();
+        $marges    = [];
+        try {
+            $marges = RecetteModel::margesParPlat();
+        } catch (\Throwable) {
+            // Tables recettes pas encore créées en prod — silent fallback
+        }
 
         view('pages/admin/finances', compact(
             'caStats', 'synthese', 'caMensuel', 'menus', 'regimeTva', 'config',
-            'menuFilter', 'dateDebut', 'dateFin'
+            'menuFilter', 'dateDebut', 'dateFin', 'marges'
         ));
     }
 

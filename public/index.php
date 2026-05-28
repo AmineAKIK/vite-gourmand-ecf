@@ -25,6 +25,7 @@ use App\Controllers\Workspace\DocumentController;
 use App\Controllers\Workspace\EmployeController;
 use App\Controllers\Workspace\HoraireController;
 use App\Controllers\Workspace\MenuAdminController;
+use App\Controllers\Workspace\RecetteController;
 
 session_set_cookie_params([
     'lifetime' => 0,
@@ -138,6 +139,7 @@ $routes = [
         '/employe/menus'                  => [MenuAdminController::class,  'index'],
         '/employe/avis'                   => [AvisAdminController::class,  'index'],
         '/employe/horaires'               => [HoraireController::class,    'index'],
+        '/employe/recettes'               => [RecetteController::class,   'index'],
         '/employe/document/edit'          => [DocumentController::class,   'edit'],
         '/employe/document/apercu'        => [DocumentController::class,   'preview'],
         '/employe/document/export'        => [DocumentController::class,   'export'],
@@ -173,7 +175,13 @@ $routes = [
         '/employe/avis/valider'          => [AvisAdminController::class,  'valider'],
         '/employe/avis/accueil'          => [AvisAdminController::class,  'toggleAccueil'],
         '/employe/avis/supprimer'        => [AvisAdminController::class,  'supprimer'],
-        '/employe/horaires/modifier'     => [HoraireController::class,    'update'],
+        '/employe/horaires/modifier'      => [HoraireController::class,    'update'],
+        '/employe/recette/sauvegarder'    => [RecetteController::class,   'saveRecette'],
+        '/employe/ingredient/creer'       => [RecetteController::class,   'createIngredient'],
+        '/employe/ingredient/modifier'    => [RecetteController::class,   'updateIngredient'],
+        '/employe/ingredient/supprimer'   => [RecetteController::class,   'deleteIngredient'],
+        '/employe/stock/mouvement/ajouter'=> [RecetteController::class,   'addMouvement'],
+        '/employe/stock/mouvement/supprimer' => [RecetteController::class,'deleteMouvement'],
         '/employe/plat/creer'            => [MenuAdminController::class,  'createPlat'],
         '/employe/plat/modifier'         => [MenuAdminController::class,  'updatePlat'],
         '/employe/plat/supprimer'        => [MenuAdminController::class,  'deletePlat'],

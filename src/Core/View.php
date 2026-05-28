@@ -127,6 +127,7 @@ class View
 
         $items[] = ['href' => '/employe/commandes', 'label' => 'Commandes',    'icon' => 'bi-list-check',   'match' => ['/employe/commandes*', '/employe/document*']];
         $items[] = ['href' => '/employe/menus',     'label' => 'Menus & Plats','icon' => 'bi-journal-text', 'match' => '/employe/menus*'];
+        $items[] = ['href' => '/employe/recettes',  'label' => 'Fiches & Stocks','icon' => 'bi-clipboard2-data', 'match' => '/employe/recettes*'];
         $items[] = ['href' => '/employe/avis',      'label' => 'Avis clients', 'icon' => 'bi-star',         'match' => '/employe/avis*'];
 
         if ($isAdmin) {
