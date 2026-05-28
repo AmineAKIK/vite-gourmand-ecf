@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../src/Config/config.php';
 
 use App\Config\Database;
+use App\Config\Migrator;
 use App\Controllers\AuthController;
 use App\Controllers\CronController;
 use App\Controllers\DevisController;
@@ -70,6 +71,9 @@ require_once __DIR__ . '/../src/helpers.php';
 
 $uri    = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH);
 $uri    = rtrim($uri, '/') ?: '/';
+
+// Auto-migrate : applique les migrations manquantes au démarrage (idempotent, fail-silent)
+Migrator::run();
 
 // Healthcheck — réponse avant tout dispatch applicatif
 if ($uri === '/health') {
