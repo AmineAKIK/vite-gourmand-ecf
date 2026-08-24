@@ -8,9 +8,10 @@ use App\Models\PaiementModel;
 use App\Models\UserModel;
 use App\Services\MailService;
 
-class StripeController {
-
-    public function checkout(): void {
+class StripeController
+{
+    public function checkout(): void
+    {
         requireAuth();
 
         $pending = $_SESSION['stripe_pending'] ?? null;
@@ -27,18 +28,40 @@ class StripeController {
         \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
 
         $commandeData = $pending['commande_data'];
-        $pricing      = $pending['pricing'];
-        $panier       = $pending['panier'];
+        $pricing = $pending['pricing'];
+        $panier = $pending['panier'];
+
+        $expectedCents = (int) ($pricing['total_ttc_cents'] ?? round($pricing['total_ttc'] * 100));
+        $grossCents = (int) ($pricing['total_brut_cents'] ?? round($pricing['total_brut'] * 100));
+        $deliveryCents = (int) ($pricing['prix_livraison_cents'] ?? round($pricing['prix_livraison'] * 100));
+        $discountCents = (int) ($pricing['remise_globale_cents'] ?? round($pricing['remise_globale'] * 100));
+
+        if ($grossCents + $deliveryCents - $discountCents !== $expectedCents) {
+            error_log(sprintf(
+                '[pricing] invariant Stripe invalide ref=%s brut=%d livraison=%d remise=%d total=%d',
+                $commandeData['numero_commande'] ?? 'inconnue',
+                $grossCents,
+                $deliveryCents,
+                $discountCents,
+                $expectedCents
+            ));
+            flash('error', 'Le montant de la commande est incohérent. Veuillez recommencer votre commande.');
+            redirect('/panier');
+        }
 
         $lineItems = [];
 
-        // Ligne par menu dans la commande
+        // Stripe reçoit les montants bruts. La remise globale est appliquée une seule fois via le coupon.
         foreach ($pricing['lignes'] as $ligne) {
-            $menu = MenuModel::getById((int)$ligne['menu_id']);
+            $menu = MenuModel::getById((int) $ligne['menu_id']);
+            $lineGrossCents = (int) ($ligne['prix_menu_brut_cents'] ?? round(
+                ((float) $ligne['prix_par_personne_snapshot']) * ((int) $ligne['nombre_personne']) * 100
+            ));
+
             $lineItems[] = [
                 'price_data' => [
-                    'currency'     => 'eur',
-                    'unit_amount'  => (int)round($ligne['prix_menu'] * 100),
+                    'currency' => 'eur',
+                    'unit_amount' => $lineGrossCents,
                     'product_data' => [
                         'name' => ($menu['titre'] ?? 'Menu') . ' × ' . $ligne['nombre_personne'] . ' pers.',
                     ],
@@ -47,26 +70,24 @@ class StripeController {
             ];
         }
 
-        // Frais de livraison si non nuls
-        if ($pricing['prix_livraison'] > 0) {
+        if ($deliveryCents > 0) {
             $lineItems[] = [
                 'price_data' => [
-                    'currency'     => 'eur',
-                    'unit_amount'  => (int)round($pricing['prix_livraison'] * 100),
+                    'currency' => 'eur',
+                    'unit_amount' => $deliveryCents,
                     'product_data' => ['name' => 'Frais de livraison'],
                 ],
                 'quantity' => 1,
             ];
         }
 
-        // Remise globale si applicable
         $discounts = [];
-        if (!empty($pricing['remise_globale']) && $pricing['remise_globale'] > 0) {
+        if ($discountCents > 0) {
             $coupon = \Stripe\Coupon::create([
-                'amount_off' => (int)round($pricing['remise_globale'] * 100),
-                'currency'   => 'eur',
-                'duration'   => 'once',
-                'name'       => 'Réduction fidélité',
+                'amount_off' => $discountCents,
+                'currency' => 'eur',
+                'duration' => 'once',
+                'name' => 'Réduction fidélité',
             ]);
             $discounts = [['coupon' => $coupon->id]];
         }
@@ -75,14 +96,16 @@ class StripeController {
 
         $session = \Stripe\Checkout\Session::create([
             'payment_method_types' => ['card'],
-            'line_items'           => $lineItems,
-            'discounts'            => $discounts,
-            'mode'                 => 'payment',
-            'success_url'          => $baseUrl . '/stripe/success?session_id={CHECKOUT_SESSION_ID}',
-            'cancel_url'           => $baseUrl . '/stripe/cancel',
-            'metadata'             => [
+            'line_items' => $lineItems,
+            'discounts' => $discounts,
+            'mode' => 'payment',
+            'success_url' => $baseUrl . '/stripe/success?session_id={CHECKOUT_SESSION_ID}',
+            'cancel_url' => $baseUrl . '/stripe/cancel',
+            'metadata' => [
                 'numero_commande' => $commandeData['numero_commande'],
-                'utilisateur_id'  => (string)$commandeData['utilisateur_id'],
+                'utilisateur_id' => (string) $commandeData['utilisateur_id'],
+                'expected_total_cents' => (string) $expectedCents,
+                'currency' => 'eur',
             ],
             'client_reference_id' => $commandeData['numero_commande'],
         ]);
@@ -93,18 +116,18 @@ class StripeController {
         exit;
     }
 
-    public function success(): void {
+    public function success(): void
+    {
         requireAuth();
 
         $sessionId = sanitize($_GET['session_id'] ?? '');
-        $pending   = $_SESSION['stripe_pending'] ?? null;
+        $pending = $_SESSION['stripe_pending'] ?? null;
 
         if (!$pending || !$sessionId) {
             flash('error', 'Paiement non confirmé.');
             redirect('/mon-compte');
         }
 
-        // Verify the Stripe session is actually paid
         \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
         try {
             $stripeSession = \Stripe\Checkout\Session::retrieve($sessionId);
@@ -119,8 +142,8 @@ class StripeController {
         }
 
         $commandeData = $pending['commande_data'];
-        $pricing      = $pending['pricing'];
-        $panier       = $pending['panier'];
+        $pricing = $pending['pricing'];
+        $panier = $pending['panier'];
 
         try {
             $commandeId = CommandeModel::create($commandeData, $pricing['lignes']);
@@ -129,13 +152,10 @@ class StripeController {
             redirect('/mon-compte');
         }
 
-        // Enregistrer le paiement Stripe
         $user = currentUser();
 
-        // La consommation de stock reste non bloquante tant que le redesign métier
-        // n'est pas en place, mais une erreur doit être visible en production.
         try {
-            \App\Models\StockModel::consommerPourCommande($commandeId, (int)$user['id']);
+            \App\Models\StockModel::consommerPourCommande($commandeId, (int) $user['id']);
         } catch (\Throwable $e) {
             error_log(sprintf(
                 '[stock] consommation impossible pour commande_id=%d via Stripe: %s',
@@ -145,14 +165,14 @@ class StripeController {
         }
 
         PaiementModel::create([
-            'commande_id'   => $commandeId,
+            'commande_id' => $commandeId,
             'type_paiement' => 'paiement_unique',
-            'montant'       => $commandeData['prix_total'],
-            'mode'          => 'cb_online',
+            'montant' => $commandeData['prix_total'],
+            'mode' => 'cb_online',
             'date_paiement' => date('Y-m-d'),
-            'reference'     => $stripeSession->payment_intent ?? $sessionId,
-            'note'          => 'Paiement Stripe — session ' . $sessionId,
-        ], (int)$user['id']);
+            'reference' => $stripeSession->payment_intent ?? $sessionId,
+            'note' => 'Paiement Stripe — session ' . $sessionId,
+        ], (int) $user['id']);
 
         $userFull = UserModel::findById($user['id']);
         MailService::sendCommandeConfirmation($userFull['email'], $commandeData, $panier);
@@ -164,14 +184,16 @@ class StripeController {
         redirect('/mon-compte');
     }
 
-    public function cancel(): void {
+    public function cancel(): void
+    {
         unset($_SESSION['stripe_session_id']);
         flash('error', 'Paiement annulé. Votre commande n\'a pas été enregistrée.');
         redirect('/panier');
     }
 
-    public function webhook(): void {
-        $payload   = file_get_contents('php://input');
+    public function webhook(): void
+    {
+        $payload = file_get_contents('php://input');
         $sigHeader = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
 
         if (!STRIPE_WEBHOOK_SECRET || str_starts_with(STRIPE_WEBHOOK_SECRET, 'whsec_REMPLACER')) {
@@ -187,33 +209,29 @@ class StripeController {
             exit;
         }
 
-        // Handle checkout.session.completed as a safety net
-        // (primary confirmation is via /stripe/success redirect)
         if ($event->type === 'checkout.session.completed') {
             $session = $event->data->object;
-            $ref     = $session->client_reference_id;
+            $ref = $session->client_reference_id;
 
-            // Check if order already exists (created by success redirect)
             $commande = db()->fetchOne(
-                "SELECT commande_id, prix_total FROM commande WHERE numero_commande = ?",
+                'SELECT commande_id, prix_total FROM commande WHERE numero_commande = ?',
                 [$ref]
             );
 
             if ($commande) {
-                // Ensure paiement is recorded if somehow missing
                 $already = db()->fetchOne(
                     "SELECT paiement_id FROM paiement WHERE commande_id = ? AND mode = 'cb_online'",
                     [$commande['commande_id']]
                 );
                 if (!$already) {
                     PaiementModel::create([
-                        'commande_id'   => $commande['commande_id'],
+                        'commande_id' => $commande['commande_id'],
                         'type_paiement' => 'paiement_unique',
-                        'montant'       => $commande['prix_total'],
-                        'mode'          => 'cb_online',
+                        'montant' => $commande['prix_total'],
+                        'mode' => 'cb_online',
                         'date_paiement' => date('Y-m-d'),
-                        'reference'     => $session->payment_intent ?? $session->id,
-                        'note'          => 'Paiement Stripe via webhook — session ' . $session->id,
+                        'reference' => $session->payment_intent ?? $session->id,
+                        'note' => 'Paiement Stripe via webhook — session ' . $session->id,
                     ], null);
                 }
             }
