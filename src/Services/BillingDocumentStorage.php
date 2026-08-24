@@ -16,6 +16,8 @@ final class BillingDocumentStorage
     public static function ensureArchive(int $documentId): string
     {
         $document = self::document($documentId);
+        self::assertFinalized($document);
+
         $resolved = self::resolveStoredPath($documentId, 'archive_path', $document['archive_path'] ?? null);
         if ($resolved !== null) {
             return $resolved;
@@ -28,6 +30,8 @@ final class BillingDocumentStorage
     public static function ensurePdf(int $documentId): string
     {
         $document = self::document($documentId);
+        self::assertFinalized($document);
+
         $resolved = self::resolveStoredPath($documentId, 'pdf_path', $document['pdf_path'] ?? null);
         if ($resolved !== null) {
             return $resolved;
@@ -57,6 +61,13 @@ final class BillingDocumentStorage
             throw new InvalidArgumentException('Document introuvable.');
         }
         return $document;
+    }
+
+    private static function assertFinalized(array $document): void
+    {
+        if (($document['statut'] ?? '') !== 'finalise') {
+            throw new InvalidArgumentException('Seuls les documents finalisés sont accessibles.');
+        }
     }
 
     private static function resolveStoredPath(int $documentId, string $column, ?string $storedPath): ?string
