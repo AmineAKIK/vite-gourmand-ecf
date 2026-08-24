@@ -8,7 +8,7 @@ final class ClientIpPolicy
         mixed $remoteAddr,
         mixed $cloudflareIp,
         mixed $forwardedFor,
-        bool $trustProxyHeaders
+        bool $trustProxyHeaders,
     ): string {
         $remote = self::validIp($remoteAddr) ?? '0.0.0.0';
 
