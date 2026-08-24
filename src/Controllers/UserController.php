@@ -2,6 +2,8 @@
 
 namespace App\Controllers;
 
+use App\Domain\AnalyticsTrustPolicy;
+use App\Domain\InputPolicy;
 use App\Models\AvisModel;
 use App\Models\CommandeModel;
 use App\Models\UserModel;
@@ -21,23 +23,23 @@ class UserController {
     public function update(): void {
         verifyCsrf();
         $user = currentUser();
-        $data = [
-            'prenom'      => sanitize($_POST['prenom'] ?? ''),
-            'nom'         => sanitize($_POST['nom'] ?? ''),
-            'telephone'   => sanitize($_POST['telephone'] ?? ''),
-            'adresse'     => sanitize($_POST['adresse'] ?? ''),
-            'ville'       => sanitize($_POST['ville'] ?? ''),
-            'code_postal' => sanitize($_POST['code_postal'] ?? ''),
-        ];
 
-        if (!$data['prenom'] || !$data['nom']) {
-            flash('error', 'Prénom et nom obligatoires.');
+        try {
+            $data = [
+                'prenom'      => InputPolicy::text($_POST['prenom'] ?? '', 80, true),
+                'nom'         => InputPolicy::text($_POST['nom'] ?? '', 100, true),
+                'telephone'   => InputPolicy::text($_POST['telephone'] ?? '', 30),
+                'adresse'     => InputPolicy::text($_POST['adresse'] ?? '', 180),
+                'ville'       => InputPolicy::text($_POST['ville'] ?? '', 100),
+                'code_postal' => InputPolicy::postalCode($_POST['code_postal'] ?? '', false),
+            ];
+        } catch (\InvalidArgumentException $e) {
+            flash('error', $e->getMessage());
             redirect('/mon-compte');
         }
 
         UserModel::update($user['id'], $data);
 
-        // Mettre à jour la session
         $_SESSION['user']['prenom'] = $data['prenom'];
         $_SESSION['user']['nom']    = $data['nom'];
 
@@ -56,17 +58,24 @@ class UserController {
         header('Cache-Control: no-cache, no-store, must-revalidate');
 
         $out = fopen('php://output', 'w');
-        fwrite($out, "\xEF\xBB\xBF"); // BOM UTF-8 pour Excel
+        fwrite($out, "\xEF\xBB\xBF");
         fputcsv($out, ['N° commande', 'Date commande', 'Date prestation', 'Menu(s)', 'Adresse livraison', 'Total TTC', 'Statut'], ';');
         foreach ($commandes as $cmd) {
-            fputcsv($out, [
+            $textCells = [
                 $cmd['numero_commande'] ?? '',
                 $cmd['date_commande']   ?? '',
                 $cmd['date_prestation'] ?? '',
                 $cmd['menu_titre']      ?? '',
                 trim(($cmd['adresse_livraison'] ?? '') . ' ' . ($cmd['code_postal_livraison'] ?? '') . ' ' . ($cmd['ville_livraison'] ?? '')),
+            ];
+            $textCells = array_map(
+                static fn ($value): string => AnalyticsTrustPolicy::csvCell((string) $value),
+                $textCells,
+            );
+            fputcsv($out, [
+                ...$textCells,
                 number_format((float)($cmd['prix_total'] ?? 0), 2, ',', ''),
-                $cmd['statut'] ?? '',
+                AnalyticsTrustPolicy::csvCell((string) ($cmd['statut'] ?? '')),
             ], ';');
         }
         fclose($out);
