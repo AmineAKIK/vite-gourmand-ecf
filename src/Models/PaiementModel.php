@@ -101,7 +101,7 @@ class PaiementModel
         }
     }
 
-    public static function delete(int $paiementId): void
+    public static function delete(int $paiementId, ?int $creePar = null): void
     {
         $db = self::db();
         $ownsTransaction = !$db->inTransaction();
@@ -110,7 +110,7 @@ class PaiementModel
         }
 
         try {
-            PaymentLedgerService::reverseManualCollection($db, $paiementId, null);
+            PaymentLedgerService::reverseManualCollection($db, $paiementId, $creePar);
             if ($ownsTransaction) {
                 $db->commit();
             }
