@@ -170,6 +170,14 @@ final class PaymentAttemptModel
     public static function recordAttemptError(int $attemptId, string $message): void
     {
         $stmt = Database::getConnection()->prepare(
+            'UPDATE payment_attempt SET last_error = ? WHERE attempt_id = ?',
+        );
+        $stmt->execute([mb_substr($message, 0, 4000), $attemptId]);
+    }
+
+    public static function failAttempt(int $attemptId, string $message): void
+    {
+        $stmt = Database::getConnection()->prepare(
             "UPDATE payment_attempt SET status = 'failed', last_error = ? WHERE attempt_id = ?",
         );
         $stmt->execute([mb_substr($message, 0, 4000), $attemptId]);
