@@ -56,18 +56,47 @@ final class PaymentAttemptModel
                 $panierJson,
             ]);
             $draftId = (int) $db->lastInsertId();
-
-            $attemptStmt = $db->prepare(
-                'INSERT INTO payment_attempt (
-                    draft_id, provider, status, expected_amount_cents, currency
-                 ) VALUES (?, ?, ?, ?, ?)',
-            );
-            $attemptStmt->execute([$draftId, 'stripe', 'created', $expectedCents, $currency]);
-            $attemptId = (int) $db->lastInsertId();
+            $attemptId = self::insertAttempt($db, $draftId, $expectedCents, $currency);
 
             $db->commit();
 
             return ['draft_id' => $draftId, 'attempt_id' => $attemptId];
+        } catch (\Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    public static function createRetryAttempt(int $draftId): int
+    {
+        $db = Database::getConnection();
+        $db->beginTransaction();
+
+        try {
+            $stmt = $db->prepare(
+                "SELECT expected_total_cents, currency
+                 FROM order_draft
+                 WHERE draft_id = ? AND status = 'pending_payment'
+                 FOR UPDATE",
+            );
+            $stmt->execute([$draftId]);
+            $draft = $stmt->fetch();
+
+            if (!$draft) {
+                throw new RuntimeException('Draft indisponible pour une nouvelle tentative.');
+            }
+
+            $attemptId = self::insertAttempt(
+                $db,
+                $draftId,
+                (int) $draft['expected_total_cents'],
+                strtolower((string) $draft['currency']),
+            );
+            $db->commit();
+
+            return $attemptId;
         } catch (\Throwable $e) {
             if ($db->inTransaction()) {
                 $db->rollBack();
@@ -87,6 +116,17 @@ final class PaymentAttemptModel
         return $row ? self::hydrateDraft($row) : null;
     }
 
+    public static function findAttemptForDraft(int $attemptId, int $draftId): ?array
+    {
+        $stmt = Database::getConnection()->prepare(
+            'SELECT * FROM payment_attempt WHERE attempt_id = ? AND draft_id = ? LIMIT 1',
+        );
+        $stmt->execute([$attemptId, $draftId]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
     public static function latestAttemptForDraft(int $draftId): ?array
     {
         $stmt = Database::getConnection()->prepare(
@@ -102,7 +142,7 @@ final class PaymentAttemptModel
     {
         $stmt = Database::getConnection()->prepare(
             "UPDATE payment_attempt
-             SET provider_session_id = ?, status = 'checkout_created'
+             SET provider_session_id = ?, status = 'checkout_created', last_error = NULL
              WHERE attempt_id = ? AND provider = 'stripe'",
         );
         $stmt->execute([$sessionId, $attemptId]);
@@ -127,6 +167,22 @@ final class PaymentAttemptModel
         $stmt->execute([$status, $paymentIntentId, $attemptId]);
     }
 
+    public static function recordAttemptError(int $attemptId, string $message): void
+    {
+        $stmt = Database::getConnection()->prepare(
+            'UPDATE payment_attempt SET last_error = ? WHERE attempt_id = ?',
+        );
+        $stmt->execute([mb_substr($message, 0, 4000), $attemptId]);
+    }
+
+    public static function failAttempt(int $attemptId, string $message): void
+    {
+        $stmt = Database::getConnection()->prepare(
+            "UPDATE payment_attempt SET status = 'failed', last_error = ? WHERE attempt_id = ?",
+        );
+        $stmt->execute([mb_substr($message, 0, 4000), $attemptId]);
+    }
+
     public static function markDraftStatus(int $draftId, string $status): void
     {
         $allowed = ['pending_payment', 'paid', 'cancelled', 'failed', 'consumed'];
@@ -144,6 +200,18 @@ final class PaymentAttemptModel
             "UPDATE order_draft SET commande_id = ?, status = 'consumed' WHERE draft_id = ?",
         );
         $stmt->execute([$commandeId, $draftId]);
+    }
+
+    private static function insertAttempt(\PDO $db, int $draftId, int $expectedCents, string $currency): int
+    {
+        $attemptStmt = $db->prepare(
+            'INSERT INTO payment_attempt (
+                draft_id, provider, status, expected_amount_cents, currency
+             ) VALUES (?, ?, ?, ?, ?)',
+        );
+        $attemptStmt->execute([$draftId, 'stripe', 'created', $expectedCents, $currency]);
+
+        return (int) $db->lastInsertId();
     }
 
     private static function hydrateDraft(array $row): array
