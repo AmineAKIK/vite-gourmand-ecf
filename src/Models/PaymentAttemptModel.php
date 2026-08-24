@@ -112,6 +112,21 @@ final class PaymentAttemptModel
         }
     }
 
+    public static function markAttemptStatus(int $attemptId, string $status, ?string $paymentIntentId = null): void
+    {
+        $allowed = ['created', 'checkout_created', 'paid', 'cancelled', 'failed'];
+        if (!in_array($status, $allowed, true)) {
+            throw new RuntimeException('Statut de tentative invalide.');
+        }
+
+        $stmt = Database::getConnection()->prepare(
+            'UPDATE payment_attempt
+             SET status = ?, provider_payment_intent_id = COALESCE(?, provider_payment_intent_id)
+             WHERE attempt_id = ?'
+        );
+        $stmt->execute([$status, $paymentIntentId, $attemptId]);
+    }
+
     public static function markDraftStatus(int $draftId, string $status): void
     {
         $allowed = ['pending_payment', 'paid', 'cancelled', 'failed', 'consumed'];
