@@ -34,7 +34,6 @@
 
 <!-- FLASH MESSAGES (hors sidebar) -->
 <?php
-// Bandeau plan SaaS — visible uniquement pour l'admin, seulement si plan non-premium
 if (hasRole(ROLE_ADMIN)) {
     try {
         $__plan      = \App\Config\PlanConfig::current();
@@ -99,10 +98,8 @@ if (hasRole(ROLE_ADMIN)) {
 
 <div class="workspace-layout">
 
-    <!-- SIDEBAR -->
     <aside class="workspace-sidebar" id="workspaceSidebar" role="navigation" aria-label="Navigation back-office">
 
-        <!-- Logo / brand -->
         <div class="workspace-brand">
             <a href="/" class="workspace-brand-link" aria-label="Retour au site">
                 <?php if ($siteLogo): ?>
@@ -116,7 +113,6 @@ if (hasRole(ROLE_ADMIN)) {
             </span>
         </div>
 
-        <!-- Nav items -->
         <nav class="workspace-nav-list">
             <?php foreach (workspaceNavItems() as $item):
                 if (!empty($item['separator'])): ?>
@@ -139,12 +135,14 @@ if (hasRole(ROLE_ADMIN)) {
             <a href="/" class="workspace-nav-item">
                 <span>Retour au site</span>
             </a>
-            <a href="/deconnexion" class="workspace-nav-item workspace-nav-item--danger">
-                <span>Déconnexion</span>
-            </a>
+            <form method="POST" action="/deconnexion" class="m-0">
+                <?= csrfField() ?>
+                <button type="submit" class="workspace-nav-item workspace-nav-item--danger border-0 bg-transparent w-100 text-start">
+                    <span>Déconnexion</span>
+                </button>
+            </form>
         </nav>
 
-        <!-- Footer sidebar -->
         <div class="workspace-sidebar-footer">
             <form class="workspace-search-form" method="GET" action="/employe/recherche" role="search">
                 <div class="input-group input-group-sm">
@@ -173,10 +171,8 @@ if (hasRole(ROLE_ADMIN)) {
 
     </aside>
 
-    <!-- CONTENU PRINCIPAL -->
     <main class="workspace-main" id="workspace-content" tabindex="-1">
 
-        <!-- Navbar mobile (< lg) -->
         <nav class="d-lg-none navbar navbar-expand-lg navbar-dark bg-vg sticky-top" aria-label="Navigation back-office mobile">
             <div class="container">
                 <?php if ($siteLogo): ?>
@@ -222,7 +218,12 @@ if (hasRole(ROLE_ADMIN)) {
                             </a>
                         </li>
                         <li class="nav-item"><a class="nav-link" href="/">Retour au site</a></li>
-                        <li class="nav-item"><a class="nav-link" href="/deconnexion">Déconnexion</a></li>
+                        <li class="nav-item">
+                            <form method="POST" action="/deconnexion" class="m-0">
+                                <?= csrfField() ?>
+                                <button type="submit" class="nav-link border-0 bg-transparent w-100 text-start">Déconnexion</button>
+                            </form>
+                        </li>
                     </ul>
                 </div>
             </div>
