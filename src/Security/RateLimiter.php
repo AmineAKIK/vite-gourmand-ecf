@@ -3,6 +3,7 @@
 namespace App\Security;
 
 use App\Config\Database;
+use App\Domain\ClientIpPolicy;
 
 class RateLimiter
 {
@@ -11,7 +12,8 @@ class RateLimiter
     private const BLOCK_DURATION = 900;
 
     /**
-     * @throws \RuntimeException when the action is blocked or the limiter cannot be enforced.
+     * @throws \RuntimeException when the action is blocked.
+     * @throws RateLimitUnavailableException when abuse protection cannot be enforced.
      */
     public static function check(
         string $ip,
@@ -53,11 +55,17 @@ class RateLimiter
                     "Trop de tentatives. Votre accès est temporairement bloqué pour {$reste} minutes."
                 );
             }
+        } catch (RateLimitUnavailableException $e) {
+            throw $e;
         } catch (\RuntimeException $e) {
             throw $e;
         } catch (\Throwable $e) {
             error_log('[security] rate limiter indisponible pour ' . $action . ': ' . $e->getMessage());
-            throw new \RuntimeException('Protection anti-abus temporairement indisponible. Réessayez plus tard.');
+            throw new RateLimitUnavailableException(
+                'Protection anti-abus temporairement indisponible. Réessayez plus tard.',
+                0,
+                $e
+            );
         }
     }
 
@@ -87,28 +95,12 @@ class RateLimiter
 
     public static function clientIp(): string
     {
-        $remote = self::validIp($_SERVER['REMOTE_ADDR'] ?? '') ?? '0.0.0.0';
-
-        if (!self::trustProxyHeaders()) {
-            return $remote;
-        }
-
-        $cloudflare = self::validIp($_SERVER['HTTP_CF_CONNECTING_IP'] ?? '');
-        if ($cloudflare !== null) {
-            return $cloudflare;
-        }
-
-        $forwarded = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '';
-        if (is_string($forwarded) && $forwarded !== '') {
-            foreach (explode(',', $forwarded) as $candidate) {
-                $ip = self::validIp(trim($candidate));
-                if ($ip !== null) {
-                    return $ip;
-                }
-            }
-        }
-
-        return $remote;
+        return ClientIpPolicy::resolve(
+            $_SERVER['REMOTE_ADDR'] ?? '',
+            $_SERVER['HTTP_CF_CONNECTING_IP'] ?? '',
+            $_SERVER['HTTP_X_FORWARDED_FOR'] ?? '',
+            self::trustProxyHeaders()
+        );
     }
 
     private static function trustProxyHeaders(): bool
@@ -119,15 +111,5 @@ class RateLimiter
         }
 
         return filter_var($value, FILTER_VALIDATE_BOOL) === true;
-    }
-
-    private static function validIp(mixed $value): ?string
-    {
-        if (!is_string($value) || $value === '') {
-            return null;
-        }
-
-        $value = trim($value);
-        return filter_var($value, FILTER_VALIDATE_IP) ? $value : null;
     }
 }
