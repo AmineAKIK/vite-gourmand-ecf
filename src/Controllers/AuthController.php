@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Domain\InputPolicy;
 use App\Models\UserModel;
 use App\Security\Password;
 use App\Security\RateLimiter;
@@ -22,8 +23,12 @@ class AuthController
     public function login(): void {
         verifyCsrf();
         $ip       = RateLimiter::clientIp();
-        $email    = sanitize($_POST['email'] ?? '');
-        $password = $_POST['password'] ?? '';
+        try {
+            $email = InputPolicy::email($_POST['email'] ?? '');
+        } catch (\InvalidArgumentException) {
+            $email = '';
+        }
+        $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
 
         try {
             RateLimiter::check($ip, 'login');
@@ -40,7 +45,6 @@ class AuthController
         }
 
         $user = UserModel::findByEmail($email);
-        // Toujours appeler password_verify même si l'user est introuvable — évite le timing attack
         $hash = $user['password'] ?? Password::dummyHash();
         if (!$user || !password_verify($password, $hash)) {
             RateLimiter::record($ip, 'login');
@@ -51,7 +55,6 @@ class AuthController
             flash('error', 'Votre compte a été désactivé. Contactez-nous.');
             redirect('/connexion');
         }
-        // Vérification email uniquement si la colonne existe (migration 033 appliquée)
         if (array_key_exists('email_verified_at', $user) && empty($user['email_verified_at'])) {
             flash('error', 'Veuillez confirmer votre adresse email avant de vous connecter. Vérifiez vos spams.');
             redirect('/connexion');
@@ -95,24 +98,25 @@ class AuthController
             redirect('/inscription');
         }
 
-        $data = [
-            'email'         => sanitize($_POST['email'] ?? ''),
-            'prenom'        => sanitize($_POST['prenom'] ?? ''),
-            'nom'           => sanitize($_POST['nom'] ?? ''),
-            'telephone'     => sanitize($_POST['telephone'] ?? ''),
-            'adresse'       => sanitize($_POST['adresse'] ?? ''),
-            'ville'         => sanitize($_POST['ville'] ?? ''),
-            'code_postal'   => sanitize($_POST['code_postal'] ?? ''),
-            'password'      => $_POST['password'] ?? '',
-        ];
-
-        // Validations
-        if (!$data['prenom'] || !$data['nom'] || !$data['telephone'] || !$data['adresse'] || !$data['ville'] || !$data['code_postal'] || !$data['password']) {
-            flash('error', 'Tous les champs sont obligatoires.');
+        try {
+            $data = [
+                'email'       => InputPolicy::email($_POST['email'] ?? ''),
+                'prenom'      => InputPolicy::text($_POST['prenom'] ?? '', 80, true),
+                'nom'         => InputPolicy::text($_POST['nom'] ?? '', 100, true),
+                'telephone'   => InputPolicy::text($_POST['telephone'] ?? '', 30, true),
+                'adresse'     => InputPolicy::text($_POST['adresse'] ?? '', 180, true),
+                'ville'       => InputPolicy::text($_POST['ville'] ?? '', 100, true),
+                'code_postal' => InputPolicy::postalCode($_POST['code_postal'] ?? ''),
+                'password'    => is_string($_POST['password'] ?? null) ? $_POST['password'] : '',
+            ];
+        } catch (\InvalidArgumentException $e) {
+            flash('error', $e->getMessage());
             redirect('/inscription');
         }
-        if (!filter_var($data['email'], FILTER_VALIDATE_EMAIL)) {
-            flash('error', 'Email invalide.'); redirect('/inscription');
+
+        if ($data['password'] === '') {
+            flash('error', 'Tous les champs sont obligatoires.');
+            redirect('/inscription');
         }
         if ($data['password'] !== ($_POST['password_confirm'] ?? '')) {
             flash('error', 'Les mots de passe ne correspondent pas.'); redirect('/inscription');
@@ -148,8 +152,9 @@ class AuthController
     }
 
     public function verifyEmail(): void {
-        $token = sanitize($_GET['token'] ?? '');
-        if (!$token) {
+        try {
+            $token = InputPolicy::token($_GET['token'] ?? '', 128);
+        } catch (\InvalidArgumentException) {
             flash('error', 'Lien de vérification invalide.');
             redirect('/connexion');
         }
@@ -168,10 +173,13 @@ class AuthController
 
     public function forgot(): void {
         verifyCsrf();
-        $email = sanitize($_POST['email'] ?? '');
-        $user  = UserModel::findByEmail($email);
+        try {
+            $email = InputPolicy::email($_POST['email'] ?? '');
+        } catch (\InvalidArgumentException) {
+            $email = '';
+        }
+        $user = $email !== '' ? UserModel::findByEmail($email) : null;
 
-        // Toujours afficher le même message (sécurité anti-enumération)
         flash('success', 'Si cet email existe, un lien de réinitialisation vous a été envoyé.');
 
         if ($user) {
@@ -183,7 +191,12 @@ class AuthController
     }
 
     public function resetForm(): void {
-        $token = sanitize($_GET['token'] ?? '');
+        try {
+            $token = InputPolicy::token($_GET['token'] ?? '', 128);
+        } catch (\InvalidArgumentException) {
+            flash('error', 'Lien invalide ou expiré.');
+            redirect('/connexion');
+        }
         $tokenData = UserModel::findResetToken($token);
         if (!$tokenData) {
             flash('error', 'Lien invalide ou expiré.');
@@ -194,14 +207,19 @@ class AuthController
 
     public function reset(): void {
         verifyCsrf();
-        $token    = sanitize($_POST['token'] ?? '');
-        $password = $_POST['password'] ?? '';
-        $confirm  = $_POST['password_conf'] ?? '';
+        try {
+            $token = InputPolicy::token($_POST['token'] ?? '', 128);
+        } catch (\InvalidArgumentException) {
+            flash('error', 'Lien invalide.');
+            redirect('/connexion');
+        }
+        $password = is_string($_POST['password'] ?? null) ? $_POST['password'] : '';
+        $confirm  = is_string($_POST['password_conf'] ?? null) ? $_POST['password_conf'] : '';
 
         $tokenData = UserModel::findResetToken($token);
         if (!$tokenData) { flash('error', 'Lien invalide.'); redirect('/connexion'); }
-        if ($password !== $confirm) { flash('error', 'Mots de passe différents.'); redirect("/reinitialiser?token=$token"); }
-        if (!validatePassword($password)) { flash('error', passwordPolicyMessage()); redirect("/reinitialiser?token=$token"); }
+        if ($password !== $confirm) { flash('error', 'Mots de passe différents.'); redirect('/reinitialiser?token=' . rawurlencode($token)); }
+        if (!validatePassword($password)) { flash('error', passwordPolicyMessage()); redirect('/reinitialiser?token=' . rawurlencode($token)); }
 
         UserModel::updatePassword($tokenData['utilisateur_id'], hashPassword($password));
         UserModel::invalidateResetToken($token);
