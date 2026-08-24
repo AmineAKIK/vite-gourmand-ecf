@@ -47,13 +47,25 @@ final class StripeWebhookContractTest extends TestCase
         $wrongAmount['amount_total'] = 12989;
         yield 'wrong amount' => [$wrongAmount, $draft, $attempt];
 
+        $wrongMetadataAmount = $session;
+        $wrongMetadataAmount['metadata']['expected_total_cents'] = '12989';
+        yield 'wrong metadata amount' => [$wrongMetadataAmount, $draft, $attempt];
+
         $wrongCurrency = $session;
         $wrongCurrency['currency'] = 'usd';
         yield 'wrong currency' => [$wrongCurrency, $draft, $attempt];
 
+        $wrongMetadataCurrency = $session;
+        $wrongMetadataCurrency['metadata']['currency'] = 'usd';
+        yield 'wrong metadata currency' => [$wrongMetadataCurrency, $draft, $attempt];
+
         $wrongSession = $attempt;
         $wrongSession['provider_session_id'] = 'cs_other';
         yield 'wrong provider session' => [$session, $draft, $wrongSession];
+
+        $wrongIntent = $attempt;
+        $wrongIntent['provider_payment_intent_id'] = 'pi_other';
+        yield 'wrong payment intent' => [$session, $draft, $wrongIntent];
 
         $wrongDraft = $session;
         $wrongDraft['metadata']['draft_id'] = '43';
@@ -97,6 +109,8 @@ final class StripeWebhookContractTest extends TestCase
                 'attempt_id' => '73',
                 'numero_commande' => 'CMD-2026-0042',
                 'utilisateur_id' => '7',
+                'expected_total_cents' => '12990',
+                'currency' => 'eur',
             ],
         ];
     }
@@ -119,6 +133,7 @@ final class StripeWebhookContractTest extends TestCase
             'draft_id' => 42,
             'provider' => 'stripe',
             'provider_session_id' => 'cs_test_123',
+            'provider_payment_intent_id' => null,
             'expected_amount_cents' => 12990,
             'currency' => 'eur',
         ];
