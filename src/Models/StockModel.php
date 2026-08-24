@@ -67,7 +67,7 @@ class StockModel
         $stmt = $db->prepare(
             'SELECT mp.plat_id, lc.nombre_personne,
                     rl.ingredient_id, rl.grammage
-             FROM ligne_commande lc
+             FROM commande_ligne lc
              JOIN menu_plat mp ON mp.menu_id = lc.menu_id
              JOIN recette_ligne rl ON rl.plat_id = mp.plat_id
              WHERE lc.commande_id = ?'
