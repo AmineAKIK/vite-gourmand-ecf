@@ -16,7 +16,9 @@ class PaiementModel
     public static function getByCommande(int $commandeId): array
     {
         $stmt = self::db()->prepare(
-            "SELECT p.*, u.prenom, u.nom
+            "SELECT p.*,
+                    CASE WHEN p.nature = 'remboursement' THEN -p.montant ELSE p.montant END AS montant,
+                    u.prenom, u.nom
              FROM paiement p
              LEFT JOIN utilisateur u ON u.utilisateur_id = p.cree_par
              WHERE p.commande_id = ?
