@@ -132,9 +132,19 @@ class StripeController {
         // Enregistrer le paiement Stripe
         $user = currentUser();
 
-        // Consommation stock ingrédients (fail silencieux si recettes non configurées)
-        try { \App\Models\StockModel::consommerPourCommande($commandeId, (int)$user['id']); } catch (\Throwable) {}
-        \PaiementModel::create([
+        // La consommation de stock reste non bloquante tant que le redesign métier
+        // n'est pas en place, mais une erreur doit être visible en production.
+        try {
+            \App\Models\StockModel::consommerPourCommande($commandeId, (int)$user['id']);
+        } catch (\Throwable $e) {
+            error_log(sprintf(
+                '[stock] consommation impossible pour commande_id=%d via Stripe: %s',
+                $commandeId,
+                $e->getMessage()
+            ));
+        }
+
+        PaiementModel::create([
             'commande_id'   => $commandeId,
             'type_paiement' => 'paiement_unique',
             'montant'       => $commandeData['prix_total'],
@@ -145,7 +155,7 @@ class StripeController {
         ], (int)$user['id']);
 
         $userFull = UserModel::findById($user['id']);
-        \MailService::sendCommandeConfirmation($userFull['email'], $commandeData, $panier);
+        MailService::sendCommandeConfirmation($userFull['email'], $commandeData, $panier);
 
         unset($_SESSION['stripe_pending'], $_SESSION['stripe_session_id']);
         $_SESSION['panier'] = [];
@@ -196,7 +206,7 @@ class StripeController {
                     [$commande['commande_id']]
                 );
                 if (!$already) {
-                    \PaiementModel::create([
+                    PaiementModel::create([
                         'commande_id'   => $commande['commande_id'],
                         'type_paiement' => 'paiement_unique',
                         'montant'       => $commande['prix_total'],
