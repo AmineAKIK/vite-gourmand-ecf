@@ -1,14 +1,27 @@
 # Migrations — Ordre d'exécution
 
 Les migrations doivent être appliquées **dans l'ordre numérique strict**.
-Chaque fichier est idempotent (`IF NOT EXISTS`, `INSERT IGNORE`, `CREATE OR REPLACE VIEW`)
-sauf les `MODIFY COLUMN` qui peuvent être relancés sans effet s'ils aboutissent au même type.
+
+Le runtime Tugères suit désormais chaque migration dans `schema_migrations` avec son checksum SHA-256.
+Une migration déjà appliquée ne doit donc **jamais être modifiée** : toute évolution supplémentaire doit être ajoutée dans un nouveau fichier numéroté.
+
+## Contrat du migrateur
+
+- un verrou MySQL `GET_LOCK` empêche deux instances d'appliquer les migrations simultanément ;
+- une migration n'est enregistrée comme appliquée qu'après succès de tous ses statements ;
+- un checksum absent sur une ancienne installation est initialisé à partir du fichier actuellement livré ;
+- un checksum déjà enregistré qui ne correspond plus au fichier provoque un arrêt ;
+- une table créée par une migration suivie mais absente de la base est considérée comme une dérive de schéma et provoque un arrêt ;
+- seuls certains cas DDL réellement idempotents sont tolérés pour la compatibilité avec les anciennes installations partiellement migrées ;
+- aucune erreur de migration critique n'est masquée : l'application ne doit pas continuer sur un schéma inconnu.
+
+Les migrations existantes utilisent notamment `IF NOT EXISTS`, `INSERT IGNORE` et `CREATE OR REPLACE VIEW` lorsque cela est pertinent. Les migrations historiques ne doivent plus être éditées une fois suivies par checksum.
 
 ## Phase 1 — Fondations financières (migrations 012–016)
 
 Exécuter dans cet ordre :
 
-```
+```text
 012_finance_foundations.sql   — DECIMAL sur commande/commande_ligne, snapshots, correction livraison_km
 013_entreprise_profile.sql    — Profil entreprise et paramètres comptables dans site_config
 014_paiements.sql             — Tables paiement + mode_paiement, extension type_document, vue v_paiements_commande
@@ -17,28 +30,19 @@ Exécuter dans cet ordre :
 ```
 
 **Dépendance critique :** `016_stats_view.sql` utilise `v_paiements_commande` créée dans `014`.
-`015_taux_tva.sql` ajoute une FK sur `document_facturation_ligne` — doit venir après `014` qui modifie
-`document_facturation`.
+`015_taux_tva.sql` ajoute une FK sur `document_facturation_ligne` — elle doit venir après `014` qui modifie `document_facturation`.
 
-## Commande d'application (depuis la racine du projet)
+## Application manuelle
 
-```bash
-mysql -u vg -pvg vite_gourmand < sql/migrations/012_finance_foundations.sql
-mysql -u vg -pvg vite_gourmand < sql/migrations/013_entreprise_profile.sql
-mysql -u vg -pvg vite_gourmand < sql/migrations/014_paiements.sql
-mysql -u vg -pvg vite_gourmand < sql/migrations/015_taux_tva.sql
-mysql -u vg -pvg vite_gourmand < sql/migrations/016_stats_view.sql
-```
+Depuis la racine du projet, une migration peut toujours être appliquée manuellement avec le client MySQL lorsque l'exploitation l'exige. Dans ce cas, il faut également préserver la cohérence de `schema_migrations` ; le chemin normal reste le migrateur applicatif tant que PR21 n'a pas déplacé cette étape dans le cycle de déploiement.
 
 ## Après migration
 
-- Remplir les paramètres entreprise dans **Admin → Paramètres → Informations entreprise**
-  (SIRET, adresse, téléphone, IBAN) — champs désormais obligatoires pour finaliser une facture
-- Vérifier le régime TVA configuré (assujetti / non assujetti)
-- Vérifier les taux TVA dans la table `taux_tva` correspondent à la situation actuelle
+- remplir les paramètres entreprise dans **Admin → Paramètres → Informations entreprise** ;
+- vérifier le régime TVA configuré ;
+- vérifier les taux TVA actifs ;
+- ne jamais corriger une migration déjà appliquée en éditant son fichier : créer une migration suivante.
 
 ## Rollback
 
-Aucun rollback automatisé. En cas de problème, restaurer depuis une sauvegarde avant migration.
-Les `MODIFY COLUMN DECIMAL` sur des données DOUBLE existantes sont sans perte de données
-(DECIMAL est plus précis, les valeurs arrondies à 2 décimales sont conservées).
+Aucun rollback automatisé. En cas de problème, restaurer depuis une sauvegarde prise avant migration ou appliquer une migration corrective explicite. Une migration SQL historique déjà suivie par checksum ne doit pas être réécrite pour simuler un rollback.
