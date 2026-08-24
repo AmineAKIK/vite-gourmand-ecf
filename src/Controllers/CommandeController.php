@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Geo\Exception\DeliveryGeoNotConfiguredException;
 use App\Geo\Exception\DeliveryOutOfRangeException;
 use App\Models\CommandeModel;
+use App\Models\PaymentAttemptModel;
 use App\Models\UserModel;
 use App\Services\CommandeService;
 use App\Services\MailService;
@@ -155,13 +156,24 @@ class CommandeController {
             'instructions'          => $instructions ?: null,
         ];
 
-        // CB en ligne : stocker les données en session, rediriger vers Stripe
+        // CB en ligne : persister le draft et la tentative AVANT toute redirection externe.
         if ($modePaiement === 'cb_online') {
-            $_SESSION['stripe_pending'] = [
-                'commande_data' => $commandeData,
-                'pricing'       => $pricing,
-                'panier'        => $panier,
-            ];
+            try {
+                $draft = PaymentAttemptModel::createDraftWithAttempt(
+                    $commandeData,
+                    $pricing,
+                    $panier,
+                    (int) $user['id']
+                );
+            } catch (\Throwable $e) {
+                error_log('[payment] création draft impossible ref=' . $numeroCommande . ': ' . $e->getMessage());
+                flash('error', 'Impossible de préparer le paiement en ligne. Veuillez réessayer.');
+                redirect('/panier');
+            }
+
+            $_SESSION['stripe_draft_id'] = $draft['draft_id'];
+            $_SESSION['stripe_attempt_id'] = $draft['attempt_id'];
+            unset($_SESSION['stripe_pending']);
             redirect('/stripe/checkout');
         }
 
