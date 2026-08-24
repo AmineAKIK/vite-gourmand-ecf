@@ -38,8 +38,16 @@ jobs:
       - name: Validate Composer metadata
         run: composer validate --strict --no-interaction
 
-      - name: Install dependencies
-        run: composer install --prefer-dist --no-progress --no-interaction
+      - name: Refresh vulnerable locked packages
+        run: composer update dompdf/dompdf guzzlehttp/guzzle guzzlehttp/psr7 --with-all-dependencies --no-progress --no-interaction
+
+      - name: Upload refreshed lockfile
+        uses: actions/upload-artifact@v4
+        with:
+          name: composer-lock-refresh
+          path: composer.lock
+          if-no-files-found: error
+          retention-days: 1
 
       - name: Audit locked dependencies
         run: composer audit --locked --no-interaction
