@@ -2,7 +2,7 @@
 
 namespace App\Controllers;
 
-use App\Models\FacturationModel;
+use App\Services\QuoteDecisionService;
 
 class DevisController
 {
@@ -16,22 +16,22 @@ class DevisController
             return;
         }
 
-        $document = FacturationModel::getBySignatureToken($token);
+        $document = QuoteDecisionService::findByToken($token);
 
-        if (!$document || ($document['type_document'] ?? '') !== 'devis' || ($document['statut'] ?? '') !== 'finalise') {
+        if (!$document) {
             http_response_code(404);
             view('pages/404');
             return;
         }
 
-        $alreadySigned = $document['signed_at'] !== null;
+        $alreadySigned = ($document['statut_devis'] ?? null) === 'accepte';
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST' && !$alreadySigned) {
             verifyCsrf();
             try {
                 $ip = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['REMOTE_ADDR'] ?? '';
-                FacturationModel::signDevis($token, (string)$ip);
-                $document = FacturationModel::getBySignatureToken($token);
+                QuoteDecisionService::acceptWithToken($token, (string)$ip);
+                $document = QuoteDecisionService::findByToken($token) ?: $document;
                 $alreadySigned = true;
                 flash('success', 'Votre devis a bien été accepté. Nous vous contacterons prochainement.');
             } catch (\Throwable $e) {
