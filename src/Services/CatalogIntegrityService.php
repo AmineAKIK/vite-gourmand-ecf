@@ -77,7 +77,7 @@ final class CatalogIntegrityService
             ]);
             self::replaceMenuPlats($db, $menuId, $platIds);
             if ($newImagePaths !== []) {
-                $orderStmt = $db->prepare('SELECT COALESCE(MAX(ordre), 0) + 1 FROM menu_image WHERE menu_id = ? FOR UPDATE');
+                $orderStmt = $db->prepare('SELECT COALESCE(MAX(ordre), 0) + 1 FROM menu_image WHERE menu_id = ?');
                 $orderStmt->execute([$menuId]);
                 self::appendImages($db, $menuId, $newImagePaths, (int) $orderStmt->fetchColumn());
             }
@@ -146,7 +146,7 @@ final class CatalogIntegrityService
         $db->beginTransaction();
         try {
             self::lockPlat($db, $platId);
-            self::assertIdsExist($db, 'ingredient', 'ingredient_id', $ingredientIds, 'Ingrédient introuvable ou supprimé.');
+            self::assertActiveIngredientIds($db, $ingredientIds);
             $db->prepare('DELETE FROM recette_ligne WHERE plat_id = ?')->execute([$platId]);
             if ($lines !== []) {
                 $insert = $db->prepare('INSERT INTO recette_ligne (plat_id, ingredient_id, grammage) VALUES (?, ?, ?)');
@@ -176,6 +176,7 @@ final class CatalogIntegrityService
                 $db->commit();
                 return null;
             }
+            self::lockMenu($db, (int) $image['menu_id']);
             $count = $db->prepare('SELECT COUNT(*) FROM menu_image WHERE menu_id = ?');
             $count->execute([(int) $image['menu_id']]);
             if ((int) $count->fetchColumn() <= 1) {
@@ -201,6 +202,23 @@ final class CatalogIntegrityService
             self::assertIdsExist($db, 'regime', 'regime_id', [(int) $data['regime_id']], 'Régime introuvable.');
         }
         self::assertIdsExist($db, 'plat', 'plat_id', $platIds, 'Un plat sélectionné est introuvable.');
+    }
+
+    private static function assertActiveIngredientIds(PDO $db, array $ids): void
+    {
+        if ($ids === []) {
+            return;
+        }
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $stmt = $db->prepare("SELECT ingredient_id FROM ingredient WHERE actif = 1 AND ingredient_id IN ({$placeholders}) FOR UPDATE");
+        $stmt->execute($ids);
+        $found = array_map('intval', array_column($stmt->fetchAll(), 'ingredient_id'));
+        sort($found);
+        $expected = array_values(array_unique(array_map('intval', $ids)));
+        sort($expected);
+        if ($found !== $expected) {
+            throw new RuntimeException('Ingrédient introuvable ou désactivé.');
+        }
     }
 
     private static function assertIdsExist(PDO $db, string $table, string $column, array $ids, string $message): void
