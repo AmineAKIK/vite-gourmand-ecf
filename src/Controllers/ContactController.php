@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Domain\InputPolicy;
+use App\Security\RateLimiter;
 use App\Services\MailService;
 
 class ContactController
@@ -20,6 +21,14 @@ class ContactController
     public function send(): void
     {
         verifyCsrf();
+        $ip = RateLimiter::clientIp();
+        try {
+            RateLimiter::check($ip, 'contact', 5, 3600);
+        } catch (\RuntimeException $e) {
+            flash('error', $e->getMessage());
+            redirect('/contact');
+        }
+        RateLimiter::record($ip, 'contact');
 
         try {
             $titre       = InputPolicy::text($_POST['titre'] ?? '', 160, true);
