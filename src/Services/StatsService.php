@@ -10,6 +10,7 @@ class StatsService
     {
         $stmt = Database::getConnection()->prepare($sql);
         $stmt->execute($params);
+
         return $stmt->fetchAll();
     }
 
@@ -17,7 +18,19 @@ class StatsService
     {
         $stmt = Database::getConnection()->prepare($sql);
         $stmt->execute($params);
+
         return $stmt->fetch();
+    }
+
+    /** @return iterable<array<string,mixed>> */
+    private static function iterate(string $sql, array $params = []): iterable
+    {
+        $stmt = Database::getConnection()->prepare($sql);
+        $stmt->execute($params);
+
+        while ($row = $stmt->fetch()) {
+            yield $row;
+        }
     }
 
     /**
@@ -27,7 +40,7 @@ class StatsService
     public static function getCaParMenu(
         int $menuId = 0,
         string $dateDebut = '',
-        string $dateFin = ''
+        string $dateFin = '',
     ): array {
         if ($menuId || $dateDebut || $dateFin) {
             return self::getCaParMenuFiltered($menuId, $dateDebut, $dateFin);
@@ -41,7 +54,7 @@ class StatsService
                     nb_personnes,
                     prix_moyen_menu
              FROM v_ca_par_menu
-             ORDER BY ca DESC"
+             ORDER BY ca DESC",
         );
     }
 
@@ -62,19 +75,20 @@ class StatsService
         $params = [];
 
         if ($menuId) {
-            $sql .= " AND s.menu_id = ?";
+            $sql .= ' AND s.menu_id = ?';
             $params[] = $menuId;
         }
         if ($dateDebut) {
-            $sql .= " AND s.date_comptabilisation >= ?";
+            $sql .= ' AND s.date_comptabilisation >= ?';
             $params[] = $dateDebut;
         }
         if ($dateFin) {
-            $sql .= " AND s.date_comptabilisation <= ?";
+            $sql .= ' AND s.date_comptabilisation <= ?';
             $params[] = $dateFin . ' 23:59:59';
         }
 
-        $sql .= " GROUP BY s.menu_id, s.menu_titre ORDER BY ca DESC";
+        $sql .= ' GROUP BY s.menu_id, s.menu_titre ORDER BY ca DESC';
+
         return self::fetchAll($sql, $params);
     }
 
@@ -85,11 +99,11 @@ class StatsService
     public static function getCaMensuel(
         int $limit = 12,
         string $dateDebut = '',
-        string $dateFin = ''
+        string $dateFin = '',
     ): array {
         if (!$dateDebut && !$dateFin) {
             return self::fetchAll(
-                'SELECT * FROM v_ca_mensuel ORDER BY annee DESC, mois DESC LIMIT ' . max(1, (int)$limit)
+                'SELECT * FROM v_ca_mensuel ORDER BY annee DESC, mois DESC LIMIT ' . max(1, (int) $limit),
             );
         }
 
@@ -119,7 +133,7 @@ class StatsService
         $sql .= "
             GROUP BY YEAR(date_comptabilisation), MONTH(date_comptabilisation), DATE_FORMAT(date_comptabilisation, '%Y-%m')
             ORDER BY annee DESC, mois DESC
-            LIMIT " . max(1, (int)$limit);
+            LIMIT " . max(1, (int) $limit);
 
         return self::fetchAll($sql, $params);
     }
@@ -144,11 +158,11 @@ class StatsService
         $params = [];
 
         if ($dateDebut) {
-            $sql .= " AND date_comptabilisation >= ?";
+            $sql .= ' AND date_comptabilisation >= ?';
             $params[] = $dateDebut;
         }
         if ($dateFin) {
-            $sql .= " AND date_comptabilisation <= ?";
+            $sql .= ' AND date_comptabilisation <= ?';
             $params[] = $dateFin . ' 23:59:59';
         }
 
@@ -163,7 +177,8 @@ class StatsService
         ];
     }
 
-    public static function getExportRows(string $dateDebut = '', string $dateFin = ''): array
+    /** @return iterable<array<string,mixed>> */
+    public static function getExportRows(string $dateDebut = '', string $dateFin = ''): iterable
     {
         $sql = "
             SELECT
@@ -187,19 +202,21 @@ class StatsService
         $params = [];
 
         if ($dateDebut) {
-            $sql .= " AND date_comptabilisation >= ?";
+            $sql .= ' AND date_comptabilisation >= ?';
             $params[] = $dateDebut;
         }
         if ($dateFin) {
-            $sql .= " AND date_comptabilisation <= ?";
+            $sql .= ' AND date_comptabilisation <= ?';
             $params[] = $dateFin . ' 23:59:59';
         }
 
-        $sql .= " ORDER BY date_comptabilisation DESC, numero_commande DESC";
-        return self::fetchAll($sql, $params);
+        $sql .= ' ORDER BY date_comptabilisation DESC, numero_commande DESC';
+
+        return self::iterate($sql, $params);
     }
 
-    public static function getExportLignes(string $dateDebut = '', string $dateFin = ''): array
+    /** @return iterable<array<string,mixed>> */
+    public static function getExportLignes(string $dateDebut = '', string $dateFin = ''): iterable
     {
         $sql = "
             SELECT
@@ -226,16 +243,17 @@ class StatsService
         $params = [];
 
         if ($dateDebut) {
-            $sql .= " AND s.date_comptabilisation >= ?";
+            $sql .= ' AND s.date_comptabilisation >= ?';
             $params[] = $dateDebut;
         }
         if ($dateFin) {
-            $sql .= " AND s.date_comptabilisation <= ?";
+            $sql .= ' AND s.date_comptabilisation <= ?';
             $params[] = $dateFin . ' 23:59:59';
         }
 
-        $sql .= " ORDER BY s.date_comptabilisation DESC, s.commande_id ASC, s.ligne_id ASC";
-        return self::fetchAll($sql, $params);
+        $sql .= ' ORDER BY s.date_comptabilisation DESC, s.commande_id ASC, s.ligne_id ASC';
+
+        return self::iterate($sql, $params);
     }
 
     public static function getExportMensuel(string $dateDebut = '', string $dateFin = ''): array
