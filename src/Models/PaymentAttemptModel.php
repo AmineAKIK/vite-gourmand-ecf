@@ -17,7 +17,7 @@ final class PaymentAttemptModel
         array $commandeData,
         array $pricing,
         array $panier,
-        int $userId
+        int $userId,
     ): array {
         $numeroCommande = (string) ($commandeData['numero_commande'] ?? '');
         $expectedCents = (int) ($pricing['total_ttc_cents'] ?? 0);
@@ -43,7 +43,7 @@ final class PaymentAttemptModel
                 'INSERT INTO order_draft (
                     numero_commande, utilisateur_id, status, currency, expected_total_cents,
                     commande_snapshot, pricing_snapshot, panier_snapshot, expires_at
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 2 HOUR))'
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 2 HOUR))',
             );
             $stmt->execute([
                 $numeroCommande,
@@ -60,7 +60,7 @@ final class PaymentAttemptModel
             $attemptStmt = $db->prepare(
                 'INSERT INTO payment_attempt (
                     draft_id, provider, status, expected_amount_cents, currency
-                 ) VALUES (?, ?, ?, ?, ?)'
+                 ) VALUES (?, ?, ?, ?, ?)',
             );
             $attemptStmt->execute([$draftId, 'stripe', 'created', $expectedCents, $currency]);
             $attemptId = (int) $db->lastInsertId();
@@ -79,7 +79,7 @@ final class PaymentAttemptModel
     public static function findDraftForUser(int $draftId, int $userId): ?array
     {
         $stmt = Database::getConnection()->prepare(
-            'SELECT * FROM order_draft WHERE draft_id = ? AND utilisateur_id = ? LIMIT 1'
+            'SELECT * FROM order_draft WHERE draft_id = ? AND utilisateur_id = ? LIMIT 1',
         );
         $stmt->execute([$draftId, $userId]);
         $row = $stmt->fetch();
@@ -90,7 +90,7 @@ final class PaymentAttemptModel
     public static function latestAttemptForDraft(int $draftId): ?array
     {
         $stmt = Database::getConnection()->prepare(
-            'SELECT * FROM payment_attempt WHERE draft_id = ? ORDER BY attempt_id DESC LIMIT 1'
+            'SELECT * FROM payment_attempt WHERE draft_id = ? ORDER BY attempt_id DESC LIMIT 1',
         );
         $stmt->execute([$draftId]);
         $row = $stmt->fetch();
@@ -103,7 +103,7 @@ final class PaymentAttemptModel
         $stmt = Database::getConnection()->prepare(
             "UPDATE payment_attempt
              SET provider_session_id = ?, status = 'checkout_created'
-             WHERE attempt_id = ? AND provider = 'stripe'"
+             WHERE attempt_id = ? AND provider = 'stripe'",
         );
         $stmt->execute([$sessionId, $attemptId]);
 
@@ -122,7 +122,7 @@ final class PaymentAttemptModel
         $stmt = Database::getConnection()->prepare(
             'UPDATE payment_attempt
              SET status = ?, provider_payment_intent_id = COALESCE(?, provider_payment_intent_id)
-             WHERE attempt_id = ?'
+             WHERE attempt_id = ?',
         );
         $stmt->execute([$status, $paymentIntentId, $attemptId]);
     }
@@ -141,7 +141,7 @@ final class PaymentAttemptModel
     public static function attachCommande(int $draftId, int $commandeId): void
     {
         $stmt = Database::getConnection()->prepare(
-            "UPDATE order_draft SET commande_id = ?, status = 'consumed' WHERE draft_id = ?"
+            "UPDATE order_draft SET commande_id = ?, status = 'consumed' WHERE draft_id = ?",
         );
         $stmt->execute([$commandeId, $draftId]);
     }
