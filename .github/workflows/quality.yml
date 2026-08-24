@@ -64,7 +64,9 @@ jobs:
           set -euo pipefail
           git diff --diff-filter=A --name-only "origin/${{ github.base_ref }}...HEAD" -- '*.php' > /tmp/new-php-files.txt
           if [ -s /tmp/new-php-files.txt ]; then
-            xargs php-cs-fixer fix --dry-run --diff --using-cache=no --rules=@PER-CS2.0 < /tmp/new-php-files.txt
+            while IFS= read -r file; do
+              php-cs-fixer fix "$file" --dry-run --diff --using-cache=no --rules=@PER-CS2.0
+            done < /tmp/new-php-files.txt
           else
             echo 'No newly added PHP files to style-check.'
           fi
