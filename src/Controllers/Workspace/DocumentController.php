@@ -196,6 +196,39 @@ class DocumentController
         }
     }
 
+    public function exportArchive(): void
+    {
+        $documentId = (int)($_GET['id'] ?? 0);
+        try {
+            $document = FacturationModel::getById($documentId);
+            if (!$document) {
+                throw new InvalidArgumentException('Document introuvable.');
+            }
+            if (($document['statut'] ?? '') !== 'finalise') {
+                throw new InvalidArgumentException('Seuls les documents finalisés peuvent être consultés.');
+            }
+
+            $absolutePath = BillingDocumentStorage::ensureArchive($documentId);
+            if (!is_file($absolutePath)) {
+                throw new \RuntimeException('Archive introuvable après génération.');
+            }
+
+            $numero   = $document['numero_document'] ?: ('document-' . $documentId);
+            $filename = preg_replace('/[^A-Z0-9_.-]+/i', '-', $numero) . '.html';
+            header('Content-Type: text/html; charset=UTF-8');
+            header('Content-Disposition: inline; filename="' . $filename . '"');
+            header('Content-Length: ' . filesize($absolutePath));
+            header('Cache-Control: private, no-store, max-age=0');
+            header('X-Content-Type-Options: nosniff');
+            readfile($absolutePath);
+            exit;
+        } catch (Throwable $e) {
+            error_log('[facturation] export archive impossible document_id=' . $documentId . ': ' . $e->getMessage());
+            http_response_code(404);
+            echo 'Document introuvable.';
+        }
+    }
+
     public function exportPdf(): void
     {
         $documentId = (int)($_GET['id'] ?? 0);
