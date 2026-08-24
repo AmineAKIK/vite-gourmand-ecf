@@ -42,8 +42,6 @@ final class StripeWebhookFulfillmentService
             ];
         }
 
-        PlanConfig::checkCommandesQuota();
-
         $db = Database::getConnection();
         $db->beginTransaction();
 
@@ -78,6 +76,8 @@ final class StripeWebhookFulfillmentService
                     'panier' => null,
                 ];
             }
+
+            PlanConfig::checkCommandesQuota();
 
             [$commandeData, $pricing, $panier] = self::decodeSnapshots($draft);
             $commandeData['prix_total'] = Money::toDecimal($validated['amount_total']);
