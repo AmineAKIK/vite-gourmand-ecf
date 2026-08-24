@@ -2,6 +2,9 @@
 
 namespace App\Controllers;
 
+use App\Config\Database;
+use App\Config\PlanConfig;
+use App\Config\SiteConfig;
 use App\Geo\Exception\DeliveryGeoNotConfiguredException;
 use App\Geo\Exception\DeliveryOutOfRangeException;
 use App\Models\CommandeModel;
@@ -9,6 +12,7 @@ use App\Models\PaymentAttemptModel;
 use App\Models\UserModel;
 use App\Services\CommandeService;
 use App\Services\MailService;
+use App\Services\OrderAdmissionService;
 use App\Services\OrderTransitionService;
 use App\Services\PricingService;
 
@@ -64,12 +68,24 @@ class CommandeController {
             echo json_encode(['ok' => false, 'message' => 'Date invalide.']);
             return;
         }
-        $count = \App\Models\CommandeModel::countByDate($date);
-        $max   = \App\Config\SiteConfig::commandesMaxParJour();
+
+        try {
+            $count = OrderAdmissionService::countCommittedAndReservedForDay(
+                Database::getConnection(),
+                $date,
+            );
+        } catch (\Throwable $e) {
+            error_log('[admission] calcul disponibilité impossible: ' . $e->getMessage());
+            http_response_code(503);
+            echo json_encode(['ok' => false, 'message' => 'Disponibilité temporairement indisponible.']);
+            return;
+        }
+
+        $max = SiteConfig::commandesMaxParJour();
         echo json_encode([
-            'ok'     => true,
-            'count'  => $count,
-            'max'    => $max,
+            'ok'      => true,
+            'count'   => $count,
+            'max'     => $max,
             'complet' => $max > 0 && $count >= $max,
         ]);
     }
@@ -157,7 +173,8 @@ class CommandeController {
             'instructions'          => $instructions ?: null,
         ];
 
-        // CB en ligne : persister le draft et la tentative AVANT toute redirection externe.
+        // CB en ligne : draft + tentative + réservation admission sont persistés
+        // dans une transaction unique avant toute redirection externe.
         if ($modePaiement === 'cb_online') {
             try {
                 $draft = PaymentAttemptModel::createDraftWithAttempt(
@@ -166,6 +183,10 @@ class CommandeController {
                     $panier,
                     (int) $user['id']
                 );
+            } catch (\RuntimeException $e) {
+                error_log('[payment] création draft refusée ref=' . $numeroCommande . ': ' . $e->getMessage());
+                flash('error', $e->getMessage());
+                redirect('/panier');
             } catch (\Throwable $e) {
                 error_log('[payment] création draft impossible ref=' . $numeroCommande . ': ' . $e->getMessage());
                 flash('error', 'Impossible de préparer le paiement en ligne. Veuillez réessayer.');
@@ -178,11 +199,68 @@ class CommandeController {
             redirect('/stripe/checkout');
         }
 
+        $admissionDb = Database::getConnection();
+        $admissionDb->beginTransaction();
+        try {
+            OrderAdmissionService::reserve(
+                $admissionDb,
+                $numeroCommande,
+                (string) $commandeData['date_prestation'],
+                SiteConfig::commandesMaxParJour(),
+                PlanConfig::maxCommandesMois(),
+                date('Y-m-d H:i:s', time() + 600),
+            );
+            $admissionDb->commit();
+        } catch (\RuntimeException $e) {
+            if ($admissionDb->inTransaction()) {
+                $admissionDb->rollBack();
+            }
+            flash('error', $e->getMessage());
+            redirect('/panier');
+        } catch (\Throwable $e) {
+            if ($admissionDb->inTransaction()) {
+                $admissionDb->rollBack();
+            }
+            error_log('[admission] réservation impossible ref=' . $numeroCommande . ': ' . $e->getMessage());
+            flash('error', 'Impossible de réserver ce créneau. Veuillez réessayer.');
+            redirect('/panier');
+        }
+
         try {
             $commandeId = CommandeModel::create($commandeData, $pricing['lignes']);
         } catch (\Throwable $e) {
+            try {
+                $releaseDb = Database::getConnection();
+                $releaseDb->beginTransaction();
+                OrderAdmissionService::release($releaseDb, $numeroCommande);
+                $releaseDb->commit();
+            } catch (\Throwable $releaseError) {
+                if (isset($releaseDb) && $releaseDb->inTransaction()) {
+                    $releaseDb->rollBack();
+                }
+                error_log('[admission] libération impossible ref=' . $numeroCommande . ': ' . $releaseError->getMessage());
+            }
             flash('error', 'Un ou plusieurs menus ne sont plus disponibles.');
             redirect('/panier');
+        }
+
+        try {
+            $consumeDb = Database::getConnection();
+            $consumeDb->beginTransaction();
+            OrderAdmissionService::consume(
+                $consumeDb,
+                $numeroCommande,
+                $commandeId,
+                (string) $commandeData['date_prestation'],
+            );
+            $consumeDb->commit();
+        } catch (\Throwable $e) {
+            if (isset($consumeDb) && $consumeDb->inTransaction()) {
+                $consumeDb->rollBack();
+            }
+            // La commande existe déjà et reste comptée. Le permit de secours expire
+            // automatiquement ; ne jamais transformer cela en échec client.
+            error_log('[admission] consommation impossible ref=' . $numeroCommande . ': ' . $e->getMessage());
         }
 
         // La consommation de stock reste non bloquante tant que le redesign métier
