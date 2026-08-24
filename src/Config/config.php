@@ -33,6 +33,8 @@ define('APP_VERSION', '1.1.0');
 define('APP_NAME', 'Tugères');
 define('APP_VENDOR_URL', 'https://tugeres.fr');
 define('SAAS_SECRET', $_ENV['SAAS_SECRET'] ?? '');
+define('TUGERES_ENTITLEMENTS_MODE', strtolower((string) ($_ENV['TUGERES_ENTITLEMENTS_MODE'] ?? 'legacy')));
+define('TUGERES_LICENSE_PUBLIC_KEY_B64', (string) ($_ENV['TUGERES_LICENSE_PUBLIC_KEY_B64'] ?? ''));
 
 if (APP_ENV !== 'development') {
     ini_set('display_errors', '0');

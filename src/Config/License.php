@@ -2,92 +2,135 @@
 
 namespace App\Config;
 
-use App\Config\Database;
+use App\Domain\SignedEntitlement;
 use App\Models\SiteConfigModel;
 
-class License
+final class License
 {
-    private static ?bool $cache = null;
+    private static ?array $cache = null;
 
-    public static function isValid(): bool
+    public static function mode(): string
     {
+        return TUGERES_ENTITLEMENTS_MODE === 'signed' ? 'signed' : 'legacy';
+    }
+
+    public static function isSignedMode(): bool
+    {
+        return self::mode() === 'signed';
+    }
+
+    public static function entitlements(): array
+    {
+        if (!self::isSignedMode()) {
+            throw new \RuntimeException('Les droits signés ne sont pas activés.');
+        }
         if (self::$cache !== null) {
             return self::$cache;
         }
 
+        $document = SiteConfigModel::get('license_document') ?? '';
+        $publicKey = self::publicKeyPem();
+        if ($document === '' || $publicKey === '') {
+            throw new \RuntimeException('Licence signée non configurée.');
+        }
+
+        return self::$cache = SignedEntitlement::verify($document, $publicKey, self::runtimeDomain());
+    }
+
+    public static function isValid(): bool
+    {
         try {
-            if (!Database::isConnected()) {
-                return self::$cache = true;
+            if (self::isSignedMode()) {
+                self::entitlements();
+                return true;
             }
 
-            $key    = self::storedKey();
-            $domain = self::storedDomain();
-
-            if (!$key || !$domain) {
-                return self::$cache = false;
+            $key = SiteConfigModel::get('license_key') ?? '';
+            $domain = SiteConfigModel::get('license_domain') ?? '';
+            $hash = SiteConfigModel::get('license_hash') ?? '';
+            if ($key === '' || $domain === '' || $hash === '') {
+                return false;
             }
 
-            return self::$cache = hash_equals(self::expectedHash($key, $domain), self::computeHash($key, $domain));
-        } catch (\Throwable) {
-            return self::$cache = true;
+            // Legacy compatibility only. This verifier is deliberately not used for entitlement decisions.
+            $secret = 'tugeres_akiksystems_2025_' . $key;
+            $legacyHash = hash_hmac('sha256', self::normalizeDomain($domain), $secret);
+            return hash_equals($hash, $legacyHash);
+        } catch (\Throwable $e) {
+            error_log('[license] validation impossible: ' . $e->getMessage());
+            return false;
         }
     }
 
-    public static function generate(string $domain): array
+    public static function installSignedDocument(string $documentJson): array
     {
-        $key  = strtoupper(bin2hex(random_bytes(12)));
-        $key  = implode('-', str_split($key, 6));
-        $hash = self::computeHash($key, self::normalizeDomain($domain));
+        $publicKey = self::publicKeyPem();
+        if ($publicKey === '') {
+            throw new \RuntimeException('Clé publique de licence non configurée.');
+        }
 
-        return ['key' => $key, 'domain' => $domain, 'hash' => $hash];
-    }
-
-    public static function activate(string $key, string $domain): void
-    {
-        $domain = self::normalizeDomain($domain);
-        $hash   = self::computeHash($key, $domain);
-
+        $verified = SignedEntitlement::verify($documentJson, $publicKey, self::runtimeDomain());
         $pdo = Database::getConnection();
-        $pdo->prepare("INSERT INTO site_config (cle, valeur) VALUES ('license_key', ?) ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)")->execute([$key]);
-        $pdo->prepare("INSERT INTO site_config (cle, valeur) VALUES ('license_domain', ?) ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)")->execute([$domain]);
-        $pdo->prepare("INSERT INTO site_config (cle, valeur) VALUES ('license_hash', ?) ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)")->execute([$hash]);
+        $pdo->beginTransaction();
+        try {
+            $stmt = $pdo->prepare(
+                "INSERT INTO site_config (cle, valeur) VALUES ('license_document', ?)
+                 ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)"
+            );
+            $stmt->execute([$documentJson]);
+            foreach (['license_key', 'license_hash'] as $legacyKey) {
+                $pdo->prepare('DELETE FROM site_config WHERE cle = ?')->execute([$legacyKey]);
+            }
+            $pdo->prepare(
+                "INSERT INTO site_config (cle, valeur) VALUES ('license_domain', ?)
+                 ON DUPLICATE KEY UPDATE valeur = VALUES(valeur)"
+            )->execute([$verified['domain']]);
+            $pdo->commit();
+        } catch (\Throwable $e) {
+            if ($pdo->inTransaction()) {
+                $pdo->rollBack();
+            }
+            throw $e;
+        }
 
-        self::$cache = null;
+        self::$cache = $verified;
+        return $verified;
     }
 
     public static function banner(): string
     {
         return '<div style="position:fixed;bottom:0;left:0;right:0;z-index:99999;background:#b91c1c;color:#fff;text-align:center;padding:.5rem;font-size:.85rem;font-family:sans-serif;">'
-            . 'Licence Tugères non activée — <a href="https://tugeres.fr" style="color:#fde68a;" target="_blank">tugeres.fr</a>'
+            . 'Licence Tugères non activée — <a href="https://tugeres.fr" style="color:#fde68a;" target="_blank" rel="noopener">tugeres.fr</a>'
             . '</div>';
     }
 
-    private static function storedKey(): string
+    private static function publicKeyPem(): string
     {
-        return SiteConfigModel::get('license_key') ?? '';
+        if (TUGERES_LICENSE_PUBLIC_KEY_B64 === '') {
+            return '';
+        }
+        $decoded = base64_decode(TUGERES_LICENSE_PUBLIC_KEY_B64, true);
+        if ($decoded === false || $decoded === '') {
+            throw new \RuntimeException('Clé publique de licence mal encodée.');
+        }
+        return $decoded;
     }
 
-    private static function storedDomain(): string
+    private static function runtimeDomain(): string
     {
-        return SiteConfigModel::get('license_domain') ?? '';
-    }
-
-    private static function expectedHash(string $key, string $domain): string
-    {
-        return SiteConfigModel::get('license_hash') ?? '';
-    }
-
-    private static function computeHash(string $key, string $domain): string
-    {
-        $secret = 'tugeres_akiksystems_2025_' . $key;
-        return hash_hmac('sha256', $domain, $secret);
+        $configured = SiteConfigModel::get('site_domaine') ?? '';
+        if ($configured !== '') {
+            return self::normalizeDomain($configured);
+        }
+        return self::normalizeDomain((string) ($_SERVER['HTTP_HOST'] ?? ''));
     }
 
     private static function normalizeDomain(string $domain): string
     {
         $domain = strtolower(trim($domain));
-        $domain = preg_replace('#^https?://#', '', $domain);
-        $domain = rtrim($domain, '/');
-        return $domain;
+        $domain = (string) preg_replace('#^https?://#', '', $domain);
+        $domain = explode('/', $domain, 2)[0];
+        $domain = preg_replace('/:\d+$/', '', $domain) ?? $domain;
+        return rtrim($domain, '.');
     }
 }
