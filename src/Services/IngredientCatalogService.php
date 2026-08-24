@@ -6,6 +6,7 @@ namespace App\Services;
 
 use App\Config\Database;
 use App\Domain\CatalogIntegrityPolicy;
+use PDO;
 use RuntimeException;
 use Throwable;
 
@@ -38,7 +39,7 @@ final class IngredientCatalogService
         $db = Database::getConnection();
         $db->beginTransaction();
         try {
-            self::lockActive($ingredientId);
+            self::lockActive($db, $ingredientId);
             $db->prepare(
                 'UPDATE ingredient SET libelle = ?, unite = ?, prix_unitaire = ?, seuil_alerte = ? WHERE ingredient_id = ?',
             )->execute([$data['libelle'], $data['unite'], $data['prix_unitaire'], $data['seuil_alerte'], $ingredientId]);
@@ -56,7 +57,7 @@ final class IngredientCatalogService
         $db = Database::getConnection();
         $db->beginTransaction();
         try {
-            self::lockActive($ingredientId);
+            self::lockActive($db, $ingredientId);
             $db->prepare('UPDATE ingredient SET actif = 0 WHERE ingredient_id = ?')->execute([$ingredientId]);
             $db->commit();
         } catch (Throwable $e) {
@@ -67,9 +68,9 @@ final class IngredientCatalogService
         }
     }
 
-    private static function lockActive(int $ingredientId): void
+    private static function lockActive(PDO $db, int $ingredientId): void
     {
-        $stmt = Database::getConnection()->prepare(
+        $stmt = $db->prepare(
             'SELECT ingredient_id FROM ingredient WHERE ingredient_id = ? AND actif = 1 FOR UPDATE',
         );
         $stmt->execute([$ingredientId]);
