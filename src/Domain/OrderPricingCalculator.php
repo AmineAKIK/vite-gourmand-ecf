@@ -20,7 +20,7 @@ final class OrderPricingCalculator
         array $items,
         int $deliveryCents,
         int $discountThresholdCents,
-        float $discountRate
+        float $discountRate,
     ): array {
         $grossLines = [];
         $totalGrossCents = 0;
@@ -59,7 +59,7 @@ final class OrderPricingCalculator
                     $lineDiscount = (int) round(
                         $discountCents * ($line['prix_menu_brut_cents'] / $totalGrossCents),
                         0,
-                        PHP_ROUND_HALF_UP
+                        PHP_ROUND_HALF_UP,
                     );
                     $allocatedDiscount += $lineDiscount;
                 }
