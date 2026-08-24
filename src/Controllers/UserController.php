@@ -35,7 +35,7 @@ class UserController {
             redirect('/mon-compte');
         }
 
-        \UserModel::update($user['id'], $data);
+        UserModel::update($user['id'], $data);
 
         // Mettre à jour la session
         $_SESSION['user']['prenom'] = $data['prenom'];
@@ -83,7 +83,7 @@ class UserController {
             redirect('/mon-compte');
         }
 
-        \UserModel::delete($user['id']);
+        UserModel::delete($user['id']);
 
         session_destroy();
         redirect('/');
