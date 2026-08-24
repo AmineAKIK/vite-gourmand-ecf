@@ -6,6 +6,7 @@ use App\Config\Database;
 use App\Models\FacturationModel;
 use InvalidArgumentException;
 use RuntimeException;
+use Throwable;
 
 final class BillingDocumentStorage
 {
@@ -18,13 +19,22 @@ final class BillingDocumentStorage
         $document = self::document($documentId);
         self::assertFinalized($document);
 
-        $resolved = self::resolveStoredPath($documentId, 'archive_path', $document['archive_path'] ?? null);
-        if ($resolved !== null) {
-            return $resolved;
-        }
+        try {
+            $resolved = self::resolveStoredPath($documentId, 'archive_path', $document['archive_path'] ?? null);
+            if ($resolved !== null) {
+                self::markArchiveReady($documentId);
+                return $resolved;
+            }
 
-        $legacyPath = FacturationModel::archiveDocument($documentId);
-        return self::moveGeneratedLegacyFile($documentId, 'archive_path', $legacyPath);
+            self::markArchivePending($documentId);
+            $legacyPath = FacturationModel::archiveDocument($documentId);
+            $absolute = self::moveGeneratedLegacyFile($documentId, 'archive_path', $legacyPath);
+            self::markArchiveReady($documentId);
+            return $absolute;
+        } catch (Throwable $e) {
+            self::markArchiveFailed($documentId, $e->getMessage());
+            throw $e;
+        }
     }
 
     public static function ensurePdf(int $documentId): string
@@ -50,8 +60,38 @@ final class BillingDocumentStorage
     {
         $document = self::document($documentId);
         foreach (self::COLUMNS as $column) {
-            self::resolveStoredPath($documentId, $column, $document[$column] ?? null);
+            $resolved = self::resolveStoredPath($documentId, $column, $document[$column] ?? null);
+            if ($column === 'archive_path' && $resolved !== null) {
+                self::markArchiveReady($documentId);
+            }
         }
+    }
+
+    public static function markArchivePending(int $documentId): void
+    {
+        Database::getConnection()->prepare(
+            "UPDATE document_facturation
+             SET archive_status = 'pending', archive_last_error = NULL
+             WHERE document_id = ? AND statut = 'finalise'",
+        )->execute([$documentId]);
+    }
+
+    public static function markArchiveReady(int $documentId): void
+    {
+        Database::getConnection()->prepare(
+            "UPDATE document_facturation
+             SET archive_status = 'ready', archive_last_error = NULL, archived_at = COALESCE(archived_at, NOW())
+             WHERE document_id = ? AND statut = 'finalise'",
+        )->execute([$documentId]);
+    }
+
+    public static function markArchiveFailed(int $documentId, string $message): void
+    {
+        Database::getConnection()->prepare(
+            "UPDATE document_facturation
+             SET archive_status = 'failed', archive_last_error = ?
+             WHERE document_id = ? AND statut = 'finalise'",
+        )->execute([substr(trim($message), 0, 500), $documentId]);
     }
 
     private static function document(int $documentId): array
