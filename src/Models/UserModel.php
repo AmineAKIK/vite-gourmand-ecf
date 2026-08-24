@@ -15,7 +15,6 @@ class UserModel {
                 $stmt->execute([$col]);
                 if ((int)$stmt->fetchColumn() === 0) {
                     $db->exec("ALTER TABLE `utilisateur` ADD COLUMN `{$col}` {$def}");
-                    // Marquer les comptes existants comme vérifiés
                     if ($col === 'email_verified_at') {
                         $db->exec("UPDATE utilisateur SET email_verified_at = created_at WHERE email_verified_at IS NULL");
                     }
@@ -56,11 +55,12 @@ class UserModel {
                 email_verification_token)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ");
+        $verificationToken = $data['email_verification_token'] ?? null;
         $stmt->execute([
             $data['email'], $data['password'], $data['prenom'], $data['nom'],
             $data['telephone'], $data['adresse'], $data['ville'], $data['code_postal'],
             ROLE_ID_USER,
-            $data['email_verification_token'] ?? null,
+            is_string($verificationToken) && $verificationToken !== '' ? self::tokenDigest($verificationToken) : null,
         ]);
         return (int)$db->lastInsertId();
     }
@@ -78,7 +78,7 @@ class UserModel {
     public static function saveEmailVerificationToken(int $id, string $token): void {
         Database::getConnection()
             ->prepare("UPDATE utilisateur SET email_verification_token = ? WHERE utilisateur_id = ?")
-            ->execute([$token, $id]);
+            ->execute([self::tokenDigest($token), $id]);
     }
 
     public static function verifyEmail(string $token): ?array {
@@ -86,9 +86,9 @@ class UserModel {
         $db   = Database::getConnection();
         $stmt = $db->prepare(
             "SELECT utilisateur_id FROM utilisateur
-             WHERE email_verification_token = ? AND email_verified_at IS NULL"
+             WHERE email_verification_token IN (?, ?) AND email_verified_at IS NULL"
         );
-        $stmt->execute([$token]);
+        $stmt->execute([self::tokenDigest($token), $token]);
         $row = $stmt->fetch();
         if (!$row) {
             return null;
@@ -134,19 +134,20 @@ class UserModel {
         $db = Database::getConnection();
         $db->prepare("DELETE FROM password_reset WHERE utilisateur_id=?")->execute([$userId]);
         $db->prepare("INSERT INTO password_reset (utilisateur_id, token, expires_at) VALUES (?, ?, DATE_ADD(NOW(), INTERVAL 1 HOUR))")
-           ->execute([$userId, $token]);
+           ->execute([$userId, self::tokenDigest($token)]);
     }
 
     public static function findResetToken(string $token): ?array {
         $db   = Database::getConnection();
-        $stmt = $db->prepare("SELECT * FROM password_reset WHERE token=? AND expires_at > NOW() AND used=0");
-        $stmt->execute([$token]);
+        $stmt = $db->prepare("SELECT * FROM password_reset WHERE token IN (?, ?) AND expires_at > NOW() AND used=0");
+        $stmt->execute([self::tokenDigest($token), $token]);
         return $stmt->fetch() ?: null;
     }
 
     public static function invalidateResetToken(string $token): void {
         $db = Database::getConnection();
-        $db->prepare("UPDATE password_reset SET used=1 WHERE token=?")->execute([$token]);
+        $db->prepare("UPDATE password_reset SET used=1 WHERE token IN (?, ?)")
+            ->execute([self::tokenDigest($token), $token]);
     }
 
     public static function search(string $q, int $limit = 20): array {
@@ -166,7 +167,6 @@ class UserModel {
 
     public static function deleteEmploye(int $id): void {
         $db = Database::getConnection();
-        // Détache l'employé de l'historique avant suppression (contrainte FK sans ON DELETE)
         $db->prepare("UPDATE commande_historique SET modifie_par = NULL WHERE modifie_par = ?")->execute([$id]);
         $db->prepare("DELETE FROM password_reset WHERE utilisateur_id = ?")->execute([$id]);
         $db->prepare("DELETE FROM utilisateur WHERE utilisateur_id = ?")->execute([$id]);
@@ -179,7 +179,6 @@ class UserModel {
         $stmt = $db->prepare("SELECT 1 FROM commande WHERE utilisateur_id=? LIMIT 1");
         $stmt->execute([$id]);
         if ($stmt->fetch()) {
-            // Le client a des commandes : anonymise les données personnelles (contrainte FK + comptabilité)
             $db->prepare("
                 UPDATE utilisateur
                 SET email=?, password='*', prenom='Compte', nom='supprimé',
@@ -189,5 +188,10 @@ class UserModel {
         } else {
             $db->prepare("DELETE FROM utilisateur WHERE utilisateur_id=?")->execute([$id]);
         }
+    }
+
+    private static function tokenDigest(string $token): string
+    {
+        return hash('sha256', $token);
     }
 }
