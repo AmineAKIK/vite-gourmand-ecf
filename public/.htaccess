@@ -2,14 +2,16 @@ Options -Indexes
 RewriteEngine On
 RewriteBase /
 
+# Readiness probe: DB + migration tracking, sans session ni dispatch applicatif.
+RewriteRule ^ready$ ready.php [L]
+
 # Les documents de facturation sont privés. Même si une ancienne copie existe encore
 # physiquement sous public/uploads/facturation, elle doit passer par l'application et finir en 404.
 RewriteRule ^uploads/facturation(?:/.*)?$ index.php [L]
 
 # Bloquer l'accès aux fichiers sensibles
 <FilesMatch "\.(env|sql|json|lock|md)$">
-    Order Allow,Deny
-    Deny from all
+    Require all denied
 </FilesMatch>
 
 # Tout rediriger vers index.php sauf fichiers statiques
