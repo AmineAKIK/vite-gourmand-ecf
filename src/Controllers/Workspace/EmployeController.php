@@ -11,6 +11,7 @@ use App\Models\NotificationModel;
 use App\Models\UserModel;
 use App\Security\Guard;
 use App\Services\MailService;
+use App\Services\OrderTransitionService;
 
 class EmployeController
 {
@@ -169,8 +170,6 @@ class EmployeController
             redirect('/employe/commandes');
         }
 
-        $ancienStatut = $commande['statut'] ?? null;
-
         if ($statut === OrderStatus::cancelled() && $action !== 'annuler') {
             flash('error', 'Une annulation doit passer par le formulaire dédié avec motif et confirmation.');
             redirect('/employe/commandes');
@@ -179,38 +178,50 @@ class EmployeController
             flash('error', 'Requête d\'annulation invalide.');
             redirect('/employe/commandes');
         }
-        if ($action === 'annuler' && $ancienStatut === OrderStatus::cancelled()) {
-            flash('error', 'Cette commande est déjà annulée.');
+
+        try {
+            if ($action === 'annuler') {
+                $motif                  = $commentaire;
+                $modeContact            = sanitize($_POST['mode_contact'] ?? '');
+                $confirmationAnnulation = ($_POST['confirmation_annulation'] ?? '') === '1';
+                if (!$motif || !$modeContact || !$confirmationAnnulation) {
+                    flash('error', 'Le motif, le mode de contact et la confirmation sont obligatoires pour une annulation.');
+                    redirect('/employe/commandes');
+                }
+                if (!in_array($modeContact, ['mail', 'gsm'], true)) {
+                    flash('error', 'Mode de contact invalide pour l\'annulation.');
+                    redirect('/employe/commandes');
+                }
+
+                $transition = OrderTransitionService::cancel(
+                    $commandeId,
+                    $motif,
+                    $modeContact,
+                    (int) $user['id'],
+                );
+            } else {
+                $transition = OrderTransitionService::transition(
+                    $commandeId,
+                    $statut,
+                    $commentaire ?: null,
+                    (int) $user['id'],
+                );
+            }
+        } catch (\RuntimeException $e) {
+            flash('error', $e->getMessage());
             redirect('/employe/commandes');
         }
 
-        if ($action === 'annuler') {
-            $motif                  = $commentaire;
-            $modeContact            = sanitize($_POST['mode_contact'] ?? '');
-            $confirmationAnnulation = ($_POST['confirmation_annulation'] ?? '') === '1';
-            if (!$motif || !$modeContact || !$confirmationAnnulation) {
-                flash('error', 'Le motif, le mode de contact et la confirmation sont obligatoires pour une annulation.');
-                redirect('/employe/commandes');
-            }
-            if (!in_array($modeContact, ['mail', 'gsm'], true)) {
-                flash('error', 'Mode de contact invalide pour l\'annulation.');
-                redirect('/employe/commandes');
-            }
-            CommandeModel::cancel($commandeId, $motif, $modeContact, $user['id']);
-        } else {
-            CommandeModel::updateStatut($commandeId, $statut, $commentaire ?: null, $user['id']);
-        }
-
         $userCommande = UserModel::findById($commande['utilisateur_id']);
-        if ($ancienStatut !== $statut && $statut === OrderStatus::completed() && $userCommande) {
+        if ($transition['changed'] && $statut === OrderStatus::completed() && $userCommande) {
             MailService::sendCommandeTerminee($userCommande['email'], $commandeId);
         }
-        if ($ancienStatut !== $statut && $statut === OrderStatus::awaitingMaterial() && $userCommande) {
+        if ($transition['changed'] && $statut === OrderStatus::awaitingMaterial() && $userCommande) {
             MailService::sendMaterielRelance($userCommande['email'], $userCommande['prenom']);
         }
 
-        // Notification in-app au client
-        if ($ancienStatut !== $statut && $userCommande) {
+        // Notification in-app au client, seulement après commit effectif.
+        if ($transition['changed'] && $userCommande) {
             NotificationModel::notifyClientStatutCommande(
                 $commandeId,
                 (int)$commande['utilisateur_id'],
@@ -219,7 +230,7 @@ class EmployeController
             );
         }
 
-        flash('success', 'Statut mis à jour.');
+        flash('success', $transition['changed'] ? 'Statut mis à jour.' : 'Statut déjà à jour.');
         redirect('/employe/commandes');
     }
 

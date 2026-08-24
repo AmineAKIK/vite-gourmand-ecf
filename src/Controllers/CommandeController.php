@@ -9,6 +9,7 @@ use App\Models\PaymentAttemptModel;
 use App\Models\UserModel;
 use App\Services\CommandeService;
 use App\Services\MailService;
+use App\Services\OrderTransitionService;
 use App\Services\PricingService;
 
 class CommandeController {
@@ -285,8 +286,19 @@ class CommandeController {
             flash('error', 'Impossible d\'annuler cette commande.'); redirect('/mon-compte');
         }
 
-        CommandeModel::cancel((int)$commande['commande_id'], 'Annulation demandée par le client', 'client', $user['id']);
-        flash('success', 'Commande annulée.');
+        try {
+            $transition = OrderTransitionService::cancel(
+                (int) $commande['commande_id'],
+                'Annulation demandée par le client',
+                'client',
+                (int) $user['id'],
+            );
+        } catch (\RuntimeException $e) {
+            flash('error', $e->getMessage());
+            redirect('/mon-compte');
+        }
+
+        flash('success', $transition['changed'] ? 'Commande annulée.' : 'Commande déjà annulée.');
         redirect('/mon-compte');
     }
 
