@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Models\CommandeModel;
 use App\Models\MenuModel;
 use App\Models\PaiementModel;
+use App\Models\PaymentAttemptModel;
 use App\Models\UserModel;
 use App\Services\MailService;
 
@@ -14,7 +15,7 @@ class StripeController
     {
         requireAuth();
 
-        $pending = $_SESSION['stripe_pending'] ?? null;
+        $pending = $this->loadPendingPayment();
         if (!$pending) {
             flash('error', 'Session expirée. Veuillez recommencer votre commande.');
             redirect('/panier');
@@ -29,7 +30,6 @@ class StripeController
 
         $commandeData = $pending['commande_data'];
         $pricing = $pending['pricing'];
-        $panier = $pending['panier'];
 
         $expectedCents = (int) ($pricing['total_ttc_cents'] ?? round($pricing['total_ttc'] * 100));
         $grossCents = (int) ($pricing['total_brut_cents'] ?? round($pricing['total_brut'] * 100));
@@ -47,6 +47,16 @@ class StripeController
             ));
             flash('error', 'Le montant de la commande est incohérent. Veuillez recommencer votre commande.');
             redirect('/panier');
+        }
+
+        if (isset($pending['draft'])) {
+            $draft = $pending['draft'];
+            if ((int) $draft['expected_total_cents'] !== $expectedCents
+                || strtolower((string) $draft['currency']) !== strtolower((string) ($pricing['currency'] ?? 'eur'))) {
+                error_log('[payment] snapshot draft incohérent draft_id=' . (int) $draft['draft_id']);
+                flash('error', 'Le paiement préparé est incohérent. Veuillez recommencer votre commande.');
+                redirect('/panier');
+            }
         }
 
         $lineItems = [];
@@ -93,6 +103,17 @@ class StripeController
         }
 
         $baseUrl = rtrim(BASE_URL, '/');
+        $metadata = [
+            'numero_commande' => $commandeData['numero_commande'],
+            'utilisateur_id' => (string) $commandeData['utilisateur_id'],
+            'expected_total_cents' => (string) $expectedCents,
+            'currency' => 'eur',
+        ];
+
+        if (isset($pending['draft'], $pending['attempt'])) {
+            $metadata['draft_id'] = (string) $pending['draft']['draft_id'];
+            $metadata['attempt_id'] = (string) $pending['attempt']['attempt_id'];
+        }
 
         $session = \Stripe\Checkout\Session::create([
             'payment_method_types' => ['card'],
@@ -101,14 +122,19 @@ class StripeController
             'mode' => 'payment',
             'success_url' => $baseUrl . '/stripe/success?session_id={CHECKOUT_SESSION_ID}',
             'cancel_url' => $baseUrl . '/stripe/cancel',
-            'metadata' => [
-                'numero_commande' => $commandeData['numero_commande'],
-                'utilisateur_id' => (string) $commandeData['utilisateur_id'],
-                'expected_total_cents' => (string) $expectedCents,
-                'currency' => 'eur',
-            ],
+            'metadata' => $metadata,
             'client_reference_id' => $commandeData['numero_commande'],
         ]);
+
+        if (isset($pending['attempt'])) {
+            try {
+                PaymentAttemptModel::bindStripeSession((int) $pending['attempt']['attempt_id'], $session->id);
+            } catch (\Throwable $e) {
+                error_log('[payment] liaison session Stripe impossible: ' . $e->getMessage());
+                flash('error', 'Impossible de finaliser la préparation du paiement. Veuillez réessayer.');
+                redirect('/panier');
+            }
+        }
 
         $_SESSION['stripe_session_id'] = $session->id;
 
@@ -121,7 +147,7 @@ class StripeController
         requireAuth();
 
         $sessionId = sanitize($_GET['session_id'] ?? '');
-        $pending = $_SESSION['stripe_pending'] ?? null;
+        $pending = $this->loadPendingPayment();
 
         if (!$pending || !$sessionId) {
             flash('error', 'Paiement non confirmé.');
@@ -174,10 +200,28 @@ class StripeController
             'note' => 'Paiement Stripe — session ' . $sessionId,
         ], (int) $user['id']);
 
+        if (isset($pending['draft'], $pending['attempt'])) {
+            try {
+                PaymentAttemptModel::markAttemptStatus(
+                    (int) $pending['attempt']['attempt_id'],
+                    'paid',
+                    isset($stripeSession->payment_intent) ? (string) $stripeSession->payment_intent : null
+                );
+                PaymentAttemptModel::attachCommande((int) $pending['draft']['draft_id'], $commandeId);
+            } catch (\Throwable $e) {
+                error_log('[payment] finalisation tracking draft impossible commande_id=' . $commandeId . ': ' . $e->getMessage());
+            }
+        }
+
         $userFull = UserModel::findById($user['id']);
         MailService::sendCommandeConfirmation($userFull['email'], $commandeData, $panier);
 
-        unset($_SESSION['stripe_pending'], $_SESSION['stripe_session_id']);
+        unset(
+            $_SESSION['stripe_pending'],
+            $_SESSION['stripe_draft_id'],
+            $_SESSION['stripe_attempt_id'],
+            $_SESSION['stripe_session_id']
+        );
         $_SESSION['panier'] = [];
 
         flash('success', 'Paiement confirmé ! Commande #' . $commandeData['numero_commande'] . ' passée avec succès.');
@@ -186,7 +230,18 @@ class StripeController
 
     public function cancel(): void
     {
-        unset($_SESSION['stripe_session_id']);
+        if (isset($_SESSION['stripe_draft_id'])) {
+            try {
+                PaymentAttemptModel::markDraftStatus((int) $_SESSION['stripe_draft_id'], 'cancelled');
+                if (isset($_SESSION['stripe_attempt_id'])) {
+                    PaymentAttemptModel::markAttemptStatus((int) $_SESSION['stripe_attempt_id'], 'cancelled');
+                }
+            } catch (\Throwable $e) {
+                error_log('[payment] annulation tracking draft impossible: ' . $e->getMessage());
+            }
+        }
+
+        unset($_SESSION['stripe_session_id'], $_SESSION['stripe_draft_id'], $_SESSION['stripe_attempt_id']);
         flash('error', 'Paiement annulé. Votre commande n\'a pas été enregistrée.');
         redirect('/panier');
     }
@@ -240,5 +295,43 @@ class StripeController
         http_response_code(200);
         echo json_encode(['received' => true]);
         exit;
+    }
+
+    private function loadPendingPayment(): ?array
+    {
+        $user = currentUser();
+        $draftId = (int) ($_SESSION['stripe_draft_id'] ?? 0);
+
+        if ($draftId > 0 && $user) {
+            try {
+                $draft = PaymentAttemptModel::findDraftForUser($draftId, (int) $user['id']);
+                if (!$draft || $draft['status'] !== 'pending_payment') {
+                    return null;
+                }
+                if (!empty($draft['expires_at']) && strtotime((string) $draft['expires_at']) < time()) {
+                    PaymentAttemptModel::markDraftStatus($draftId, 'failed');
+                    return null;
+                }
+
+                $attempt = PaymentAttemptModel::latestAttemptForDraft($draftId);
+                if (!$attempt) {
+                    return null;
+                }
+
+                return [
+                    'commande_data' => $draft['commande_data'],
+                    'pricing' => $draft['pricing'],
+                    'panier' => $draft['panier'],
+                    'draft' => $draft,
+                    'attempt' => $attempt,
+                ];
+            } catch (\Throwable $e) {
+                error_log('[payment] lecture draft impossible draft_id=' . $draftId . ': ' . $e->getMessage());
+                return null;
+            }
+        }
+
+        $legacy = $_SESSION['stripe_pending'] ?? null;
+        return is_array($legacy) ? $legacy : null;
     }
 }
