@@ -28,10 +28,19 @@ class StripeController
         }
 
         \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
+        $stripeExpiresAt = null;
 
         if (isset($pending['draft'], $pending['attempt'])) {
-            $pending = $this->preparePersistedAttempt($pending);
-            if ($this->redirectToExistingOpenSession($pending['attempt'])) {
+            try {
+                $pending = $this->preparePersistedAttempt($pending);
+                $stripeExpiresAt = StripeCheckoutContract::sessionExpiresAt((string) $pending['draft']['expires_at']);
+            } catch (\Throwable $e) {
+                error_log('[payment] contrat Checkout Stripe invalide: ' . $e->getMessage());
+                flash('error', 'Le paiement préparé n’est plus valide. Veuillez recommencer votre commande.');
+                redirect('/panier');
+            }
+
+            if ($this->redirectToExistingSession($pending)) {
                 return;
             }
         }
@@ -56,6 +65,15 @@ class StripeController
             ));
             flash('error', 'Le montant de la commande est incohérent. Veuillez recommencer votre commande.');
             redirect('/panier');
+        }
+
+        if (isset($pending['draft'])) {
+            if ((int) $pending['draft']['expected_total_cents'] !== $expectedCents
+                || strtolower((string) $pending['draft']['currency']) !== $currency) {
+                error_log('[payment] snapshot pricing incohérent draft_id=' . (int) $pending['draft']['draft_id']);
+                flash('error', 'Le montant préparé pour Stripe est incohérent. Veuillez recommencer votre commande.');
+                redirect('/panier');
+            }
         }
 
         $lineItems = [];
@@ -98,12 +116,18 @@ class StripeController
                 );
             }
 
-            $coupon = \Stripe\Coupon::create([
-                'amount_off' => $discountCents,
-                'currency' => $currency,
-                'duration' => 'once',
-                'name' => 'Réduction fidélité',
-            ], $couponOptions);
+            try {
+                $coupon = \Stripe\Coupon::create([
+                    'amount_off' => $discountCents,
+                    'currency' => $currency,
+                    'duration' => 'once',
+                    'name' => 'Réduction fidélité',
+                ], $couponOptions);
+            } catch (\Throwable $e) {
+                $this->trackAmbiguousStripeError($pending, $e);
+                flash('error', 'Impossible de préparer la réduction Stripe. Veuillez réessayer.');
+                redirect('/panier');
+            }
             $discounts = [['coupon' => $coupon->id]];
         }
 
@@ -131,9 +155,7 @@ class StripeController
             $metadata['draft_id'] = (string) $pending['draft']['draft_id'];
             $metadata['attempt_id'] = (string) $pending['attempt']['attempt_id'];
             $sessionParams['metadata'] = $metadata;
-            $sessionParams['expires_at'] = StripeCheckoutContract::sessionExpiresAt(
-                (string) $pending['draft']['expires_at'],
-            );
+            $sessionParams['expires_at'] = $stripeExpiresAt;
             $sessionOptions['idempotency_key'] = StripeCheckoutContract::idempotencyKey(
                 (int) $pending['attempt']['attempt_id'],
                 'checkout-session',
@@ -143,14 +165,7 @@ class StripeController
         try {
             $session = \Stripe\Checkout\Session::create($sessionParams, $sessionOptions);
         } catch (\Throwable $e) {
-            if (isset($pending['attempt'])) {
-                try {
-                    PaymentAttemptModel::recordAttemptError((int) $pending['attempt']['attempt_id'], $e->getMessage());
-                } catch (\Throwable $trackingError) {
-                    error_log('[payment] tracking erreur Stripe impossible: ' . $trackingError->getMessage());
-                }
-            }
-            error_log('[payment] création Checkout Session Stripe impossible: ' . $e->getMessage());
+            $this->trackAmbiguousStripeError($pending, $e);
             flash('error', 'Impossible de préparer le paiement Stripe. Veuillez réessayer.');
             redirect('/panier');
         }
@@ -340,12 +355,11 @@ class StripeController
                 $session = \Stripe\Checkout\Session::retrieve((string) $attempt['provider_session_id']);
             } catch (\Throwable $e) {
                 error_log('[payment] lecture Checkout Session existante impossible: ' . $e->getMessage());
-                flash('error', 'Impossible de vérifier votre paiement en cours. Veuillez réessayer.');
-                redirect('/panier');
+                throw new \RuntimeException('Checkout Session Stripe temporairement indisponible.', 0, $e);
             }
 
             if ((string) $session->status === 'expired') {
-                PaymentAttemptModel::recordAttemptError((int) $attempt['attempt_id'], 'Checkout Session Stripe expirée.');
+                PaymentAttemptModel::failAttempt((int) $attempt['attempt_id'], 'Checkout Session Stripe expirée.');
                 return $this->replaceAttempt($pending);
             }
 
@@ -363,6 +377,12 @@ class StripeController
             throw new \RuntimeException('Nouvelle tentative Stripe introuvable.');
         }
 
+        StripeCheckoutContract::assertCompatible(
+            $pending['draft'],
+            $attempt,
+            (int) currentUser()['id'],
+        );
+
         $_SESSION['stripe_attempt_id'] = $attemptId;
         unset($_SESSION['stripe_session_id']);
         $pending['attempt'] = $attempt;
@@ -371,20 +391,13 @@ class StripeController
         return $pending;
     }
 
-    private function redirectToExistingOpenSession(array $attempt): bool
+    private function redirectToExistingSession(array $pending): bool
     {
-        if (empty($attempt['provider_session_id'])) {
+        if (!isset($pending['stripe_session'])) {
             return false;
         }
 
-        try {
-            $session = \Stripe\Checkout\Session::retrieve((string) $attempt['provider_session_id']);
-        } catch (\Throwable $e) {
-            error_log('[payment] relecture Checkout Session impossible: ' . $e->getMessage());
-            flash('error', 'Impossible de reprendre votre paiement en cours. Veuillez réessayer.');
-            redirect('/panier');
-        }
-
+        $session = $pending['stripe_session'];
         if ((string) $session->status === 'open' && !empty($session->url)) {
             $_SESSION['stripe_session_id'] = $session->id;
             header('Location: ' . $session->url);
@@ -396,6 +409,19 @@ class StripeController
         }
 
         return false;
+    }
+
+    private function trackAmbiguousStripeError(array $pending, \Throwable $e): void
+    {
+        if (isset($pending['attempt'])) {
+            try {
+                PaymentAttemptModel::recordAttemptError((int) $pending['attempt']['attempt_id'], $e->getMessage());
+            } catch (\Throwable $trackingError) {
+                error_log('[payment] tracking erreur Stripe impossible: ' . $trackingError->getMessage());
+            }
+        }
+
+        error_log('[payment] appel Stripe ambigu: ' . $e->getMessage());
     }
 
     private function loadPendingPayment(): ?array
