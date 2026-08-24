@@ -6,25 +6,7 @@ use App\Config\Database;
 
 class UserModel {
 
-    public static function ensureSchema(): void
-    {
-        try {
-            $db = Database::getConnection();
-            foreach (['email_verified_at' => 'DATETIME NULL DEFAULT NULL', 'email_verification_token' => 'VARCHAR(64) NULL DEFAULT NULL'] as $col => $def) {
-                $stmt = $db->prepare("SELECT COUNT(*) FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'utilisateur' AND COLUMN_NAME = ?");
-                $stmt->execute([$col]);
-                if ((int)$stmt->fetchColumn() === 0) {
-                    $db->exec("ALTER TABLE `utilisateur` ADD COLUMN `{$col}` {$def}");
-                    if ($col === 'email_verified_at') {
-                        $db->exec("UPDATE utilisateur SET email_verified_at = created_at WHERE email_verified_at IS NULL");
-                    }
-                }
-            }
-        } catch (\Throwable) {}
-    }
-
     public static function findByEmail(string $email): ?array {
-        self::ensureSchema();
         $db   = Database::getConnection();
         $stmt = $db->prepare("
             SELECT u.*, r.libelle AS role_libelle
@@ -82,7 +64,6 @@ class UserModel {
     }
 
     public static function verifyEmail(string $token): ?array {
-        self::ensureSchema();
         $db   = Database::getConnection();
         $stmt = $db->prepare(
             "SELECT utilisateur_id FROM utilisateur
