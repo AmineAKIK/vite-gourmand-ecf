@@ -33,20 +33,7 @@ final class OrderTransitionService
         string $modeContact,
         ?int $modifiePar,
     ): array {
-        $motif = trim($motif);
-        $modeContact = trim($modeContact);
-        if ($motif === '' || $modeContact === '') {
-            throw new RuntimeException('Le motif et le mode de contact sont obligatoires pour une annulation.');
-        }
-
-        return self::apply(
-            $commandeId,
-            OrderStatus::cancelled(),
-            sprintf('Annulation (%s) : %s', $modeContact, $motif),
-            $modifiePar,
-            $motif,
-            $modeContact,
-        );
+        return OrderCancellationService::cancel($commandeId, $motif, $modeContact, $modifiePar);
     }
 
     /**
