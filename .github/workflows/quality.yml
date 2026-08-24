@@ -1,0 +1,72 @@
+name: Quality Gate
+
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+concurrency:
+  group: quality-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    name: PHP quality gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql, zip
+          coverage: none
+          tools: composer:v2, phpunit:10, phpstan:2.2, php-cs-fixer:3
+
+      - name: Validate Composer metadata
+        run: composer validate --strict --no-interaction
+
+      - name: Install locked dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Audit locked dependencies
+        run: composer audit --locked --no-interaction
+
+      - name: Lint PHP syntax
+        shell: bash
+        run: |
+          set -euo pipefail
+          find src public tests -type f -name '*.php' -print0 \
+            | xargs -0 -n1 php -l
+
+      - name: Run unit tests
+        run: phpunit --configuration phpunit.xml
+
+      - name: Run PHPStan
+        run: phpstan analyse --configuration phpstan.neon --no-progress
+
+      - name: Check style of newly added PHP files
+        if: github.event_name == 'pull_request'
+        shell: bash
+        run: |
+          set -euo pipefail
+          git diff --diff-filter=A --name-only "origin/${{ github.base_ref }}...HEAD" -- '*.php' > /tmp/new-php-files.txt
+          if [ -s /tmp/new-php-files.txt ]; then
+            while IFS= read -r file; do
+              php-cs-fixer fix "$file" --dry-run --diff --using-cache=no --rules=@PER-CS2.0
+            done < /tmp/new-php-files.txt
+          else
+            echo 'No newly added PHP files to style-check.'
+          fi
