@@ -23,13 +23,32 @@ final class BillingCreditNoteService
              WHERE commande_id = ?
                AND statut = 'finalise'
                AND type_document IN ('facture', 'acompte')
-             ORDER BY document_id ASC
+             ORDER BY finalized_at ASC, document_id ASC
              FOR UPDATE",
         );
         $stmt->execute([$commandeId]);
+        $sources = $stmt->fetchAll();
+
+        // Une facture finale porte déjà le total de la commande et affiche l'acompte versé.
+        // L'annuler en plus de la facture d'acompte créerait un double avoir. Si une facture
+        // finale existe, elle est donc le document fiscal de référence ; sinon on annule
+        // uniquement la dernière facture d'acompte disponible.
+        $factures = array_values(array_filter(
+            $sources,
+            static fn(array $source): bool => ($source['type_document'] ?? '') === 'facture',
+        ));
+        if ($factures !== []) {
+            $sources = [end($factures)];
+        } else {
+            $acomptes = array_values(array_filter(
+                $sources,
+                static fn(array $source): bool => ($source['type_document'] ?? '') === 'acompte',
+            ));
+            $sources = $acomptes === [] ? [] : [end($acomptes)];
+        }
 
         $created = [];
-        foreach ($stmt->fetchAll() as $source) {
+        foreach ($sources as $source) {
             $sourceId = (int) $source['document_id'];
             $existing = $db->prepare(
                 "SELECT document_id FROM document_facturation
