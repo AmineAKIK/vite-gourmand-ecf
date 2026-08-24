@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Domain\StripeSuccessReconciliation;
+use App\Domain\StripeWebhookContract;
 use App\Models\NotificationModel;
 use App\Models\PaiementModel;
 use App\Models\PaymentAttemptModel;
@@ -69,32 +71,29 @@ final class StripeFulfillmentController
     {
         requireAuth();
 
-        if (!isset($_SESSION['stripe_draft_id'])) {
-            (new StripeController())->success();
-            return;
-        }
-
-        $sessionId = sanitize($_GET['session_id'] ?? '');
+        $sessionId = trim((string) ($_GET['session_id'] ?? ''));
         $user = currentUser();
-        $draftId = (int) ($_SESSION['stripe_draft_id'] ?? 0);
-        $attemptId = (int) ($_SESSION['stripe_attempt_id'] ?? 0);
-
-        if (!$sessionId || !$user || $draftId <= 0 || $attemptId <= 0) {
-            flash('error', 'Paiement non confirmé.');
+        if ($sessionId === '' || strlen($sessionId) > 255 || !$user) {
+            flash('error', 'Référence de paiement invalide.');
             redirect('/mon-compte');
         }
 
         try {
-            $draft = PaymentAttemptModel::findDraftForUser($draftId, (int) $user['id']);
-            $attempt = PaymentAttemptModel::findAttemptForDraft($attemptId, $draftId);
+            $context = PaymentAttemptModel::findStripeContextForUser($sessionId, (int) $user['id']);
         } catch (Throwable $e) {
-            error_log('[payment] lecture réconciliation success impossible: ' . $e->getMessage());
+            error_log('[payment] résolution success impossible: ' . $e->getMessage());
             flash('error', 'Impossible de vérifier votre paiement. Contactez-nous.');
             redirect('/mon-compte');
         }
 
-        if (!$draft || !$attempt || (string) ($attempt['provider_session_id'] ?? '') !== $sessionId) {
-            flash('error', 'Référence de paiement invalide.');
+        if (!$context) {
+            error_log('[payment] success Stripe non rattaché user_id=' . (int) $user['id']);
+            flash('error', 'Ce paiement ne correspond pas à votre compte.');
+            redirect('/mon-compte');
+        }
+
+        if (!STRIPE_SECRET_KEY || str_starts_with(STRIPE_SECRET_KEY, 'sk_test_REMPLACER')) {
+            flash('error', 'Impossible de vérifier votre paiement. Contactez-nous.');
             redirect('/mon-compte');
         }
 
@@ -107,32 +106,80 @@ final class StripeFulfillmentController
             redirect('/mon-compte');
         }
 
-        if ((string) $stripeSession->payment_status !== 'paid') {
+        $sessionData = $this->sessionData($stripeSession);
+        if ((string) $sessionData['payment_status'] !== 'paid') {
             flash('error', 'Le paiement n’a pas été complété.');
             redirect('/panier');
         }
 
         try {
-            $draft = PaymentAttemptModel::findDraftForUser($draftId, (int) $user['id']) ?? $draft;
+            StripeWebhookContract::assertPaidSession(
+                $sessionData,
+                $context['draft'],
+                $context['attempt'],
+            );
         } catch (Throwable $e) {
-            error_log('[payment] relecture draft après paiement impossible: ' . $e->getMessage());
+            error_log('[payment] réconciliation Stripe incohérente session=' . $sessionId . ': ' . $e->getMessage());
+            flash('error', 'Le paiement reçu ne correspond pas à la commande préparée. Contactez-nous.');
+            redirect('/mon-compte');
         }
 
-        unset(
-            $_SESSION['stripe_pending'],
-            $_SESSION['stripe_draft_id'],
-            $_SESSION['stripe_attempt_id'],
-            $_SESSION['stripe_session_id'],
-        );
-        $_SESSION['panier'] = [];
+        try {
+            $freshContext = PaymentAttemptModel::findStripeContextForUser($sessionId, (int) $user['id']);
+            if ($freshContext) {
+                $context = $freshContext;
+            }
+        } catch (Throwable $e) {
+            error_log('[payment] relecture état fulfillment impossible session=' . $sessionId . ': ' . $e->getMessage());
+        }
 
-        if (!empty($draft['commande_id'])) {
+        $state = StripeSuccessReconciliation::state($context['draft'], $context['attempt']);
+        if ($state === StripeSuccessReconciliation::CONFIRMED) {
+            $currentCart = is_array($_SESSION['panier'] ?? null) ? $_SESSION['panier'] : [];
+            $draftCart = is_array($context['draft']['panier'] ?? null) ? $context['draft']['panier'] : [];
+            if (StripeSuccessReconciliation::shouldClearCart($currentCart, $draftCart)) {
+                $_SESSION['panier'] = [];
+            }
+
+            $this->clearMatchingBrowserPaymentState(
+                $sessionId,
+                (int) $context['draft']['draft_id'],
+                (int) $context['attempt']['attempt_id'],
+            );
             flash('success', 'Paiement confirmé ! Votre commande a bien été enregistrée.');
-        } else {
-            flash('success', 'Paiement reçu. Votre commande est en cours de confirmation automatique.');
+            redirect('/mon-compte');
         }
 
+        if ($state === StripeSuccessReconciliation::PENDING) {
+            flash('success', 'Paiement reçu. Votre commande est en cours de confirmation automatique.');
+            redirect('/mon-compte');
+        }
+
+        error_log(sprintf(
+            '[payment] état success inattendu session=%s draft=%d attempt=%d state=%s',
+            $sessionId,
+            (int) $context['draft']['draft_id'],
+            (int) $context['attempt']['attempt_id'],
+            $state,
+        ));
+        flash('error', 'Votre paiement a été reçu mais son enregistrement doit être vérifié. Contactez-nous.');
         redirect('/mon-compte');
+    }
+
+    private function clearMatchingBrowserPaymentState(string $sessionId, int $draftId, int $attemptId): void
+    {
+        $storedSessionId = (string) ($_SESSION['stripe_session_id'] ?? '');
+        $storedDraftId = (int) ($_SESSION['stripe_draft_id'] ?? 0);
+        $storedAttemptId = (int) ($_SESSION['stripe_attempt_id'] ?? 0);
+
+        if ($storedSessionId === $sessionId || ($storedDraftId === $draftId && $storedAttemptId === $attemptId)) {
+            unset(
+                $_SESSION['stripe_pending'],
+                $_SESSION['stripe_draft_id'],
+                $_SESSION['stripe_attempt_id'],
+                $_SESSION['stripe_session_id'],
+            );
+        }
     }
 
     private function sessionData(object $session): array
