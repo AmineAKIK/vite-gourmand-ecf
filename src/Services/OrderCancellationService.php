@@ -111,45 +111,87 @@ final class OrderCancellationService
         }
 
         \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
-        $paymentReference = (string) $attempt['provider_payment_reference'];
 
         try {
-            if (str_starts_with($paymentReference, 'cs_')) {
-                $session = \Stripe\Checkout\Session::retrieve($paymentReference);
-                $paymentReference = (string) ($session->payment_intent ?? '');
-            }
-            if (!str_starts_with($paymentReference, 'pi_')) {
-                throw new RuntimeException('Référence de PaymentIntent Stripe introuvable.');
-            }
+            if (!empty($attempt['provider_refund_id'])) {
+                $refund = \Stripe\Refund::retrieve((string) $attempt['provider_refund_id']);
+            } else {
+                $paymentReference = (string) $attempt['provider_payment_reference'];
+                if (str_starts_with($paymentReference, 'cs_')) {
+                    $session = \Stripe\Checkout\Session::retrieve($paymentReference);
+                    $paymentReference = (string) ($session->payment_intent ?? '');
+                }
+                if (!str_starts_with($paymentReference, 'pi_')) {
+                    throw new RuntimeException('Référence de PaymentIntent Stripe introuvable.');
+                }
 
-            $refund = \Stripe\Refund::create([
-                'payment_intent' => $paymentReference,
-                'amount' => (int) $attempt['amount_cents'],
-                'metadata' => [
-                    'commande_id' => (string) $attempt['commande_id'],
-                    'paiement_id' => (string) $attempt['paiement_id'],
-                ],
-            ], [
-                'idempotency_key' => (string) $attempt['operation_key'],
-            ]);
-
-            $db = Database::getConnection();
-            $stmt = $db->prepare(
-                "UPDATE payment_refund_attempt
-                 SET status = 'succeeded', provider_refund_id = ?, last_error = NULL
-                 WHERE refund_attempt_id = ?",
-            );
-            $stmt->execute([(string) $refund->id, (int) $attempt['refund_attempt_id']]);
+                $refund = \Stripe\Refund::create([
+                    'payment_intent' => $paymentReference,
+                    'amount' => (int) $attempt['amount_cents'],
+                    'metadata' => [
+                        'commande_id' => (string) $attempt['commande_id'],
+                        'paiement_id' => (string) $attempt['paiement_id'],
+                    ],
+                ], [
+                    'idempotency_key' => (string) $attempt['operation_key'],
+                ]);
+            }
         } catch (Throwable $e) {
-            $db = Database::getConnection();
-            $stmt = $db->prepare(
-                "UPDATE payment_refund_attempt
-                 SET status = 'failed', last_error = ?
-                 WHERE refund_attempt_id = ?",
+            self::updateRefundAttempt(
+                (int) $attempt['refund_attempt_id'],
+                'failed',
+                isset($refund) ? (string) $refund->id : null,
+                $e->getMessage(),
             );
-            $stmt->execute([substr($e->getMessage(), 0, 500), (int) $attempt['refund_attempt_id']]);
             throw new RuntimeException('Le remboursement Stripe a échoué. La commande n’a pas été annulée.', 0, $e);
         }
+
+        $providerStatus = (string) ($refund->status ?? '');
+        $refundId = (string) $refund->id;
+        if ($providerStatus === 'succeeded') {
+            self::updateRefundAttempt((int) $attempt['refund_attempt_id'], 'succeeded', $refundId, null);
+            return;
+        }
+
+        if (in_array($providerStatus, ['failed', 'canceled'], true)) {
+            self::updateRefundAttempt(
+                (int) $attempt['refund_attempt_id'],
+                'failed',
+                $refundId,
+                'Statut Stripe: ' . $providerStatus,
+            );
+            throw new RuntimeException('Le remboursement Stripe a échoué. La commande n’a pas été annulée.');
+        }
+
+        self::updateRefundAttempt(
+            (int) $attempt['refund_attempt_id'],
+            'pending',
+            $refundId,
+            'Statut Stripe: ' . ($providerStatus !== '' ? $providerStatus : 'pending'),
+        );
+        throw new RuntimeException(
+            'Le remboursement Stripe est encore en cours. Réessayez l’annulation après confirmation du remboursement.',
+        );
+    }
+
+    private static function updateRefundAttempt(
+        int $attemptId,
+        string $status,
+        ?string $providerRefundId,
+        ?string $lastError,
+    ): void {
+        $db = Database::getConnection();
+        $stmt = $db->prepare(
+            'UPDATE payment_refund_attempt
+             SET status = ?, provider_refund_id = COALESCE(?, provider_refund_id), last_error = ?
+             WHERE refund_attempt_id = ?',
+        );
+        $stmt->execute([
+            $status,
+            $providerRefundId,
+            $lastError !== null ? substr($lastError, 0, 500) : null,
+            $attemptId,
+        ]);
     }
 
     /**
