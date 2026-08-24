@@ -141,6 +141,59 @@ final class OrderAdmissionService
         $stmt->execute([$numeroCommande]);
     }
 
+    public static function assertAndRecordDateMove(
+        PDO $db,
+        int $commandeId,
+        string $targetDate,
+        int $maxPerDay,
+    ): void {
+        if ($commandeId <= 0 || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $targetDate)) {
+            throw new RuntimeException('Modification de date invalide.');
+        }
+        if (!$db->inTransaction()) {
+            throw new RuntimeException('La modification de date doit être transactionnelle.');
+        }
+
+        $commandeStmt = $db->prepare(
+            'SELECT date_prestation, statut FROM commande WHERE commande_id = ? FOR UPDATE',
+        );
+        $commandeStmt->execute([$commandeId]);
+        $commande = $commandeStmt->fetch();
+        if (!$commande) {
+            throw new RuntimeException('Commande introuvable.');
+        }
+        if ((string) $commande['statut'] !== OrderStatus::initial()) {
+            throw new RuntimeException('Cette commande ne peut plus être modifiée.');
+        }
+
+        $currentDate = (string) $commande['date_prestation'];
+        if ($currentDate === $targetDate) {
+            return;
+        }
+
+        self::lockScopes($db, ['day:' . $currentDate, 'day:' . $targetDate]);
+        self::expireStaleReservations($db, $targetDate, date('Y-m'));
+
+        if ($maxPerDay > 0) {
+            $ordersStmt = $db->prepare(
+                'SELECT COUNT(*) FROM commande '
+                . 'WHERE date_prestation = ? AND statut <> ? AND commande_id <> ?',
+            );
+            $ordersStmt->execute([$targetDate, OrderStatus::cancelled(), $commandeId]);
+            $destinationCount = (int) $ordersStmt->fetchColumn()
+                + self::countActiveReservationsForDay($db, $targetDate);
+
+            OrderAdmissionPolicy::assertWithinLimits($destinationCount, $maxPerDay, 0, 0);
+        }
+
+        $reservationStmt = $db->prepare(
+            "UPDATE order_admission_reservation
+             SET date_prestation = ?
+             WHERE commande_id = ? AND status = 'consumed'",
+        );
+        $reservationStmt->execute([$targetDate, $commandeId]);
+    }
+
     public static function countCommittedAndReservedForDay(PDO $db, string $datePrestation): int
     {
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $datePrestation)) {
@@ -153,6 +206,7 @@ final class OrderAdmissionService
 
     private static function lockScopes(PDO $db, array $scopeKeys): void
     {
+        $scopeKeys = array_values(array_unique($scopeKeys));
         sort($scopeKeys, SORT_STRING);
         $insert = $db->prepare(
             'INSERT INTO order_admission_lock (scope_key) VALUES (?) '
