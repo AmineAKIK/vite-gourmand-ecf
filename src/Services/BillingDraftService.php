@@ -30,7 +30,6 @@ final class BillingDraftService
                 throw new RuntimeException('Le document doit contenir au moins une ligne.');
             }
             $totals = self::totalsFromLines($lines);
-
             $rawAcompte = trim((string) ($payload['montant_acompte_verse'] ?? ''));
             $montantAcompte = ($rawAcompte !== '' && is_numeric($rawAcompte) && (float) $rawAcompte >= 0)
                 ? round((float) $rawAcompte, 2)
@@ -63,14 +62,8 @@ final class BillingDraftService
                 trim((string) ($payload['note_publique'] ?? '')),
                 trim((string) ($payload['mention_legale'] ?? '')),
                 $montantAcompte,
-                $totals['ht'],
-                $totals['tva'],
-                $totals['ttc'],
-                $documentId,
+                $totals['ht'], $totals['tva'], $totals['ttc'], $documentId,
             ]);
-            if ($update->rowCount() !== 1) {
-                throw new RuntimeException('Le brouillon a changé pendant la modification.');
-            }
 
             self::replaceLines($db, $documentId, $lines);
             $db->commit();
@@ -86,24 +79,10 @@ final class BillingDraftService
     {
         $db->prepare('DELETE FROM document_facturation_ligne WHERE document_id = ?')->execute([$documentId]);
         $stmt = $db->prepare(
-            'INSERT INTO document_facturation_ligne (
-                document_id, designation, quantite, prix_unitaire_ht, prix_unitaire_ttc,
-                taux_tva, total_ht, total_tva, total_ttc, ordre
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+            'INSERT INTO document_facturation_ligne (document_id, designation, quantite, prix_unitaire_ht, prix_unitaire_ttc, taux_tva, total_ht, total_tva, total_ttc, ordre) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         );
         foreach ($lines as $line) {
-            $stmt->execute([
-                $documentId,
-                $line['designation'],
-                $line['quantite'],
-                $line['prix_unitaire_ht'],
-                $line['prix_unitaire_ttc'],
-                $line['taux_tva'],
-                $line['total_ht'],
-                $line['total_tva'],
-                $line['total_ttc'],
-                $line['ordre'],
-            ]);
+            $stmt->execute([$documentId, $line['designation'], $line['quantite'], $line['prix_unitaire_ht'], $line['prix_unitaire_ttc'], $line['taux_tva'], $line['total_ht'], $line['total_tva'], $line['total_ttc'], $line['ordre']]);
         }
     }
 
@@ -114,7 +93,6 @@ final class BillingDraftService
         $prices = is_array($payload['prix_unitaire_ttc'] ?? null) ? $payload['prix_unitaire_ttc'] : [];
         $taxRates = is_array($payload['taux_tva'] ?? null) ? $payload['taux_tva'] : [];
         $lines = [];
-
         foreach ($designations as $index => $designation) {
             $designation = trim((string) $designation);
             if ($designation === '') {
@@ -126,7 +104,6 @@ final class BillingDraftService
             $unitHt = $taxRate > 0 ? $priceTtc / (1 + ($taxRate / 100)) : $priceTtc;
             $totalTtc = $quantity * $priceTtc;
             $totalHt = $quantity * $unitHt;
-
             $lines[] = [
                 'designation' => $designation,
                 'quantite' => round($quantity, 2),
@@ -139,7 +116,6 @@ final class BillingDraftService
                 'ordre' => count($lines) + 1,
             ];
         }
-
         return $lines;
     }
 
