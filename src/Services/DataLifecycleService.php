@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Config\Database;
 use App\Domain\DataRetentionPolicy;
 use DateTimeImmutable;
-use PDO;
 
 final class DataLifecycleService
 {
@@ -17,12 +16,12 @@ final class DataLifecycleService
         $db = Database::getConnection();
 
         $notifications = $db->prepare(
-            'SELECT COUNT(*) FROM notification WHERE lu = 1 AND created_at < ?'
+            'SELECT COUNT(*) FROM notification WHERE lu = 1 AND created_at < ?',
         );
         $notifications->execute([$notificationCutoff]);
 
         $reminders = $db->prepare(
-            'SELECT COUNT(*) FROM cron_rappel_log WHERE sent_at IS NOT NULL AND sent_at < ?'
+            'SELECT COUNT(*) FROM cron_rappel_log WHERE sent_at IS NOT NULL AND sent_at < ?',
         );
         $reminders->execute([$reminderCutoff]);
 
