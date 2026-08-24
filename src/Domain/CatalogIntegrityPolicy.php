@@ -79,4 +79,35 @@ final class CatalogIntegrityPolicy
             throw new InvalidArgumentException('La catégorie du plat est obligatoire.');
         }
     }
+
+    /**
+     * @return array{libelle:string,unite:string,prix_unitaire:string,seuil_alerte:?string}
+     */
+    public static function ingredientPayload(array $data): array
+    {
+        $libelle = trim((string) ($data['libelle'] ?? ''));
+        $unite = trim((string) ($data['unite'] ?? 'kg'));
+        $priceRaw = str_replace(',', '.', trim((string) ($data['prix_unitaire'] ?? '0')));
+        $thresholdRaw = str_replace(',', '.', trim((string) ($data['seuil_alerte'] ?? '')));
+
+        if ($libelle === '') {
+            throw new InvalidArgumentException('Le libellé de l’ingrédient est obligatoire.');
+        }
+        if ($unite === '') {
+            throw new InvalidArgumentException('L’unité de l’ingrédient est obligatoire.');
+        }
+        if (!is_numeric($priceRaw) || (float) $priceRaw < 0) {
+            throw new InvalidArgumentException('Le prix unitaire de l’ingrédient est invalide.');
+        }
+        if ($thresholdRaw !== '' && (!is_numeric($thresholdRaw) || (float) $thresholdRaw < 0)) {
+            throw new InvalidArgumentException('Le seuil d’alerte de l’ingrédient est invalide.');
+        }
+
+        return [
+            'libelle' => $libelle,
+            'unite' => $unite,
+            'prix_unitaire' => number_format((float) $priceRaw, 4, '.', ''),
+            'seuil_alerte' => $thresholdRaw === '' ? null : number_format((float) $thresholdRaw, 3, '.', ''),
+        ];
+    }
 }
