@@ -4,34 +4,19 @@ namespace App\Services;
 
 use App\Config\Database;
 use App\Config\SiteConfig;
+use App\Domain\Money;
+use App\Domain\OrderPricingCalculator;
 use App\Geo\DeliveryResolver;
 use InvalidArgumentException;
 use Throwable;
 
 class PricingService
 {
-    // ----------------------------------------------------------------
-    // Calcul complet du total d'une commande à partir du panier session
-    // ----------------------------------------------------------------
-
     /**
      * Calcule tous les montants d'une commande.
      *
-     * $panierItems : tableau de la session, chaque item contient :
-     *   menu_id, titre, prix_par_personne, minimum, nombre_personne
-     *
-     * $adresse, $ville, $codePostal : adresse de livraison saisie
-     *
-     * Retourne un array structuré contenant :
-     *   - lignes[]        : une entrée par item panier avec tous les montants et snapshots
-     *   - total_brut      : somme des prix (nb × prix/pers) avant remise
-     *   - remise_globale  : montant total de remise (0 si sous le seuil)
-     *   - total_menus_net : total menus après remise
-     *   - prix_livraison  : frais de livraison calculés (null si adresse non reconnue)
-     *   - total_ttc       : total_menus_net + prix_livraison
-     *   - snapshots       : seuil, taux_reduction, taux_tva_menu, taux_tva_livraison, regime_tva
-     *
-     * Lève InvalidArgumentException si l'adresse n'est pas reconnue.
+     * Le contrat financier canonique est exprimé en centimes entiers. Les champs
+     * historiques en euros restent présents pour compatibilité avec la base et les vues.
      */
     public static function computeOrderTotal(
         array $panierItems,
@@ -39,65 +24,14 @@ class PricingService
         string $ville,
         string $codePostal
     ): array {
-        $tauxTvaMenu      = self::defaultTauxTvaByCategorie('menu');
+        $tauxTvaMenu = self::defaultTauxTvaByCategorie('menu');
         $tauxTvaLivraison = self::defaultTauxTvaByCategorie('livraison');
-        $tauxTvaMenuId    = self::defaultTauxTvaIdByCategorie('menu');
+        $tauxTvaMenuId = self::defaultTauxTvaIdByCategorie('menu');
         $tauxTvaLivraisonId = self::defaultTauxTvaIdByCategorie('livraison');
-        $seuilReduction   = SiteConfig::discountThreshold();
-        $tauxReduction    = SiteConfig::discountRate();
-        $regimeTva        = self::regimeTva();
+        $seuilReduction = SiteConfig::discountThreshold();
+        $tauxReduction = SiteConfig::discountRate();
+        $regimeTva = self::regimeTva();
 
-        // 1. Calculer le total brut (sans remise) sur tous les items
-        $totalBrut = 0.0;
-        foreach ($panierItems as $item) {
-            $totalBrut += round((float)$item['prix_par_personne'] * (int)$item['nombre_personne'], 2);
-        }
-        $totalBrut = round($totalBrut, 2);
-
-        // 2. Calculer la remise globale sur le total (pas par ligne)
-        $remiseGlobale = 0.0;
-        $tauxReductionApplique = 0.0;
-        if ($seuilReduction > 0 && $totalBrut >= $seuilReduction) {
-            $remiseGlobale = round($totalBrut * ($tauxReduction / 100), 2);
-            $tauxReductionApplique = $tauxReduction;
-        }
-        $totalMenusNet = round($totalBrut - $remiseGlobale, 2);
-
-        // 3. Répartir la remise proportionnellement sur chaque ligne
-        $lignes = [];
-        $remiseRepartie = 0.0;
-        $nbItems = count($panierItems);
-        foreach ($panierItems as $index => $item) {
-            $prixBrutLigne = round((float)$item['prix_par_personne'] * (int)$item['nombre_personne'], 2);
-
-            // Dernière ligne : prend le reste pour éviter les erreurs d'arrondi
-            if ($index === $nbItems - 1) {
-                $remiseLigne = round($remiseGlobale - $remiseRepartie, 2);
-            } else {
-                $remiseLigne = $totalBrut > 0
-                    ? round($remiseGlobale * ($prixBrutLigne / $totalBrut), 2)
-                    : 0.0;
-                $remiseRepartie = round($remiseRepartie + $remiseLigne, 2);
-            }
-
-            $prixNetLigne = round($prixBrutLigne - $remiseLigne, 2);
-
-            $lignes[] = [
-                'menu_id'                    => (int)$item['menu_id'],
-                'nombre_personne'            => (int)$item['nombre_personne'],
-                'prix_par_personne_snapshot' => (float)$item['prix_par_personne'],
-                'prix_menu'                  => $prixNetLigne,
-                'remise_appliquee'           => $remiseLigne,
-                'taux_tva_snapshot'          => $tauxTvaMenu,
-                'taux_tva_id'                => $tauxTvaMenuId,
-                'taux_reduction_snapshot'    => $tauxReductionApplique,
-                // prix_livraison et prix_total_ligne : renseignés après calcul livraison
-                'prix_livraison'             => 0.0,
-                'prix_total_ligne'           => $prixNetLigne,
-            ];
-        }
-
-        // 4. Calculer la livraison
         $prixLivraison = DeliveryResolver::computeDeliveryPrice($adresse, $ville, $codePostal);
         if ($prixLivraison === null) {
             throw new InvalidArgumentException(
@@ -105,50 +39,65 @@ class PricingService
             );
         }
 
-        // 5. Porter la livraison sur la première ligne uniquement
-        if (!empty($lignes)) {
-            $lignes[0]['prix_livraison']  = $prixLivraison;
-            $lignes[0]['prix_total_ligne'] = round($lignes[0]['prix_menu'] + $prixLivraison, 2);
+        $pricing = OrderPricingCalculator::calculate(
+            $panierItems,
+            Money::fromDecimal($prixLivraison),
+            Money::fromDecimal($seuilReduction),
+            $tauxReduction
+        );
 
-            // Toutes les autres lignes : prix_total_ligne = prix_menu
-            for ($i = 1; $i < count($lignes); $i++) {
-                $lignes[$i]['prix_total_ligne'] = $lignes[$i]['prix_menu'];
-            }
+        $lignes = [];
+        foreach ($pricing['lignes'] as $index => $line) {
+            $prixLivraisonCents = $index === 0 ? $pricing['prix_livraison_cents'] : 0;
+            $prixTotalLigneCents = $line['prix_menu_net_cents'] + $prixLivraisonCents;
+
+            $lignes[] = [
+                'menu_id' => $line['menu_id'],
+                'nombre_personne' => $line['nombre_personne'],
+                'prix_par_personne_snapshot' => Money::toDecimal($line['prix_par_personne_cents']),
+                'prix_par_personne_cents' => $line['prix_par_personne_cents'],
+                'prix_menu_brut' => Money::toDecimal($line['prix_menu_brut_cents']),
+                'prix_menu_brut_cents' => $line['prix_menu_brut_cents'],
+                'prix_menu' => Money::toDecimal($line['prix_menu_net_cents']),
+                'prix_menu_net_cents' => $line['prix_menu_net_cents'],
+                'remise_appliquee' => Money::toDecimal($line['remise_appliquee_cents']),
+                'remise_appliquee_cents' => $line['remise_appliquee_cents'],
+                'taux_tva_snapshot' => $tauxTvaMenu,
+                'taux_tva_id' => $tauxTvaMenuId,
+                'taux_reduction_snapshot' => $pricing['taux_reduction_applique'],
+                'prix_livraison' => Money::toDecimal($prixLivraisonCents),
+                'prix_livraison_cents' => $prixLivraisonCents,
+                'prix_total_ligne' => Money::toDecimal($prixTotalLigneCents),
+                'prix_total_ligne_cents' => $prixTotalLigneCents,
+            ];
         }
 
-        $totalTtc = round($totalMenusNet + $prixLivraison, 2);
-
         return [
-            'lignes'          => $lignes,
-            'total_brut'      => $totalBrut,
-            'remise_globale'  => $remiseGlobale,
-            'total_menus_net' => $totalMenusNet,
-            'prix_livraison'  => $prixLivraison,
-            'total_ttc'       => $totalTtc,
-            'snapshots'       => [
-                'seuil_reduction'       => $seuilReduction,
-                'taux_reduction'        => $tauxReductionApplique,
-                'taux_tva_menu'         => $tauxTvaMenu,
-                'taux_tva_menu_id'      => $tauxTvaMenuId,
-                'taux_tva_livraison'    => $tauxTvaLivraison,
+            'lignes' => $lignes,
+            'total_brut' => Money::toDecimal($pricing['total_brut_cents']),
+            'total_brut_cents' => $pricing['total_brut_cents'],
+            'remise_globale' => Money::toDecimal($pricing['remise_globale_cents']),
+            'remise_globale_cents' => $pricing['remise_globale_cents'],
+            'total_menus_net' => Money::toDecimal($pricing['total_menus_net_cents']),
+            'total_menus_net_cents' => $pricing['total_menus_net_cents'],
+            'prix_livraison' => Money::toDecimal($pricing['prix_livraison_cents']),
+            'prix_livraison_cents' => $pricing['prix_livraison_cents'],
+            'total_ttc' => Money::toDecimal($pricing['total_ttc_cents']),
+            'total_ttc_cents' => $pricing['total_ttc_cents'],
+            'currency' => 'eur',
+            'snapshots' => [
+                'seuil_reduction' => $seuilReduction,
+                'seuil_reduction_cents' => Money::fromDecimal($seuilReduction),
+                'taux_reduction' => $pricing['taux_reduction_applique'],
+                'taux_tva_menu' => $tauxTvaMenu,
+                'taux_tva_menu_id' => $tauxTvaMenuId,
+                'taux_tva_livraison' => $tauxTvaLivraison,
                 'taux_tva_livraison_id' => $tauxTvaLivraisonId,
-                'regime_tva'            => $regimeTva,
+                'regime_tva' => $regimeTva,
             ],
         ];
     }
 
-    // ----------------------------------------------------------------
-    // Validation des prix du panier avant checkout
-    // ----------------------------------------------------------------
-
-    /**
-     * Vérifie que les prix_par_personne du panier session correspondent
-     * aux prix actuels en base. Retourne la liste des items dont le prix
-     * a changé (tableau vide = tout est cohérent).
-     *
-     * $panierItems : tableau de la session
-     * Retourne [] si tout est OK, ou [{menu_id, titre, prix_session, prix_actuel}]
-     */
     public static function detectPrixChanges(array $panierItems): array
     {
         if (empty($panierItems)) {
@@ -164,26 +113,26 @@ class PricingService
 
         $prixActuels = [];
         foreach ($stmt->fetchAll() as $row) {
-            $prixActuels[(int)$row['menu_id']] = [
-                'titre'             => $row['titre'],
-                'prix_par_personne' => (float)$row['prix_par_personne'],
+            $prixActuels[(int) $row['menu_id']] = [
+                'titre' => $row['titre'],
+                'prix_par_personne' => (float) $row['prix_par_personne'],
             ];
         }
 
         $changes = [];
         foreach ($panierItems as $item) {
-            $menuId = (int)$item['menu_id'];
+            $menuId = (int) $item['menu_id'];
             if (!isset($prixActuels[$menuId])) {
                 continue;
             }
-            $prixSession = (float)$item['prix_par_personne'];
-            $prixActuel  = $prixActuels[$menuId]['prix_par_personne'];
+            $prixSession = (float) $item['prix_par_personne'];
+            $prixActuel = $prixActuels[$menuId]['prix_par_personne'];
             if (abs($prixSession - $prixActuel) > 0.001) {
                 $changes[] = [
-                    'menu_id'      => $menuId,
-                    'titre'        => $prixActuels[$menuId]['titre'],
+                    'menu_id' => $menuId,
+                    'titre' => $prixActuels[$menuId]['titre'],
                     'prix_session' => $prixSession,
-                    'prix_actuel'  => $prixActuel,
+                    'prix_actuel' => $prixActuel,
                 ];
             }
         }
@@ -191,15 +140,12 @@ class PricingService
         return $changes;
     }
 
-    // ----------------------------------------------------------------
-    // Conversions HT / TTC
-    // ----------------------------------------------------------------
-
     public static function htFromTtc(float $ttc, float $tauxTva): float
     {
         if ($tauxTva <= 0) {
             return round($ttc, 2);
         }
+
         return round($ttc / (1 + $tauxTva / 100), 2);
     }
 
@@ -211,16 +157,14 @@ class PricingService
     public static function tvaFromTtc(float $ttc, float $tauxTva): float
     {
         $ht = self::htFromTtc($ttc, $tauxTva);
+
         return round($ttc - $ht, 2);
     }
-
-    // ----------------------------------------------------------------
-    // Lecture du régime TVA et des taux depuis la DB
-    // ----------------------------------------------------------------
 
     public static function regimeTva(): string
     {
         $regime = SiteConfig::get('regime_tva', 'assujetti');
+
         return in_array($regime, ['assujetti', 'non_assujetti'], true) ? $regime : 'assujetti';
     }
 
@@ -229,27 +173,21 @@ class PricingService
         return self::regimeTva() === 'assujetti';
     }
 
-    /**
-     * Taux TVA par défaut pour une catégorie ('menu', 'livraison', 'general').
-     * Lit depuis la table taux_tva (migration 015).
-     * Fallback sur 10% si la table n'existe pas encore.
-     */
     public static function defaultTauxTvaByCategorie(string $categorie): float
     {
         try {
             $stmt = Database::getConnection()->prepare(
-                "SELECT taux FROM taux_tva WHERE categorie = ? AND par_defaut = 1 AND actif = 1 LIMIT 1"
+                'SELECT taux FROM taux_tva WHERE categorie = ? AND par_defaut = 1 AND actif = 1 LIMIT 1'
             );
             $stmt->execute([$categorie]);
             $taux = $stmt->fetchColumn();
             if ($taux !== false) {
-                return (float)$taux;
+                return (float) $taux;
             }
         } catch (Throwable) {
-            // table taux_tva pas encore créée (avant migration 015)
+            // Compatibilité temporaire avec les installations antérieures à la migration TVA.
         }
 
-        // Fallback : régime non assujetti → 0%, sinon 10%
         return self::isAssujetti() ? 10.0 : 0.0;
     }
 
@@ -257,30 +195,35 @@ class PricingService
     {
         try {
             $stmt = Database::getConnection()->prepare(
-                "SELECT taux_id FROM taux_tva WHERE categorie = ? AND par_defaut = 1 AND actif = 1 LIMIT 1"
+                'SELECT taux_id FROM taux_tva WHERE categorie = ? AND par_defaut = 1 AND actif = 1 LIMIT 1'
             );
             $stmt->execute([$categorie]);
             $id = $stmt->fetchColumn();
-            return $id !== false ? (int)$id : null;
+
+            return $id !== false ? (int) $id : null;
         } catch (Throwable) {
             return null;
         }
     }
 
-    /**
-     * Liste tous les taux actifs, pour les menus déroulants dans l'interface de facturation.
-     */
     public static function tauxTvaActifs(): array
     {
         try {
             $stmt = Database::getConnection()->prepare(
-                "SELECT taux_id, libelle, taux, categorie, par_defaut FROM taux_tva WHERE actif = 1 ORDER BY taux ASC, libelle ASC"
+                'SELECT taux_id, libelle, taux, categorie, par_defaut FROM taux_tva WHERE actif = 1 ORDER BY taux ASC, libelle ASC'
             );
             $stmt->execute();
+
             return $stmt->fetchAll();
         } catch (Throwable) {
             return [
-                ['taux_id' => null, 'libelle' => 'Restauration traiteur – 10%', 'taux' => 10.0, 'categorie' => 'menu', 'par_defaut' => 1],
+                [
+                    'taux_id' => null,
+                    'libelle' => 'Restauration traiteur – 10%',
+                    'taux' => 10.0,
+                    'categorie' => 'menu',
+                    'par_defaut' => 1,
+                ],
             ];
         }
     }
