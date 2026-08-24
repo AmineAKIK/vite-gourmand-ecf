@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Domain\OrderAdmissionPolicy;
 use App\Domain\OrderStatus;
 use PDO;
 use RuntimeException;
@@ -39,26 +40,14 @@ final class OrderAdmissionService
 
         self::expireStaleReservations($db, $datePrestation, $monthKey);
 
-        if ($maxPerDay > 0) {
-            $dayCount = self::countOrdersForDay($db, $datePrestation)
-                + self::countActiveReservationsForDay($db, $datePrestation);
-            if ($dayCount >= $maxPerDay) {
-                throw new RuntimeException(
-                    'Capacité journalière atteinte (' . $maxPerDay . ' commande(s)). Choisissez une autre date.',
-                );
-            }
-        }
+        $dayCount = $maxPerDay > 0
+            ? self::countOrdersForDay($db, $datePrestation) + self::countActiveReservationsForDay($db, $datePrestation)
+            : 0;
+        $monthCount = $maxPerMonth > 0
+            ? self::countOrdersForMonth($db, $monthKey) + self::countActiveReservationsForMonth($db, $monthKey)
+            : 0;
 
-        if ($maxPerMonth > 0) {
-            $monthCount = self::countOrdersForMonth($db, $monthKey)
-                + self::countActiveReservationsForMonth($db, $monthKey);
-            if ($monthCount >= $maxPerMonth) {
-                throw new RuntimeException(
-                    'Quota mensuel atteint (' . $maxPerMonth . ' commandes). '
-                    . 'Passez au plan supérieur pour continuer à accepter des commandes.',
-                );
-            }
-        }
+        OrderAdmissionPolicy::assertWithinLimits($dayCount, $maxPerDay, $monthCount, $maxPerMonth);
 
         $stmt = $db->prepare(
             "INSERT INTO order_admission_reservation
