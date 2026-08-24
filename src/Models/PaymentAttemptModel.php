@@ -5,6 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Config\Database;
+use App\Config\PlanConfig;
+use App\Config\SiteConfig;
+use App\Services\OrderAdmissionService;
 use JsonException;
 use RuntimeException;
 
@@ -20,10 +23,16 @@ final class PaymentAttemptModel
         int $userId,
     ): array {
         $numeroCommande = (string) ($commandeData['numero_commande'] ?? '');
+        $datePrestation = (string) ($commandeData['date_prestation'] ?? '');
         $expectedCents = (int) ($pricing['total_ttc_cents'] ?? 0);
         $currency = strtolower((string) ($pricing['currency'] ?? 'eur'));
 
-        if ($numeroCommande === '' || $expectedCents <= 0 || !preg_match('/^[a-z]{3}$/', $currency)) {
+        if (
+            $numeroCommande === ''
+            || !preg_match('/^\d{4}-\d{2}-\d{2}$/', $datePrestation)
+            || $expectedCents <= 0
+            || !preg_match('/^[a-z]{3}$/', $currency)
+        ) {
             throw new RuntimeException('Draft de paiement invalide.');
         }
 
@@ -35,15 +44,25 @@ final class PaymentAttemptModel
             throw new RuntimeException('Impossible de sérialiser le draft de paiement.', 0, $e);
         }
 
+        $expiresAt = date('Y-m-d H:i:s', time() + 7200);
         $db = Database::getConnection();
         $db->beginTransaction();
 
         try {
+            $reservationId = OrderAdmissionService::reserve(
+                $db,
+                $numeroCommande,
+                $datePrestation,
+                SiteConfig::commandesMaxParJour(),
+                PlanConfig::maxCommandesMois(),
+                $expiresAt,
+            );
+
             $stmt = $db->prepare(
                 'INSERT INTO order_draft (
                     numero_commande, utilisateur_id, status, currency, expected_total_cents,
                     commande_snapshot, pricing_snapshot, panier_snapshot, expires_at
-                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, DATE_ADD(NOW(), INTERVAL 2 HOUR))',
+                 ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
             );
             $stmt->execute([
                 $numeroCommande,
@@ -54,8 +73,10 @@ final class PaymentAttemptModel
                 $commandeJson,
                 $pricingJson,
                 $panierJson,
+                $expiresAt,
             ]);
             $draftId = (int) $db->lastInsertId();
+            OrderAdmissionService::attachDraft($db, $reservationId, $draftId);
             $attemptId = self::insertAttempt($db, $draftId, $expectedCents, $currency);
 
             $db->commit();

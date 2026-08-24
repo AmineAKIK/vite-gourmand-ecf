@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Config\Database;
-use App\Config\PlanConfig;
 use App\Domain\Money;
 use App\Domain\OrderStatus;
 use App\Domain\StripeWebhookContract;
@@ -77,12 +76,16 @@ final class StripeWebhookFulfillmentService
                 ];
             }
 
-            PlanConfig::checkCommandesQuota();
-
             [$commandeData, $pricing, $panier] = self::decodeSnapshots($draft);
             $commandeData['prix_total'] = Money::toDecimal($validated['amount_total']);
 
             $commandeId = self::createCommande($db, $commandeData, $pricing['lignes'] ?? []);
+            OrderAdmissionService::consume(
+                $db,
+                (string) $commandeData['numero_commande'],
+                $commandeId,
+                (string) $commandeData['date_prestation'],
+            );
 
             PaiementModel::create([
                 'commande_id' => $commandeId,
