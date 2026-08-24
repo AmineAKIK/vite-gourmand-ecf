@@ -342,7 +342,29 @@ class CommandeController {
             'instructions'          => $instructionsUpdate ?: null,
         ];
 
-        CommandeModel::updateDetails((int)$commande['commande_id'], $payload);
+        $updateDb = Database::getConnection();
+        $updateDb->beginTransaction();
+        try {
+            OrderAdmissionService::assertAndRecordDateMove(
+                $updateDb,
+                (int) $commande['commande_id'],
+                (string) $payload['date_prestation'],
+                SiteConfig::commandesMaxParJour(),
+            );
+            CommandeModel::updateDetails((int)$commande['commande_id'], $payload);
+            $updateDb->commit();
+        } catch (\RuntimeException $e) {
+            if ($updateDb->inTransaction()) {
+                $updateDb->rollBack();
+            }
+            redirect('/mon-compte?open_modal=modif_' . (int)$commande['commande_id'] . '&modal_error=' . urlencode($e->getMessage()));
+        } catch (\Throwable $e) {
+            if ($updateDb->inTransaction()) {
+                $updateDb->rollBack();
+            }
+            error_log('[admission] modification commande_id=' . (int)$commande['commande_id'] . ' impossible: ' . $e->getMessage());
+            redirect('/mon-compte?open_modal=modif_' . (int)$commande['commande_id'] . '&modal_error=' . urlencode('Impossible de modifier cette commande. Veuillez réessayer.'));
+        }
 
         $msg = 'Commande modifiée. Nouveau total : ' . formatPrice($payload['prix_total']);
         if (abs($payload['prix_total'] - (float)$commande['prix_total']) > 0.01) {
