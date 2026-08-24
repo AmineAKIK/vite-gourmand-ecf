@@ -51,7 +51,7 @@ final class OrderPricingCalculatorTest extends TestCase
         self::assertSame($result['total_menus_net_cents'], $netLines);
         self::assertSame(
             $result['total_brut_cents'] - $result['remise_globale_cents'],
-            $result['total_menus_net_cents']
+            $result['total_menus_net_cents'],
         );
     }
 
