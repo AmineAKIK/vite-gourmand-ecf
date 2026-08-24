@@ -24,7 +24,7 @@ class PaiementController
                 throw new InvalidArgumentException('Commande introuvable.');
             }
 
-            $paiementId = PaiementModel::create($_POST, (int)currentUser()['id']);
+            PaiementModel::create($_POST, (int)currentUser()['id']);
 
             // Si type = acompte et qu'un document_id est lié, mettre à jour les champs
             // montant_acompte_verse / solde_a_regler sur le document (pratique courante).
@@ -58,8 +58,8 @@ class PaiementController
             if (!$paiement) {
                 throw new InvalidArgumentException('Paiement introuvable.');
             }
-            PaiementModel::delete($paiementId);
-            flash('success', 'Paiement supprimé.');
+            PaiementModel::delete($paiementId, (int)currentUser()['id']);
+            flash('success', 'Paiement contre-passé. L’écriture d’origine est conservée.');
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }
