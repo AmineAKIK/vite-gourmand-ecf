@@ -4,7 +4,8 @@ namespace App\Controllers;
 
 use App\Config\Database;
 use App\Config\SiteConfig;
-use App\Services\MailService;
+use App\Services\ReminderLeaseService;
+use App\Services\ReminderMailTransport;
 
 class CronController
 {
@@ -45,6 +46,8 @@ class CronController
 
         $sent = 0;
         $skipped = 0;
+        $failed = 0;
+
         foreach ($commandes as $cmd) {
             if (!$cmd['email']) {
                 $skipped++;
@@ -55,35 +58,48 @@ class CronController
                 (strtotime($cmd['date_prestation']) - strtotime($today)) / 86400
             );
             $typeRappel = 'prestation_j' . $jours;
+            $commandeId = (int) $cmd['commande_id'];
+            $dateCible = (string) $cmd['date_prestation'];
 
-            $reserved = $db->prepare(
-                'INSERT IGNORE INTO cron_rappel_log (commande_id, type_rappel, date_cible) VALUES (?, ?, ?)'
-            );
-            $reserved->execute([(int) $cmd['commande_id'], $typeRappel, $cmd['date_prestation']]);
-            if ($reserved->rowCount() !== 1) {
+            $leaseToken = ReminderLeaseService::claim($commandeId, $typeRappel, $dateCible);
+            if ($leaseToken === null) {
                 $skipped++;
                 continue;
             }
 
             try {
-                MailService::sendRappelPrestation($cmd['email'], $cmd['prenom'] ?? '', $cmd, $jours);
-                $db->prepare(
-                    'UPDATE cron_rappel_log SET sent_at = NOW() WHERE commande_id = ? AND type_rappel = ? AND date_cible = ?'
-                )->execute([(int) $cmd['commande_id'], $typeRappel, $cmd['date_prestation']]);
+                ReminderMailTransport::send($cmd['email'], $cmd['prenom'] ?? '', $cmd, $jours);
+                ReminderLeaseService::markSent($commandeId, $typeRappel, $dateCible, $leaseToken);
                 $sent++;
-            } catch (\Throwable $e) {
-                $db->prepare(
-                    'DELETE FROM cron_rappel_log WHERE commande_id = ? AND type_rappel = ? AND date_cible = ? AND sent_at IS NULL'
-                )->execute([(int) $cmd['commande_id'], $typeRappel, $cmd['date_prestation']]);
-                error_log('[cron] rappel commande_id=' . (int) $cmd['commande_id'] . ' impossible: ' . $e->getMessage());
-                $skipped++;
+            } catch (\Throwable $error) {
+                try {
+                    ReminderLeaseService::markFailed(
+                        $commandeId,
+                        $typeRappel,
+                        $dateCible,
+                        $leaseToken,
+                        $error
+                    );
+                } catch (\Throwable $leaseError) {
+                    error_log(
+                        '[cron] impossible de libérer le lease rappel commande_id=' . $commandeId
+                        . ': ' . $leaseError->getMessage()
+                    );
+                }
+
+                error_log(
+                    '[cron] rappel commande_id=' . $commandeId . ' impossible: ' . $error->getMessage()
+                );
+                $failed++;
             }
         }
 
+        http_response_code($failed === 0 ? 200 : 503);
         echo json_encode([
-            'ok'      => true,
+            'ok'      => $failed === 0,
             'checked' => count($commandes),
             'sent'    => $sent,
+            'failed'  => $failed,
             'skipped' => $skipped,
             'ts'      => date('c'),
         ]);
