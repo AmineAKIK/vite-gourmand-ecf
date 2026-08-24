@@ -16,6 +16,7 @@ use App\Controllers\PageController;
 use App\Controllers\PaiementController;
 use App\Controllers\PanierController;
 use App\Controllers\StripeController;
+use App\Controllers\StripeFulfillmentController;
 use App\Controllers\UserController;
 use App\Controllers\Admin\DashboardController;
 use App\Controllers\Admin\EmployeAdminController;
@@ -130,7 +131,7 @@ $routes = [
         '/mot-de-passe-oublie' => [AuthController::class,    'forgot'],
         '/reinitialiser'       => [AuthController::class,    'reset'],
         '/contact'             => [ContactController::class, 'send'],
-        '/stripe/webhook'      => [StripeController::class,  'webhook'],
+        '/stripe/webhook'      => [StripeFulfillmentController::class, 'webhook'],
     ],
     'GET_AUTH' => [
         '/mon-compte'                    => [UserController::class,    'dashboard'],
@@ -138,7 +139,7 @@ $routes = [
         '/panier'                        => [PanierController::class,  'view'],
         '/commande/suivi'                => [CommandeController::class,'suivi'],
         '/stripe/checkout'               => [StripeController::class,  'checkout'],
-        '/stripe/success'                => [StripeController::class,  'success'],
+        '/stripe/success'                => [StripeFulfillmentController::class, 'success'],
         '/stripe/cancel'                 => [StripeController::class,  'cancel'],
     ],
     'POST_AUTH' => [
