@@ -21,7 +21,7 @@ final class ReminderLeaseService
             $select = $db->prepare(
                 'SELECT rappel_id, sent_at, lease_until FROM cron_rappel_log
                  WHERE commande_id = ? AND type_rappel = ? AND date_cible = ?
-                 FOR UPDATE'
+                 FOR UPDATE',
             );
             $select->execute([$commandeId, $typeRappel, $dateCible]);
             $row = $select->fetch(PDO::FETCH_ASSOC);
@@ -40,14 +40,14 @@ final class ReminderLeaseService
                 $update = $db->prepare(
                     'UPDATE cron_rappel_log
                      SET lease_token = ?, lease_until = ?, attempt_count = attempt_count + 1, last_error = NULL
-                     WHERE rappel_id = ?'
+                     WHERE rappel_id = ?',
                 );
                 $update->execute([$token, $leaseUntil, (int) $row['rappel_id']]);
             } else {
                 $insert = $db->prepare(
                     'INSERT INTO cron_rappel_log
                      (commande_id, type_rappel, date_cible, lease_token, lease_until, attempt_count)
-                     VALUES (?, ?, ?, ?, ?, 1)'
+                     VALUES (?, ?, ?, ?, ?, 1)',
                 );
                 $insert->execute([$commandeId, $typeRappel, $dateCible, $token, $leaseUntil]);
             }
@@ -71,7 +71,7 @@ final class ReminderLeaseService
             'UPDATE cron_rappel_log
              SET sent_at = NOW(), lease_token = NULL, lease_until = NULL, last_error = NULL
              WHERE commande_id = ? AND type_rappel = ? AND date_cible = ?
-               AND sent_at IS NULL AND lease_token = ?'
+               AND sent_at IS NULL AND lease_token = ?',
         );
         $stmt->execute([$commandeId, $typeRappel, $dateCible, $leaseToken]);
 
@@ -85,14 +85,14 @@ final class ReminderLeaseService
         string $typeRappel,
         string $dateCible,
         string $leaseToken,
-        \Throwable $error
+        \Throwable $error,
     ): void {
         $db = Database::getConnection();
         $stmt = $db->prepare(
             'UPDATE cron_rappel_log
              SET lease_token = NULL, lease_until = NULL, last_error = ?
              WHERE commande_id = ? AND type_rappel = ? AND date_cible = ?
-               AND sent_at IS NULL AND lease_token = ?'
+               AND sent_at IS NULL AND lease_token = ?',
         );
         $stmt->execute([
             ReminderLeasePolicy::errorMessage($error),
