@@ -6,28 +6,34 @@ use App\Models\IngredientModel;
 use App\Models\MenuModel;
 use App\Models\RecetteModel;
 use App\Models\StockModel;
+use App\Services\CatalogIntegrityService;
+use App\Services\IngredientCatalogService;
 
 class RecetteController
 {
     public function index(): void
     {
-        $plats       = MenuModel::getPlatsForAdmin();
-        $ingredients = IngredientModel::getAll();
-        $alertes     = IngredientModel::getSousSeuilAlerte();
+        $plats = MenuModel::getPlatsForAdmin();
+        $ingredients = IngredientModel::getAll(true);
+        $alertes = IngredientModel::getSousSeuilAlerte();
 
         $recettesByPlat = [];
-        $coutsByPlat    = [];
+        $coutsByPlat = [];
         foreach ($plats as $plat) {
-            $pid = (int)$plat['plat_id'];
+            $pid = (int) $plat['plat_id'];
             $recettesByPlat[$pid] = RecetteModel::getByPlat($pid);
-            $coutsByPlat[$pid]    = RecetteModel::coutRevient($pid);
+            $coutsByPlat[$pid] = RecetteModel::coutRevient($pid);
         }
 
         $mouvements = StockModel::getTousMovements(100);
 
         view('pages/employe/recettes', compact(
-            'plats', 'ingredients', 'alertes',
-            'recettesByPlat', 'coutsByPlat', 'mouvements'
+            'plats',
+            'ingredients',
+            'alertes',
+            'recettesByPlat',
+            'coutsByPlat',
+            'mouvements',
         ));
     }
 
@@ -35,22 +41,24 @@ class RecetteController
     {
         verifyCsrf();
 
-        $platId = (int)($_POST['plat_id'] ?? 0);
-        if (!$platId) {
+        $platId = (int) ($_POST['plat_id'] ?? 0);
+        if ($platId <= 0) {
             flash('error', 'Plat invalide.');
             redirect('/employe/recettes');
         }
 
+        $ingredientIds = is_array($_POST['ingredient_id'] ?? null) ? $_POST['ingredient_id'] : [];
+        $grammages = is_array($_POST['grammage'] ?? null) ? $_POST['grammage'] : [];
         $lignes = [];
-        foreach ($_POST['ingredient_id'] ?? [] as $k => $ingredientId) {
+        foreach ($ingredientIds as $key => $ingredientId) {
             $lignes[] = [
-                'ingredient_id' => (int)$ingredientId,
-                'grammage'      => (float)str_replace(',', '.', $_POST['grammage'][$k] ?? 0),
+                'ingredient_id' => $ingredientId,
+                'grammage' => $grammages[$key] ?? null,
             ];
         }
 
         try {
-            RecetteModel::syncLignes($platId, $lignes);
+            CatalogIntegrityService::saveRecipe($platId, $lignes);
             flash('success', 'Fiche technique enregistrée.');
         } catch (\Throwable $e) {
             flash('error', $e->getMessage());
@@ -61,21 +69,8 @@ class RecetteController
     public function createIngredient(): void
     {
         verifyCsrf();
-
-        $data = [
-            'libelle'       => sanitize(trim($_POST['libelle'] ?? '')),
-            'unite'         => sanitize(trim($_POST['unite'] ?? 'kg')),
-            'prix_unitaire' => (float)str_replace(',', '.', $_POST['prix_unitaire'] ?? 0),
-            'seuil_alerte'  => trim($_POST['seuil_alerte'] ?? ''),
-        ];
-
-        if (!$data['libelle']) {
-            flash('error', 'Le libellé est obligatoire.');
-            redirect('/employe/recettes');
-        }
-
         try {
-            IngredientModel::create($data);
+            IngredientCatalogService::create($_POST);
             flash('success', 'Ingrédient créé.');
         } catch (\Throwable $e) {
             flash('error', $e->getMessage());
@@ -86,22 +81,14 @@ class RecetteController
     public function updateIngredient(): void
     {
         verifyCsrf();
-
-        $id   = (int)($_POST['ingredient_id'] ?? 0);
-        $data = [
-            'libelle'       => sanitize(trim($_POST['libelle'] ?? '')),
-            'unite'         => sanitize(trim($_POST['unite'] ?? 'kg')),
-            'prix_unitaire' => (float)str_replace(',', '.', $_POST['prix_unitaire'] ?? 0),
-            'seuil_alerte'  => trim($_POST['seuil_alerte'] ?? ''),
-        ];
-
-        if (!$id || !$data['libelle']) {
+        $id = (int) ($_POST['ingredient_id'] ?? 0);
+        if ($id <= 0) {
             flash('error', 'Données invalides.');
             redirect('/employe/recettes');
         }
 
         try {
-            IngredientModel::update($id, $data);
+            IngredientCatalogService::update($id, $_POST);
             flash('success', 'Ingrédient mis à jour.');
         } catch (\Throwable $e) {
             flash('error', $e->getMessage());
@@ -112,13 +99,12 @@ class RecetteController
     public function deleteIngredient(): void
     {
         verifyCsrf();
-
-        $id = (int)($_POST['ingredient_id'] ?? 0);
+        $id = (int) ($_POST['ingredient_id'] ?? 0);
         try {
-            IngredientModel::delete($id);
-            flash('success', 'Ingrédient supprimé.');
+            IngredientCatalogService::deactivate($id);
+            flash('success', 'Ingrédient désactivé. Son historique de stock est conservé.');
         } catch (\Throwable $e) {
-            flash('error', 'Impossible de supprimer : ' . $e->getMessage());
+            flash('error', $e->getMessage());
         }
         redirect('/employe/recettes');
     }
@@ -127,11 +113,11 @@ class RecetteController
     {
         verifyCsrf();
 
-        $ingredientId = (int)($_POST['ingredient_id'] ?? 0);
-        $type         = sanitize($_POST['type_mouvement'] ?? '');
-        $quantite     = (float)str_replace(',', '.', $_POST['quantite'] ?? 0);
-        $motif        = sanitize(trim($_POST['motif'] ?? ''));
-        $user         = currentUser();
+        $ingredientId = (int) ($_POST['ingredient_id'] ?? 0);
+        $type = sanitize($_POST['type_mouvement'] ?? '');
+        $quantite = (float) str_replace(',', '.', $_POST['quantite'] ?? 0);
+        $motif = sanitize(trim($_POST['motif'] ?? ''));
+        $user = currentUser();
 
         try {
             StockModel::addMouvement($ingredientId, $type, $quantite, $motif ?: null, null, $user['id'] ?? null);
@@ -146,10 +132,10 @@ class RecetteController
     {
         verifyCsrf();
 
-        $id = (int)($_POST['mouvement_id'] ?? 0);
+        $id = (int) ($_POST['mouvement_id'] ?? 0);
         $user = currentUser();
         try {
-            StockModel::deleteMouvement($id, isset($user['id']) ? (int)$user['id'] : null);
+            StockModel::deleteMouvement($id, isset($user['id']) ? (int) $user['id'] : null);
             flash('success', 'Mouvement contre-passé. Le ledger conserve l’historique.');
         } catch (\Throwable $e) {
             flash('error', $e->getMessage());
