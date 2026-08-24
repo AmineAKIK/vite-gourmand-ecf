@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Domain\Money;
+use App\Domain\OrderStatus;
 use App\Domain\PaymentLedgerPolicy;
 use DateTimeImmutable;
 use InvalidArgumentException;
@@ -34,6 +35,9 @@ final class PaymentLedgerService
         }
 
         $commande = self::lockOrder($db, $commandeId);
+        if ((string) $commande['statut'] === OrderStatus::cancelled()) {
+            throw new RuntimeException('Impossible d’enregistrer un paiement sur une commande annulée.');
+        }
         $netCents = self::netCollectedCents($db, $commandeId);
         PaymentLedgerPolicy::assertCollectionAmount($amountCents, $netCents, Money::fromDecimal((string) $commande['prix_total']));
 
