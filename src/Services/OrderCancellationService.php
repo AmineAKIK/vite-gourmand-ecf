@@ -249,6 +249,7 @@ final class OrderCancellationService
 
             InventoryLedgerService::restoreOrderConsumption($db, $commandeId, $modifiePar);
             self::restoreMenuStockOnce($db, $commandeId);
+            $creditNoteIds = BillingCreditNoteService::createForCancellation($db, $commandeId, $modifiePar);
 
             $stmt = $db->prepare(
                 'UPDATE commande
@@ -271,6 +272,19 @@ final class OrderCancellationService
             ]);
 
             $db->commit();
+
+            foreach ($creditNoteIds as $creditNoteId) {
+                try {
+                    BillingDocumentStorage::ensureArchive($creditNoteId);
+                } catch (Throwable $archiveError) {
+                    error_log(sprintf(
+                        '[facturation] avoir finalisé mais archive en échec document_id=%d: %s',
+                        $creditNoteId,
+                        $archiveError->getMessage(),
+                    ));
+                }
+            }
+
             return [
                 'commande_id' => $commandeId,
                 'ancien_statut' => $oldStatus,
