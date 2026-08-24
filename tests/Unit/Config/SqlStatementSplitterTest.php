@@ -11,7 +11,7 @@ final class SqlStatementSplitterTest extends TestCase
     {
         self::assertSame(
             ['CREATE TABLE a (id INT)', 'ALTER TABLE a ADD COLUMN name VARCHAR(20)'],
-            SqlStatementSplitter::split("CREATE TABLE a (id INT);\nALTER TABLE a ADD COLUMN name VARCHAR(20);\n")
+            SqlStatementSplitter::split("CREATE TABLE a (id INT);\nALTER TABLE a ADD COLUMN name VARCHAR(20);\n"),
         );
     }
 
@@ -21,7 +21,7 @@ final class SqlStatementSplitterTest extends TestCase
 
         self::assertSame(
             ["INSERT INTO a (value) VALUES ('x;y')", 'SELECT `semi;column` FROM a'],
-            SqlStatementSplitter::split($sql)
+            SqlStatementSplitter::split($sql),
         );
     }
 
