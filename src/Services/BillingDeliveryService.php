@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Domain\BillingDeliveryPolicy;
 use App\Models\CommandeModel;
 use App\Models\FacturationModel;
 use InvalidArgumentException;
@@ -19,12 +20,7 @@ final class BillingDeliveryService
         if (!$document) {
             throw new InvalidArgumentException('Document introuvable.');
         }
-        if (($document['statut'] ?? '') !== 'finalise') {
-            throw new InvalidArgumentException('Seuls les documents finalisés peuvent être envoyés.');
-        }
-        if (trim((string) ($document['client_email'] ?? '')) === '') {
-            throw new InvalidArgumentException('Aucune adresse email client disponible pour ce document.');
-        }
+        BillingDeliveryPolicy::assertCanSend($document);
 
         $archiveAbsolute = BillingDocumentStorage::ensureArchive($documentId);
         $document = FacturationModel::getById($documentId) ?: $document;
@@ -51,15 +47,7 @@ final class BillingDeliveryService
         if (!$document) {
             throw new InvalidArgumentException('Document introuvable.');
         }
-        if (($document['type_document'] ?? '') !== 'devis') {
-            throw new InvalidArgumentException('Seul un devis peut être envoyé pour signature.');
-        }
-        if (($document['statut'] ?? '') !== 'finalise') {
-            throw new InvalidArgumentException('Le devis doit être finalisé avant envoi pour signature.');
-        }
-        if (trim((string) ($document['client_email'] ?? '')) === '') {
-            throw new InvalidArgumentException('Aucune adresse email client disponible pour ce devis.');
-        }
+        BillingDeliveryPolicy::assertCanRequestSignature($document);
 
         $token = QuoteDecisionService::createSignatureToken($documentId);
         $signatureUrl = rtrim(BASE_URL, '/') . '/devis/accepter?token=' . urlencode($token);
