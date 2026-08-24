@@ -94,6 +94,7 @@ class CronController
             }
         }
 
+        http_response_code($failed === 0 ? 200 : 503);
         echo json_encode([
             'ok'      => $failed === 0,
             'checked' => count($commandes),
