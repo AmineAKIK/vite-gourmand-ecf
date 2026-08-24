@@ -3,11 +3,16 @@
 namespace App\Geo;
 
 use App\Config\SiteConfig;
-use App\Geo\Exception\DeliveryOutOfRangeException;
 use App\Geo\Exception\DeliveryGeoNotConfiguredException;
+use App\Geo\Exception\DeliveryOutOfRangeException;
+use App\Integrations\ExternalServiceUnavailableException;
+use App\Integrations\JsonHttpClient;
 
 class DeliveryResolver
 {
+    /** @var array<string,array{expires:int,value:mixed}> */
+    private static array $cache = [];
+
     public static function normalizeLabel(string $value): string
     {
         $value = strtolower(trim($value));
@@ -19,83 +24,88 @@ class DeliveryResolver
 
     public static function geocodeCity(string $ville): ?array
     {
-        $url     = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=fr&q=' . urlencode($ville . ', France');
-        $context = stream_context_create([
-            'http' => [
-                'header'  => "User-Agent: " . SiteConfig::name() . "/1.0\r\n",
-                'timeout' => 2,
-            ],
-        ]);
-        $response = @file_get_contents($url, false, $context);
-        if (!$response) {
+        $ville = trim($ville);
+        if ($ville === '') {
             return null;
         }
-        $data = json_decode($response, true);
+
+        $cacheKey = 'city:' . self::normalizeLabel($ville);
+        $cached = self::cacheGet($cacheKey);
+        if ($cached !== null) {
+            return $cached === false ? null : $cached;
+        }
+
+        $url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=fr&q=' . urlencode($ville . ', France');
+        $data = JsonHttpClient::get($url, ['User-Agent: ' . self::userAgent()], 3);
         if (empty($data[0]['lat']) || empty($data[0]['lon'])) {
+            self::cachePut($cacheKey, false, 300);
             return null;
         }
-        return [(float)$data[0]['lat'], (float)$data[0]['lon']];
+
+        $result = [(float) $data[0]['lat'], (float) $data[0]['lon']];
+        self::cachePut($cacheKey, $result, 3600);
+        return $result;
     }
 
     public static function resolveAddress(string $adresse, string $ville, string $codePostal): ?array
     {
-        $adresse    = trim($adresse);
-        $ville      = trim($ville);
+        $adresse = trim($adresse);
+        $ville = trim($ville);
         $codePostal = trim($codePostal);
 
         if ($adresse === '' || $ville === '' || !preg_match('/^\d{5}$/', $codePostal)) {
             return null;
         }
 
-        $query   = trim($adresse . ' ' . $codePostal . ' ' . $ville);
-        $url     = 'https://api-adresse.data.gouv.fr/search/?limit=1&q=' . urlencode($query);
-        $context = stream_context_create([
-            'http' => [
-                'header'  => "User-Agent: " . SiteConfig::name() . "/1.0\r\n",
-                'timeout' => 3,
-            ],
-        ]);
-        $response = @file_get_contents($url, false, $context);
-        if ($response) {
-            $data       = json_decode($response, true);
-            $feature    = $data['features'][0] ?? null;
-            $props      = $feature['properties'] ?? [];
-            $coords     = $feature['geometry']['coordinates'] ?? [];
-            $score      = (float)($props['score'] ?? 0);
-            $apiPost    = (string)($props['postcode'] ?? '');
-            $apiCity    = (string)($props['city'] ?? '');
-            $apiType    = (string)($props['type'] ?? '');
-
-            if (
-                $feature
-                && $score >= .45
-                && in_array($apiType, ['housenumber', 'street'], true)
-                && $apiPost === $codePostal
-                && self::normalizeLabel($apiCity) === self::normalizeLabel($ville)
-                && isset($coords[0], $coords[1])
-            ) {
-                return [
-                    'label'    => $props['label'] ?? $query,
-                    'city'     => $apiCity,
-                    'postcode' => $apiPost,
-                    'lat'      => (float)$coords[1],
-                    'lng'      => (float)$coords[0],
-                    'score'    => $score,
-                    'fallback' => false,
-                ];
-            }
+        $query = trim($adresse . ' ' . $codePostal . ' ' . $ville);
+        $cacheKey = 'address:' . hash('sha256', self::normalizeLabel($query));
+        $cached = self::cacheGet($cacheKey);
+        if ($cached !== null) {
+            return $cached === false ? null : $cached;
         }
 
+        $url = 'https://api-adresse.data.gouv.fr/search/?limit=1&q=' . urlencode($query);
+        $data = JsonHttpClient::get($url, ['User-Agent: ' . self::userAgent()], 4);
+        $feature = $data['features'][0] ?? null;
+        $props = is_array($feature['properties'] ?? null) ? $feature['properties'] : [];
+        $coords = is_array($feature['geometry']['coordinates'] ?? null) ? $feature['geometry']['coordinates'] : [];
+        $score = (float) ($props['score'] ?? 0);
+        $apiPost = (string) ($props['postcode'] ?? '');
+        $apiCity = (string) ($props['city'] ?? '');
+        $apiType = (string) ($props['type'] ?? '');
+
+        if (
+            is_array($feature)
+            && $score >= .45
+            && in_array($apiType, ['housenumber', 'street'], true)
+            && $apiPost === $codePostal
+            && self::normalizeLabel($apiCity) === self::normalizeLabel($ville)
+            && isset($coords[0], $coords[1])
+        ) {
+            $result = [
+                'label' => (string) ($props['label'] ?? $query),
+                'city' => $apiCity,
+                'postcode' => $apiPost,
+                'lat' => (float) $coords[1],
+                'lng' => (float) $coords[0],
+                'score' => $score,
+                'fallback' => false,
+            ];
+            self::cachePut($cacheKey, $result, 3600);
+            return $result;
+        }
+
+        self::cachePut($cacheKey, false, 300);
         return null;
     }
 
     public static function distanceKmFromCoords(float $lat2, float $lon2): float
     {
         $earthRadius = 6371;
-        $lat1        = deg2rad(SiteConfig::lat());
-        $lon1        = deg2rad(SiteConfig::lng());
-        $lat2        = deg2rad($lat2);
-        $lon2        = deg2rad($lon2);
+        $lat1 = deg2rad(SiteConfig::lat());
+        $lon1 = deg2rad(SiteConfig::lng());
+        $lat2 = deg2rad($lat2);
+        $lon2 = deg2rad($lon2);
         $dLat = $lat2 - $lat1;
         $dLon = $lon2 - $lon1;
         $a = sin($dLat / 2) ** 2 + cos($lat1) * cos($lat2) * sin($dLon / 2) ** 2;
@@ -103,10 +113,11 @@ class DeliveryResolver
     }
 
     /**
-     * @throws DeliveryGeoNotConfiguredException  si les coordonnées du traiteur ne sont pas configurées
-     * @throws DeliveryOutOfRangeException         si l'adresse dépasse le rayon de livraison
+     * @throws DeliveryGeoNotConfiguredException
+     * @throws DeliveryOutOfRangeException
+     * @throws ExternalServiceUnavailableException
      */
-    public static function computeDeliveryPrice(string $adresse, string $ville, string $codePostal): ?float
+    public static function deliveryQuote(string $adresse, string $ville, string $codePostal): ?array
     {
         if (!SiteConfig::isGeoConfigured()) {
             throw new DeliveryGeoNotConfiguredException(
@@ -119,28 +130,64 @@ class DeliveryResolver
             return null;
         }
 
+        $distance = self::distanceKmFromCoords((float) $resolved['lat'], (float) $resolved['lng']);
         if (
             self::normalizeLabel($resolved['city'] ?? '') === self::normalizeLabel(SiteConfig::city())
-            && in_array((string)($resolved['postcode'] ?? ''), SiteConfig::freePostalCodes(), true)
+            && in_array((string) ($resolved['postcode'] ?? ''), SiteConfig::freePostalCodes(), true)
         ) {
-            return 0.0;
+            return ['price' => 0.0, 'distance' => $distance, 'resolved' => $resolved];
         }
 
-        $distance  = self::distanceKmFromCoords((float)$resolved['lat'], (float)$resolved['lng']);
-        $rayonMax  = SiteConfig::deliveryRadiusKm();
-
+        $rayonMax = SiteConfig::deliveryRadiusKm();
         if ($distance > $rayonMax) {
             throw new DeliveryOutOfRangeException(
                 sprintf(
                     'Cette adresse se trouve à %.1f km, au-delà du rayon de livraison de %d km.',
                     $distance,
-                    $rayonMax
+                    $rayonMax,
                 ),
                 $distance,
-                $rayonMax
+                $rayonMax,
             );
         }
 
-        return round(SiteConfig::deliveryBase() + (SiteConfig::deliveryKm() * $distance), 2);
+        return [
+            'price' => round(SiteConfig::deliveryBase() + (SiteConfig::deliveryKm() * $distance), 2),
+            'distance' => $distance,
+            'resolved' => $resolved,
+        ];
+    }
+
+    public static function computeDeliveryPrice(string $adresse, string $ville, string $codePostal): ?float
+    {
+        $quote = self::deliveryQuote($adresse, $ville, $codePostal);
+        return $quote !== null ? (float) $quote['price'] : null;
+    }
+
+    private static function userAgent(): string
+    {
+        $name = preg_replace('/[\r\n]+/', ' ', SiteConfig::name()) ?? 'Tugeres';
+        return trim($name) . '/1.0 (Tugeres delivery geocoding)';
+    }
+
+    private static function cacheGet(string $key): mixed
+    {
+        $entry = self::$cache[$key] ?? null;
+        if (!is_array($entry)) {
+            return null;
+        }
+        if ($entry['expires'] < time()) {
+            unset(self::$cache[$key]);
+            return null;
+        }
+        return $entry['value'];
+    }
+
+    private static function cachePut(string $key, mixed $value, int $ttl): void
+    {
+        if (count(self::$cache) >= 256) {
+            array_shift(self::$cache);
+        }
+        self::$cache[$key] = ['expires' => time() + $ttl, 'value' => $value];
     }
 }
