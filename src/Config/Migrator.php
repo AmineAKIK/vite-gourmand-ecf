@@ -16,6 +16,11 @@ use Throwable;
  * - schema drift is reported instead of silently replaying tracked migrations;
  * - a migration is recorded only after every statement succeeded or was proven idempotent;
  * - migration failures are propagated so the application never serves on an unknown schema.
+ *
+ * Runtime lifecycle:
+ * - CLI execution is allowed and is the production deployment path;
+ * - HTTP execution is disabled by default so requests never mutate the schema;
+ * - TUGERES_ALLOW_HTTP_MIGRATIONS=true is an explicit temporary compatibility escape hatch.
  */
 class Migrator
 {
@@ -26,6 +31,10 @@ class Migrator
 
     public static function run(): void
     {
+        if (!self::executionAllowed()) {
+            return;
+        }
+
         if (self::$ran) {
             return;
         }
@@ -70,6 +79,15 @@ class Migrator
                 self::releaseLock($db);
             }
         }
+    }
+
+    private static function executionAllowed(): bool
+    {
+        if (PHP_SAPI === 'cli') {
+            return true;
+        }
+
+        return strtolower((string) ($_ENV['TUGERES_ALLOW_HTTP_MIGRATIONS'] ?? getenv('TUGERES_ALLOW_HTTP_MIGRATIONS') ?: 'false')) === 'true';
     }
 
     private static function acquireLock(PDO $db): bool
@@ -216,23 +234,21 @@ class Migrator
         $code = (int) ($e->errorInfo[1] ?? 0);
         $normalized = strtoupper(preg_replace('/\s+/', ' ', trim($statement)) ?? trim($statement));
 
-        if (!str_starts_with($normalized, 'ALTER TABLE ')) {
-            return false;
-        }
-
-        if ($code === 1060) {
-            return substr_count($normalized, ' ADD COLUMN ') === 1;
-        }
-
-        if ($code === 1091) {
-            $dropCount = substr_count($normalized, ' DROP COLUMN ')
-                + substr_count($normalized, ' DROP INDEX ')
-                + substr_count($normalized, ' DROP KEY ');
-
-            return $dropCount === 1;
-        }
-
-        return false;
+        return match ($code) {
+            1050 => str_starts_with($normalized, 'CREATE TABLE '),
+            1060 => str_starts_with($normalized, 'ALTER TABLE ')
+                && substr_count($normalized, ' ADD COLUMN ') === 1
+                && substr_count($normalized, ', ADD ') === 0,
+            1061 => str_starts_with($normalized, 'ALTER TABLE ') && (
+                str_contains($normalized, ' ADD INDEX ')
+                || str_contains($normalized, ' ADD KEY ')
+                || str_contains($normalized, ' ADD UNIQUE ')
+            ),
+            1091 => str_starts_with($normalized, 'ALTER TABLE ')
+                && str_contains($normalized, ' DROP ')
+                && substr_count($normalized, ', DROP ') === 0,
+            default => false,
+        };
     }
 
     /** @return list<string> */
