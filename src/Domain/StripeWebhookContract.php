@@ -21,6 +21,8 @@ final class StripeWebhookContract
         $paymentIntent = isset($session['payment_intent']) && $session['payment_intent'] !== ''
             ? (string) $session['payment_intent']
             : null;
+        $expectedCents = (int) ($draft['expected_total_cents'] ?? 0);
+        $draftCurrency = strtolower((string) ($draft['currency'] ?? ''));
 
         if ((string) ($session['payment_status'] ?? '') !== 'paid') {
             throw new RuntimeException('Checkout Session non payée.');
@@ -40,17 +42,23 @@ final class StripeWebhookContract
         if ((string) ($attempt['provider_session_id'] ?? '') !== (string) ($session['id'] ?? '')) {
             throw new RuntimeException('Checkout Session non liée à la tentative.');
         }
-        if ($amountTotal <= 0 || $amountTotal !== (int) ($draft['expected_total_cents'] ?? 0)) {
+        if ($amountTotal <= 0 || $amountTotal !== $expectedCents) {
             throw new RuntimeException('Montant Stripe différent du montant attendu.');
         }
         if ($amountTotal !== (int) ($attempt['expected_amount_cents'] ?? 0)) {
             throw new RuntimeException('Montant Stripe différent de la tentative.');
         }
-        if ($currency === '' || $currency !== strtolower((string) ($draft['currency'] ?? ''))) {
+        if ((int) ($metadata['expected_total_cents'] ?? 0) !== $expectedCents) {
+            throw new RuntimeException('Metadata montant attendu incohérente.');
+        }
+        if ($currency === '' || $currency !== $draftCurrency) {
             throw new RuntimeException('Devise Stripe différente du draft.');
         }
         if ($currency !== strtolower((string) ($attempt['currency'] ?? ''))) {
             throw new RuntimeException('Devise Stripe différente de la tentative.');
+        }
+        if (strtolower((string) ($metadata['currency'] ?? '')) !== $draftCurrency) {
+            throw new RuntimeException('Metadata devise incohérente.');
         }
         if ((string) ($session['client_reference_id'] ?? '') !== (string) ($draft['numero_commande'] ?? '')) {
             throw new RuntimeException('Référence commande Stripe incohérente.');
@@ -60,6 +68,11 @@ final class StripeWebhookContract
         }
         if ((int) ($metadata['utilisateur_id'] ?? 0) !== (int) ($draft['utilisateur_id'] ?? 0)) {
             throw new RuntimeException('Metadata utilisateur incohérente.');
+        }
+
+        $knownPaymentIntent = (string) ($attempt['provider_payment_intent_id'] ?? '');
+        if ($knownPaymentIntent !== '' && $paymentIntent !== $knownPaymentIntent) {
+            throw new RuntimeException('PaymentIntent Stripe incohérent.');
         }
 
         return [
