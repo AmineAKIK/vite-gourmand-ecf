@@ -3,9 +3,9 @@
 namespace App\Controllers\Workspace;
 
 use App\Models\IngredientModel;
+use App\Models\MenuModel;
 use App\Models\RecetteModel;
 use App\Models\StockModel;
-use App\Models\MenuModel;
 
 class RecetteController
 {
@@ -147,9 +147,10 @@ class RecetteController
         verifyCsrf();
 
         $id = (int)($_POST['mouvement_id'] ?? 0);
+        $user = currentUser();
         try {
-            StockModel::deleteMouvement($id);
-            flash('success', 'Mouvement supprimé.');
+            StockModel::deleteMouvement($id, isset($user['id']) ? (int)$user['id'] : null);
+            flash('success', 'Mouvement contre-passé. Le ledger conserve l’historique.');
         } catch (\Throwable $e) {
             flash('error', $e->getMessage());
         }
