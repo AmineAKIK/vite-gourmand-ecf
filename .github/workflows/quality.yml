@@ -9,7 +9,7 @@ on:
       - main
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: quality-${{ github.workflow }}-${{ github.ref }}
@@ -25,7 +25,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: pr3
           fetch-depth: 0
 
       - name: Setup PHP
@@ -39,20 +38,8 @@ jobs:
       - name: Validate Composer metadata
         run: composer validate --strict --no-interaction
 
-      - name: Refresh vulnerable locked packages
-        run: composer update dompdf/dompdf guzzlehttp/guzzle guzzlehttp/psr7 --with-all-dependencies --no-progress --no-interaction
-
-      - name: Commit refreshed lockfile
-        shell: bash
-        run: |
-          set -euo pipefail
-          if ! git diff --quiet -- composer.lock; then
-            git config user.name "github-actions[bot]"
-            git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-            git add composer.lock
-            git commit -m "chore: refresh vulnerable Composer dependencies"
-            git push origin HEAD:pr3
-          fi
+      - name: Install locked dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
 
       - name: Audit locked dependencies
         run: composer audit --locked --no-interaction
