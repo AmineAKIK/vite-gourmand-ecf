@@ -1,0 +1,13 @@
+.git
+.github
+.env
+.env.*
+!.env.example
+tests
+docs
+install
+node_modules
+vendor
+phpunit.xml
+phpstan.neon
+README.md
