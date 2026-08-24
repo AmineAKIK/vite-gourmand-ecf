@@ -85,6 +85,45 @@ final class InventoryLedgerService
         }
     }
 
+    public static function restoreOrderConsumption(PDO $db, int $commandeId, ?int $creePar): void
+    {
+        self::requireTransaction($db);
+
+        $lock = $db->prepare('SELECT commande_id FROM commande WHERE commande_id = ? FOR UPDATE');
+        $lock->execute([$commandeId]);
+        if ($lock->fetchColumn() === false) {
+            throw new RuntimeException('Commande introuvable pour la restitution de stock.');
+        }
+
+        $stmt = $db->prepare(
+            "SELECT m.*
+             FROM mouvement_stock m
+             LEFT JOIN mouvement_stock r ON r.reversal_of_mouvement_id = m.mouvement_id
+             WHERE m.commande_id = ?
+               AND m.type_mouvement = 'sortie'
+               AND m.operation_key LIKE ?
+               AND r.mouvement_id IS NULL
+             ORDER BY m.mouvement_id ASC
+             FOR UPDATE",
+        );
+        $stmt->execute([$commandeId, 'order:' . $commandeId . ':consume:%']);
+
+        foreach ($stmt->fetchAll() as $movement) {
+            $movementId = (int) $movement['mouvement_id'];
+            self::appendMovement(
+                $db,
+                (int) $movement['ingredient_id'],
+                'entree',
+                (float) $movement['quantite'],
+                'Restitution annulation commande #' . $commandeId,
+                $commandeId,
+                $creePar,
+                InventoryMovementPolicy::reversalKey($movementId),
+                $movementId,
+            );
+        }
+    }
+
     public static function appendManualMovement(
         PDO $db,
         int $ingredientId,
