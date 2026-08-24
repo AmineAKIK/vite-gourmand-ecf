@@ -25,7 +25,7 @@ final class BillingDocumentPolicy
 
         $now ??= new DateTimeImmutable('now');
         $expiry = self::quoteExpiry($expiresAt, $dateEmission);
-        if ($expiry !== null && $now >= $expiry) {
+        if ($expiry !== null && $now > $expiry) {
             throw new RuntimeException('Ce devis a expiré.');
         }
     }
@@ -43,7 +43,7 @@ final class BillingDocumentPolicy
             return null;
         }
         $date = DateTimeImmutable::createFromFormat('!Y-m-d', $dateEmission);
-        return $date instanceof DateTimeImmutable ? $date->modify('+30 days') : null;
+        return $date instanceof DateTimeImmutable ? $date->modify('+30 days')->setTime(23, 59, 59) : null;
     }
 
     public static function signatureExpiry(string $dateEmission): string
