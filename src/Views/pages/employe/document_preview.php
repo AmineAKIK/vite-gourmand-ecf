@@ -1,29 +1,35 @@
 <?php
 // src/views/pages/employe/document_preview.php
+$pageTitle = buildPageTitle('Aperçu document');
 $type = $document['type_document'] ?? 'facture';
 $isTicket  = $type === 'ticket';
 $isDevis   = $type === 'devis';
+$isAvoir   = $type === 'avoir';
 $typeLabel = match ($type) {
     'ticket'  => 'Ticket de caisse',
     'devis'   => 'Devis',
     'acompte' => 'Acompte',
+    'avoir'   => 'Avoir',
     default   => 'Facture',
 };
 $entreprise   = $document['entreprise'] ?? [];
 $isFinalise   = ($document['statut'] ?? '') === 'finalise';
 $statutDevis  = $document['statut_devis'] ?? null;
 $signedAt     = $document['signed_at'] ?? null;
-$hasToken     = !empty($document['token_signature']);
+$hasToken     = !empty($document['signature_token_hash']) || !empty($document['token_signature']);
 $documentRef  = $document['numero_document'] ?: ('Brouillon #' . (int)$document['document_id']);
+$archiveStatus = $document['archive_status'] ?? null;
 ?>
 <div class="container py-5 facturation-page">
 
     <?php partial('partials/page_title_bar', ['icon' => $isDevis ? 'bi-file-earmark-plus' : ($isTicket ? 'bi-receipt' : 'bi-file-earmark-text'), 'title' => 'Aperçu ' . strtolower($typeLabel)]); ?>
 
     <div class="facturation-toolbar mb-4">
+        <?php if (!$isAvoir): ?>
         <a href="/employe/document/edit?id=<?= (int)$document['document_id'] ?>" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-pencil me-1"></i>Retour éditeur
         </a>
+        <?php endif; ?>
         <button type="button" class="btn btn-vg btn-sm" data-print-document>
             <i class="bi bi-printer me-1"></i>Imprimer
         </button>
@@ -82,7 +88,7 @@ $documentRef  = $document['numero_document'] ?: ('Brouillon #' . (int)$document[
     <?php if ($isFinalise): ?>
         <div class="facturation-state-strip mb-4">
             <span><i class="bi bi-lock me-1"></i>Finalisé</span>
-            <span><i class="bi bi-archive me-1"></i><?= !empty($document['archive_path']) ? 'Archivé' : 'Archive à générer' ?></span>
+            <span><i class="bi bi-archive me-1"></i><?= $archiveStatus === 'ready' ? 'Archivé' : ($archiveStatus === 'failed' ? 'Archive en échec' : 'Archive à générer') ?></span>
             <span><i class="bi bi-envelope me-1"></i><?= !empty($document['sent_at']) ? 'Envoyé le ' . sanitize(formatDateTimeFr($document['sent_at'])) : 'Non envoyé' ?></span>
             <?php if ($isDevis): ?>
                 <?php if ($signedAt): ?>

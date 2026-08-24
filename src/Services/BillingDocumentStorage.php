@@ -6,6 +6,7 @@ use App\Config\Database;
 use App\Models\FacturationModel;
 use InvalidArgumentException;
 use RuntimeException;
+use Throwable;
 
 final class BillingDocumentStorage
 {
@@ -18,13 +19,26 @@ final class BillingDocumentStorage
         $document = self::document($documentId);
         self::assertFinalized($document);
 
-        $resolved = self::resolveStoredPath($documentId, 'archive_path', $document['archive_path'] ?? null);
-        if ($resolved !== null) {
-            return $resolved;
-        }
+        try {
+            $resolved = self::resolveStoredPath($documentId, 'archive_path', $document['archive_path'] ?? null);
+            if ($resolved !== null) {
+                self::markArchiveReady($documentId);
+                return $resolved;
+            }
 
-        $legacyPath = FacturationModel::archiveDocument($documentId);
-        return self::moveGeneratedLegacyFile($documentId, 'archive_path', $legacyPath);
+            self::markArchivePending($documentId);
+            if (($document['type_document'] ?? '') === 'avoir') {
+                $absolute = self::writeCreditNoteArchive($document);
+            } else {
+                $legacyPath = FacturationModel::archiveDocument($documentId);
+                $absolute = self::moveGeneratedLegacyFile($documentId, 'archive_path', $legacyPath);
+            }
+            self::markArchiveReady($documentId);
+            return $absolute;
+        } catch (Throwable $e) {
+            self::markArchiveFailed($documentId, $e->getMessage());
+            throw $e;
+        }
     }
 
     public static function ensurePdf(int $documentId): string
@@ -37,21 +51,99 @@ final class BillingDocumentStorage
             return $resolved;
         }
 
+        if (($document['type_document'] ?? '') === 'avoir') {
+            return self::writeCreditNotePdf($document);
+        }
+
         $legacyPath = FacturationModel::generatePdf($documentId);
         return self::moveGeneratedLegacyFile($documentId, 'pdf_path', $legacyPath);
     }
 
-    /**
-     * Déplace à la volée les fichiers historiques encore présents sous public/.
-     * Un chemin DB pointant vers un ancien fichier absent reste inchangé : ensureArchive/ensurePdf
-     * le régénérera uniquement lorsqu'il est effectivement nécessaire.
-     */
     public static function migrateExisting(int $documentId): void
     {
         $document = self::document($documentId);
         foreach (self::COLUMNS as $column) {
-            self::resolveStoredPath($documentId, $column, $document[$column] ?? null);
+            $resolved = self::resolveStoredPath($documentId, $column, $document[$column] ?? null);
+            if ($column === 'archive_path' && $resolved !== null) {
+                self::markArchiveReady($documentId);
+            }
         }
+    }
+
+    public static function markArchivePending(int $documentId): void
+    {
+        Database::getConnection()->prepare(
+            "UPDATE document_facturation
+             SET archive_status = 'pending', archive_last_error = NULL
+             WHERE document_id = ? AND statut = 'finalise'",
+        )->execute([$documentId]);
+    }
+
+    public static function markArchiveReady(int $documentId): void
+    {
+        Database::getConnection()->prepare(
+            "UPDATE document_facturation
+             SET archive_status = 'ready', archive_last_error = NULL, archived_at = COALESCE(archived_at, NOW())
+             WHERE document_id = ? AND statut = 'finalise'",
+        )->execute([$documentId]);
+    }
+
+    public static function markArchiveFailed(int $documentId, string $message): void
+    {
+        Database::getConnection()->prepare(
+            "UPDATE document_facturation
+             SET archive_status = 'failed', archive_last_error = ?
+             WHERE document_id = ? AND statut = 'finalise'",
+        )->execute([substr(trim($message), 0, 500), $documentId]);
+    }
+
+    private static function writeCreditNoteArchive(array $document): string
+    {
+        self::ensurePrivateDirectory();
+        $filename = self::documentFilename($document, 'html');
+        $destination = self::privatePath($filename);
+        $html = self::creditNoteHtml($document);
+        if (file_put_contents($destination, $html, LOCK_EX) === false) {
+            throw new RuntimeException('Impossible d’écrire l’archive de l’avoir.');
+        }
+        @chmod($destination, 0640);
+        self::updateStoredPath((int) $document['document_id'], 'archive_path', self::PRIVATE_PREFIX . $filename);
+        return $destination;
+    }
+
+    private static function writeCreditNotePdf(array $document): string
+    {
+        self::ensurePrivateDirectory();
+        $filename = self::documentFilename($document, 'pdf');
+        $destination = self::privatePath($filename);
+
+        $options = new \Dompdf\Options();
+        $options->set('isHtml5ParserEnabled', true);
+        $options->set('isRemoteEnabled', false);
+        $options->set('defaultFont', 'DejaVu Sans');
+        $dompdf = new \Dompdf\Dompdf($options);
+        $dompdf->loadHtml(self::creditNoteHtml($document), 'UTF-8');
+        $dompdf->setPaper('A4', 'portrait');
+        $dompdf->render();
+        if (file_put_contents($destination, $dompdf->output(), LOCK_EX) === false) {
+            throw new RuntimeException('Impossible d’écrire le PDF de l’avoir.');
+        }
+        @chmod($destination, 0640);
+        self::updateStoredPath((int) $document['document_id'], 'pdf_path', self::PRIVATE_PREFIX . $filename);
+        return $destination;
+    }
+
+    private static function creditNoteHtml(array $document): string
+    {
+        $html = FacturationModel::renderDocumentHtml($document, true);
+        return str_replace('<h2>Facture</h2>', '<h2>Avoir</h2>', $html);
+    }
+
+    private static function documentFilename(array $document, string $extension): string
+    {
+        $ref = (string) ($document['numero_document'] ?? ('AVR-' . (int) $document['document_id']));
+        $safe = preg_replace('/[^A-Z0-9_-]+/i', '-', $ref) ?: ('avoir-' . (int) $document['document_id']);
+        return self::safeFilename($safe . '.' . $extension);
     }
 
     private static function document(int $documentId): array
@@ -91,7 +183,6 @@ final class BillingDocumentStorage
             return self::moveLegacyFile($documentId, $column, $legacyPath);
         }
 
-        // Ne jamais accepter un chemin arbitraire provenant de la base.
         error_log(sprintf(
             '[facturation] chemin refusé document_id=%d colonne=%s chemin=%s',
             $documentId,

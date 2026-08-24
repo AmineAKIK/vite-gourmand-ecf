@@ -5,8 +5,11 @@ namespace App\Controllers\Workspace;
 use App\Models\CommandeModel;
 use App\Models\FacturationModel;
 use App\Services\BillingDocumentStorage;
+use App\Services\BillingDraftService;
+use App\Services\BillingFinalizationService;
 use App\Services\MailService;
 use App\Services\PricingService;
+use App\Services\QuoteDecisionService;
 use InvalidArgumentException;
 use Throwable;
 
@@ -51,7 +54,7 @@ class DocumentController
 
         $documentId = (int)($_POST['document_id'] ?? 0);
         try {
-            FacturationModel::updateDraft($documentId, $_POST);
+            BillingDraftService::update($documentId, $_POST);
             flash('success', 'Brouillon mis à jour.');
             redirect('/employe/document/edit?id=' . $documentId);
         } catch (Throwable $e) {
@@ -69,18 +72,23 @@ class DocumentController
             if (isset($_POST['designation'])) {
                 $document = FacturationModel::getById($documentId);
                 if ($document && ($document['statut'] ?? '') === 'brouillon') {
-                    FacturationModel::updateDraft($documentId, $_POST);
+                    BillingDraftService::update($documentId, $_POST);
                 }
             }
-            $numero          = FacturationModel::finalizeDraft($documentId, currentUser()['id'] ?? null);
-            $archiveAbsolute = BillingDocumentStorage::ensureArchive($documentId);
-            $document        = FacturationModel::getById($documentId);
-            if ($document && ($document['type_document'] ?? '') === 'devis' && !empty($document['client_email'])) {
+
+            $result = BillingFinalizationService::finalize($documentId, currentUser()['id'] ?? null);
+            $numero = $result['numero'];
+            $archiveAbsolute = $result['archive'];
+            $document = FacturationModel::getById($documentId);
+
+            if ($document
+                && ($document['type_document'] ?? '') === 'devis'
+                && !empty($document['client_email'])
+                && $archiveAbsolute !== null
+            ) {
                 try {
                     $commande = CommandeModel::getById((int)$document['commande_id']);
                     MailService::sendDevis($document, $commande ?: [], $archiveAbsolute);
-                    // MailService peut encore générer un PDF via le générateur historique :
-                    // le déplacer immédiatement hors du webroot s'il a été créé.
                     BillingDocumentStorage::migrateExisting($documentId);
                     FacturationModel::markSent($documentId, currentUser()['id'] ?? null);
                     flash('success', 'Devis finalisé (' . $numero . ') et envoyé au client.');
@@ -90,6 +98,10 @@ class DocumentController
                 }
             } else {
                 flash('success', 'Document finalisé : ' . $numero . '.');
+            }
+
+            if ($result['archive_warning'] !== null) {
+                flash('error', $result['archive_warning']);
             }
             redirect('/employe/document/apercu?id=' . $documentId);
         } catch (Throwable $e) {
@@ -122,7 +134,7 @@ class DocumentController
             $document = FacturationModel::getById($documentId);
             if (!$document) throw new \InvalidArgumentException('Document introuvable.');
 
-            $token       = FacturationModel::generateSignatureToken($documentId);
+            $token = QuoteDecisionService::createSignatureToken($documentId);
             $signatureUrl = rtrim(BASE_URL, '/') . '/devis/accepter?token=' . urlencode($token);
             MailService::sendDevisSignatureRequest($document, $signatureUrl);
             flash('success', 'Email de signature envoyé au client.');
@@ -138,7 +150,7 @@ class DocumentController
 
         $documentId = (int)($_POST['document_id'] ?? 0);
         try {
-            FacturationModel::acceptDevis($documentId);
+            QuoteDecisionService::decide($documentId, 'accepte');
             flash('success', 'Devis marqué comme accepté.');
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
@@ -152,7 +164,7 @@ class DocumentController
 
         $documentId = (int)($_POST['document_id'] ?? 0);
         try {
-            FacturationModel::refuseDevis($documentId);
+            QuoteDecisionService::decide($documentId, 'refuse');
             flash('success', 'Devis marqué comme refusé.');
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
@@ -175,7 +187,6 @@ class DocumentController
             }
 
             $archiveAbsolute = BillingDocumentStorage::ensureArchive($documentId);
-            // Recharge le document : archive_path peut avoir été migré vers le stockage privé.
             $document = FacturationModel::getById($documentId) ?: $document;
             $commande = CommandeModel::getById((int)$document['commande_id']);
             if (($document['type_document'] ?? '') === 'devis') {
@@ -183,8 +194,6 @@ class DocumentController
             } else {
                 MailService::sendDocumentFacturation($document, $commande ?: [], $archiveAbsolute);
             }
-            // Le helper d'attachement historique peut générer le PDF pendant l'envoi.
-            // On le sort immédiatement de public/ après l'envoi.
             BillingDocumentStorage::migrateExisting($documentId);
             FacturationModel::markSent($documentId, currentUser()['id'] ?? null);
 
@@ -282,9 +291,6 @@ class DocumentController
             redirect('/employe/commandes');
         }
 
-        // Migration opportuniste des anciennes archives encore présentes dans public/.
-        // Une erreur de migration ne doit pas empêcher l'aperçu ; le router HTTP bloque
-        // de toute façon l'ancien répertoire de manière systématique.
         try {
             BillingDocumentStorage::migrateExisting($documentId);
             $document = FacturationModel::getById($documentId) ?: $document;
