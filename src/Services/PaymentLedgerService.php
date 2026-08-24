@@ -132,11 +132,12 @@ final class PaymentLedgerService
         $stmt = $db->prepare(
             "SELECT p.*
              FROM paiement p
-             LEFT JOIN paiement r ON r.reversal_of_paiement_id = p.paiement_id
              WHERE p.commande_id = ?
                AND p.mode = 'cb_online'
                AND p.nature = 'encaissement'
-               AND r.paiement_id IS NULL
+               AND NOT EXISTS (
+                   SELECT 1 FROM paiement r WHERE r.reversal_of_paiement_id = p.paiement_id
+               )
              ORDER BY p.paiement_id ASC
              FOR UPDATE",
         );
@@ -187,8 +188,26 @@ final class PaymentLedgerService
             (int) $payment['paiement_id'],
             $creePar,
         ]);
+        $refundId = (int) $db->lastInsertId();
 
-        return (int) $db->lastInsertId();
+        $verify = $db->prepare(
+            'SELECT commande_id, nature, montant, mode, operation_key, reversal_of_paiement_id
+             FROM paiement WHERE paiement_id = ?',
+        );
+        $verify->execute([$refundId]);
+        $existing = $verify->fetch();
+        if (!$existing
+            || (int) $existing['commande_id'] !== (int) $payment['commande_id']
+            || (string) $existing['nature'] !== 'remboursement'
+            || Money::fromDecimal((string) $existing['montant']) !== Money::fromDecimal((string) $payment['montant'])
+            || (string) $existing['mode'] !== (string) $payment['mode']
+            || (string) $existing['operation_key'] !== $operationKey
+            || (int) $existing['reversal_of_paiement_id'] !== (int) $payment['paiement_id']
+        ) {
+            throw new RuntimeException('Collision de clé idempotente du ledger de paiement.');
+        }
+
+        return $refundId;
     }
 
     private static function lockOrder(PDO $db, int $commandeId): array
