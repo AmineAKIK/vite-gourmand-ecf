@@ -5,7 +5,8 @@ namespace App\Config;
 final class SqlStatementSplitter
 {
     /**
-     * Split SQL on semicolons that are outside strings, quoted identifiers and comments.
+     * Split SQL on semicolons that are outside strings and quoted identifiers.
+     * Ordinary comments are discarded so statement classification remains stable.
      *
      * @return list<string>
      */
@@ -23,19 +24,18 @@ final class SqlStatementSplitter
             $next = $i + 1 < $length ? $sql[$i + 1] : '';
 
             if ($lineComment) {
-                $buffer .= $char;
                 if ($char === "\n") {
                     $lineComment = false;
+                    $buffer .= "\n";
                 }
                 continue;
             }
 
             if ($blockComment) {
-                $buffer .= $char;
                 if ($char === '*' && $next === '/') {
-                    $buffer .= '/';
                     $i++;
                     $blockComment = false;
+                    $buffer .= ' ';
                 }
                 continue;
             }
@@ -60,9 +60,7 @@ final class SqlStatementSplitter
 
             if (($char === '-' && $next === '-') || $char === '#') {
                 $lineComment = true;
-                $buffer .= $char;
                 if ($char === '-') {
-                    $buffer .= $next;
                     $i++;
                 }
                 continue;
@@ -70,7 +68,6 @@ final class SqlStatementSplitter
 
             if ($char === '/' && $next === '*') {
                 $blockComment = true;
-                $buffer .= '/*';
                 $i++;
                 continue;
             }
