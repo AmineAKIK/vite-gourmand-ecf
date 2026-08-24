@@ -216,17 +216,23 @@ class Migrator
         $code = (int) ($e->errorInfo[1] ?? 0);
         $normalized = strtoupper(preg_replace('/\s+/', ' ', trim($statement)) ?? trim($statement));
 
-        return match ($code) {
-            1050 => str_starts_with($normalized, 'CREATE TABLE '),
-            1060 => str_starts_with($normalized, 'ALTER TABLE ') && str_contains($normalized, ' ADD COLUMN '),
-            1061 => str_starts_with($normalized, 'ALTER TABLE ') && (
-                str_contains($normalized, ' ADD INDEX ')
-                || str_contains($normalized, ' ADD KEY ')
-                || str_contains($normalized, ' ADD UNIQUE ')
-            ),
-            1091 => str_starts_with($normalized, 'ALTER TABLE ') && str_contains($normalized, ' DROP '),
-            default => false,
-        };
+        if (!str_starts_with($normalized, 'ALTER TABLE ')) {
+            return false;
+        }
+
+        if ($code === 1060) {
+            return substr_count($normalized, ' ADD COLUMN ') === 1;
+        }
+
+        if ($code === 1091) {
+            $dropCount = substr_count($normalized, ' DROP COLUMN ')
+                + substr_count($normalized, ' DROP INDEX ')
+                + substr_count($normalized, ' DROP KEY ');
+
+            return $dropCount === 1;
+        }
+
+        return false;
     }
 
     /** @return list<string> */
