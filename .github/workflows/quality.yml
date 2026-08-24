@@ -48,7 +48,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          find src public tests -type f -name '*.php' -print0 \
+          find src public tests bin -type f -name '*.php' -print0 \
             | xargs -0 -n1 php -l
 
       - name: Run unit tests
@@ -70,3 +70,15 @@ jobs:
           else
             echo 'No newly added PHP files to style-check.'
           fi
+
+  docker:
+    name: Production image build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build production image
+        run: docker build --pull --tag tugeres-ci:${{ github.sha }} .
