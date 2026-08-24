@@ -1,0 +1,8 @@
+parameters:
+    level: 5
+    paths:
+        - src/Domain
+        - src/Services/BillingDocumentStorage.php
+        - tests
+    tmpDir: .phpstan-cache
+    treatPhpDocTypesAsCertain: false
