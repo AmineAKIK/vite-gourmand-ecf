@@ -121,6 +121,20 @@ final class OrderAdmissionService
         $insert->execute([$numeroCommande, $datePrestation, date('Y-m'), $commandeId]);
     }
 
+    public static function release(PDO $db, string $numeroCommande): void
+    {
+        if (!$db->inTransaction()) {
+            throw new RuntimeException('La libération d’admission doit être transactionnelle.');
+        }
+
+        $stmt = $db->prepare(
+            "UPDATE order_admission_reservation
+             SET status = 'released'
+             WHERE numero_commande = ? AND status = 'reserved'",
+        );
+        $stmt->execute([$numeroCommande]);
+    }
+
     public static function countCommittedAndReservedForDay(PDO $db, string $datePrestation): int
     {
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $datePrestation)) {
