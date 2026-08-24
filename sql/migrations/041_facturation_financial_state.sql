@@ -2,6 +2,7 @@
 SET NAMES utf8mb4;
 
 ALTER TABLE document_facturation
+    MODIFY COLUMN type_document ENUM('facture','ticket','devis','acompte','avoir') NOT NULL,
     ADD COLUMN IF NOT EXISTS archive_status ENUM('pending','ready','failed') NULL DEFAULT NULL AFTER archive_path,
     ADD COLUMN IF NOT EXISTS archive_last_error VARCHAR(500) NULL DEFAULT NULL AFTER archive_status,
     ADD COLUMN IF NOT EXISTS archived_at DATETIME NULL DEFAULT NULL AFTER archive_last_error,
