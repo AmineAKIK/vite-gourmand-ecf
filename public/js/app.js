@@ -49,12 +49,7 @@
 document.addEventListener('DOMContentLoaded', function () {
     /* Réouverture automatique d'un modal après erreur de validation côté serveur
        Le serveur redirige avec ?open_modal=xxx&modal_error=message
-       On retrouve le modal par l'id "modalId" = "modalCreerMenu", "modalModifierMenu5", etc.
-       Convention : open_modal=creer_menu  → modal id #modalCreerMenu
-                    open_modal=modifier_menu_3 → #modalModifierMenu3
-                    open_modal=creer_plat  → #modalCreerPlat
-                    open_modal=modifier_plat_7 → #modalModifPlat7
-                    open_modal=modif_2 → #modifModal2
+       URLSearchParams décode déjà les paramètres ; ne pas rappeler decodeURIComponent().
     */
     var params = new URLSearchParams(window.location.search);
     var openModal = params.get('open_modal');
@@ -72,18 +67,16 @@ document.addEventListener('DOMContentLoaded', function () {
             if (modalError) {
                 var errBox = document.getElementById(openModal + '-error');
                 if (errBox) {
-                    errBox.textContent = decodeURIComponent(modalError);
+                    errBox.textContent = modalError;
                     errBox.classList.remove('d-none');
                 }
             }
             bootstrap.Modal.getOrCreateInstance(el).show();
-            // Nettoyer l'URL sans recharger
             var cleanUrl = window.location.pathname;
             window.history.replaceState({}, '', cleanUrl);
         }
     }
 
-    /* Auto-dismiss des alertes Bootstrap après 4 secondes */
     document.querySelectorAll('.alert.alert-dismissible').forEach(function (alert) {
         setTimeout(function () {
             var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
@@ -91,7 +84,6 @@ document.addEventListener('DOMContentLoaded', function () {
         }, 4000);
     });
 
-    /* Confirmation maison responsive — remplace les dialogues natifs du navigateur. */
     var confirmedForms = new WeakSet();
 
     function ensureConfirmModal() {
@@ -223,7 +215,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    // Rétro-compatibilité : class form-confirm sans message personnalisé.
     document.querySelectorAll('form.form-confirm:not([data-confirm])').forEach(function (form) {
         form.addEventListener('submit', function (e) {
             if (confirmedForms.has(form)) {
@@ -237,7 +228,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    /* Aperçu miniatures photos avant upload */
     document.querySelectorAll('.image-picker').forEach(function (input) {
         input.addEventListener('change', function () {
             var container = input.nextElementSibling && input.nextElementSibling.nextElementSibling;
@@ -261,7 +251,6 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     });
 
-    /* Afficher/masquer les champs mot de passe */
     document.querySelectorAll('[data-password-toggle]').forEach(function (button) {
         button.addEventListener('click', function () {
             var input = document.getElementById(button.dataset.passwordToggle);

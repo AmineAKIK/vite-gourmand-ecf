@@ -2,13 +2,18 @@
 
 namespace App\Controllers;
 
+use App\Domain\InputPolicy;
 use App\Services\MailService;
 
 class ContactController
 {
     public function index(): void
     {
-        $sujet = sanitize($_GET['sujet'] ?? '');
+        try {
+            $sujet = InputPolicy::text($_GET['sujet'] ?? '', 160);
+        } catch (\InvalidArgumentException) {
+            $sujet = '';
+        }
         view('pages/contact', compact('sujet'));
     }
 
@@ -16,12 +21,12 @@ class ContactController
     {
         verifyCsrf();
 
-        $titre       = sanitize($_POST['titre']       ?? '');
-        $description = sanitize($_POST['description'] ?? '');
-        $email       = sanitize($_POST['email']       ?? '');
-
-        if (!$titre || !$description || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            flash('error', 'Veuillez remplir tous les champs correctement.');
+        try {
+            $titre       = InputPolicy::text($_POST['titre'] ?? '', 160, true);
+            $description = InputPolicy::multiline($_POST['description'] ?? '', 5000, true);
+            $email       = InputPolicy::email($_POST['email'] ?? '');
+        } catch (\InvalidArgumentException $e) {
+            flash('error', $e->getMessage());
             redirect('/contact');
         }
 
