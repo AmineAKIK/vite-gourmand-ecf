@@ -2,179 +2,238 @@
 
 namespace App\Config;
 
+use PDO;
+use PDOException;
+use RuntimeException;
+use Throwable;
+
 /**
- * Applique automatiquement le schéma et les migrations SQL au démarrage.
+ * Applies the base schema and ordered SQL migrations.
  *
- * Ordre d'exécution :
- *   1. Crée schema_migrations si absente
- *   2. Si la base est vide (pas de table `utilisateur`), applique sql/schema.sql
- *   3. Applique les migrations sql/migrations/*.sql non encore jouées, dans l'ordre
- *
- * Compatibilité MySQL :
- *   - ADD COLUMN IF NOT EXISTS n'est supporté qu'à partir de MySQL 8.0.29.
- *     Les erreurs 1060 (Duplicate column) et 1091 (Can't DROP non-existent) sont
- *     traitées comme des succès (colonne déjà présente = migration déjà partiellement jouée).
- *   - Une migration qui rencontre une vraie erreur n'est pas marquée comme appliquée.
- *   - Au démarrage, les migrations déjà marquées sont vérifiées : si une table créée par
- *     CREATE TABLE IF NOT EXISTS manque, la migration est retirée du tracking et rejouée.
- *
- * Fail-silent : toute erreur non fatale est loguée, jamais propagée.
+ * Lifecycle guarantees:
+ * - one database instance migrates at a time through a MySQL advisory lock;
+ * - an applied migration is bound to its SHA-256 checksum;
+ * - schema drift is reported instead of silently replaying tracked migrations;
+ * - a migration is recorded only after every statement succeeded or was proven idempotent;
+ * - migration failures are propagated so the application never serves on an unknown schema.
  */
 class Migrator
 {
-    private static bool $ran = false;
+    private const LOCK_NAME = 'tugeres_schema_migrations';
+    private const LOCK_TIMEOUT_SECONDS = 10;
 
-    // Codes MySQL traités comme "déjà fait, continuer"
-    private const IDEMPOTENT_CODES = [
-        1060, // Duplicate column name
-        1061, // Duplicate key name
-        1062, // Duplicate entry
-        1091, // Can't DROP; check that column/key exists
-        1050, // Table already exists
-    ];
+    private static bool $ran = false;
 
     public static function run(): void
     {
-        if (self::$ran) return;
-        self::$ran = true;
+        if (self::$ran) {
+            return;
+        }
+
+        $db = Database::getConnection();
+        $locked = false;
 
         try {
-            $db = Database::getConnection();
-
-            // ── 1. Table de tracking ─────────────────────────────────────────
-            $db->exec("
-                CREATE TABLE IF NOT EXISTS schema_migrations (
-                    migration  VARCHAR(255) NOT NULL PRIMARY KEY,
-                    applied_at DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP
-                ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4
-            ");
-
-            // ── 2. Schéma de base si DB vide ─────────────────────────────────
-            $tables   = $db->query("SHOW TABLES")->fetchAll(\PDO::FETCH_COLUMN);
-            $hasUsers = in_array('utilisateur', $tables, true);
-
-            // Rien à pré-remplir : toutes les migrations non encore dans schema_migrations
-            // seront jouées normalement. Les erreurs idempotentes (colonne déjà présente,
-            // table déjà existante) sont silencieuses — sûr sur une DB existante.
-
-            if (!$hasUsers) {
-                $schemaFile = dirname(__DIR__, 2) . '/sql/schema.sql';
-                if (file_exists($schemaFile)) {
-                    try {
-                        $db->exec(file_get_contents($schemaFile));
-                        error_log('[Migrator] schema.sql appliqué');
-                    } catch (\Throwable $e) {
-                        error_log('[Migrator] schema.sql : ' . $e->getMessage());
-                    }
-                }
+            $locked = self::acquireLock($db);
+            if (!$locked) {
+                throw new RuntimeException('Impossible d’obtenir le verrou de migration dans le délai imparti.');
             }
 
-            $dir   = dirname(__DIR__, 2) . '/sql/migrations';
-            $files = glob($dir . '/[0-9]*.sql') ?: [];
-            natsort($files);
+            self::ensureTrackingTable($db);
+            self::applyBaseSchemaIfNeeded($db);
 
-            self::reconcileAppliedMigrations($db, $files);
+            $files = self::migrationFiles();
+            self::validateAppliedMigrations($db, $files);
 
-            // ── 3. Migrations ────────────────────────────────────────────────
-            $applied = array_flip(
-                $db->query("SELECT migration FROM schema_migrations")->fetchAll(\PDO::FETCH_COLUMN)
-            );
-
+            $applied = self::appliedMigrations($db);
             foreach ($files as $file) {
                 $name = basename($file);
-                if (isset($applied[$name])) continue;
+                if (isset($applied[$name])) {
+                    continue;
+                }
 
                 $sql = file_get_contents($file);
-                if ($sql === false) continue;
+                if ($sql === false) {
+                    throw new RuntimeException('Migration illisible : ' . $name);
+                }
 
                 self::repairKnownPartialMigration($db, $name);
                 self::applyMigration($db, $name, $sql);
             }
 
-        } catch (\Throwable $e) {
+            self::$ran = true;
+        } catch (Throwable $e) {
             error_log('[Migrator] Échec critique : ' . $e->getMessage());
+            throw $e;
+        } finally {
+            if ($locked) {
+                self::releaseLock($db);
+            }
         }
     }
 
-    private static function applyMigration(\PDO $db, string $name, string $sql): void
+    private static function acquireLock(PDO $db): bool
     {
-        // Découpe le fichier en statements individuels pour gérer les erreurs par statement
-        $statements = array_filter(
-            array_map('trim', preg_split('/;\s*\n/', $sql)),
-            fn($s) => $s !== ''
+        $stmt = $db->prepare('SELECT GET_LOCK(?, ?)');
+        $stmt->execute([self::LOCK_NAME, self::LOCK_TIMEOUT_SECONDS]);
+
+        return (int) $stmt->fetchColumn() === 1;
+    }
+
+    private static function releaseLock(PDO $db): void
+    {
+        try {
+            $stmt = $db->prepare('SELECT RELEASE_LOCK(?)');
+            $stmt->execute([self::LOCK_NAME]);
+        } catch (Throwable $e) {
+            error_log('[Migrator] libération du verrou impossible : ' . $e->getMessage());
+        }
+    }
+
+    private static function ensureTrackingTable(PDO $db): void
+    {
+        $db->exec(
+            'CREATE TABLE IF NOT EXISTS schema_migrations (
+                migration VARCHAR(255) NOT NULL PRIMARY KEY,
+                checksum CHAR(64) NULL,
+                applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4'
         );
 
-        $hasError = false;
-        foreach ($statements as $stmt) {
-            if (trim($stmt) === '') continue;
-            try {
-                $db->exec($stmt);
-            } catch (\PDOException $e) {
-                $code = (int)($e->errorInfo[1] ?? 0);
-                if (in_array($code, self::IDEMPOTENT_CODES, true)) {
-                    // Déjà appliqué partiellement — ignorer silencieusement
-                    continue;
-                }
-                // Erreur réelle — loguer mais continuer les autres statements
-                error_log('[Migrator] ' . $name . ' : ' . $e->getMessage());
-                $hasError = true;
-            }
+        if (!self::columnExists($db, 'schema_migrations', 'checksum')) {
+            $db->exec('ALTER TABLE schema_migrations ADD COLUMN checksum CHAR(64) NULL AFTER migration');
         }
+    }
 
-        if ($hasError) {
-            error_log('[Migrator] ' . $name . ' non marquée comme appliquée (erreur partielle)');
+    private static function applyBaseSchemaIfNeeded(PDO $db): void
+    {
+        $tables = $db->query('SHOW TABLES')->fetchAll(PDO::FETCH_COLUMN);
+        if (in_array('utilisateur', $tables, true)) {
             return;
         }
 
-        try {
-            $db->prepare("INSERT IGNORE INTO schema_migrations (migration) VALUES (?)")
-               ->execute([$name]);
-        } catch (\Throwable) {}
+        $schemaFile = dirname(__DIR__, 2) . '/sql/schema.sql';
+        $sql = file_get_contents($schemaFile);
+        if ($sql === false) {
+            throw new RuntimeException('sql/schema.sql est introuvable ou illisible.');
+        }
+
+        foreach (SqlStatementSplitter::split($sql) as $statement) {
+            $db->exec($statement);
+        }
+
+        error_log('[Migrator] schema.sql appliqué');
     }
 
-    private static function reconcileAppliedMigrations(\PDO $db, array $files): void
+    /** @return list<string> */
+    private static function migrationFiles(): array
     {
-        $applied = array_flip(
-            $db->query("SELECT migration FROM schema_migrations")->fetchAll(\PDO::FETCH_COLUMN)
-        );
+        $dir = dirname(__DIR__, 2) . '/sql/migrations';
+        $files = glob($dir . '/[0-9]*.sql') ?: [];
+        natsort($files);
+
+        return array_values($files);
+    }
+
+    /** @return array<string,string|null> */
+    private static function appliedMigrations(PDO $db): array
+    {
+        $rows = $db->query('SELECT migration, checksum FROM schema_migrations')->fetchAll(PDO::FETCH_ASSOC);
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(string) $row['migration']] = $row['checksum'] !== null ? (string) $row['checksum'] : null;
+        }
+
+        return $result;
+    }
+
+    private static function validateAppliedMigrations(PDO $db, array $files): void
+    {
+        $applied = self::appliedMigrations($db);
 
         foreach ($files as $file) {
             $name = basename($file);
-            if (!isset($applied[$name])) {
+            if (!array_key_exists($name, $applied)) {
                 continue;
             }
 
             $sql = file_get_contents($file);
             if ($sql === false) {
-                continue;
+                throw new RuntimeException('Migration appliquée mais illisible : ' . $name);
             }
 
-            $missingTables = [];
+            $checksum = hash('sha256', $sql);
+            $storedChecksum = $applied[$name];
+            if ($storedChecksum === null || $storedChecksum === '') {
+                $stmt = $db->prepare('UPDATE schema_migrations SET checksum = ? WHERE migration = ? AND checksum IS NULL');
+                $stmt->execute([$checksum, $name]);
+            } elseif (!hash_equals($storedChecksum, $checksum)) {
+                throw new RuntimeException('Migration modifiée après application : ' . $name);
+            }
+
             foreach (self::extractCreatedTables($sql) as $table) {
                 if (!self::tableExists($db, $table)) {
-                    $missingTables[] = $table;
+                    throw new RuntimeException(
+                        'Dérive de schéma détectée : ' . $name . ' est appliquée mais la table ' . $table . ' manque.'
+                    );
                 }
-            }
-
-            if ($missingTables === []) {
-                continue;
-            }
-
-            try {
-                $db->prepare("DELETE FROM schema_migrations WHERE migration = ?")->execute([$name]);
-                error_log(
-                    '[Migrator] ' . $name . ' sera rejouée, table(s) manquante(s) : ' . implode(', ', $missingTables)
-                );
-            } catch (\Throwable $e) {
-                error_log('[Migrator] impossible de rejouer ' . $name . ' : ' . $e->getMessage());
             }
         }
     }
 
+    private static function applyMigration(PDO $db, string $name, string $sql): void
+    {
+        $statements = SqlStatementSplitter::split($sql);
+        if ($statements === []) {
+            throw new RuntimeException('Migration vide : ' . $name);
+        }
+
+        foreach ($statements as $statement) {
+            try {
+                $db->exec($statement);
+            } catch (PDOException $e) {
+                if (self::isProvenIdempotentError($e, $statement)) {
+                    continue;
+                }
+
+                throw new RuntimeException(
+                    'Migration ' . $name . ' interrompue : ' . $e->getMessage(),
+                    0,
+                    $e
+                );
+            }
+        }
+
+        $stmt = $db->prepare(
+            'INSERT INTO schema_migrations (migration, checksum, applied_at) VALUES (?, ?, NOW())'
+        );
+        $stmt->execute([$name, hash('sha256', $sql)]);
+        error_log('[Migrator] migration appliquée : ' . $name);
+    }
+
+    private static function isProvenIdempotentError(PDOException $e, string $statement): bool
+    {
+        $code = (int) ($e->errorInfo[1] ?? 0);
+        $normalized = strtoupper(preg_replace('/\s+/', ' ', trim($statement)) ?? trim($statement));
+
+        return match ($code) {
+            1050 => str_starts_with($normalized, 'CREATE TABLE '),
+            1060 => str_starts_with($normalized, 'ALTER TABLE ') && str_contains($normalized, ' ADD COLUMN '),
+            1061 => str_starts_with($normalized, 'ALTER TABLE ') && (
+                str_contains($normalized, ' ADD INDEX ')
+                || str_contains($normalized, ' ADD KEY ')
+                || str_contains($normalized, ' ADD UNIQUE ')
+            ),
+            1091 => str_starts_with($normalized, 'ALTER TABLE ') && str_contains($normalized, ' DROP '),
+            default => false,
+        };
+    }
+
+    /** @return list<string> */
     private static function extractCreatedTables(string $sql): array
     {
         preg_match_all(
-            '/CREATE\s+TABLE\s+IF\s+NOT\s+EXISTS\s+`?([a-zA-Z0-9_]+)`?/i',
+            '/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?([a-zA-Z0-9_]+)`?/i',
             $sql,
             $matches
         );
@@ -182,19 +241,18 @@ class Migrator
         return array_values(array_unique($matches[1] ?? []));
     }
 
-    private static function tableExists(\PDO $db, string $table): bool
+    private static function tableExists(PDO $db, string $table): bool
     {
         $stmt = $db->prepare(
-            "SELECT COUNT(*)
-             FROM information_schema.TABLES
-             WHERE TABLE_SCHEMA = DATABASE()
-               AND TABLE_NAME = ?"
+            'SELECT COUNT(*) FROM information_schema.TABLES
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
         );
         $stmt->execute([$table]);
-        return (int)$stmt->fetchColumn() > 0;
+
+        return (int) $stmt->fetchColumn() > 0;
     }
 
-    private static function repairKnownPartialMigration(\PDO $db, string $name): void
+    private static function repairKnownPartialMigration(PDO $db, string $name): void
     {
         if ($name !== '031_recettes_ingredients.sql') {
             return;
@@ -205,28 +263,23 @@ class Migrator
         }
 
         $backup = self::uniqueLegacyTableName($db, 'ingredient');
-        try {
-            $db->exec("RENAME TABLE `ingredient` TO `" . str_replace('`', '``', $backup) . "`");
-            error_log('[Migrator] 031_recettes_ingredients.sql : table ingredient incompatible sauvegardée en ' . $backup);
-        } catch (\Throwable $e) {
-            error_log('[Migrator] 031_recettes_ingredients.sql : impossible de sauvegarder ingredient incompatible : ' . $e->getMessage());
-        }
+        $escaped = str_replace('`', '``', $backup);
+        $db->exec('RENAME TABLE `ingredient` TO `' . $escaped . '`');
+        error_log('[Migrator] 031 : table ingredient incompatible sauvegardée en ' . $backup);
     }
 
-    private static function columnExists(\PDO $db, string $table, string $column): bool
+    private static function columnExists(PDO $db, string $table, string $column): bool
     {
         $stmt = $db->prepare(
-            "SELECT COUNT(*)
-             FROM information_schema.COLUMNS
-             WHERE TABLE_SCHEMA = DATABASE()
-               AND TABLE_NAME = ?
-               AND COLUMN_NAME = ?"
+            'SELECT COUNT(*) FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
         );
         $stmt->execute([$table, $column]);
-        return (int)$stmt->fetchColumn() > 0;
+
+        return (int) $stmt->fetchColumn() > 0;
     }
 
-    private static function uniqueLegacyTableName(\PDO $db, string $table): string
+    private static function uniqueLegacyTableName(PDO $db, string $table): string
     {
         $base = $table . '_legacy_' . date('YmdHis');
         $candidate = $base;
