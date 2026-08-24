@@ -3,18 +3,23 @@ $pageTitle   = buildPageTitle('Finances');
 $cspNonce    = $GLOBALS['csp_nonce'] ?? '';
 $isAssujetti = ($regimeTva ?? 'assujetti') === 'assujetti';
 
-// --- Stats ---
 $totalTTC     = (float)($synthese['total_ttc']        ?? 0);
 $totalHT      = (float)($synthese['total_ht']         ?? 0);
 $totalTVA     = (float)($synthese['total_tva']        ?? 0);
-$totalNb      = (int)  ($synthese['nb_commandes']     ?? 0);
+$totalNb      = (int)($synthese['nb_commandes']       ?? 0);
 $encaisse     = (float)($synthese['montant_encaisse'] ?? 0);
 $soldeRestant = (float)($synthese['solde_restant']    ?? 0);
 $panierMoyen  = $totalNb > 0 ? $totalTTC / $totalNb : 0;
-$topMenu      = $caStats[0] ?? null;
-$topMenuShare = ($topMenu && $totalTTC > 0) ? ((float)$topMenu['ca'] / $totalTTC) * 100 : 0;
-$activeFilters = (int)($menuFilter ?? 0) > 0 || !empty($dateDebut) || !empty($dateFin);
 
+$menuSalesTtc = array_sum(array_map(fn($row) => (float)($row['ca'] ?? 0), $caStats ?? []));
+$menuSalesHt  = array_sum(array_map(fn($row) => (float)($row['ca_ht'] ?? 0), $caStats ?? []));
+$menuSalesTva = $menuSalesTtc - $menuSalesHt;
+$topMenu      = $caStats[0] ?? null;
+$topMenuShare = ($topMenu && $menuSalesTtc > 0)
+    ? ((float)$topMenu['ca'] / $menuSalesTtc) * 100
+    : 0;
+
+$activeFilters = (int)($menuFilter ?? 0) > 0 || !empty($dateDebut) || !empty($dateFin);
 $periodLabel = 'Toutes les commandes acceptées';
 if (!empty($dateDebut) && !empty($dateFin)) {
     $periodLabel = 'Du ' . formatDateFr($dateDebut) . ' au ' . formatDateFr($dateFin);
@@ -24,21 +29,31 @@ if (!empty($dateDebut) && !empty($dateFin)) {
     $periodLabel = "Jusqu'au " . formatDateFr($dateFin);
 }
 
-$chartLabels = array_map(fn($r) => $r['titre'] ?? '', $caStats ?? []);
-$chartData   = array_map(fn($r) => round((float)($r['ca'] ?? 0), 2), $caStats ?? []);
-$mensuelAsc         = array_reverse($caMensuel ?? []);
-$chartMensuelLabels = array_map(fn($r) => $r['annee_mois'] ?? '', $mensuelAsc);
-$chartMensuelData   = array_map(fn($r) => round((float)($r['ca_ttc'] ?? 0), 2), $mensuelAsc);
+$chartLabels = array_map(fn($row) => $row['titre'] ?? '', $caStats ?? []);
+$chartData = array_map(fn($row) => round((float)($row['ca'] ?? 0), 2), $caStats ?? []);
+$mensuelAsc = array_reverse($caMensuel ?? []);
+$chartMensuelLabels = array_map(fn($row) => $row['annee_mois'] ?? '', $mensuelAsc);
+$chartMensuelData = array_map(fn($row) => round((float)($row['ca_ttc'] ?? 0), 2), $mensuelAsc);
 
 $exportStatsUrl = '/admin/stats/export?' . http_build_query(array_filter([
     'date_debut' => $dateDebut ?? '',
-    'date_fin'   => $dateFin   ?? '',
+    'date_fin'   => $dateFin ?? '',
 ]));
 
-// --- Comptabilité ---
 $siret = trim((string)($config['entreprise_siret'] ?? ''));
-
 $activeTab = $_GET['tab'] ?? 'stats';
+if (!in_array($activeTab, ['stats', 'comptabilite', 'marges'], true)) {
+    $activeTab = 'stats';
+}
+
+$nbCouts = count($coutsMatiere ?? []);
+$coutMoyen = $nbCouts > 0
+    ? array_sum(array_map(fn($row) => (float)($row['cout_matiere_portion'] ?? 0), $coutsMatiere)) / $nbCouts
+    : 0;
+$coutMax = $nbCouts > 0
+    ? max(array_map(fn($row) => (float)($row['cout_matiere_portion'] ?? 0), $coutsMatiere))
+    : 0;
+$nbUtilises = count(array_filter($coutsMatiere ?? [], fn($row) => (int)($row['nb_menus_actifs'] ?? 0) > 0));
 ?>
 
 <?php partial('partials/page_title_bar', ['icon' => 'bi-graph-up', 'title' => 'Finances']); ?>
@@ -59,20 +74,18 @@ $activeTab = $_GET['tab'] ?? 'stats';
     <li class="nav-item" role="presentation">
         <button class="nav-link <?= $activeTab === 'marges' ? 'active' : '' ?>"
                 id="tab-marges" data-bs-toggle="tab" data-bs-target="#pane-marges" type="button" role="tab">
-            <i class="bi bi-percent me-1"></i>Marges plats
+            <i class="bi bi-basket me-1"></i>Coûts matière
         </button>
     </li>
 </ul>
 
 <div class="tab-content">
-
-    <!-- ============================================================
-         ONGLET 1 — Statistiques CA
-    ============================================================ -->
     <div class="tab-pane fade <?= $activeTab === 'stats' ? 'show active' : '' ?>" id="pane-stats" role="tabpanel">
-
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-4">
-            <p class="text-muted mb-0">Vue synthétique du chiffre d'affaires. Source : commandes au statut accepté ou ultérieur.</p>
+            <div>
+                <p class="text-muted mb-1">CA commandes : total TTC des commandes acceptées ou au-delà, livraison incluse.</p>
+                <p class="text-muted small mb-0">Ventes menus : montant net des menus, hors livraison. Les parts par menu utilisent uniquement ce sous-total.</p>
+            </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <span class="stats-period-badge">
                     <i class="bi bi-calendar3 me-1"></i><?= sanitize($periodLabel) ?>
@@ -83,43 +96,35 @@ $activeTab = $_GET['tab'] ?? 'stats';
             </div>
         </div>
 
-        <!-- KPI -->
         <section class="stats-kpi-grid mb-4" aria-label="Indicateurs de synthèse">
             <article class="stats-kpi-card">
-                <span class="stats-kpi-label">CA TTC</span>
+                <span class="stats-kpi-label">CA commandes TTC</span>
                 <strong class="stats-kpi-value"><?= sanitize(formatPrice($totalTTC)) ?></strong>
                 <?php if ($isAssujetti): ?>
-                <span class="stats-kpi-note">HT : <?= sanitize(formatPrice($totalHT)) ?> · TVA : <?= sanitize(formatPrice($totalTVA)) ?></span>
+                    <span class="stats-kpi-note">HT : <?= sanitize(formatPrice($totalHT)) ?> · TVA : <?= sanitize(formatPrice($totalTVA)) ?></span>
                 <?php else: ?>
-                <span class="stats-kpi-note">Régime non-assujetti (art. 293 B)</span>
+                    <span class="stats-kpi-note">Livraison incluse</span>
                 <?php endif; ?>
+            </article>
+            <article class="stats-kpi-card">
+                <span class="stats-kpi-label">Ventes menus TTC</span>
+                <strong class="stats-kpi-value"><?= sanitize(formatPrice($menuSalesTtc)) ?></strong>
+                <span class="stats-kpi-note">Hors livraison</span>
             </article>
             <article class="stats-kpi-card">
                 <span class="stats-kpi-label">Commandes</span>
                 <strong class="stats-kpi-value"><?= sanitize(formatInteger($totalNb)) ?></strong>
-                <span class="stats-kpi-note">Panier moyen <?= sanitize(formatPrice($panierMoyen)) ?></span>
-            </article>
-            <article class="stats-kpi-card">
-                <span class="stats-kpi-label">Encaissé</span>
-                <strong class="stats-kpi-value"><?= sanitize(formatPrice($encaisse)) ?></strong>
-                <?php if ($soldeRestant > 0): ?>
-                <span class="stats-kpi-note stats-kpi-note--alert">Solde restant : <?= sanitize(formatPrice($soldeRestant)) ?></span>
-                <?php else: ?>
-                <span class="stats-kpi-note">Tout soldé</span>
-                <?php endif; ?>
+                <span class="stats-kpi-note">Panier moyen commande <?= sanitize(formatPrice($panierMoyen)) ?></span>
             </article>
             <article class="stats-kpi-card">
                 <span class="stats-kpi-label">Meilleur menu</span>
-                <strong class="stats-kpi-value stats-kpi-value--text">
-                    <?= sanitize($topMenu['titre'] ?? 'Aucun') ?>
-                </strong>
+                <strong class="stats-kpi-value stats-kpi-value--text"><?= sanitize($topMenu['titre'] ?? 'Aucun') ?></strong>
                 <span class="stats-kpi-note">
-                    <?= $topMenu ? sanitize(number_format($topMenuShare, 0, ',', ' ') . ' % du CA') : 'Aucune donnée' ?>
+                    <?= $topMenu ? sanitize(number_format($topMenuShare, 0, ',', ' ') . ' % des ventes menus') : 'Aucune donnée' ?>
                 </span>
             </article>
         </section>
 
-        <!-- Filtres -->
         <section class="stats-filter-panel mb-4" aria-label="Filtres">
             <form method="GET" action="/admin/stats" class="row g-3 align-items-end" role="search">
                 <input type="hidden" name="tab" value="stats">
@@ -127,30 +132,24 @@ $activeTab = $_GET['tab'] ?? 'stats';
                     <label for="filtre-menu" class="form-label form-label-sm">Menu</label>
                     <select class="form-select form-select-sm" id="filtre-menu" name="menu_id">
                         <option value="">Tous les menus</option>
-                        <?php foreach ($menus as $m): ?>
-                            <option value="<?= (int)$m['menu_id'] ?>" <?= (int)($menuFilter ?? 0) === (int)$m['menu_id'] ? 'selected' : '' ?>>
-                                <?= sanitize($m['titre'] ?? '') ?>
+                        <?php foreach ($menus as $menu): ?>
+                            <option value="<?= (int)$menu['menu_id'] ?>" <?= (int)($menuFilter ?? 0) === (int)$menu['menu_id'] ? 'selected' : '' ?>>
+                                <?= sanitize($menu['titre'] ?? '') ?>
                             </option>
                         <?php endforeach; ?>
                     </select>
                 </div>
                 <div class="col-12 col-lg-3">
                     <label for="filtre-debut" class="form-label form-label-sm">Date début</label>
-                    <input type="date" class="form-control form-control-sm" id="filtre-debut" name="date_debut"
-                           value="<?= sanitize($dateDebut ?? '') ?>">
+                    <input type="date" class="form-control form-control-sm" id="filtre-debut" name="date_debut" value="<?= sanitize($dateDebut ?? '') ?>">
                 </div>
                 <div class="col-12 col-lg-3">
                     <label for="filtre-fin" class="form-label form-label-sm">Date fin</label>
-                    <input type="date" class="form-control form-control-sm" id="filtre-fin" name="date_fin"
-                           value="<?= sanitize($dateFin ?? '') ?>">
+                    <input type="date" class="form-control form-control-sm" id="filtre-fin" name="date_fin" value="<?= sanitize($dateFin ?? '') ?>">
                 </div>
                 <div class="col-12 col-xl-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-vg btn-sm flex-grow-1">
-                        <i class="bi bi-funnel me-1"></i>Filtrer
-                    </button>
-                    <a href="/admin/stats" class="btn btn-outline-secondary btn-sm <?= $activeFilters ? '' : 'disabled' ?>">
-                        Réinitialiser
-                    </a>
+                    <button type="submit" class="btn btn-vg btn-sm flex-grow-1"><i class="bi bi-funnel me-1"></i>Filtrer</button>
+                    <a href="/admin/stats" class="btn btn-outline-secondary btn-sm <?= $activeFilters ? '' : 'disabled' ?>">Réinitialiser</a>
                 </div>
             </form>
         </section>
@@ -162,433 +161,284 @@ $activeTab = $_GET['tab'] ?? 'stats';
                 <span>Essayez une période plus large ou retirez le filtre menu.</span>
             </div>
         <?php else: ?>
+            <div class="row g-4 mb-4">
+                <?php if (!empty($caStats)): ?>
+                    <div class="col-12 <?= !empty($caMensuel) ? 'col-xl-6' : 'col-xl-8 offset-xl-2' ?>">
+                        <section class="stats-panel h-100">
+                            <div class="stats-panel-header">
+                                <div><h2>Ventes menus TTC</h2><p>Hors frais de livraison, sur la période filtrée.</p></div>
+                            </div>
+                            <div class="stats-chart-wrap"><canvas id="chartCA" aria-label="Ventes menus TTC" role="img"></canvas></div>
+                        </section>
+                    </div>
+                <?php endif; ?>
+                <?php if (!empty($caMensuel)): ?>
+                    <div class="col-12 <?= !empty($caStats) ? 'col-xl-6' : '' ?>">
+                        <section class="stats-panel h-100">
+                            <div class="stats-panel-header">
+                                <div><h2>CA commandes mensuel</h2><p>Livraison incluse · <?= count($caMensuel) ?> mois.</p></div>
+                            </div>
+                            <div class="stats-chart-wrap"><canvas id="chartMensuel" aria-label="CA commandes mensuel" role="img"></canvas></div>
+                        </section>
+                    </div>
+                <?php endif; ?>
+            </div>
 
-        <!-- Graphiques -->
-        <div class="row g-4 mb-4">
             <?php if (!empty($caStats)): ?>
-            <div class="col-12 <?= !empty($caMensuel) ? 'col-xl-6' : 'col-xl-8 offset-xl-2' ?>">
-                <section class="stats-panel h-100">
-                    <div class="stats-panel-header">
-                        <div><h2>CA par menu (TTC)</h2><p>Classement sur la période filtrée.</p></div>
+                <section class="stats-panel stats-detail-panel mb-4">
+                    <div class="stats-panel-header stats-panel-header--table">
+                        <div><h2>Détail des ventes menus</h2><p>Les colonnes CA ci-dessous excluent la livraison.</p></div>
                     </div>
-                    <div class="stats-chart-wrap">
-                        <canvas id="chartCA" aria-label="CA par menu" role="img"></canvas>
+                    <div class="table-responsive">
+                        <table class="table stats-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Menu</th>
+                                    <th class="text-end">Commandes contenant le menu</th>
+                                    <th class="text-end">Moy. menu / commande</th>
+                                    <?php if ($isAssujetti): ?>
+                                        <th class="text-end">Ventes HT</th>
+                                        <th class="text-end">TVA</th>
+                                    <?php endif; ?>
+                                    <th class="text-end">Part ventes menus</th>
+                                    <th class="text-end">Ventes TTC</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($caStats as $row):
+                                    $nb = (int)($row['nb'] ?? 0);
+                                    $ca = (float)($row['ca'] ?? 0);
+                                    $caHT = (float)($row['ca_ht'] ?? 0);
+                                    $tva = $ca - $caHT;
+                                    $average = $nb > 0 ? $ca / $nb : 0;
+                                    $share = $menuSalesTtc > 0 ? ($ca / $menuSalesTtc) * 100 : 0;
+                                ?>
+                                    <tr>
+                                        <td><?= sanitize($row['titre'] ?? '') ?></td>
+                                        <td class="text-end"><?= sanitize(formatInteger($nb)) ?></td>
+                                        <td class="text-end text-nowrap"><?= sanitize(formatPrice($average)) ?></td>
+                                        <?php if ($isAssujetti): ?>
+                                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($caHT)) ?></td>
+                                            <td class="text-end text-nowrap text-muted"><?= sanitize(formatPrice($tva)) ?></td>
+                                        <?php endif; ?>
+                                        <td class="text-end"><?= sanitize(number_format($share, 0, ',', ' ')) ?> %</td>
+                                        <td class="text-end fw-bold text-vg text-nowrap"><?= sanitize(formatPrice($ca)) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                            <tfoot>
+                                <tr>
+                                    <td>Ventes menus</td>
+                                    <td class="text-end">—</td>
+                                    <td class="text-end">—</td>
+                                    <?php if ($isAssujetti): ?>
+                                        <td class="text-end text-nowrap"><?= sanitize(formatPrice($menuSalesHt)) ?></td>
+                                        <td class="text-end text-nowrap text-muted"><?= sanitize(formatPrice($menuSalesTva)) ?></td>
+                                    <?php endif; ?>
+                                    <td class="text-end">100 %</td>
+                                    <td class="text-end fw-bold text-vg text-nowrap"><?= sanitize(formatPrice($menuSalesTtc)) ?></td>
+                                </tr>
+                            </tfoot>
+                        </table>
                     </div>
                 </section>
-            </div>
             <?php endif; ?>
+
             <?php if (!empty($caMensuel)): ?>
-            <div class="col-12 <?= !empty($caStats) ? 'col-xl-6' : '' ?>">
-                <section class="stats-panel h-100">
-                    <div class="stats-panel-header">
-                        <div><h2>Tendance mensuelle (TTC)</h2><p><?= count($caMensuel) ?> mois.</p></div>
+                <section class="stats-panel stats-detail-panel">
+                    <div class="stats-panel-header stats-panel-header--table">
+                        <div><h2>Tendance mensuelle</h2><p>CA commandes par mois de comptabilisation, livraison incluse.</p></div>
                     </div>
-                    <div class="stats-chart-wrap">
-                        <canvas id="chartMensuel" aria-label="Tendance mensuelle" role="img"></canvas>
+                    <div class="table-responsive">
+                        <table class="table stats-table align-middle mb-0">
+                            <thead>
+                                <tr>
+                                    <th>Mois</th>
+                                    <th class="text-end">Commandes</th>
+                                    <th class="text-end">Personnes</th>
+                                    <th class="text-end">Panier moyen</th>
+                                    <?php if ($isAssujetti): ?>
+                                        <th class="text-end">CA HT</th>
+                                        <th class="text-end">TVA</th>
+                                    <?php endif; ?>
+                                    <th class="text-end">CA TTC</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php foreach ($caMensuel as $mois): ?>
+                                    <tr>
+                                        <td><?= sanitize($mois['annee_mois'] ?? '') ?></td>
+                                        <td class="text-end"><?= sanitize(formatInteger($mois['nb_commandes'] ?? 0)) ?></td>
+                                        <td class="text-end"><?= sanitize(formatInteger($mois['nb_personnes'] ?? 0)) ?></td>
+                                        <td class="text-end text-nowrap"><?= sanitize(formatPrice($mois['panier_moyen_ttc'] ?? 0)) ?></td>
+                                        <?php if ($isAssujetti): ?>
+                                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($mois['ca_ht'] ?? 0)) ?></td>
+                                            <td class="text-end text-nowrap text-muted"><?= sanitize(formatPrice($mois['tva_collectee'] ?? 0)) ?></td>
+                                        <?php endif; ?>
+                                        <td class="text-end fw-bold text-vg text-nowrap"><?= sanitize(formatPrice($mois['ca_ttc'] ?? 0)) ?></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            </tbody>
+                        </table>
                     </div>
                 </section>
-            </div>
             <?php endif; ?>
-        </div>
-
-        <!-- Tableau CA par menu -->
-        <?php if (!empty($caStats)): ?>
-        <section class="stats-panel stats-detail-panel mb-4">
-            <div class="stats-panel-header stats-panel-header--table">
-                <div><h2>Détail par menu</h2><p>CA<?= $isAssujetti ? ', HT et TVA' : '' ?>, volume et part.</p></div>
-            </div>
-            <div class="table-responsive stats-table-desktop">
-                <table class="table stats-table align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Menu</th>
-                            <th class="text-end text-nowrap">Commandes</th>
-                            <th class="text-end text-nowrap">Panier moyen</th>
-                            <?php if ($isAssujetti): ?>
-                            <th class="text-end text-nowrap">CA HT</th>
-                            <th class="text-end text-nowrap">TVA</th>
-                            <?php endif; ?>
-                            <th class="text-end text-nowrap">Part CA</th>
-                            <th class="text-end text-nowrap">CA TTC</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($caStats as $row):
-                            $nb      = (int)  ($row['nb']    ?? 0);
-                            $ca      = (float)($row['ca']    ?? 0);
-                            $caHT    = (float)($row['ca_ht'] ?? 0);
-                            $tva     = $ca - $caHT;
-                            $average = $nb > 0 ? $ca / $nb : 0;
-                            $share   = $totalTTC > 0 ? ($ca / $totalTTC) * 100 : 0;
-                        ?>
-                        <tr>
-                            <td data-label="Menu"><?= sanitize($row['titre'] ?? '') ?></td>
-                            <td class="text-end" data-label="Commandes"><?= sanitize(formatInteger($nb)) ?></td>
-                            <td class="text-end text-nowrap" data-label="Panier moyen"><?= sanitize(formatPrice($average)) ?></td>
-                            <?php if ($isAssujetti): ?>
-                            <td class="text-end text-nowrap" data-label="CA HT"><?= sanitize(formatPrice($caHT)) ?></td>
-                            <td class="text-end text-nowrap text-muted" data-label="TVA"><?= sanitize(formatPrice($tva)) ?></td>
-                            <?php endif; ?>
-                            <td class="text-end" data-label="Part CA">
-                                <span class="stats-percent"><?= sanitize(number_format($share, 0, ',', ' ')) ?> %</span>
-                            </td>
-                            <td class="text-end fw-bold text-vg text-nowrap" data-label="CA TTC"><?= sanitize(formatPrice($ca)) ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                    <tfoot>
-                        <tr>
-                            <td>Total</td>
-                            <td class="text-end"><?= sanitize(formatInteger($totalNb)) ?></td>
-                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($panierMoyen)) ?></td>
-                            <?php if ($isAssujetti): ?>
-                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($totalHT)) ?></td>
-                            <td class="text-end text-nowrap text-muted"><?= sanitize(formatPrice($totalTVA)) ?></td>
-                            <?php endif; ?>
-                            <td class="text-end">100 %</td>
-                            <td class="text-end text-vg text-nowrap"><?= sanitize(formatPrice($totalTTC)) ?></td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-            <div class="stats-menu-cards">
-                <?php foreach ($caStats as $row):
-                    $nb    = (int)  ($row['nb']    ?? 0);
-                    $ca    = (float)($row['ca']    ?? 0);
-                    $caHT  = (float)($row['ca_ht'] ?? 0);
-                    $tva   = $ca - $caHT;
-                    $avg   = $nb > 0 ? $ca / $nb : 0;
-                    $share = $totalTTC > 0 ? ($ca / $totalTTC) * 100 : 0;
-                ?>
-                    <article class="stats-menu-card stats-menu-card-row">
-                        <div class="stats-menu-card-head">
-                            <strong><?= sanitize($row['titre'] ?? '') ?></strong>
-                            <span><?= sanitize(formatPrice($ca)) ?></span>
-                        </div>
-                        <dl>
-                            <div><dt>Commandes</dt><dd><?= sanitize(formatInteger($nb)) ?></dd></div>
-                            <div><dt>Panier moyen</dt><dd><?= sanitize(formatPrice($avg)) ?></dd></div>
-                            <?php if ($isAssujetti): ?>
-                            <div><dt>HT</dt><dd><?= sanitize(formatPrice($caHT)) ?></dd></div>
-                            <div><dt>TVA</dt><dd><?= sanitize(formatPrice($tva)) ?></dd></div>
-                            <?php endif; ?>
-                            <div><dt>Part CA</dt><dd><?= sanitize(number_format($share, 0, ',', ' ')) ?> %</dd></div>
-                        </dl>
-                    </article>
-                <?php endforeach; ?>
-            </div>
-        </section>
         <?php endif; ?>
-
-        <!-- Tendance mensuelle -->
-        <?php if (!empty($caMensuel)): ?>
-        <section class="stats-panel stats-detail-panel">
-            <div class="stats-panel-header stats-panel-header--table">
-                <div><h2>Tendance mensuelle</h2><p>CA par mois de comptabilisation.</p></div>
-            </div>
-            <div class="table-responsive">
-                <table class="table stats-table align-middle mb-0">
-                    <thead>
-                        <tr>
-                            <th>Mois</th>
-                            <th class="text-end text-nowrap">Commandes</th>
-                            <th class="text-end text-nowrap">Personnes</th>
-                            <th class="text-end text-nowrap">Panier moyen</th>
-                            <?php if ($isAssujetti): ?>
-                            <th class="text-end text-nowrap">CA HT</th>
-                            <th class="text-end text-nowrap">TVA</th>
-                            <?php endif; ?>
-                            <th class="text-end text-nowrap">CA TTC</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <?php foreach ($caMensuel as $mois): ?>
-                        <tr>
-                            <td><?= sanitize($mois['annee_mois'] ?? '') ?></td>
-                            <td class="text-end"><?= sanitize(formatInteger($mois['nb_commandes'] ?? 0)) ?></td>
-                            <td class="text-end"><?= sanitize(formatInteger($mois['nb_personnes'] ?? 0)) ?></td>
-                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($mois['panier_moyen_ttc'] ?? 0)) ?></td>
-                            <?php if ($isAssujetti): ?>
-                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($mois['ca_ht'] ?? 0)) ?></td>
-                            <td class="text-end text-nowrap text-muted"><?= sanitize(formatPrice($mois['tva_collectee'] ?? 0)) ?></td>
-                            <?php endif; ?>
-                            <td class="text-end fw-bold text-vg text-nowrap"><?= sanitize(formatPrice($mois['ca_ttc'] ?? 0)) ?></td>
-                        </tr>
-                        <?php endforeach; ?>
-                    </tbody>
-                </table>
-            </div>
-        </section>
-        <?php endif; ?>
-
-        <?php endif; // fin empty check ?>
     </div>
 
-    <!-- ============================================================
-         ONGLET 2 — Comptabilité
-    ============================================================ -->
     <div class="tab-pane fade <?= $activeTab === 'comptabilite' ? 'show active' : '' ?>" id="pane-comptabilite" role="tabpanel">
-
         <p class="text-muted mb-4">
             Exports des données financières. Toutes les commandes au statut accepté ou ultérieur sont comptabilisées.
             <?php if (!$isAssujetti): ?>
-            <span class="badge bg-secondary ms-1">Régime non-assujetti TVA (art. 293 B CGI)</span>
+                <span class="badge bg-secondary ms-1">Régime non-assujetti TVA (art. 293 B CGI)</span>
             <?php endif; ?>
         </p>
 
         <?php if (!$siret): ?>
-        <div class="alert alert-warning d-flex gap-2 align-items-start mb-4">
-            <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
-            <div>
-                <strong>SIRET manquant.</strong>
-                Sans SIRET, les documents générés ne sont pas fiscalement valides.
-                <a href="/admin/parametres?tab=entreprise" class="alert-link ms-1">Configurer l'entreprise →</a>
+            <div class="alert alert-warning d-flex gap-2 align-items-start mb-4">
+                <i class="bi bi-exclamation-triangle-fill flex-shrink-0 mt-1"></i>
+                <div>
+                    <strong>SIRET manquant.</strong>
+                    Vérifiez les informations légales de l'entreprise avant d'utiliser les exports comme support comptable.
+                    <a href="/admin/parametres?tab=entreprise" class="alert-link ms-1">Configurer l'entreprise →</a>
+                </div>
             </div>
-        </div>
         <?php endif; ?>
 
-        <!-- KPI snapshot -->
         <section class="stats-kpi-grid mb-5" aria-label="Soldes globaux">
             <article class="stats-kpi-card">
-                <span class="stats-kpi-label">CA TTC cumulé</span>
+                <span class="stats-kpi-label">CA commandes TTC</span>
                 <strong class="stats-kpi-value"><?= sanitize(formatPrice($totalTTC)) ?></strong>
-                <?php if ($isAssujetti): ?>
-                <span class="stats-kpi-note">HT : <?= sanitize(formatPrice($totalHT)) ?></span>
-                <?php endif; ?>
+                <?php if ($isAssujetti): ?><span class="stats-kpi-note">HT : <?= sanitize(formatPrice($totalHT)) ?></span><?php endif; ?>
             </article>
             <?php if ($isAssujetti): ?>
-            <article class="stats-kpi-card">
-                <span class="stats-kpi-label">TVA collectée</span>
-                <strong class="stats-kpi-value"><?= sanitize(formatPrice($totalTVA)) ?></strong>
-                <span class="stats-kpi-note">Toutes périodes</span>
-            </article>
+                <article class="stats-kpi-card">
+                    <span class="stats-kpi-label">TVA calculée</span>
+                    <strong class="stats-kpi-value"><?= sanitize(formatPrice($totalTVA)) ?></strong>
+                    <span class="stats-kpi-note">Selon les snapshots de taux des lignes</span>
+                </article>
             <?php endif; ?>
             <article class="stats-kpi-card">
-                <span class="stats-kpi-label">Encaissé</span>
+                <span class="stats-kpi-label">Encaissé net</span>
                 <strong class="stats-kpi-value"><?= sanitize(formatPrice($encaisse)) ?></strong>
-                <?php if ($soldeRestant > 0): ?>
-                <span class="stats-kpi-note stats-kpi-note--alert">Solde restant : <?= sanitize(formatPrice($soldeRestant)) ?></span>
-                <?php else: ?>
-                <span class="stats-kpi-note">Tout soldé</span>
-                <?php endif; ?>
+                <span class="stats-kpi-note">Remboursements déduits</span>
             </article>
             <article class="stats-kpi-card">
-                <span class="stats-kpi-label">Commandes</span>
-                <strong class="stats-kpi-value"><?= sanitize(formatInteger($totalNb)) ?></strong>
-                <span class="stats-kpi-note">Acceptées et au-delà</span>
+                <span class="stats-kpi-label">Solde restant</span>
+                <strong class="stats-kpi-value"><?= sanitize(formatPrice($soldeRestant)) ?></strong>
+                <span class="stats-kpi-note"><?= sanitize(formatInteger($totalNb)) ?> commandes comptabilisées</span>
             </article>
         </section>
 
-        <!-- Exports -->
         <h2 class="h5 mb-4 fw-semibold">Exports CSV</h2>
         <div class="row g-4">
-
-            <div class="col-12 col-lg-4">
-                <div class="card h-100 shadow-sm comptabilite-export-card">
-                    <div class="card-body d-flex flex-column">
-                        <div class="comptabilite-export-icon mb-3">
-                            <i class="bi bi-file-earmark-spreadsheet text-vg" style="font-size:2rem"></i>
+            <?php
+            $exports = [
+                ['format' => 'commandes', 'icon' => 'bi-file-earmark-spreadsheet', 'title' => 'Journal des commandes', 'description' => 'Une ligne par commande : dates, client, total, encaissé net, solde et statuts.'],
+                ['format' => 'lignes', 'icon' => 'bi-list-ul', 'title' => 'Journal des lignes', 'description' => 'Une ligne par menu commandé : prix brut, remise, livraison et ventilation TVA.'],
+                ['format' => 'mensuel', 'icon' => 'bi-calendar-month', 'title' => 'Récapitulatif mensuel', 'description' => 'Agrégats mensuels de CA commandes, volumes, panier moyen et TVA calculée.'],
+            ];
+            ?>
+            <?php foreach ($exports as $export): ?>
+                <div class="col-12 col-lg-4">
+                    <div class="card h-100 shadow-sm comptabilite-export-card">
+                        <div class="card-body d-flex flex-column">
+                            <div class="comptabilite-export-icon mb-3"><i class="bi <?= sanitize($export['icon']) ?> text-vg" style="font-size:2rem"></i></div>
+                            <h3 class="h6 fw-bold mb-1"><?= sanitize($export['title']) ?></h3>
+                            <p class="small text-muted flex-grow-1"><?= sanitize($export['description']) ?></p>
+                            <form method="GET" action="/admin/comptabilite/export" class="comptabilite-export-form mt-2">
+                                <input type="hidden" name="format" value="<?= sanitize($export['format']) ?>">
+                                <div class="row g-2 mb-3">
+                                    <div class="col-6">
+                                        <label class="form-label form-label-sm">Du</label>
+                                        <input type="date" class="form-control form-control-sm" name="date_debut">
+                                    </div>
+                                    <div class="col-6">
+                                        <label class="form-label form-label-sm">Au</label>
+                                        <input type="date" class="form-control form-control-sm" name="date_fin" value="<?= date('Y-m-d') ?>">
+                                    </div>
+                                </div>
+                                <button type="submit" class="btn btn-vg btn-sm w-100"><i class="bi bi-download me-1"></i>Télécharger</button>
+                            </form>
                         </div>
-                        <h3 class="h6 fw-bold mb-1">Journal des commandes</h3>
-                        <p class="small text-muted flex-grow-1">
-                            Une ligne par commande. Contient : numéro, dates, client, total TTC
-                            <?= $isAssujetti ? ', HT, TVA' : '' ?>, encaissé, solde, statut paiement.
-                        </p>
-                        <form method="GET" action="/admin/comptabilite/export" class="comptabilite-export-form mt-2">
-                            <input type="hidden" name="format" value="commandes">
-                            <div class="row g-2 mb-3">
-                                <div class="col-6">
-                                    <label class="form-label form-label-sm">Du</label>
-                                    <input type="date" class="form-control form-control-sm" name="date_debut">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label form-label-sm">Au</label>
-                                    <input type="date" class="form-control form-control-sm" name="date_fin" value="<?= date('Y-m-d') ?>">
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-vg btn-sm w-100">
-                                <i class="bi bi-download me-1"></i>Télécharger
-                            </button>
-                        </form>
                     </div>
                 </div>
-            </div>
-
-            <div class="col-12 col-lg-4">
-                <div class="card h-100 shadow-sm comptabilite-export-card">
-                    <div class="card-body d-flex flex-column">
-                        <div class="comptabilite-export-icon mb-3">
-                            <i class="bi bi-list-ul text-vg" style="font-size:2rem"></i>
-                        </div>
-                        <h3 class="h6 fw-bold mb-1">Journal des lignes</h3>
-                        <p class="small text-muted flex-grow-1">
-                            Une ligne par menu dans chaque commande. Prix brut, remise, livraison<?= $isAssujetti ? ', HT et TVA par ligne' : '' ?>.
-                        </p>
-                        <form method="GET" action="/admin/comptabilite/export" class="comptabilite-export-form mt-2">
-                            <input type="hidden" name="format" value="lignes">
-                            <div class="row g-2 mb-3">
-                                <div class="col-6">
-                                    <label class="form-label form-label-sm">Du</label>
-                                    <input type="date" class="form-control form-control-sm" name="date_debut">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label form-label-sm">Au</label>
-                                    <input type="date" class="form-control form-control-sm" name="date_fin" value="<?= date('Y-m-d') ?>">
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-vg btn-sm w-100">
-                                <i class="bi bi-download me-1"></i>Télécharger
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
-            <div class="col-12 col-lg-4">
-                <div class="card h-100 shadow-sm comptabilite-export-card">
-                    <div class="card-body d-flex flex-column">
-                        <div class="comptabilite-export-icon mb-3">
-                            <i class="bi bi-calendar-month text-vg" style="font-size:2rem"></i>
-                        </div>
-                        <h3 class="h6 fw-bold mb-1">Récapitulatif mensuel</h3>
-                        <p class="small text-muted flex-grow-1">
-                            Agrégé par mois : CA TTC<?= $isAssujetti ? ', HT, TVA collectée' : '' ?>, panier moyen.
-                            Pour les déclarations<?= $isAssujetti ? ' TVA (CA3, CA12)' : '' ?>.
-                        </p>
-                        <form method="GET" action="/admin/comptabilite/export" class="comptabilite-export-form mt-2">
-                            <input type="hidden" name="format" value="mensuel">
-                            <div class="row g-2 mb-3">
-                                <div class="col-6">
-                                    <label class="form-label form-label-sm">Du</label>
-                                    <input type="date" class="form-control form-control-sm" name="date_debut">
-                                </div>
-                                <div class="col-6">
-                                    <label class="form-label form-label-sm">Au</label>
-                                    <input type="date" class="form-control form-control-sm" name="date_fin" value="<?= date('Y-m-d') ?>">
-                                </div>
-                            </div>
-                            <button type="submit" class="btn btn-vg btn-sm w-100">
-                                <i class="bi bi-download me-1"></i>Télécharger
-                            </button>
-                        </form>
-                    </div>
-                </div>
-            </div>
-
+            <?php endforeach; ?>
         </div>
 
         <section class="mt-5">
             <ul class="small text-muted mb-0">
-                <li>CSV séparateur <strong>;</strong>, encodage <strong>UTF-8 BOM</strong> — compatibles Excel et LibreOffice.</li>
-                <li>La <strong>date de comptabilisation</strong> = date d'acceptation de la commande.</li>
-                <?php if ($isAssujetti): ?>
-                <li>Pour votre déclaration TVA, utilisez le <strong>récapitulatif mensuel</strong>.</li>
-                <?php else: ?>
-                <li>Régime non-assujetti : aucune TVA à reverser. Vos factures ne doivent pas mentionner de TVA.</li>
-                <?php endif; ?>
+                <li>CSV séparateur <strong>;</strong>, encodage <strong>UTF-8 BOM</strong>.</li>
+                <li>Les champs texte exportés sont neutralisés contre l'interprétation de formules par les tableurs.</li>
+                <li>La <strong>date de comptabilisation</strong> correspond à la première acceptation connue, sinon à la date de commande.</li>
+                <li>Les périodes d'export sont validées strictement avant toute requête.</li>
             </ul>
         </section>
-
     </div>
 
-    <!-- ============================================================
-         MARGES PAR PLAT
-    ============================================================ -->
     <div class="tab-pane fade <?= $activeTab === 'marges' ? 'show active' : '' ?>" id="pane-marges" role="tabpanel">
-
-        <?php if (empty($marges)): ?>
+        <?php if (empty($coutsMatiere)): ?>
             <div class="alert alert-info mt-3">
                 <i class="bi bi-info-circle me-2"></i>
-                Aucune donnée de marge disponible. Renseignez des fiches techniques dans
+                Aucune donnée de coût matière disponible. Renseignez des fiches techniques dans
                 <a href="/employe/recettes">Fiches &amp; Stocks</a>.
             </div>
         <?php else: ?>
+            <div class="alert alert-secondary">
+                <strong>Pourquoi aucun taux de marge par plat ?</strong>
+                Le prix vendu correspond au menu complet. Sans règle métier d'allocation du prix entre entrée, plat et dessert,
+                attribuer tout le prix du menu à chaque plat produirait une marge fictive. Cette vue affiche donc uniquement le coût matière réellement calculable par portion.
+            </div>
 
-        <p class="text-muted mb-4">Coûts de revient calculés depuis les fiches techniques. Le prix de vente est le tarif minimum du menu contenant chaque plat.</p>
-
-        <div class="table-responsive">
-            <table class="table table-hover align-middle">
-                <thead class="table-light">
-                    <tr>
-                        <th>Plat</th>
-                        <th>Catégorie</th>
-                        <th class="text-end">Coût / portion</th>
-                        <th class="text-end">Prix vente</th>
-                        <th class="text-end">Marge brute</th>
-                        <th class="text-end">Taux marge</th>
-                        <th>Indicateur</th>
-                    </tr>
-                </thead>
-                <tbody>
-                <?php foreach ($marges as $m): ?>
-                <?php
-                    $taux    = $m['taux_marge'];
-                    $couleur = $taux === null ? 'secondary'
-                        : ($taux >= 60 ? 'success' : ($taux >= 35 ? 'warning' : 'danger'));
-                ?>
-                <tr>
-                    <td class="fw-semibold"><?= sanitize($m['titre']) ?></td>
-                    <td class="text-muted small"><?= sanitize($m['categorie']) ?></td>
-                    <td class="text-end"><?= sanitize(formatPrice($m['cout_revient'])) ?></td>
-                    <td class="text-end"><?= $m['prix_vente'] !== null ? sanitize(formatPrice($m['prix_vente'])) : '<span class="text-muted">—</span>' ?></td>
-                    <td class="text-end <?= $m['marge_brute'] !== null && $m['marge_brute'] < 0 ? 'text-danger fw-bold' : '' ?>">
-                        <?= $m['marge_brute'] !== null ? sanitize(formatPrice($m['marge_brute'])) : '—' ?>
-                    </td>
-                    <td class="text-end">
-                        <?php if ($taux !== null): ?>
-                            <span class="fw-bold text-<?= $couleur ?>"><?= $taux ?> %</span>
-                        <?php else: ?>
-                            <span class="text-muted">—</span>
-                        <?php endif; ?>
-                    </td>
-                    <td style="min-width:120px">
-                        <?php if ($taux !== null): ?>
-                        <div class="progress" style="height:8px" title="<?= $taux ?> %">
-                            <div class="progress-bar bg-<?= $couleur ?>" style="width:<?= min(100, max(0, $taux)) ?>%"></div>
-                        </div>
-                        <?php else: ?>
-                        <span class="text-muted small">Prix non défini</span>
-                        <?php endif; ?>
-                    </td>
-                </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
-
-        <div class="row g-3 mt-3">
-            <?php
-                $nbPlats    = count($marges);
-                $nbAvecTaux = count(array_filter($marges, fn($m) => $m['taux_marge'] !== null));
-                $tauxMoyen  = $nbAvecTaux > 0
-                    ? round(array_sum(array_map(fn($m) => $m['taux_marge'] ?? 0, array_filter($marges, fn($m) => $m['taux_marge'] !== null))) / $nbAvecTaux, 1)
-                    : null;
-                $nbCritiques = count(array_filter($marges, fn($m) => $m['taux_marge'] !== null && $m['taux_marge'] < 35));
-            ?>
-            <div class="col-6 col-lg-3">
+            <section class="stats-kpi-grid mb-4" aria-label="Indicateurs coûts matière">
                 <article class="stats-kpi-card">
-                    <span class="stats-kpi-label">Plats analysés</span>
-                    <span class="stats-kpi-value"><?= $nbPlats ?></span>
+                    <span class="stats-kpi-label">Plats avec fiche</span>
+                    <strong class="stats-kpi-value"><?= sanitize(formatInteger($nbCouts)) ?></strong>
                 </article>
-            </div>
-            <div class="col-6 col-lg-3">
                 <article class="stats-kpi-card">
-                    <span class="stats-kpi-label">Taux de marge moyen</span>
-                    <span class="stats-kpi-value"><?= $tauxMoyen !== null ? $tauxMoyen . ' %' : '—' ?></span>
+                    <span class="stats-kpi-label">Coût moyen / portion</span>
+                    <strong class="stats-kpi-value"><?= sanitize(formatPrice($coutMoyen)) ?></strong>
+                    <span class="stats-kpi-note">Moyenne simple des plats</span>
                 </article>
-            </div>
-            <div class="col-6 col-lg-3">
-                <article class="stats-kpi-card" style="<?= $nbCritiques > 0 ? 'border-color:#ef4444' : '' ?>">
-                    <span class="stats-kpi-label">Plats < 35 % marge</span>
-                    <span class="stats-kpi-value <?= $nbCritiques > 0 ? 'text-danger' : '' ?>"><?= $nbCritiques ?></span>
+                <article class="stats-kpi-card">
+                    <span class="stats-kpi-label">Coût max / portion</span>
+                    <strong class="stats-kpi-value"><?= sanitize(formatPrice($coutMax)) ?></strong>
                 </article>
-            </div>
-        </div>
+                <article class="stats-kpi-card">
+                    <span class="stats-kpi-label">Plats dans un menu actif</span>
+                    <strong class="stats-kpi-value"><?= sanitize(formatInteger($nbUtilises)) ?></strong>
+                </article>
+            </section>
 
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Plat</th>
+                            <th>Catégorie</th>
+                            <th class="text-end">Coût matière / portion</th>
+                            <th class="text-end">Menus actifs</th>
+                            <th>Utilisé dans</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($coutsMatiere as $row): ?>
+                            <tr>
+                                <td class="fw-semibold"><?= sanitize($row['titre']) ?></td>
+                                <td class="text-muted small"><?= sanitize($row['categorie']) ?></td>
+                                <td class="text-end fw-semibold"><?= sanitize(formatPrice($row['cout_matiere_portion'])) ?></td>
+                                <td class="text-end"><?= sanitize(formatInteger($row['nb_menus_actifs'])) ?></td>
+                                <td class="small">
+                                    <?= $row['menus_actifs'] !== '' ? sanitize($row['menus_actifs']) : '<span class="text-muted">Aucun menu actif</span>' ?>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
         <?php endif; ?>
     </div>
-
-</div><!-- /.tab-content -->
+</div>
 
 <script nonce="<?= $cspNonce ?>">
 (function () {
@@ -611,7 +461,7 @@ $activeTab = $_GET['tab'] ?? 'stats';
     'chartId'      => 'chartCA',
     'chartLabels'  => $chartLabels,
     'chartData'    => $chartData,
-    'datasetLabel' => "CA TTC",
+    'datasetLabel' => 'Ventes menus TTC (hors livraison)',
     'valueFormat'  => 'currency',
     'horizontal'   => true,
 ]); ?>
@@ -622,7 +472,7 @@ $activeTab = $_GET['tab'] ?? 'stats';
     'chartId'      => 'chartMensuel',
     'chartLabels'  => $chartMensuelLabels,
     'chartData'    => $chartMensuelData,
-    'datasetLabel' => "CA TTC mensuel",
+    'datasetLabel' => 'CA commandes TTC mensuel',
     'valueFormat'  => 'currency',
     'horizontal'   => false,
 ]); ?>

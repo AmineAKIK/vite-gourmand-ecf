@@ -3,43 +3,58 @@
 namespace App\Controllers\Admin;
 
 use App\Config\SiteConfig;
+use App\Domain\AnalyticsTrustPolicy;
 use App\Models\MenuModel;
 use App\Models\RecetteModel;
 use App\Services\PricingService;
 use App\Services\StatsService;
+use InvalidArgumentException;
 
 class StatsController
 {
     public function stats(): void
     {
-        $menuFilter = (int)($_GET['menu_id']    ?? 0);
-        $dateDebut  = sanitize($_GET['date_debut'] ?? '');
-        $dateFin    = sanitize($_GET['date_fin']   ?? '');
-
-        $caStats   = StatsService::getCaParMenu($menuFilter, $dateDebut, $dateFin);
-        $synthese  = StatsService::getSynthese($dateDebut, $dateFin);
-        $caMensuel = StatsService::getCaMensuel(24, $dateDebut, $dateFin);
-        $menus     = MenuModel::getAll();
-        $regimeTva = PricingService::regimeTva();
-        $config    = \App\Models\SiteConfigModel::getAll();
-        $marges    = [];
         try {
-            $marges = RecetteModel::margesParPlat();
-        } catch (\Throwable) {
-            // Tables recettes pas encore créées en prod — silent fallback
+            $menuFilter = AnalyticsTrustPolicy::optionalPositiveId($_GET['menu_id'] ?? '');
+            $period = AnalyticsTrustPolicy::period($_GET['date_debut'] ?? '', $_GET['date_fin'] ?? '');
+        } catch (InvalidArgumentException $e) {
+            flash('error', $e->getMessage());
+            redirect('/admin/stats');
+        }
+
+        $dateDebut = $period['date_debut'];
+        $dateFin = $period['date_fin'];
+        $caStats = StatsService::getCaParMenu($menuFilter, $dateDebut, $dateFin);
+        $synthese = StatsService::getSynthese($dateDebut, $dateFin);
+        $caMensuel = StatsService::getCaMensuel(24, $dateDebut, $dateFin);
+        $menus = MenuModel::getAll();
+        $regimeTva = PricingService::regimeTva();
+        $config = \App\Models\SiteConfigModel::getAll();
+        $coutsMatiere = [];
+        try {
+            $coutsMatiere = RecetteModel::coutsMatiereParPlat();
+        } catch (\Throwable $e) {
+            error_log('[analytics] material cost report unavailable: ' . $e->getMessage());
         }
 
         view('pages/admin/finances', compact(
-            'caStats', 'synthese', 'caMensuel', 'menus', 'regimeTva', 'config',
-            'menuFilter', 'dateDebut', 'dateFin', 'marges'
+            'caStats',
+            'synthese',
+            'caMensuel',
+            'menus',
+            'regimeTva',
+            'config',
+            'menuFilter',
+            'dateDebut',
+            'dateFin',
+            'coutsMatiere',
         ));
     }
 
     public function exportStats(): void
     {
-        $dateDebut = sanitize($_GET['date_debut'] ?? '');
-        $dateFin   = sanitize($_GET['date_fin']   ?? '');
-        $rows      = StatsService::getExportRows($dateDebut, $dateFin);
+        [$dateDebut, $dateFin] = $this->validatedPeriodOrFail();
+        $rows = StatsService::getExportRows($dateDebut, $dateFin);
 
         $filename = 'ca_' . SiteConfig::slug() . '_' . date('Y-m-d') . '.csv';
         header('Content-Type: text/csv; charset=UTF-8');
@@ -56,20 +71,20 @@ class StatsController
         ], ';');
         foreach ($rows as $row) {
             fputcsv($out, [
-                $row['numero_commande'],
-                $row['date_comptabilisation'],
-                $row['date_prestation'],
-                $row['ville_livraison'],
-                $row['client'],
-                $row['client_email'],
+                AnalyticsTrustPolicy::csvText($row['numero_commande']),
+                AnalyticsTrustPolicy::csvText($row['date_comptabilisation']),
+                AnalyticsTrustPolicy::csvText($row['date_prestation']),
+                AnalyticsTrustPolicy::csvText($row['ville_livraison']),
+                AnalyticsTrustPolicy::csvText($row['client']),
+                AnalyticsTrustPolicy::csvText($row['client_email']),
                 $row['nb_personnes'],
-                number_format((float)$row['total_ht'],         2, ',', ''),
-                number_format((float)$row['total_tva'],        2, ',', ''),
-                number_format((float)$row['total_ttc'],        2, ',', ''),
+                number_format((float)$row['total_ht'], 2, ',', ''),
+                number_format((float)$row['total_tva'], 2, ',', ''),
+                number_format((float)$row['total_ttc'], 2, ',', ''),
                 number_format((float)$row['montant_encaisse'], 2, ',', ''),
-                number_format((float)$row['solde_restant'],    2, ',', ''),
-                $row['statut_paiement'],
-                $row['statut'],
+                number_format((float)$row['solde_restant'], 2, ',', ''),
+                AnalyticsTrustPolicy::csvText($row['statut_paiement']),
+                AnalyticsTrustPolicy::csvText($row['statut']),
             ], ';');
         }
         fclose($out);
@@ -78,22 +93,28 @@ class StatsController
 
     public function comptabilite(): void
     {
-        // Comptabilité est maintenant un onglet de la page Finances
         \App\Core\View::redirect('/admin/stats?tab=comptabilite');
     }
 
     public function exportComptabilite(): void
     {
-        $format    = sanitize($_GET['format']     ?? 'commandes');
-        $dateDebut = sanitize($_GET['date_debut'] ?? '');
-        $dateFin   = sanitize($_GET['date_fin']   ?? '');
-        $regimeTva   = PricingService::regimeTva();
+        try {
+            $format = AnalyticsTrustPolicy::exportFormat($_GET['format'] ?? 'commandes');
+        } catch (InvalidArgumentException $e) {
+            $this->failExportInput($e->getMessage());
+        }
+        [$dateDebut, $dateFin] = $this->validatedPeriodOrFail();
+        $regimeTva = PricingService::regimeTva();
         $isAssujetti = $regimeTva === 'assujetti';
 
         $periodSuffix = '';
-        if ($dateDebut && $dateFin)   { $periodSuffix = '_' . $dateDebut . '_' . $dateFin; }
-        elseif ($dateDebut)           { $periodSuffix = '_depuis_' . $dateDebut; }
-        elseif ($dateFin)             { $periodSuffix = '_jusqu_' . $dateFin; }
+        if ($dateDebut && $dateFin) {
+            $periodSuffix = '_' . $dateDebut . '_' . $dateFin;
+        } elseif ($dateDebut) {
+            $periodSuffix = '_depuis_' . $dateDebut;
+        } elseif ($dateFin) {
+            $periodSuffix = '_jusqu_' . $dateFin;
+        }
 
         header('Content-Type: text/csv; charset=UTF-8');
         header('Cache-Control: no-cache, no-store, must-revalidate');
@@ -102,7 +123,6 @@ class StatsController
         fwrite($out, "\xEF\xBB\xBF");
 
         switch ($format) {
-
             case 'lignes':
                 header('Content-Disposition: attachment; filename="journal_lignes_' . SiteConfig::slug() . $periodSuffix . '.csv"');
                 $headers = [
@@ -110,23 +130,32 @@ class StatsController
                     'Ville', 'Client', 'Email', 'Menu', 'Personnes',
                     'Prix brut', 'Remise', 'Net menu', 'Livraison', 'Total TTC',
                 ];
-                if ($isAssujetti) { $headers[] = 'TVA %'; $headers[] = 'Total HT'; $headers[] = 'TVA'; }
+                if ($isAssujetti) {
+                    $headers[] = 'TVA %';
+                    $headers[] = 'Total HT';
+                    $headers[] = 'TVA';
+                }
                 fputcsv($out, $headers, ';');
                 foreach (StatsService::getExportLignes($dateDebut, $dateFin) as $r) {
                     $row = [
-                        $r['numero_commande'], $r['date_comptabilisation'], $r['date_prestation'],
-                        $r['ville_livraison'], $r['client'], $r['client_email'],
-                        $r['menu_titre'], $r['nombre_personne'],
-                        number_format((float)$r['prix_brut_menu'],  2, ',', ''),
-                        number_format((float)$r['remise'],          2, ',', ''),
-                        number_format((float)$r['prix_net_menu'],   2, ',', ''),
+                        AnalyticsTrustPolicy::csvText($r['numero_commande']),
+                        AnalyticsTrustPolicy::csvText($r['date_comptabilisation']),
+                        AnalyticsTrustPolicy::csvText($r['date_prestation']),
+                        AnalyticsTrustPolicy::csvText($r['ville_livraison']),
+                        AnalyticsTrustPolicy::csvText($r['client']),
+                        AnalyticsTrustPolicy::csvText($r['client_email']),
+                        AnalyticsTrustPolicy::csvText($r['menu_titre']),
+                        $r['nombre_personne'],
+                        number_format((float)$r['prix_brut_menu'], 2, ',', ''),
+                        number_format((float)$r['remise'], 2, ',', ''),
+                        number_format((float)$r['prix_net_menu'], 2, ',', ''),
                         number_format((float)$r['frais_livraison'], 2, ',', ''),
                         number_format((float)$r['total_ligne_ttc'], 2, ',', ''),
                     ];
                     if ($isAssujetti) {
-                        $row[] = number_format((float)$r['taux_tva'],       2, ',', '');
+                        $row[] = number_format((float)$r['taux_tva'], 2, ',', '');
                         $row[] = number_format((float)$r['total_ligne_ht'], 2, ',', '');
-                        $row[] = number_format((float)$r['tva_ligne'],      2, ',', '');
+                        $row[] = number_format((float)$r['tva_ligne'], 2, ',', '');
                     }
                     fputcsv($out, $row, ';');
                 }
@@ -135,47 +164,60 @@ class StatsController
             case 'mensuel':
                 header('Content-Disposition: attachment; filename="ca_mensuel_' . SiteConfig::slug() . $periodSuffix . '.csv"');
                 $headers = ['Mois', 'Commandes', 'Personnes', 'Panier moyen TTC', 'CA TTC'];
-                if ($isAssujetti) { $headers[] = 'CA HT'; $headers[] = 'TVA collectée'; }
+                if ($isAssujetti) {
+                    $headers[] = 'CA HT';
+                    $headers[] = 'TVA collectée';
+                }
                 fputcsv($out, $headers, ';');
                 foreach (StatsService::getExportMensuel($dateDebut, $dateFin) as $r) {
                     $row = [
-                        $r['annee_mois'], $r['nb_commandes'], $r['nb_personnes'],
+                        AnalyticsTrustPolicy::csvText($r['annee_mois']),
+                        $r['nb_commandes'],
+                        $r['nb_personnes'],
                         number_format((float)$r['panier_moyen_ttc'], 2, ',', ''),
-                        number_format((float)$r['ca_ttc'],           2, ',', ''),
+                        number_format((float)$r['ca_ttc'], 2, ',', ''),
                     ];
                     if ($isAssujetti) {
-                        $row[] = number_format((float)$r['ca_ht'],         2, ',', '');
+                        $row[] = number_format((float)$r['ca_ht'], 2, ',', '');
                         $row[] = number_format((float)$r['tva_collectee'], 2, ',', '');
                     }
                     fputcsv($out, $row, ';');
                 }
                 break;
 
-            default: // 'commandes'
+            default:
                 header('Content-Disposition: attachment; filename="journal_commandes_' . SiteConfig::slug() . $periodSuffix . '.csv"');
                 $headers = [
                     'N° commande', 'Date comptabilisation', 'Date prestation',
                     'Ville', 'Client', 'Email', 'Personnes', 'Total TTC',
                 ];
-                if ($isAssujetti) { $headers[] = 'Total HT'; $headers[] = 'TVA'; }
+                if ($isAssujetti) {
+                    $headers[] = 'Total HT';
+                    $headers[] = 'TVA';
+                }
                 array_push($headers, 'Encaissé', 'Solde restant', 'Statut paiement', 'Statut commande');
                 fputcsv($out, $headers, ';');
                 foreach (StatsService::getExportRows($dateDebut, $dateFin) as $r) {
                     $row = [
-                        $r['numero_commande'], $r['date_comptabilisation'], $r['date_prestation'],
-                        $r['ville_livraison'], $r['client'], $r['client_email'],
+                        AnalyticsTrustPolicy::csvText($r['numero_commande']),
+                        AnalyticsTrustPolicy::csvText($r['date_comptabilisation']),
+                        AnalyticsTrustPolicy::csvText($r['date_prestation']),
+                        AnalyticsTrustPolicy::csvText($r['ville_livraison']),
+                        AnalyticsTrustPolicy::csvText($r['client']),
+                        AnalyticsTrustPolicy::csvText($r['client_email']),
                         $r['nb_personnes'],
                         number_format((float)$r['total_ttc'], 2, ',', ''),
                     ];
                     if ($isAssujetti) {
-                        $row[] = number_format((float)$r['total_ht'],  2, ',', '');
+                        $row[] = number_format((float)$r['total_ht'], 2, ',', '');
                         $row[] = number_format((float)$r['total_tva'], 2, ',', '');
                     }
-                    array_push($row,
+                    array_push(
+                        $row,
                         number_format((float)$r['montant_encaisse'], 2, ',', ''),
-                        number_format((float)$r['solde_restant'],    2, ',', ''),
-                        $r['statut_paiement'],
-                        $r['statut']
+                        number_format((float)$r['solde_restant'], 2, ',', ''),
+                        AnalyticsTrustPolicy::csvText($r['statut_paiement']),
+                        AnalyticsTrustPolicy::csvText($r['statut']),
                     );
                     fputcsv($out, $row, ';');
                 }
@@ -183,6 +225,26 @@ class StatsController
         }
 
         fclose($out);
+        exit;
+    }
+
+    /** @return array{0:string,1:string} */
+    private function validatedPeriodOrFail(): array
+    {
+        try {
+            $period = AnalyticsTrustPolicy::period($_GET['date_debut'] ?? '', $_GET['date_fin'] ?? '');
+        } catch (InvalidArgumentException $e) {
+            $this->failExportInput($e->getMessage());
+        }
+
+        return [$period['date_debut'], $period['date_fin']];
+    }
+
+    private function failExportInput(string $message): never
+    {
+        http_response_code(422);
+        header('Content-Type: text/plain; charset=UTF-8');
+        echo $message;
         exit;
     }
 }
