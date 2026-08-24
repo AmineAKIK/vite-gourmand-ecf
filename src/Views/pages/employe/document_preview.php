@@ -49,7 +49,7 @@ $documentRef  = $document['numero_document'] ?: ('Brouillon #' . (int)$document[
                 </button>
             </form>
             <?php if (!empty($document['archive_path'])): ?>
-                <a href="/<?= sanitize($document['archive_path']) ?>" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener">
+                <a href="/employe/document/archive?id=<?= (int)$document['document_id'] ?>" class="btn btn-outline-secondary btn-sm" target="_blank" rel="noopener">
                     <i class="bi bi-box-arrow-up-right me-1"></i>Archive
                 </a>
             <?php endif; ?>
