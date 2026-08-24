@@ -64,11 +64,12 @@ final class License
 
     public static function installSignedDocument(string $documentJson): array
     {
-        if (!self::isSignedMode()) {
-            throw new \RuntimeException('Activez TUGERES_ENTITLEMENTS_MODE=signed avant d’installer une licence signée.');
+        $publicKey = self::publicKeyPem();
+        if ($publicKey === '') {
+            throw new \RuntimeException('Clé publique de licence non configurée.');
         }
 
-        $verified = SignedEntitlement::verify($documentJson, self::publicKeyPem(), self::runtimeDomain());
+        $verified = SignedEntitlement::verify($documentJson, $publicKey, self::runtimeDomain());
         $pdo = Database::getConnection();
         $pdo->beginTransaction();
         try {
@@ -78,7 +79,7 @@ final class License
             );
             $stmt->execute([$documentJson]);
             foreach (['license_key', 'license_hash'] as $legacyKey) {
-                $pdo->prepare("DELETE FROM site_config WHERE cle = ?")->execute([$legacyKey]);
+                $pdo->prepare('DELETE FROM site_config WHERE cle = ?')->execute([$legacyKey]);
             }
             $pdo->prepare(
                 "INSERT INTO site_config (cle, valeur) VALUES ('license_domain', ?)
