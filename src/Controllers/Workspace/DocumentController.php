@@ -5,6 +5,7 @@ namespace App\Controllers\Workspace;
 use App\Models\CommandeModel;
 use App\Models\FacturationModel;
 use App\Services\BillingDocumentStorage;
+use App\Services\BillingDraftService;
 use App\Services\BillingFinalizationService;
 use App\Services\MailService;
 use App\Services\PricingService;
@@ -53,7 +54,7 @@ class DocumentController
 
         $documentId = (int)($_POST['document_id'] ?? 0);
         try {
-            FacturationModel::updateDraft($documentId, $_POST);
+            BillingDraftService::update($documentId, $_POST);
             flash('success', 'Brouillon mis à jour.');
             redirect('/employe/document/edit?id=' . $documentId);
         } catch (Throwable $e) {
@@ -71,7 +72,7 @@ class DocumentController
             if (isset($_POST['designation'])) {
                 $document = FacturationModel::getById($documentId);
                 if ($document && ($document['statut'] ?? '') === 'brouillon') {
-                    FacturationModel::updateDraft($documentId, $_POST);
+                    BillingDraftService::update($documentId, $_POST);
                 }
             }
 
