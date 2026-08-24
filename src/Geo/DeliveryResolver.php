@@ -5,6 +5,7 @@ namespace App\Geo;
 use App\Config\SiteConfig;
 use App\Geo\Exception\DeliveryGeoNotConfiguredException;
 use App\Geo\Exception\DeliveryOutOfRangeException;
+use App\Geo\Exception\DeliveryProviderUnavailableException;
 use App\Integrations\ExternalServiceUnavailableException;
 use App\Integrations\JsonHttpClient;
 
@@ -36,7 +37,11 @@ class DeliveryResolver
         }
 
         $url = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&countrycodes=fr&q=' . urlencode($ville . ', France');
-        $data = JsonHttpClient::get($url, ['User-Agent: ' . self::userAgent()], 3);
+        try {
+            $data = JsonHttpClient::get($url, ['User-Agent: ' . self::userAgent()], 3);
+        } catch (ExternalServiceUnavailableException|\UnexpectedValueException $e) {
+            throw new DeliveryProviderUnavailableException('Le service de géocodage est temporairement indisponible.', 0, $e);
+        }
         if (empty($data[0]['lat']) || empty($data[0]['lon'])) {
             self::cachePut($cacheKey, false, 300);
             return null;
@@ -65,7 +70,11 @@ class DeliveryResolver
         }
 
         $url = 'https://api-adresse.data.gouv.fr/search/?limit=1&q=' . urlencode($query);
-        $data = JsonHttpClient::get($url, ['User-Agent: ' . self::userAgent()], 4);
+        try {
+            $data = JsonHttpClient::get($url, ['User-Agent: ' . self::userAgent()], 4);
+        } catch (ExternalServiceUnavailableException|\UnexpectedValueException $e) {
+            throw new DeliveryProviderUnavailableException('Le service de validation d’adresse est temporairement indisponible.', 0, $e);
+        }
         $feature = $data['features'][0] ?? null;
         $props = is_array($feature['properties'] ?? null) ? $feature['properties'] : [];
         $coords = is_array($feature['geometry']['coordinates'] ?? null) ? $feature['geometry']['coordinates'] : [];
@@ -115,7 +124,6 @@ class DeliveryResolver
     /**
      * @throws DeliveryGeoNotConfiguredException
      * @throws DeliveryOutOfRangeException
-     * @throws ExternalServiceUnavailableException
      */
     public static function deliveryQuote(string $adresse, string $ville, string $codePostal): ?array
     {
