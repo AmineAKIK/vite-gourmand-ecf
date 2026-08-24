@@ -21,8 +21,8 @@ class RecetteModel
     }
 
     /**
-     * Coût de revient d'une portion du plat (somme grammage × prix_unitaire).
-     * grammage est dans l'unité de l'ingrédient (kg, L, pièce…).
+     * Coût matière d'une portion du plat (somme quantité × prix_unitaire).
+     * La quantité est exprimée dans l'unité de l'ingrédient (kg, L, pièce…).
      */
     public static function coutRevient(int $platId): float
     {
@@ -37,55 +37,45 @@ class RecetteModel
     }
 
     /**
-     * Marges par plat pour tous les plats ayant au moins une ligne de recette.
-     * Retourne : plat_id, titre, categorie, prix_vente_ht (null si pas de menu),
-     *            cout_revient, marge_brute, taux_marge.
+     * Coûts matière par portion pour tous les plats ayant une fiche technique.
+     *
+     * Aucun prix de vente ni taux de marge n'est dérivé ici : le produit vend un
+     * menu complet, pas chaque plat séparément. Attribuer le prix du menu à chaque
+     * plat multiplierait artificiellement le chiffre d'affaires et la marge.
      */
-    public static function margesParPlat(): array
+    public static function coutsMatiereParPlat(): array
     {
         $db = Database::getConnection();
-
-        // Coût de revient par plat
-        $couts = $db->query(
-            'SELECT rl.plat_id,
-                    COALESCE(SUM(rl.grammage * i.prix_unitaire), 0) AS cout_revient
-             FROM recette_ligne rl
-             JOIN ingredient i ON i.ingredient_id = rl.ingredient_id
-             GROUP BY rl.plat_id'
-        )->fetchAll(\PDO::FETCH_KEY_PAIR);   // [plat_id => cout_revient]
-
-        if (!$couts) return [];
-
-        $ids          = implode(',', array_map('intval', array_keys($couts)));
-        $platsStmt    = $db->query(
-            "SELECT p.plat_id, p.titre, cp.libelle AS categorie,
-                    MIN(m.prix_par_personne) AS prix_vente_ttc
+        $stmt = $db->query(
+            "SELECT
+                p.plat_id,
+                p.titre,
+                cp.libelle AS categorie,
+                ROUND(SUM(rl.grammage * i.prix_unitaire), 4) AS cout_matiere_portion,
+                COUNT(DISTINCT CASE WHEN m.actif = 1 THEN m.menu_id END) AS nb_menus_actifs,
+                GROUP_CONCAT(DISTINCT CASE WHEN m.actif = 1 THEN m.titre END ORDER BY m.titre SEPARATOR ', ') AS menus_actifs
              FROM plat p
              JOIN categorie_plat cp ON cp.categorie_id = p.categorie_id
+             JOIN recette_ligne rl ON rl.plat_id = p.plat_id
+             JOIN ingredient i ON i.ingredient_id = rl.ingredient_id
              LEFT JOIN menu_plat mp ON mp.plat_id = p.plat_id
-             LEFT JOIN menu m       ON m.menu_id  = mp.menu_id AND m.actif = 1
-             WHERE p.plat_id IN ($ids)
-             GROUP BY p.plat_id, p.titre, cp.libelle"
+             LEFT JOIN menu m ON m.menu_id = mp.menu_id
+             GROUP BY p.plat_id, p.titre, cp.libelle
+             ORDER BY cout_matiere_portion DESC, p.titre ASC"
         );
 
         $result = [];
-        foreach ($platsStmt->fetchAll() as $row) {
-            $cout       = round((float)($couts[$row['plat_id']] ?? 0), 4);
-            $prix       = $row['prix_vente_ttc'] !== null ? (float)$row['prix_vente_ttc'] : null;
-            $marge      = $prix !== null ? round($prix - $cout, 4) : null;
-            $tauxMarge  = ($prix !== null && $prix > 0) ? round(($marge / $prix) * 100, 1) : null;
-            $result[]   = [
-                'plat_id'      => (int)$row['plat_id'],
-                'titre'        => $row['titre'],
-                'categorie'    => $row['categorie'],
-                'cout_revient' => $cout,
-                'prix_vente'   => $prix,
-                'marge_brute'  => $marge,
-                'taux_marge'   => $tauxMarge,
+        foreach ($stmt->fetchAll() as $row) {
+            $result[] = [
+                'plat_id' => (int)$row['plat_id'],
+                'titre' => (string)$row['titre'],
+                'categorie' => (string)$row['categorie'],
+                'cout_matiere_portion' => round((float)$row['cout_matiere_portion'], 4),
+                'nb_menus_actifs' => (int)$row['nb_menus_actifs'],
+                'menus_actifs' => (string)($row['menus_actifs'] ?? ''),
             ];
         }
 
-        usort($result, fn($a, $b) => ($a['taux_marge'] ?? 999) <=> ($b['taux_marge'] ?? 999));
         return $result;
     }
 
