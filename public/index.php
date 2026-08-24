@@ -117,7 +117,6 @@ $routes = [
         '/verifier-email'      => [AuthController::class,    'verifyEmail'],
         '/connexion'           => [AuthController::class,    'loginForm'],
         '/inscription'         => [AuthController::class,    'registerForm'],
-        '/deconnexion'         => [AuthController::class,    'logout'],
         '/mot-de-passe-oublie' => [AuthController::class,    'forgotForm'],
         '/reinitialiser'       => [AuthController::class,    'resetForm'],
         '/contact'             => [ContactController::class, 'index'],
@@ -143,6 +142,7 @@ $routes = [
         '/stripe/cancel'                 => [StripeController::class,  'cancel'],
     ],
     'POST_AUTH' => [
+        '/deconnexion'                   => [AuthController::class,    'logout'],
         '/mon-compte/modifier'           => [UserController::class,  'update'],
         '/mon-compte/supprimer'          => [UserController::class,  'deleteAccount'],
         '/panier/ajouter'      => [PanierController::class,  'add'],

@@ -22,7 +22,7 @@ class AuthController
 
     public function login(): void {
         verifyCsrf();
-        $ip       = RateLimiter::clientIp();
+        $ip = RateLimiter::clientIp();
         try {
             $email = InputPolicy::email($_POST['email'] ?? '');
         } catch (\InvalidArgumentException) {
@@ -32,14 +32,13 @@ class AuthController
 
         try {
             RateLimiter::check($ip, 'login');
-        } catch (\PDOException) {
-            // Table rate_limit absente — fail open, ne pas bloquer la connexion
         } catch (\RuntimeException $e) {
             flash('error', $e->getMessage());
             redirect('/connexion');
         }
 
         if (!$email || !$password) {
+            RateLimiter::record($ip, 'login');
             flash('error', 'Veuillez remplir tous les champs.');
             redirect('/connexion');
         }
@@ -52,10 +51,12 @@ class AuthController
             redirect('/connexion');
         }
         if (!$user['actif']) {
+            RateLimiter::record($ip, 'login');
             flash('error', 'Votre compte a été désactivé. Contactez-nous.');
             redirect('/connexion');
         }
         if (array_key_exists('email_verified_at', $user) && empty($user['email_verified_at'])) {
+            RateLimiter::record($ip, 'login');
             flash('error', 'Veuillez confirmer votre adresse email avant de vous connecter. Vérifiez vos spams.');
             redirect('/connexion');
         }
@@ -91,8 +92,6 @@ class AuthController
         $ip = RateLimiter::clientIp();
         try {
             RateLimiter::check($ip, 'register', 3, 3600);
-        } catch (\PDOException) {
-            // Table rate_limit absente — fail open
         } catch (\RuntimeException $e) {
             flash('error', $e->getMessage());
             redirect('/inscription');
@@ -110,21 +109,26 @@ class AuthController
                 'password'    => is_string($_POST['password'] ?? null) ? $_POST['password'] : '',
             ];
         } catch (\InvalidArgumentException $e) {
+            RateLimiter::record($ip, 'register');
             flash('error', $e->getMessage());
             redirect('/inscription');
         }
 
         if ($data['password'] === '') {
+            RateLimiter::record($ip, 'register');
             flash('error', 'Tous les champs sont obligatoires.');
             redirect('/inscription');
         }
         if ($data['password'] !== ($_POST['password_confirm'] ?? '')) {
+            RateLimiter::record($ip, 'register');
             flash('error', 'Les mots de passe ne correspondent pas.'); redirect('/inscription');
         }
         if (!validatePassword($data['password'])) {
+            RateLimiter::record($ip, 'register');
             flash('error', passwordPolicyMessage()); redirect('/inscription');
         }
         if (UserModel::findByEmail($data['email'])) {
+            RateLimiter::record($ip, 'register');
             flash('error', 'Cet email est déjà utilisé.'); redirect('/inscription');
         }
 
@@ -133,7 +137,7 @@ class AuthController
         $data['email_verification_token'] = $token;
         UserModel::create($data);
 
-        RateLimiter::record($ip, 'register');
+        RateLimiter::reset($ip, 'register');
         MailService::sendEmailVerification($data['email'], $data['prenom'], $token);
 
         flash('success', 'Compte créé ! Vérifiez votre boîte email pour activer votre compte.');
@@ -142,6 +146,7 @@ class AuthController
 
     public function logout(): void
     {
+        verifyCsrf();
         $_SESSION = [];
         if (ini_get('session.use_cookies')) {
             $p = session_get_cookie_params();
@@ -173,6 +178,15 @@ class AuthController
 
     public function forgot(): void {
         verifyCsrf();
+        $ip = RateLimiter::clientIp();
+        try {
+            RateLimiter::check($ip, 'forgot_password', 5, 3600);
+        } catch (\RuntimeException $e) {
+            flash('error', $e->getMessage());
+            redirect('/mot-de-passe-oublie');
+        }
+        RateLimiter::record($ip, 'forgot_password');
+
         try {
             $email = InputPolicy::email($_POST['email'] ?? '');
         } catch (\InvalidArgumentException) {
@@ -207,6 +221,15 @@ class AuthController
 
     public function reset(): void {
         verifyCsrf();
+        $ip = RateLimiter::clientIp();
+        try {
+            RateLimiter::check($ip, 'reset_password', 10, 900);
+        } catch (\RuntimeException $e) {
+            flash('error', $e->getMessage());
+            redirect('/connexion');
+        }
+        RateLimiter::record($ip, 'reset_password');
+
         try {
             $token = InputPolicy::token($_POST['token'] ?? '', 128);
         } catch (\InvalidArgumentException) {
@@ -223,6 +246,7 @@ class AuthController
 
         UserModel::updatePassword($tokenData['utilisateur_id'], hashPassword($password));
         UserModel::invalidateResetToken($token);
+        RateLimiter::reset($ip, 'reset_password');
 
         flash('success', 'Mot de passe réinitialisé !');
         redirect('/connexion');

@@ -109,10 +109,13 @@ $roleHomeIsCurrent = isAuth() && routeIsActive(roleHomePath());
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link nav-link-logout" href="/deconnexion">
-                            <i class="bi bi-box-arrow-right nav-link-icon d-xl-none" aria-hidden="true"></i>
-                            <span>Déconnexion</span>
-                        </a>
+                        <form method="POST" action="/deconnexion" class="m-0">
+                            <?= csrfField() ?>
+                            <button type="submit" class="nav-link nav-link-logout border-0 bg-transparent">
+                                <i class="bi bi-box-arrow-right nav-link-icon d-xl-none" aria-hidden="true"></i>
+                                <span>Déconnexion</span>
+                            </button>
+                        </form>
                     </li>
                 <?php else: ?>
                     <li class="nav-section-title d-xl-none">Compte</li>

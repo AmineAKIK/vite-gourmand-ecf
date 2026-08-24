@@ -22,7 +22,10 @@ $pageTitle = buildPageTitle('Service suspendu');
             </a>
 
             <div class="mt-4">
-                <a href="/deconnexion" class="text-muted small">Se déconnecter</a>
+                <form method="POST" action="/deconnexion" class="d-inline">
+                    <?= csrfField() ?>
+                    <button type="submit" class="btn btn-link text-muted small p-0">Se déconnecter</button>
+                </form>
             </div>
 
         </div>
