@@ -4,17 +4,16 @@ namespace App\Controllers;
 
 use App\Config\Database;
 use App\Config\SiteConfig;
-use App\Models\UserModel;
 use App\Services\MailService;
 
 class CronController
 {
     private function authenticate(): void
     {
-        $token = $_GET['token'] ?? $_SERVER['HTTP_X_CRON_TOKEN'] ?? '';
+        $token = $_SERVER['HTTP_X_CRON_TOKEN'] ?? '';
         $expected = SiteConfig::get('cron_secret_token', '');
 
-        if ($expected === '' || !hash_equals($expected, $token)) {
+        if (!is_string($token) || $expected === '' || !hash_equals($expected, $token)) {
             http_response_code(401);
             header('Content-Type: application/json; charset=utf-8');
             echo json_encode(['error' => 'Unauthorized']);
@@ -44,15 +43,41 @@ class CronController
         $stmt->execute([$in2days, $in7days]);
         $commandes = $stmt->fetchAll();
 
-        $sent  = 0;
+        $sent = 0;
         $skipped = 0;
         foreach ($commandes as $cmd) {
-            if (!$cmd['email']) { $skipped++; continue; }
-            $jours = (int)round(
+            if (!$cmd['email']) {
+                $skipped++;
+                continue;
+            }
+
+            $jours = (int) round(
                 (strtotime($cmd['date_prestation']) - strtotime($today)) / 86400
             );
-            MailService::sendRappelPrestation($cmd['email'], $cmd['prenom'] ?? '', $cmd, $jours);
-            $sent++;
+            $typeRappel = 'prestation_j' . $jours;
+
+            $reserved = $db->prepare(
+                'INSERT IGNORE INTO cron_rappel_log (commande_id, type_rappel, date_cible) VALUES (?, ?, ?)'
+            );
+            $reserved->execute([(int) $cmd['commande_id'], $typeRappel, $cmd['date_prestation']]);
+            if ($reserved->rowCount() !== 1) {
+                $skipped++;
+                continue;
+            }
+
+            try {
+                MailService::sendRappelPrestation($cmd['email'], $cmd['prenom'] ?? '', $cmd, $jours);
+                $db->prepare(
+                    'UPDATE cron_rappel_log SET sent_at = NOW() WHERE commande_id = ? AND type_rappel = ? AND date_cible = ?'
+                )->execute([(int) $cmd['commande_id'], $typeRappel, $cmd['date_prestation']]);
+                $sent++;
+            } catch (\Throwable $e) {
+                $db->prepare(
+                    'DELETE FROM cron_rappel_log WHERE commande_id = ? AND type_rappel = ? AND date_cible = ? AND sent_at IS NULL'
+                )->execute([(int) $cmd['commande_id'], $typeRappel, $cmd['date_prestation']]);
+                error_log('[cron] rappel commande_id=' . (int) $cmd['commande_id'] . ' impossible: ' . $e->getMessage());
+                $skipped++;
+            }
         }
 
         echo json_encode([
