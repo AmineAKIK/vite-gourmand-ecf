@@ -20,12 +20,13 @@ RUN sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-availabl
     && printf '<Directory /var/www/html/public>\n    AllowOverride All\n    Require all granted\n</Directory>\n' > /etc/apache2/conf-available/tugeres.conf \
     && a2enconf tugeres \
     && chmod +x /var/www/html/docker/entrypoint.sh \
-    && chown -R www-data:www-data /var/www/html/public/uploads /var/www/html/storage 2>/dev/null || true
+    && mkdir -p /var/www/html/public/uploads /var/www/html/storage \
+    && chown -R www-data:www-data /var/www/html/public/uploads /var/www/html/storage
 
 ENV PORT=8080
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=3s --start-period=20s --retries=3 \
-    CMD curl --fail --silent --show-error "http://127.0.0.1:${PORT}/health" >/dev/null || exit 1
+    CMD curl --fail --silent --show-error "http://127.0.0.1:${PORT}/ready" >/dev/null || exit 1
 
 ENTRYPOINT ["/var/www/html/docker/entrypoint.sh"]
