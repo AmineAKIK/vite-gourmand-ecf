@@ -4,6 +4,7 @@ namespace App\Controllers\Workspace;
 
 use App\Models\CommandeModel;
 use App\Models\FacturationModel;
+use App\Services\BillingDocumentStorage;
 use App\Services\MailService;
 use App\Services\PricingService;
 use InvalidArgumentException;
@@ -71,14 +72,16 @@ class DocumentController
                     FacturationModel::updateDraft($documentId, $_POST);
                 }
             }
-            $numero   = FacturationModel::finalizeDraft($documentId, currentUser()['id'] ?? null);
-            $document = FacturationModel::getById($documentId);
+            $numero          = FacturationModel::finalizeDraft($documentId, currentUser()['id'] ?? null);
+            $archiveAbsolute = BillingDocumentStorage::ensureArchive($documentId);
+            $document        = FacturationModel::getById($documentId);
             if ($document && ($document['type_document'] ?? '') === 'devis' && !empty($document['client_email'])) {
                 try {
-                    $relativeArchive = $document['archive_path'] ?: FacturationModel::archiveDocument($documentId);
-                    $absoluteArchive = dirname(__DIR__, 3) . '/public/' . ltrim($relativeArchive, '/');
-                    $commande        = CommandeModel::getById((int)$document['commande_id']);
-                    MailService::sendDevis($document, $commande ?: [], $absoluteArchive);
+                    $commande = CommandeModel::getById((int)$document['commande_id']);
+                    MailService::sendDevis($document, $commande ?: [], $archiveAbsolute);
+                    // MailService peut encore générer un PDF via le générateur historique :
+                    // le déplacer immédiatement hors du webroot s'il a été créé.
+                    BillingDocumentStorage::migrateExisting($documentId);
                     FacturationModel::markSent($documentId, currentUser()['id'] ?? null);
                     flash('success', 'Devis finalisé (' . $numero . ') et envoyé au client.');
                 } catch (Throwable $mailErr) {
@@ -101,7 +104,7 @@ class DocumentController
 
         $documentId = (int)($_POST['document_id'] ?? 0);
         try {
-            FacturationModel::archiveDocument($documentId);
+            BillingDocumentStorage::ensureArchive($documentId);
             flash('success', 'Archive du document générée.');
             redirect('/employe/document/apercu?id=' . $documentId);
         } catch (Throwable $e) {
@@ -171,14 +174,18 @@ class DocumentController
                 throw new InvalidArgumentException('Seuls les documents finalisés peuvent être envoyés.');
             }
 
-            $relativeArchive = $document['archive_path'] ?: FacturationModel::archiveDocument($documentId);
-            $absoluteArchive = dirname(__DIR__, 3) . '/public/' . ltrim($relativeArchive, '/');
+            $archiveAbsolute = BillingDocumentStorage::ensureArchive($documentId);
+            // Recharge le document : archive_path peut avoir été migré vers le stockage privé.
+            $document = FacturationModel::getById($documentId) ?: $document;
             $commande = CommandeModel::getById((int)$document['commande_id']);
             if (($document['type_document'] ?? '') === 'devis') {
-                MailService::sendDevis($document, $commande ?: [], $absoluteArchive);
+                MailService::sendDevis($document, $commande ?: [], $archiveAbsolute);
             } else {
-                MailService::sendDocumentFacturation($document, $commande ?: [], $absoluteArchive);
+                MailService::sendDocumentFacturation($document, $commande ?: [], $archiveAbsolute);
             }
+            // Le helper d'attachement historique peut générer le PDF pendant l'envoi.
+            // On le sort immédiatement de public/ après l'envoi.
+            BillingDocumentStorage::migrateExisting($documentId);
             FacturationModel::markSent($documentId, currentUser()['id'] ?? null);
 
             flash('success', 'Document envoyé au client.');
@@ -197,21 +204,23 @@ class DocumentController
             if (!$document) {
                 throw new \InvalidArgumentException('Document introuvable.');
             }
-            $relativePath    = $document['pdf_path'] ?: FacturationModel::generatePdf($documentId);
-            $absolutePath    = dirname(__DIR__, 3) . '/public/' . ltrim($relativePath, '/');
+            $absolutePath = BillingDocumentStorage::ensurePdf($documentId);
             if (!is_file($absolutePath)) {
-                $relativePath = FacturationModel::generatePdf($documentId);
-                $absolutePath = dirname(__DIR__, 3) . '/public/' . ltrim($relativePath, '/');
+                throw new \RuntimeException('PDF introuvable après génération.');
             }
             $numero   = $document['numero_document'] ?: ('document-' . $documentId);
             $filename = preg_replace('/[^A-Z0-9_.-]+/i', '-', $numero) . '.pdf';
             header('Content-Type: application/pdf');
             header('Content-Disposition: attachment; filename="' . $filename . '"');
             header('Content-Length: ' . filesize($absolutePath));
+            header('Cache-Control: private, no-store, max-age=0');
+            header('X-Content-Type-Options: nosniff');
             readfile($absolutePath);
+            exit;
         } catch (Throwable $e) {
+            error_log('[facturation] export PDF impossible document_id=' . $documentId . ': ' . $e->getMessage());
             http_response_code(500);
-            echo 'Erreur génération PDF : ' . htmlspecialchars($e->getMessage());
+            echo 'Erreur génération PDF.';
         }
     }
 
@@ -238,6 +247,16 @@ class DocumentController
         if (!$document) {
             flash('error', 'Document introuvable.');
             redirect('/employe/commandes');
+        }
+
+        // Migration opportuniste des anciennes archives encore présentes dans public/.
+        // Une erreur de migration ne doit pas empêcher l'aperçu ; le router HTTP bloque
+        // de toute façon l'ancien répertoire de manière systématique.
+        try {
+            BillingDocumentStorage::migrateExisting($documentId);
+            $document = FacturationModel::getById($documentId) ?: $document;
+        } catch (Throwable $e) {
+            error_log('[facturation] migration stockage impossible document_id=' . $documentId . ': ' . $e->getMessage());
         }
 
         $commande  = CommandeModel::getById((int)$document['commande_id']);
