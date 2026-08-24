@@ -11,17 +11,18 @@ COPY --from=composer:2.10.2 /usr/bin/composer /usr/bin/composer
 WORKDIR /var/www/html
 COPY composer.json composer.lock ./
 ENV COMPOSER_ALLOW_SUPERUSER=1
-RUN composer install --no-dev --prefer-dist --optimize-autoloader --classmap-authoritative --no-interaction --no-progress
+RUN composer install --no-dev --prefer-dist --no-autoloader --no-interaction --no-progress
 
 COPY . .
-COPY docker/php.ini /usr/local/etc/php/conf.d/zz-tugeres-production.ini
-
-RUN sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf \
+RUN composer dump-autoload --no-dev --classmap-authoritative --no-interaction \
+    && sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf \
     && printf '<Directory /var/www/html/public>\n    AllowOverride All\n    Require all granted\n</Directory>\n' > /etc/apache2/conf-available/tugeres.conf \
     && a2enconf tugeres \
     && chmod +x /var/www/html/docker/entrypoint.sh \
     && mkdir -p /var/www/html/public/uploads /var/www/html/storage \
     && chown -R www-data:www-data /var/www/html/public/uploads /var/www/html/storage
+
+COPY docker/php.ini /usr/local/etc/php/conf.d/zz-tugeres-production.ini
 
 ENV PORT=8080
 EXPOSE 8080
