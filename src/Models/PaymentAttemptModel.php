@@ -116,6 +116,42 @@ final class PaymentAttemptModel
         return $row ? self::hydrateDraft($row) : null;
     }
 
+    /**
+     * Resolve a persisted Stripe attempt from the provider session id and the authenticated owner.
+     *
+     * @return array{draft:array, attempt:array}|null
+     */
+    public static function findStripeContextForUser(string $sessionId, int $userId): ?array
+    {
+        if ($sessionId === '' || $userId <= 0) {
+            return null;
+        }
+
+        $db = Database::getConnection();
+        $stmt = $db->prepare(
+            "SELECT pa.attempt_id, pa.draft_id
+             FROM payment_attempt pa
+             JOIN order_draft od ON od.draft_id = pa.draft_id
+             WHERE pa.provider = 'stripe'
+               AND pa.provider_session_id = ?
+               AND od.utilisateur_id = ?
+             LIMIT 1",
+        );
+        $stmt->execute([$sessionId, $userId]);
+        $ids = $stmt->fetch();
+        if (!$ids) {
+            return null;
+        }
+
+        $draft = self::findDraftForUser((int) $ids['draft_id'], $userId);
+        $attempt = self::findAttemptForDraft((int) $ids['attempt_id'], (int) $ids['draft_id']);
+        if (!$draft || !$attempt) {
+            return null;
+        }
+
+        return ['draft' => $draft, 'attempt' => $attempt];
+    }
+
     public static function findAttemptForDraft(int $attemptId, int $draftId): ?array
     {
         $stmt = Database::getConnection()->prepare(
