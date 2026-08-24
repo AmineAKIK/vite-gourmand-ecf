@@ -100,13 +100,30 @@ final class OrderAdmissionService
         }
 
         $existing = $db->prepare(
-            'SELECT commande_id FROM order_admission_reservation WHERE numero_commande = ? FOR UPDATE',
+            'SELECT reservation_id, commande_id FROM order_admission_reservation WHERE numero_commande = ? FOR UPDATE',
         );
         $existing->execute([$numeroCommande]);
         $row = $existing->fetch();
         if ($row) {
-            if ((int) ($row['commande_id'] ?? 0) !== $commandeId) {
+            $linkedCommandeId = (int) ($row['commande_id'] ?? 0);
+            if ($linkedCommandeId > 0 && $linkedCommandeId !== $commandeId) {
                 throw new RuntimeException('Réservation déjà consommée par une autre commande.');
+            }
+            if ($linkedCommandeId === $commandeId) {
+                return;
+            }
+
+            // Un webhook payé peut arriver après expiration locale de la réservation.
+            // Le paiement autoritatif prime : on consomme le permit historique sans
+            // refaire un contrôle qui pourrait laisser un paiement sans commande.
+            $consumeExisting = $db->prepare(
+                "UPDATE order_admission_reservation
+                 SET status = 'consumed', commande_id = ?, expires_at = NULL
+                 WHERE reservation_id = ? AND commande_id IS NULL",
+            );
+            $consumeExisting->execute([$commandeId, (int) $row['reservation_id']]);
+            if ($consumeExisting->rowCount() !== 1) {
+                throw new RuntimeException('Impossible de consommer la réservation existante.');
             }
             return;
         }
