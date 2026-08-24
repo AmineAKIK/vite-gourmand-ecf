@@ -15,13 +15,21 @@ if ($decodedPath === '/uploads/facturation' || str_starts_with($decodedPath, '/u
 
 $publicRoot = realpath(__DIR__);
 $candidate = realpath(__DIR__ . $decodedPath);
+$staticExtensions = [
+    'css', 'js', 'map',
+    'png', 'jpg', 'jpeg', 'webp', 'gif', 'svg', 'ico',
+    'woff', 'woff2', 'ttf', 'eot',
+    'txt',
+];
 
-// Laisser le serveur PHP servir uniquement les vrais fichiers situés à l'intérieur du webroot.
+// Laisser le serveur PHP servir seulement une liste explicite d'assets statiques.
+// Les .php, archives, fichiers de configuration et autres formats inconnus repassent par l'application.
 if (
     $publicRoot !== false
     && $candidate !== false
     && str_starts_with($candidate, $publicRoot . DIRECTORY_SEPARATOR)
     && is_file($candidate)
+    && in_array(strtolower(pathinfo($candidate, PATHINFO_EXTENSION)), $staticExtensions, true)
 ) {
     return false;
 }
