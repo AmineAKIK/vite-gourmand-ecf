@@ -54,18 +54,19 @@ final class JsonHttpClient
         $status = (int) curl_getinfo($ch, CURLINFO_HTTP_CODE);
         curl_close($ch);
 
-        if ($body === false || $errno !== 0) {
-            throw new ExternalServiceUnavailableException('Échec réseau externe: ' . ($error !== '' ? $error : 'erreur inconnue'));
-        }
-        if ($status === 429 || $status >= 500) {
-            throw new ExternalServiceUnavailableException('Service externe indisponible (HTTP ' . $status . ').');
+        $transportFailure = $body === false || $errno !== 0;
+        if (HttpRetryPolicy::shouldRetry('GET', $status, $transportFailure)) {
+            $detail = $transportFailure
+                ? ($error !== '' ? $error : 'erreur réseau inconnue')
+                : 'HTTP ' . $status;
+            throw new ExternalServiceUnavailableException('Service externe indisponible: ' . $detail . '.');
         }
         if ($status < 200 || $status >= 300) {
             throw new \UnexpectedValueException('Réponse externe refusée (HTTP ' . $status . ').');
         }
 
         try {
-            $decoded = json_decode($body, true, 512, JSON_THROW_ON_ERROR);
+            $decoded = json_decode((string) $body, true, 512, JSON_THROW_ON_ERROR);
         } catch (\JsonException $e) {
             throw new ExternalServiceUnavailableException('Réponse JSON externe invalide.', 0, $e);
         }
