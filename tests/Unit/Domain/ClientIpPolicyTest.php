@@ -11,7 +11,7 @@ final class ClientIpPolicyTest extends TestCase
     {
         self::assertSame(
             '10.0.0.8',
-            ClientIpPolicy::resolve('10.0.0.8', '203.0.113.5', '198.51.100.9', false)
+            ClientIpPolicy::resolve('10.0.0.8', '203.0.113.5', '198.51.100.9', false),
         );
     }
 
@@ -19,7 +19,7 @@ final class ClientIpPolicyTest extends TestCase
     {
         self::assertSame(
             '203.0.113.5',
-            ClientIpPolicy::resolve('10.0.0.8', '203.0.113.5', '198.51.100.9', true)
+            ClientIpPolicy::resolve('10.0.0.8', '203.0.113.5', '198.51.100.9', true),
         );
     }
 
@@ -27,7 +27,7 @@ final class ClientIpPolicyTest extends TestCase
     {
         self::assertSame(
             '198.51.100.9',
-            ClientIpPolicy::resolve('10.0.0.8', '', 'garbage, 198.51.100.9, 10.0.0.8', true)
+            ClientIpPolicy::resolve('10.0.0.8', '', 'garbage, 198.51.100.9, 10.0.0.8', true),
         );
     }
 
@@ -35,7 +35,7 @@ final class ClientIpPolicyTest extends TestCase
     {
         self::assertSame(
             '10.0.0.8',
-            ClientIpPolicy::resolve('10.0.0.8', 'not-an-ip', 'also-bad', true)
+            ClientIpPolicy::resolve('10.0.0.8', 'not-an-ip', 'also-bad', true),
         );
     }
 
@@ -43,7 +43,7 @@ final class ClientIpPolicyTest extends TestCase
     {
         self::assertSame(
             '0.0.0.0',
-            ClientIpPolicy::resolve('invalid', '', '', false)
+            ClientIpPolicy::resolve('invalid', '', '', false),
         );
     }
 }
