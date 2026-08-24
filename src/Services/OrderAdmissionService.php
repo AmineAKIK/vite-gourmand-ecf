@@ -102,9 +102,6 @@ final class OrderAdmissionService
                 return;
             }
 
-            // Un webhook payé peut arriver après expiration locale de la réservation.
-            // Le paiement autoritatif prime : on consomme le permit historique sans
-            // refaire un contrôle qui pourrait laisser un paiement sans commande.
             $consumeExisting = $db->prepare(
                 "UPDATE order_admission_reservation
                  SET status = 'consumed', commande_id = ?, expires_at = NULL
@@ -117,8 +114,6 @@ final class OrderAdmissionService
             return;
         }
 
-        // Compatibilité pour un draft créé avant PR10 : un paiement déjà confirmé
-        // ne doit jamais être rejeté faute de réservation historique.
         $insert = $db->prepare(
             "INSERT INTO order_admission_reservation
                 (numero_commande, date_prestation, month_key, status, commande_id, expires_at)
@@ -165,6 +160,8 @@ final class OrderAdmissionService
         if ((string) $commande['statut'] !== OrderStatus::initial()) {
             throw new RuntimeException('Cette commande ne peut plus être modifiée.');
         }
+
+        PaymentLedgerService::assertOrderEditable($db, $commandeId);
 
         $currentDate = (string) $commande['date_prestation'];
         if ($currentDate === $targetDate) {
