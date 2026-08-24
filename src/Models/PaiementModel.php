@@ -3,8 +3,8 @@
 namespace App\Models;
 
 use App\Config\Database;
-use DateTimeImmutable;
-use InvalidArgumentException;
+use App\Services\PaymentLedgerService;
+use Throwable;
 
 class PaiementModel
 {
@@ -28,17 +28,18 @@ class PaiementModel
 
     public static function getSyntheseByCommande(int $commandeId): array
     {
-        $stmt = self::db()->prepare("SELECT * FROM v_paiements_commande WHERE commande_id = ?");
+        $stmt = self::db()->prepare('SELECT * FROM v_paiements_commande WHERE commande_id = ?');
         $stmt->execute([$commandeId]);
         $row = $stmt->fetch();
         return $row ?: [
-            'commande_id'             => $commandeId,
-            'total_encaisse'          => 0.00,
-            'total_acomptes'          => 0.00,
-            'total_soldes'            => 0.00,
+            'commande_id' => $commandeId,
+            'total_encaisse' => 0.00,
+            'total_acomptes' => 0.00,
+            'total_soldes' => 0.00,
             'total_paiements_uniques' => 0.00,
-            'nb_paiements'            => 0,
-            'derniere_date_paiement'  => null,
+            'total_rembourse' => 0.00,
+            'nb_paiements' => 0,
+            'derniere_date_paiement' => null,
         ];
     }
 
@@ -52,7 +53,7 @@ class PaiementModel
         $stmt->execute(array_values($ids));
         $indexed = [];
         foreach ($stmt->fetchAll() as $row) {
-            $indexed[(int)$row['commande_id']] = $row;
+            $indexed[(int) $row['commande_id']] = $row;
         }
         return $indexed;
     }
@@ -74,49 +75,56 @@ class PaiementModel
     public static function getModePaiements(): array
     {
         return self::db()
-            ->query("SELECT * FROM mode_paiement WHERE actif = 1 ORDER BY libelle ASC")
+            ->query('SELECT * FROM mode_paiement WHERE actif = 1 ORDER BY libelle ASC')
             ->fetchAll();
     }
 
     public static function create(array $data, ?int $creePar = null): int
     {
-        $commandeId   = (int)($data['commande_id']   ?? 0);
-        $typePaiement = $data['type_paiement']        ?? '';
-        $montant      = round((float)($data['montant'] ?? 0), 2);
-        $mode         = trim($data['mode']            ?? '');
-        $date         = trim($data['date_paiement']   ?? '');
-        $reference    = trim($data['reference']       ?? '') ?: null;
-        $note         = trim($data['note']            ?? '') ?: null;
-        $documentId   = !empty($data['document_id']) ? (int)$data['document_id'] : null;
-
-        if (!$commandeId || !$typePaiement || $montant <= 0 || !$mode || !$date) {
-            throw new InvalidArgumentException('Champs paiement obligatoires manquants.');
-        }
-        if (!in_array($typePaiement, ['acompte', 'solde', 'paiement_unique'], true)) {
-            throw new InvalidArgumentException('Type de paiement invalide.');
-        }
-        if (!DateTimeImmutable::createFromFormat('!Y-m-d', $date)) {
-            throw new InvalidArgumentException('Date de paiement invalide.');
+        $db = self::db();
+        $ownsTransaction = !$db->inTransaction();
+        if ($ownsTransaction) {
+            $db->beginTransaction();
         }
 
-        $stmt = self::db()->prepare(
-            "INSERT INTO paiement
-                (commande_id, document_id, type_paiement, montant, mode, date_paiement, reference, note, cree_par)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)"
-        );
-        $stmt->execute([$commandeId, $documentId, $typePaiement, $montant, $mode, $date, $reference, $note, $creePar]);
-        return (int)self::db()->lastInsertId();
+        try {
+            $id = PaymentLedgerService::recordCollection($db, $data, $creePar);
+            if ($ownsTransaction) {
+                $db->commit();
+            }
+            return $id;
+        } catch (Throwable $e) {
+            if ($ownsTransaction && $db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public static function delete(int $paiementId): void
     {
-        $stmt = self::db()->prepare("DELETE FROM paiement WHERE paiement_id = ?");
-        $stmt->execute([$paiementId]);
+        $db = self::db();
+        $ownsTransaction = !$db->inTransaction();
+        if ($ownsTransaction) {
+            $db->beginTransaction();
+        }
+
+        try {
+            PaymentLedgerService::reverseManualCollection($db, $paiementId, null);
+            if ($ownsTransaction) {
+                $db->commit();
+            }
+        } catch (Throwable $e) {
+            if ($ownsTransaction && $db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public static function getById(int $paiementId): ?array
     {
-        $stmt = self::db()->prepare("SELECT * FROM paiement WHERE paiement_id = ?");
+        $stmt = self::db()->prepare('SELECT * FROM paiement WHERE paiement_id = ?');
         $stmt->execute([$paiementId]);
         return $stmt->fetch() ?: null;
     }
