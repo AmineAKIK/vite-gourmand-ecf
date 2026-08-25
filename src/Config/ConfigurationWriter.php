@@ -8,8 +8,12 @@ use RuntimeException;
 
 final class ConfigurationWriter
 {
-    public static function write(string $key, string $raw, string $actorRole = 'administrateur'): void
-    {
+    /** @return array{storage_key:string,value:string} */
+    public static function prepare(
+        string $key,
+        string $raw,
+        string $actorRole = 'administrateur',
+    ): array {
         $definition = ConfigurationRegistry::get($key);
         self::assertWritableBy($definition, $actorRole);
 
@@ -26,7 +30,16 @@ final class ConfigurationWriter
             throw new RuntimeException('Writable configuration has no storage key: ' . $key);
         }
 
-        SiteConfigModel::set($definition->storageKey, $definition->toStorageValue($value));
+        return [
+            'storage_key' => $definition->storageKey,
+            'value' => $definition->toStorageValue($value),
+        ];
+    }
+
+    public static function write(string $key, string $raw, string $actorRole = 'administrateur'): void
+    {
+        $prepared = self::prepare($key, $raw, $actorRole);
+        SiteConfigModel::set($prepared['storage_key'], $prepared['value']);
         Configuration::reset();
     }
 
