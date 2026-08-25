@@ -2,9 +2,9 @@
 
 namespace App\Config;
 
-use RuntimeException;
+use InvalidArgumentException;
 
-final class ConfigurationIncompleteException extends RuntimeException
+final class ConfigurationIncompleteException extends InvalidArgumentException
 {
     /** @param list<string> $keys */
     public function __construct(
