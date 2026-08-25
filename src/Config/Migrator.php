@@ -207,18 +207,20 @@ class Migrator
         }
 
         foreach ($statements as $statement) {
-            try {
-                $db->exec($statement);
-            } catch (PDOException $e) {
-                if (self::isProvenIdempotentError($e, $statement)) {
-                    continue;
-                }
+            foreach (LegacyAlterTableCompatibility::expand($db, $name, $statement) as $runtimeStatement) {
+                try {
+                    $db->exec($runtimeStatement);
+                } catch (PDOException $e) {
+                    if (self::isProvenIdempotentError($e, $runtimeStatement)) {
+                        continue;
+                    }
 
-                throw new RuntimeException(
-                    'Migration ' . $name . ' interrompue : ' . $e->getMessage(),
-                    0,
-                    $e
-                );
+                    throw new RuntimeException(
+                        'Migration ' . $name . ' interrompue : ' . $e->getMessage(),
+                        0,
+                        $e
+                    );
+                }
             }
         }
 
