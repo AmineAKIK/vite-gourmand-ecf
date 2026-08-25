@@ -47,7 +47,7 @@ final class OperatorConfigurationContractTest extends TestCase
     {
         $this->expectException(UnexpectedValueException::class);
 
-        OperatorConfiguration::get('tenant.identity.name');
+        OperatorConfiguration::get('brand.name');
     }
 
     public function testStripeConsumersDoNotReadBootstrapAliasesDirectly(): void
