@@ -57,10 +57,15 @@ class ParametresController
 
         $section = $this->postedSection();
         $allowedPostKeys = array_merge(self::tenantStorageKeys(), ['csrf_token', '_section']);
-        $unexpectedKeys = array_diff(array_keys($_POST), $allowedPostKeys);
-        if ($unexpectedKeys !== []) {
-            flash('error', 'Un paramètre non reconnu ou réservé à l’opérateur a été refusé.');
-            redirect('/admin/parametres#' . $section);
+        foreach ($_POST as $postKey => $postValue) {
+            if (in_array($postKey, $allowedPostKeys, true)) {
+                continue;
+            }
+
+            if (!is_string($postValue) || trim($postValue) !== '') {
+                flash('error', 'Un paramètre non reconnu ou réservé à l’opérateur a été refusé.');
+                redirect('/admin/parametres#' . $section);
+            }
         }
 
         $written = false;
