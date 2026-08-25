@@ -2,6 +2,9 @@
 
 namespace App\Controllers\Admin;
 
+use App\Config\ConfigurationInvalidException;
+use App\Config\ConfigurationRegistry;
+use App\Config\ConfigurationWriter;
 use App\Models\HoraireModel;
 use App\Models\SiteConfigModel;
 use App\Models\SiteImageModel;
@@ -26,150 +29,34 @@ class ParametresController
     {
         verifyCsrf();
 
-        $section   = $_POST['_section'] ?? 'tarification';
-        $allFields = [
-            'identite' => [
-                'site_nom'                         => ['type' => 'string',  'max' => 100],
-                'site_slogan'                      => ['type' => 'string',  'max' => 100],
-                'site_domaine'                     => ['type' => 'string',  'max' => 100],
-                'site_email'                       => ['type' => 'email'],
-                'site_telephone'                   => ['type' => 'string',  'max' => 30],
-                'site_adresse'                     => ['type' => 'string',  'max' => 150],
-                'site_code_postal'                 => ['type' => 'cp'],
-                'site_ville'                       => ['type' => 'string',  'max' => 80],
-                'couleur_principale'               => ['type' => 'couleur'],
-                'couleur_secondaire'               => ['type' => 'couleur'],
-                'couleur_fond'                     => ['type' => 'couleur'],
-                'livraison_lat'                    => ['type' => 'coord'],
-                'livraison_lng'                    => ['type' => 'coord'],
-                'livraison_rayon_max_km'           => ['type' => 'int',     'min' => 1, 'max' => 500],
-                'livraison_codes_postaux_gratuits' => ['type' => 'string',  'max' => 500],
-                'commandes_max_par_jour'           => ['type' => 'int',     'min' => 0, 'max' => 999],
-            ],
-            'entreprise' => [
-                'entreprise_nom'             => ['type' => 'string',  'max' => 100],
-                'entreprise_siret'           => ['type' => 'siret'],
-                'entreprise_forme_juridique' => ['type' => 'string',  'max' => 60],
-                'entreprise_adresse'         => ['type' => 'string',  'max' => 150],
-                'entreprise_code_postal'     => ['type' => 'cp'],
-                'entreprise_ville'           => ['type' => 'string',  'max' => 80],
-                'entreprise_telephone'       => ['type' => 'string',  'max' => 20],
-                'entreprise_email'           => ['type' => 'email'],
-                'entreprise_tva_intracom'    => ['type' => 'string',  'max' => 20],
-                'banque_iban'                => ['type' => 'string',  'max' => 34],
-                'banque_bic'                 => ['type' => 'string',  'max' => 11],
-                'banque_nom_banque'          => ['type' => 'string',  'max' => 80],
-            ],
-            'fiscal' => [
-                'regime_tva'      => ['type' => 'enum', 'values' => ['assujetti', 'non_assujetti']],
-                'mention_facture' => ['type' => 'string', 'max' => 500],
-                'mention_ticket'  => ['type' => 'string', 'max' => 500],
-                'mention_acompte' => ['type' => 'string', 'max' => 500],
-            ],
-            'paiement' => [
-                'acompte_taux_defaut'    => ['type' => 'int',     'min' => 0,   'max' => 100],
-                'delai_paiement_jours'   => ['type' => 'int',     'min' => 0,   'max' => 365],
-                'penalites_retard_taux'  => ['type' => 'decimal', 'min' => 0],
-                'indemnite_recouvrement' => ['type' => 'decimal', 'min' => 0],
-            ],
-            'tarification' => [
-                'hero_sous_titre'  => ['type' => 'string',  'max' => 60],
-                'hero_paragraphe'  => ['type' => 'string',  'max' => 200],
-                'livraison_base'   => ['type' => 'decimal', 'min' => 0],
-                'livraison_km'     => ['type' => 'decimal', 'min' => 0],
-                'reduction_seuil'  => ['type' => 'decimal', 'min' => 0],
-                'reduction_taux'   => ['type' => 'int',     'min' => 0, 'max' => 100],
-            ],
-            'legal' => [
-                'cgv_contenu'      => ['type' => 'string', 'max' => 20000],
-                'mentions_contenu' => ['type' => 'string', 'max' => 20000],
-            ],
-            'avance' => [
-                'cron_secret_token' => ['type' => 'string', 'max' => 128],
-                'devis_template'    => ['type' => 'enum', 'values' => ['sobre', 'premium']],
-            ],
-        ];
+        $section = $this->postedSection();
+        $written = false;
 
-        $fields = $allFields[$section] ?? $allFields['tarification'];
+        try {
+            foreach (ConfigurationRegistry::siteConfigDefinitions() as $definition) {
+                $storageKey = $definition->storageKey;
+                if ($storageKey === null || !array_key_exists($storageKey, $_POST)) {
+                    continue;
+                }
 
-        foreach ($fields as $cle => $rules) {
-            $raw = trim($_POST[$cle] ?? '');
+                $raw = $_POST[$storageKey];
+                if (!is_string($raw)) {
+                    throw new ConfigurationInvalidException(
+                        'Configuration invalid: ' . $definition->key,
+                    );
+                }
 
-            switch ($rules['type']) {
-                case 'string':
-                    if (mb_strlen($raw) > ($rules['max'] ?? 255)) {
-                        flash('error', "Le champ '$cle' dépasse la longueur maximale autorisée.");
-                        redirect('/admin/parametres#' . $section);
-                    }
-                    SiteConfigModel::set($cle, $raw);
-                    break;
-
-                case 'email':
-                    if ($raw !== '' && !filter_var($raw, FILTER_VALIDATE_EMAIL)) {
-                        flash('error', "L'adresse email '$raw' est invalide.");
-                        redirect('/admin/parametres#' . $section);
-                    }
-                    SiteConfigModel::set($cle, $raw);
-                    break;
-
-                case 'siret':
-                    $digits = preg_replace('/\s/', '', $raw);
-                    if ($digits !== '' && !preg_match('/^\d{14}$/', $digits)) {
-                        flash('error', 'Le numéro SIRET doit comporter exactement 14 chiffres.');
-                        redirect('/admin/parametres#' . $section);
-                    }
-                    SiteConfigModel::set($cle, $digits);
-                    break;
-
-                case 'cp':
-                    if ($raw !== '' && !preg_match('/^\d{5}$/', $raw)) {
-                        flash('error', 'Le code postal doit comporter 5 chiffres.');
-                        redirect('/admin/parametres#' . $section);
-                    }
-                    SiteConfigModel::set($cle, $raw);
-                    break;
-
-                case 'enum':
-                    if (!in_array($raw, $rules['values'] ?? [], true)) {
-                        flash('error', "Valeur invalide pour le champ '$cle'.");
-                        redirect('/admin/parametres#' . $section);
-                    }
-                    SiteConfigModel::set($cle, $raw);
-                    break;
-
-                case 'couleur':
-                    if ($raw !== '' && !preg_match('/^#[0-9A-Fa-f]{6}$/', $raw)) {
-                        flash('error', "La couleur '$cle' doit être au format #RRGGBB.");
-                        redirect('/admin/parametres#' . $section);
-                    }
-                    SiteConfigModel::set($cle, $raw);
-                    break;
-
-                case 'coord':
-                    if ($raw !== '' && (!is_numeric($raw) || (float)$raw < -180 || (float)$raw > 180)) {
-                        flash('error', "La coordonnée '$cle' est invalide.");
-                        redirect('/admin/parametres#' . $section);
-                    }
-                    SiteConfigModel::set($cle, $raw);
-                    break;
-
-                case 'decimal':
-                    if (!is_numeric($raw) || (float)$raw < ($rules['min'] ?? 0)) {
-                        flash('error', "La valeur '$cle' est invalide.");
-                        redirect('/admin/parametres#' . $section);
-                    }
-                    SiteConfigModel::set($cle, number_format((float)$raw, 2, '.', ''));
-                    break;
-
-                case 'int':
-                    $val = (int)$raw;
-                    if ($val < ($rules['min'] ?? 0) || $val > ($rules['max'] ?? PHP_INT_MAX)) {
-                        flash('error', "La valeur '$cle' est hors limites.");
-                        redirect('/admin/parametres#' . $section);
-                    }
-                    SiteConfigModel::set($cle, (string)$val);
-                    break;
+                ConfigurationWriter::write($definition->key, $raw);
+                $written = true;
             }
+        } catch (ConfigurationInvalidException) {
+            flash('error', 'Un paramètre contient une valeur invalide ou hors limites.');
+            redirect('/admin/parametres#' . $section);
+        }
+
+        if (!$written) {
+            flash('error', 'Aucun paramètre modifiable reconnu.');
+            redirect('/admin/parametres#' . $section);
         }
 
         flash('success', 'Paramètres mis à jour.');
@@ -241,20 +128,20 @@ class ParametresController
     {
         verifyCsrf();
 
-        $sousTitre  = trim($_POST['hero_sous_titre'] ?? '');
-        $paragraphe = trim($_POST['hero_paragraphe'] ?? '', " \t\r");
-
-        if (mb_strlen($sousTitre) > 60) {
-            flash('error', 'Le sous-titre ne peut pas dépasser 60 caractères.');
-            redirect('/admin/parametres#personnalisation');
-        }
-        if (mb_strlen($paragraphe) > 200) {
-            flash('error', 'Le paragraphe ne peut pas dépasser 200 caractères.');
+        $sousTitre = $_POST['hero_sous_titre'] ?? '';
+        $paragraphe = $_POST['hero_paragraphe'] ?? '';
+        if (!is_string($sousTitre) || !is_string($paragraphe)) {
+            flash('error', 'Le contenu de personnalisation est invalide.');
             redirect('/admin/parametres#personnalisation');
         }
 
-        SiteConfigModel::set('hero_sous_titre', $sousTitre);
-        SiteConfigModel::set('hero_paragraphe', $paragraphe);
+        try {
+            ConfigurationWriter::writeStorageKey('hero_sous_titre', trim($sousTitre));
+            ConfigurationWriter::writeStorageKey('hero_paragraphe', trim($paragraphe, " \t\r"));
+        } catch (ConfigurationInvalidException) {
+            flash('error', 'Le contenu de personnalisation est invalide ou trop long.');
+            redirect('/admin/parametres#personnalisation');
+        }
 
         foreach (['logo', 'favicon', 'og_image', 'hero', 'preparation'] as $cle) {
             $file = $_FILES[$cle] ?? null;
@@ -274,4 +161,17 @@ class ParametresController
         redirect('/admin/parametres#personnalisation');
     }
 
+    private function postedSection(): string
+    {
+        $section = $_POST['_section'] ?? 'identite';
+        if (!is_string($section)) {
+            return 'identite';
+        }
+
+        return in_array(
+            $section,
+            ['identite', 'entreprise', 'fiscal', 'paiement', 'tarification', 'legal', 'avance'],
+            true,
+        ) ? $section : 'identite';
+    }
 }
