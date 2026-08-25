@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Config\ConfigurationCompleteness;
 use App\Models\FacturationModel;
 use RuntimeException;
 use Throwable;
@@ -15,6 +16,8 @@ final class BillingFinalizationService
      */
     public static function finalize(int $documentId, ?int $finalizedBy): array
     {
+        ConfigurationCompleteness::assertBillingReady();
+
         $numero = null;
         $initialArchiveError = null;
 
