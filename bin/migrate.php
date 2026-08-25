@@ -3,6 +3,7 @@
 require_once dirname(__DIR__) . '/src/Config/config.php';
 
 use App\Config\Migrator;
+use App\Config\Provisioner;
 
 function isTransientDatabaseStartupFailure(\Throwable $error): bool
 {
@@ -21,10 +22,11 @@ function isTransientDatabaseStartupFailure(\Throwable $error): bool
 }
 
 try {
+    Provisioner::run();
     Migrator::run();
-    fwrite(STDOUT, "Migrations applied successfully.\n");
+    fwrite(STDOUT, "Database schema ready.\n");
     exit(0);
 } catch (\Throwable $e) {
-    fwrite(STDERR, 'Migration failed: ' . $e->getMessage() . PHP_EOL);
+    fwrite(STDERR, 'Database schema preparation failed: ' . $e->getMessage() . PHP_EOL);
     exit(isTransientDatabaseStartupFailure($e) ? 75 : 1);
 }
