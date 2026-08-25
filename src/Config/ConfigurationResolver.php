@@ -13,8 +13,7 @@ final class ConfigurationResolver
     public function __construct(
         private readonly array $siteConfig,
         private readonly array $environment = [],
-    ) {
-    }
+    ) {}
 
     /** @return string|int|float|bool|list<string>|null */
     public function resolve(string $key): string|int|float|bool|array|null
