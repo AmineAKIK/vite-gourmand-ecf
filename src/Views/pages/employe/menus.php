@@ -12,14 +12,14 @@ foreach ($plats as $plat) {
 
     <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-4">
         <h1 class="h3 fw-bold mb-0">
-            <i class="bi bi-journal-text me-2 text-vg"></i>Gestion des menus
+            <i class="bi bi-journal-text me-2 text-brand"></i>Gestion des menus
         </h1>
         <div class="d-flex flex-wrap gap-2">
-            <button class="btn btn-vg-outline btn-sm" data-bs-toggle="modal" data-bs-target="#modalCreerPlat"
+            <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalCreerPlat"
                 aria-label="Ajouter un plat">
                 <i class="bi bi-plus-lg me-1"></i>Ajouter un plat
             </button>
-            <button class="btn btn-vg-outline btn-sm" data-bs-toggle="modal" data-bs-target="#modalCreerMenu"
+            <button class="btn btn-outline-secondary btn-sm" data-bs-toggle="modal" data-bs-target="#modalCreerMenu"
                 aria-label="Ajouter un menu">
                 <i class="bi bi-plus-lg me-1"></i>Ajouter un menu
             </button>
@@ -35,13 +35,13 @@ foreach ($plats as $plat) {
                 <table class="table table-hover align-middle mb-0 employe-menus-table" aria-label="Liste des menus">
                     <thead>
                         <tr style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
-                            <th scope="col" class="ps-3 text-vg fw-semibold">Titre</th>
-                            <th scope="col" class="text-vg fw-semibold d-none d-lg-table-cell">Thème</th>
-                            <th scope="col" class="text-vg fw-semibold d-none d-lg-table-cell">Régime</th>
-                            <th scope="col" class="text-vg fw-semibold d-none d-lg-table-cell">Min pers.</th>
-                            <th scope="col" class="text-vg fw-semibold">Prix / pers.</th>
-                            <th scope="col" class="text-vg fw-semibold d-none d-lg-table-cell">Stock</th>
-                            <th scope="col" class="text-vg fw-semibold pe-3">Actions</th>
+                            <th scope="col" class="ps-3 text-brand fw-semibold">Titre</th>
+                            <th scope="col" class="text-brand fw-semibold d-none d-lg-table-cell">Thème</th>
+                            <th scope="col" class="text-brand fw-semibold d-none d-lg-table-cell">Régime</th>
+                            <th scope="col" class="text-brand fw-semibold d-none d-lg-table-cell">Min pers.</th>
+                            <th scope="col" class="text-brand fw-semibold">Prix / pers.</th>
+                            <th scope="col" class="text-brand fw-semibold d-none d-lg-table-cell">Stock</th>
+                            <th scope="col" class="text-brand fw-semibold pe-3">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
@@ -52,7 +52,7 @@ foreach ($plats as $plat) {
                             <td data-label="Régime" class="text-muted d-none d-lg-table-cell"><?= sanitize($menu['regime'] ?? '—') ?></td>
                             <td data-label="Min pers." class="text-muted d-none d-lg-table-cell"><?= (int)($menu['nombre_personne_minimum'] ?? 0) ?></td>
                             <td data-label="Prix / pers." class="text-nowrap employe-menu-price">
-                                <span class="fw-semibold text-vg"><?= sanitize(formatPrice($menu['prix_par_personne'] ?? 0)) ?></span>
+                                <span class="fw-semibold text-brand"><?= sanitize(formatPrice($menu['prix_par_personne'] ?? 0)) ?></span>
                             </td>
                             <td data-label="Stock" class="text-nowrap d-none d-lg-table-cell">
                                 <?php $stock = $menu['quantite_restante']; ?>
@@ -66,7 +66,7 @@ foreach ($plats as $plat) {
                             </td>
                             <td data-label="Actions" class="pe-3 text-nowrap employe-menu-actions">
                                 <button
-                                    class="btn btn-sm btn-vg-outline me-1"
+                                    class="btn btn-sm btn-outline-secondary me-1"
                                     data-bs-toggle="modal"
                                     data-bs-target="#modalModifierMenu<?= (int)$menu['menu_id'] ?>"
                                     aria-label="Modifier le menu <?= sanitize($menu['titre'] ?? '') ?>"
@@ -97,7 +97,7 @@ foreach ($plats as $plat) {
             <?php foreach ($platsByCategorie as $categorie => $platsGroupe): ?>
             <div class="card shadow-sm" style="border:1px solid rgba(0,0,0,.08);">
                 <div class="card-header d-flex align-items-center justify-content-between py-2" style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
-                    <span class="fw-semibold text-vg"><?= sanitize($categorie) ?></span>
+                    <span class="fw-semibold text-brand"><?= sanitize($categorie) ?></span>
                     <span class="badge bg-secondary fw-normal"><?= count($platsGroupe) ?> plat<?= count($platsGroupe) > 1 ? 's' : '' ?></span>
                 </div>
                 <ul class="list-group list-group-flush">
@@ -116,7 +116,7 @@ foreach ($plats as $plat) {
                             <?php endif ?>
                         </div>
                         <div class="d-flex gap-1 flex-shrink-0">
-                            <button class="btn btn-sm btn-vg-outline"
+                            <button class="btn btn-sm btn-outline-secondary"
                                     data-bs-toggle="modal"
                                     data-bs-target="#modalModifPlat<?= (int)$plat['plat_id'] ?>"
                                     aria-label="Modifier <?= sanitize($plat['titre']) ?>">
@@ -195,8 +195,8 @@ foreach ($plats as $plat) {
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-vg-outline" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-vg">Enregistrer</button>
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                        <button type="submit" class="btn btn-brand">Enregistrer</button>
                     </div>
                 </form>
             </div>
@@ -215,7 +215,7 @@ foreach ($plats as $plat) {
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title h5 fw-bold" id="modalCreerMenuLabel">
-                    <i class="bi bi-plus-circle me-2 text-vg"></i>Ajouter un menu
+                    <i class="bi bi-plus-circle me-2 text-brand"></i>Ajouter un menu
                 </h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
@@ -290,8 +290,8 @@ foreach ($plats as $plat) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-vg-outline" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-vg">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-check-lg me-1"></i>Enregistrer
                     </button>
                 </div>
@@ -309,7 +309,7 @@ foreach ($plats as $plat) {
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title h5 fw-bold" id="modalCreerPlatLabel">
-                    <i class="bi bi-egg-fried me-2 text-vg"></i>Ajouter un plat
+                    <i class="bi bi-egg-fried me-2 text-brand"></i>Ajouter un plat
                 </h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
@@ -350,8 +350,8 @@ foreach ($plats as $plat) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-vg-outline" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-vg">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-check-lg me-1"></i>Enregistrer le plat
                     </button>
                 </div>
@@ -372,7 +372,7 @@ foreach ($plats as $plat) {
         <div class="modal-content">
             <div class="modal-header">
                 <h2 class="modal-title h5 fw-bold" id="modalModifLabel<?= (int)$menu['menu_id'] ?>">
-                    <i class="bi bi-pencil me-2 text-vg"></i>Modifier — <?= sanitize($menu['titre'] ?? '') ?>
+                    <i class="bi bi-pencil me-2 text-brand"></i>Modifier — <?= sanitize($menu['titre'] ?? '') ?>
                 </h2>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
             </div>
@@ -488,8 +488,8 @@ foreach ($plats as $plat) {
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-vg-outline" data-bs-dismiss="modal">Annuler</button>
-                    <button type="submit" class="btn btn-vg">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-check-lg me-1"></i>Enregistrer
                     </button>
                 </div>

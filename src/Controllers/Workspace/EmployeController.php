@@ -133,7 +133,7 @@ class EmployeController
                 'id'              => (int)$cmd['commande_id'],
                 'title'           => $client . ' — ' . ($cmd['ville_livraison'] ?? ''),
                 'start'           => $cmd['date_prestation'],
-                'color'           => $colorMap[$statut] ?? '#8B1A2B',
+                'color'           => $colorMap[$statut] ?? '#64748B',
                 'extendedProps'   => [
                     'statut'          => $statut,
                     'numero'          => $cmd['numero_commande'] ?? '',
