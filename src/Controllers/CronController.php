@@ -2,8 +2,8 @@
 
 namespace App\Controllers;
 
+use App\Config\Configuration;
 use App\Config\Database;
-use App\Config\SiteConfig;
 use App\Services\ReminderLeaseService;
 use App\Services\ReminderMailTransport;
 
@@ -12,7 +12,8 @@ class CronController
     private function authenticate(): void
     {
         $token = $_SERVER['HTTP_X_CRON_TOKEN'] ?? '';
-        $expected = SiteConfig::get('cron_secret_token', '');
+        $configured = Configuration::get('operator.cron.token');
+        $expected = is_string($configured) ? $configured : '';
 
         if (!is_string($token) || $expected === '' || !hash_equals($expected, $token)) {
             http_response_code(401);
