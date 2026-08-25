@@ -71,6 +71,77 @@ jobs:
             echo 'No newly added PHP files to style-check.'
           fi
 
+  migrations:
+    name: MySQL ${{ matrix.mysql }} migration gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        mysql:
+          - '8.4'
+          - '9.4'
+
+    services:
+      mysql:
+        image: mysql:${{ matrix.mysql }}
+        env:
+          MYSQL_DATABASE: tugeres_ci
+          MYSQL_USER: tugeres
+          MYSQL_PASSWORD: tugeres
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql
+          coverage: none
+
+      - name: Install locked dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Apply complete migration chain
+        env:
+          APP_ENV: production
+          DB_HOST: 127.0.0.1
+          DB_NAME: tugeres_ci
+          DB_USER: tugeres
+          DB_PASS: tugeres
+          TUGERES_ALLOW_HTTP_MIGRATIONS: 'false'
+        run: php bin/migrate.php
+
+      - name: Re-run migrations to prove idempotence
+        env:
+          APP_ENV: production
+          DB_HOST: 127.0.0.1
+          DB_NAME: tugeres_ci
+          DB_USER: tugeres
+          DB_PASS: tugeres
+          TUGERES_ALLOW_HTTP_MIGRATIONS: 'false'
+        run: php bin/migrate.php
+
+      - name: Verify every migration is tracked
+        env:
+          MYSQL_PWD: tugeres
+        shell: bash
+        run: |
+          set -euo pipefail
+          expected="$(find sql/migrations -maxdepth 1 -type f -name '[0-9]*.sql' | wc -l | tr -d ' ')"
+          applied="$(mysql --protocol=tcp -h 127.0.0.1 -u tugeres tugeres_ci -Nse 'SELECT COUNT(*) FROM schema_migrations')"
+          test "$applied" = "$expected"
+
   docker:
     name: Production image build
     runs-on: ubuntu-latest
