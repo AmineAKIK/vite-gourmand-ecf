@@ -143,7 +143,7 @@ final class LegacyAlterTableCompatibility
     {
         $stmt = $db->prepare(
             'SELECT COUNT(*) FROM information_schema.COLUMNS '
-            . 'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+            . 'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
         );
         $stmt->execute([$table, $column]);
 
@@ -154,7 +154,7 @@ final class LegacyAlterTableCompatibility
     {
         $stmt = $db->prepare(
             'SELECT COUNT(*) FROM information_schema.STATISTICS '
-            . 'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?'
+            . 'WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND INDEX_NAME = ?',
         );
         $stmt->execute([$table, $index]);
 
@@ -165,7 +165,7 @@ final class LegacyAlterTableCompatibility
     {
         $stmt = $db->prepare(
             'SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS '
-            . 'WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?'
+            . 'WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?',
         );
         $stmt->execute([$table, $constraint]);
 
