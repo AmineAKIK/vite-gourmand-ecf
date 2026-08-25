@@ -138,6 +138,6 @@ try {
         fwrite(STDOUT, "V1 schema verified.\n");
     }
 } catch (Throwable $e) {
-    fwrite(STDERR, 'V1 schema verification failed: ' . $e->getMessage() . PHP_EOL;
+    fwrite(STDERR, 'V1 schema verification failed: ' . $e->getMessage() . PHP_EOL);
     exit(1);
 }
