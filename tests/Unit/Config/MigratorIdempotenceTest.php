@@ -3,53 +3,57 @@
 namespace Tests\Unit\Config;
 
 use App\Config\Migrator;
-use PDOException;
 use PHPUnit\Framework\TestCase;
+use ReflectionClass;
 use ReflectionMethod;
+use RuntimeException;
 
 final class MigratorIdempotenceTest extends TestCase
 {
-    public function testRejectsDuplicateCreateTableError(): void
+    public function testPreReleaseDdlToleranceHasBeenRemoved(): void
     {
-        self::assertFalse($this->isAllowed(1050, 'CREATE TABLE example (id INT)'));
+        $reflection = new ReflectionClass(Migrator::class);
+
+        self::assertFalse($reflection->hasMethod('isProvenIdempotentError'));
+        self::assertFalse($reflection->hasMethod('repairKnownPartialMigration'));
+        self::assertFalse($reflection->hasMethod('applyBaseSchemaIfNeeded'));
     }
 
-    public function testRejectsDuplicateIndexError(): void
+    public function testForwardMigrationNamesStartAfterBaseline(): void
     {
-        self::assertFalse($this->isAllowed(1061, 'ALTER TABLE example ADD INDEX idx_name (name)'));
+        $this->validateFiles(['/tmp/002_add_something.sql', '/tmp/003_next_change.sql']);
+        self::addToAssertionCount(1);
     }
 
-    public function testAllowsSingleDuplicateColumnAdd(): void
+    public function testRejectsBaselineInsideForwardMigrationDirectory(): void
     {
-        self::assertTrue($this->isAllowed(1060, 'ALTER TABLE example ADD COLUMN name VARCHAR(50) NULL'));
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('baseline 001');
+
+        $this->validateFiles(['/tmp/001_v1_baseline.sql']);
     }
 
-    public function testRejectsDuplicateColumnErrorOutsideAlterTable(): void
+    public function testRejectsDuplicateForwardVersions(): void
     {
-        self::assertFalse($this->isAllowed(1060, 'CREATE TABLE example (name VARCHAR(50))'));
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Version de migration dupliquée 002');
+
+        $this->validateFiles(['/tmp/002_first.sql', '/tmp/002_second.sql']);
     }
 
-    public function testAllowsSingleMissingDropTarget(): void
+    public function testRejectsNonCanonicalMigrationFilename(): void
     {
-        self::assertTrue($this->isAllowed(1091, 'ALTER TABLE example DROP COLUMN legacy_name'));
-        self::assertTrue($this->isAllowed(1091, 'ALTER TABLE example DROP INDEX idx_legacy'));
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('Nom de migration V1 invalide');
+
+        $this->validateFiles(['/tmp/2-bad-name.sql']);
     }
 
-    public function testRejectsAmbiguousMultipleDropStatement(): void
+    /** @param list<string> $files */
+    private function validateFiles(array $files): void
     {
-        self::assertFalse(
-            $this->isAllowed(1091, 'ALTER TABLE example DROP COLUMN legacy_name, DROP INDEX idx_legacy'),
-        );
-    }
-
-    private function isAllowed(int $mysqlCode, string $statement): bool
-    {
-        $exception = new PDOException('migration failure');
-        $exception->errorInfo = ['HY000', $mysqlCode, 'migration failure'];
-
-        $method = new ReflectionMethod(Migrator::class, 'isProvenIdempotentError');
+        $method = new ReflectionMethod(Migrator::class, 'validateFileSet');
         $method->setAccessible(true);
-
-        return (bool) $method->invoke(null, $exception, $statement);
+        $method->invoke(null, $files);
     }
 }
