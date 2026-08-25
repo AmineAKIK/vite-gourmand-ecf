@@ -4,11 +4,15 @@ namespace App\Config;
 
 use App\Models\SiteConfigModel;
 use App\Models\SiteImageModel;
+use UnexpectedValueException;
 
 class SiteConfig
 {
     private static ?array $cache = null;
 
+    /**
+     * Legacy presentation access only. Commercial settings must use Configuration.
+     */
     public static function get(string $key, string|float|int $default = ''): string
     {
         if (self::$cache === null) {
@@ -19,7 +23,8 @@ class SiteConfig
                 error_log('SiteConfig indisponible : ' . $e->getMessage());
             }
         }
-        return (string)(self::$cache[$key] ?? $default);
+
+        return (string) (self::$cache[$key] ?? $default);
     }
 
     public static function name(): string
@@ -73,57 +78,69 @@ class SiteConfig
         $defaults = [
             'couleur_principale' => '#8B1A2B',
             'couleur_secondaire' => '#D4A843',
-            'couleur_fond'       => '#FDF6EC',
+            'couleur_fond' => '#FDF6EC',
         ];
+
         return self::get($key, $defaults[$key] ?? '#333333');
     }
 
     public static function lat(): float
     {
-        return (float)self::get('livraison_lat', 0.0);
+        return self::requiredFloat('delivery.origin.latitude');
     }
 
     public static function lng(): float
     {
-        return (float)self::get('livraison_lng', 0.0);
+        return self::requiredFloat('delivery.origin.longitude');
     }
 
     public static function isGeoConfigured(): bool
     {
-        return self::lat() !== 0.0 || self::lng() !== 0.0;
+        try {
+            ConfigurationCompleteness::assertDeliveryReady();
+            return true;
+        } catch (ConfigurationIncompleteException) {
+            return false;
+        }
     }
 
     public static function deliveryRadiusKm(): int
     {
-        $v = (int)self::get('livraison_rayon_max_km', 50);
-        return $v > 0 ? $v : 50;
+        return self::requiredInt('delivery.radius_km');
     }
 
+    /** @return list<string> */
     public static function freePostalCodes(): array
     {
-        $raw = self::get('livraison_codes_postaux_gratuits', '');
-        return array_values(array_filter(array_map('trim', explode(',', $raw))));
+        $value = Configuration::get('delivery.free_postal_codes');
+        if ($value === null) {
+            return [];
+        }
+        if (!is_array($value)) {
+            throw new UnexpectedValueException('delivery.free_postal_codes must resolve to a string list.');
+        }
+
+        return array_values(array_map('strval', $value));
     }
 
     public static function deliveryBase(): float
     {
-        return max(0.0, (float)self::get('livraison_base', LIVRAISON_BASE));
+        return self::requiredFloat('delivery.base_fee');
     }
 
     public static function deliveryKm(): float
     {
-        return max(0.0, (float)self::get('livraison_km', LIVRAISON_KM));
+        return self::requiredFloat('delivery.per_km_fee');
     }
 
     public static function discountThreshold(): float
     {
-        return max(0.0, (float)self::get('reduction_seuil', '100.00'));
+        return self::requiredFloat('discount.threshold');
     }
 
     public static function discountRate(): float
     {
-        $rate = (float)self::get('reduction_taux', REDUCTION_TAUX * 100);
-        return min(100.0, max(0.0, $rate));
+        return self::requiredFloat('discount.rate_percent');
     }
 
     public static function logoUrl(): ?string
@@ -154,6 +171,26 @@ class SiteConfig
 
     public static function commandesMaxParJour(): int
     {
-        return max(0, (int)self::get('commandes_max_par_jour', 0));
+        return self::requiredInt('order.capacity.max_per_day');
+    }
+
+    private static function requiredFloat(string $key): float
+    {
+        $value = Configuration::get($key);
+        if (!is_float($value) && !is_int($value)) {
+            throw new UnexpectedValueException($key . ' must resolve to a numeric value.');
+        }
+
+        return (float) $value;
+    }
+
+    private static function requiredInt(string $key): int
+    {
+        $value = Configuration::get($key);
+        if (!is_int($value)) {
+            throw new UnexpectedValueException($key . ' must resolve to an integer.');
+        }
+
+        return $value;
     }
 }
