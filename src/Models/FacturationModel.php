@@ -14,92 +14,14 @@ class FacturationModel
     private const DEFAULT_TVA = 10.0;
     private const TYPES = ['facture', 'ticket', 'devis', 'acompte'];
 
+    /**
+     * Kept as a compatibility no-op for existing callers.
+     *
+     * The billing schema lifecycle belongs exclusively to sql/migrations and the
+     * deployment-time Migrator. Application requests must never create or alter tables.
+     */
     public static function ensureSchema(): void
     {
-        $db = Database::getConnection();
-        $db->exec("
-            CREATE TABLE IF NOT EXISTS document_facturation (
-                document_id INT AUTO_INCREMENT PRIMARY KEY,
-                commande_id INT NOT NULL,
-                type_document VARCHAR(20) NOT NULL,
-                statut VARCHAR(20) NOT NULL DEFAULT 'brouillon',
-                numero_document VARCHAR(50),
-                date_emission DATE NOT NULL,
-                date_prestation DATE,
-                client_nom VARCHAR(160) NOT NULL DEFAULT '',
-                client_email VARCHAR(190) NOT NULL DEFAULT '',
-                client_telephone VARCHAR(40) NOT NULL DEFAULT '',
-                client_adresse VARCHAR(255) NOT NULL DEFAULT '',
-                client_ville VARCHAR(120) NOT NULL DEFAULT '',
-                client_code_postal VARCHAR(20) NOT NULL DEFAULT '',
-                client_siren VARCHAR(20) NULL,
-                adresse_livraison VARCHAR(255) NULL,
-                ville_livraison VARCHAR(120) NULL,
-                code_postal_livraison VARCHAR(20) NULL,
-                categorie_operation VARCHAR(30) NOT NULL DEFAULT 'mixte',
-                option_tva_debits TINYINT(1) NOT NULL DEFAULT 0,
-                entreprise_snapshot LONGTEXT,
-                note_publique TEXT,
-                mention_legale TEXT,
-                total_ht DECIMAL(10,2) NOT NULL DEFAULT 0,
-                total_tva DECIMAL(10,2) NOT NULL DEFAULT 0,
-                total_ttc DECIMAL(10,2) NOT NULL DEFAULT 0,
-                created_by INT,
-                created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-                updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
-                finalized_at DATETIME NULL,
-                finalized_by INT NULL,
-                archive_path VARCHAR(255) NULL,
-                sent_at DATETIME NULL,
-                sent_by INT NULL,
-                INDEX idx_document_facturation_commande (commande_id),
-                INDEX idx_document_facturation_type (type_document),
-                INDEX idx_document_facturation_statut (statut)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ");
-        $db->exec("
-            CREATE TABLE IF NOT EXISTS document_facturation_ligne (
-                ligne_document_id INT AUTO_INCREMENT PRIMARY KEY,
-                document_id INT NOT NULL,
-                designation VARCHAR(255) NOT NULL,
-                quantite DECIMAL(10,2) NOT NULL DEFAULT 1,
-                prix_unitaire_ht DECIMAL(10,2) NOT NULL DEFAULT 0,
-                prix_unitaire_ttc DECIMAL(10,2) NOT NULL DEFAULT 0,
-                taux_tva DECIMAL(5,2) NOT NULL DEFAULT 10,
-                total_ht DECIMAL(10,2) NOT NULL DEFAULT 0,
-                total_tva DECIMAL(10,2) NOT NULL DEFAULT 0,
-                total_ttc DECIMAL(10,2) NOT NULL DEFAULT 0,
-                ordre INT NOT NULL DEFAULT 0,
-                INDEX idx_document_facturation_ligne_document (document_id)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ");
-        $db->exec("
-            CREATE TABLE IF NOT EXISTS document_sequence (
-                type_document VARCHAR(20) NOT NULL,
-                annee INT NOT NULL,
-                dernier_numero INT NOT NULL DEFAULT 0,
-                PRIMARY KEY (type_document, annee)
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-        ");
-        self::addColumnIfMissing('document_facturation', 'finalized_at', 'DATETIME NULL');
-        self::addColumnIfMissing('document_facturation', 'finalized_by', 'INT NULL');
-        self::addColumnIfMissing('document_facturation', 'archive_path', 'VARCHAR(255) NULL');
-        self::addColumnIfMissing('document_facturation', 'sent_at', 'DATETIME NULL');
-        self::addColumnIfMissing('document_facturation', 'sent_by', 'INT NULL');
-        self::addColumnIfMissing('document_facturation', 'client_siren', 'VARCHAR(20) NULL');
-        self::addColumnIfMissing('document_facturation', 'adresse_livraison', 'VARCHAR(255) NULL');
-        self::addColumnIfMissing('document_facturation', 'ville_livraison', 'VARCHAR(120) NULL');
-        self::addColumnIfMissing('document_facturation', 'code_postal_livraison', 'VARCHAR(20) NULL');
-        self::addColumnIfMissing('document_facturation', 'categorie_operation', "VARCHAR(30) NOT NULL DEFAULT 'mixte'");
-        self::addColumnIfMissing('document_facturation', 'option_tva_debits', 'TINYINT(1) NOT NULL DEFAULT 0');
-        self::addColumnIfMissing('document_facturation', 'montant_acompte_verse', 'DECIMAL(10,2) NULL DEFAULT NULL');
-        self::addColumnIfMissing('document_facturation', 'document_acompte_id', 'INT NULL DEFAULT NULL');
-        self::addColumnIfMissing('document_facturation', 'statut_devis', "ENUM('accepte','refuse') NULL DEFAULT NULL");
-        self::addColumnIfMissing('document_facturation', 'date_decision_devis', 'DATETIME NULL DEFAULT NULL');
-        self::addColumnIfMissing('document_facturation', 'pdf_path', 'VARCHAR(255) NULL DEFAULT NULL');
-        self::addColumnIfMissing('document_facturation', 'token_signature', 'VARCHAR(64) NULL DEFAULT NULL');
-        self::addColumnIfMissing('document_facturation', 'signed_at', 'DATETIME NULL DEFAULT NULL');
-        self::addColumnIfMissing('document_facturation', 'signed_ip', 'VARCHAR(45) NULL DEFAULT NULL');
     }
 
     public static function search(string $q, int $limit = 20): array
@@ -1149,22 +1071,6 @@ class FacturationModel
             .document-footer{margin-top:24px;padding-top:16px;border-top:1px solid #e5e7eb;color:#4B5563;font-size:13px}
             @media(max-width:700px){body{padding:12px}.document-preview{padding:16px}.document-preview-header,.document-parties,.document-totals{grid-template-columns:1fr}.document-meta{text-align:left}.document-totals dl{justify-self:stretch;min-width:0}thead{display:none}table,tbody,tr,td,th{display:block;width:100%}table{min-width:0;border-collapse:separate;border-spacing:0}tbody{display:grid;gap:12px}tr{box-sizing:border-box;padding:12px;border:1px solid #e5e7eb;border-radius:8px;background:{$fond}}td{box-sizing:border-box;display:flex;align-items:baseline;justify-content:space-between;gap:12px;padding:6px 0;border-bottom:1px solid #e5e7eb;text-align:right!important}td:before{content:attr(data-label);flex:0 0 auto;color:#5F6470;font-size:12px;font-weight:700;text-align:left}td:first-child{display:block;padding-top:0;font-weight:700;text-align:left!important}td:first-child:before{content:none}td:last-child{padding-bottom:0;border-bottom:0;color:{$c1};font-weight:700}.document-ticket-line-meta{font-size:12px}}
         ";
-    }
-
-    private static function addColumnIfMissing(string $table, string $column, string $definition): void
-    {
-        $db = Database::getConnection();
-        $stmt = $db->prepare("
-            SELECT COUNT(*)
-            FROM information_schema.COLUMNS
-            WHERE TABLE_SCHEMA = DATABASE()
-            AND TABLE_NAME = ?
-            AND COLUMN_NAME = ?
-        ");
-        $stmt->execute([$table, $column]);
-        if ((int)$stmt->fetchColumn() === 0) {
-            $db->exec("ALTER TABLE `$table` ADD COLUMN `$column` $definition");
-        }
     }
 
     private static function replaceLignes(int $documentId, array $lignes): void
