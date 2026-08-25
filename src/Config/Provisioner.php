@@ -30,7 +30,6 @@ final class Provisioner
         'site_config',
         'site_image',
         'horaire',
-        'geocache',
         'regime',
         'theme',
         'categorie_plat',
