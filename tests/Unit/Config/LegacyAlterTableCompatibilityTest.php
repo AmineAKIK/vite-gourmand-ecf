@@ -31,6 +31,29 @@ final class LegacyAlterTableCompatibilityTest extends TestCase
         self::assertStringStartsWith('ADD CONSTRAINT fk_document_source', $actions[9]);
     }
 
+    public function testCompatibilityIsRestrictedToKnownHistoricalMigrations(): void
+    {
+        $statement = 'ALTER TABLE example ADD COLUMN IF NOT EXISTS legacy_col INT NULL';
+        $method = new ReflectionMethod(LegacyAlterTableCompatibility::class, 'supports');
+        $method->setAccessible(true);
+
+        self::assertTrue((bool) $method->invoke(null, '040_payment_refund_integrity.sql', $statement));
+        self::assertTrue((bool) $method->invoke(null, '041_facturation_financial_state.sql', $statement));
+        self::assertFalse((bool) $method->invoke(null, '046_future_change.sql', $statement));
+    }
+
+    public function testCompatibilityDoesNotInterceptNormalAlterStatements(): void
+    {
+        $method = new ReflectionMethod(LegacyAlterTableCompatibility::class, 'supports');
+        $method->setAccessible(true);
+
+        self::assertFalse((bool) $method->invoke(
+            null,
+            '040_payment_refund_integrity.sql',
+            'ALTER TABLE paiement ADD COLUMN operation_key VARCHAR(160) NULL',
+        ));
+    }
+
     /** @return list<string> */
     private function legacyAlterActions(string $migration): array
     {
