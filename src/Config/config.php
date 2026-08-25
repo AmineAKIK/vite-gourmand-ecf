@@ -28,7 +28,7 @@ define('STRIPE_WEBHOOK_SECRET', Environment::get('STRIPE_WEBHOOK_SECRET'));
 
 define('BREVO_API_KEY', Environment::get('BREVO_API_KEY'));
 define('MAIL_FROM', Environment::get('MAIL_FROM', 'noreply@vitegourmand.fr'));
-// MAIL_FROM_NAME est un fallback — la vraie valeur vient de siteName() (table site_config)
+// MAIL_FROM_NAME est un fallback de présentation — la vraie valeur vient de siteName().
 define('MAIL_FROM_NAME', Environment::get('MAIL_FROM_NAME', 'Mon Traiteur'));
 
 define('BASE_URL', Environment::get('BASE_URL', 'http://localhost:8080'));
@@ -50,13 +50,10 @@ if (APP_ENV !== 'development') {
     ini_set('display_startup_errors', '1');
     error_reporting(E_ALL);
 }
+
 define('ROLE_USER', 'utilisateur');
 define('ROLE_EMPLOYE', 'employe');
 define('ROLE_ADMIN', 'administrateur');
 define('ROLE_ID_USER', 1);
 define('ROLE_ID_EMPLOYE', 2);
 define('ROLE_ID_ADMIN', 3);
-define('LIVRAISON_BASE', 5.00);
-define('LIVRAISON_KM',   0.59);
-// Valeurs de repli si site_config est indisponible. Source de vérité = table site_config.
-define('REDUCTION_TAUX',  0.10);   // 10% (0.10 = fraction, site_config stocke "10" en entier)
