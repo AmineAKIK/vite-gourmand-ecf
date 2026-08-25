@@ -3,6 +3,11 @@
 
 declare(strict_types=1);
 
+use App\Config\Database;
+use App\Config\Migrator;
+use App\Config\Provisioner;
+use App\Security\Password;
+
 /**
  * Tugères V1 — installation CLI.
  *
@@ -64,11 +69,6 @@ if (!is_file($envPath)) {
 }
 
 require_once $root . '/src/Config/config.php';
-
-use App\Config\Database;
-use App\Config\Migrator;
-use App\Config\Provisioner;
-use App\Security\Password;
 
 try {
     Provisioner::run();
