@@ -4,6 +4,4 @@ namespace App\Config;
 
 use RuntimeException;
 
-final class ConfigurationInvalidException extends RuntimeException
-{
-}
+final class ConfigurationInvalidException extends RuntimeException {}
