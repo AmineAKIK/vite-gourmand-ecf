@@ -23,6 +23,7 @@ final class ProvisionerContractTest extends TestCase
         self::assertContains('cron_rappel_log', $required);
         self::assertNotContains('plat_allergene', $required);
         self::assertNotContains('schema_migrations', $required);
+        self::assertNotContains('geocache', $required);
     }
 
     public function testCompleteSchemaIsAccepted(): void
