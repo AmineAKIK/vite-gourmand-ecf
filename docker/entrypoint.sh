@@ -46,4 +46,12 @@ while :; do
   sleep 2
 done
 
+# Railway's runtime may materialize Apache module links differently from the
+# image build. Reassert the only MPM supported by mod_php immediately before
+# Apache starts, then fail closed if the effective runtime config is invalid.
+rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm_event.conf \
+      /etc/apache2/mods-enabled/mpm_worker.load /etc/apache2/mods-enabled/mpm_worker.conf
+a2enmod mpm_prefork >/dev/null
+apache2ctl configtest
+
 exec apache2-foreground
