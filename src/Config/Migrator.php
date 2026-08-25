@@ -207,7 +207,7 @@ class Migrator
         }
 
         foreach ($statements as $statement) {
-            foreach (LegacyAlterTableCompatibility::expand($db, $statement) as $runtimeStatement) {
+            foreach (LegacyAlterTableCompatibility::expand($db, $name, $statement) as $runtimeStatement) {
                 try {
                     $db->exec($runtimeStatement);
                 } catch (PDOException $e) {
