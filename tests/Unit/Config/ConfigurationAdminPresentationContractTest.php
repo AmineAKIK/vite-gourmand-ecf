@@ -31,14 +31,15 @@ final class ConfigurationAdminPresentationContractTest extends TestCase
         self::assertStringContainsString("\$config[\$storageKey] = ''", $source);
     }
 
-    public function testTenantAdminRejectsEveryUnregisteredConfigurationKey(): void
+    public function testTenantAdminRejectsNonEmptyUnregisteredConfigurationKeys(): void
     {
         $source = (string) file_get_contents(
             dirname(__DIR__, 3) . '/src/Controllers/Admin/ParametresController.php',
         );
 
         self::assertStringNotContainsString('cron_secret_token', $source);
-        self::assertStringContainsString('$unexpectedKeys = array_diff(array_keys($_POST), $allowedPostKeys);', $source);
+        self::assertStringContainsString('foreach ($_POST as $postKey => $postValue)', $source);
+        self::assertStringContainsString("trim(\$postValue) !== ''", $source);
         self::assertStringContainsString('ConfigurationRegistry::siteConfigDefinitions()', $source);
     }
 
