@@ -15,11 +15,11 @@ use Throwable;
  * provisioner. This migrator only applies later files from sql/v1/migrations.
  *
  * Guarantees:
+ * - schema mutation is CLI/startup only; HTTP execution is impossible;
  * - one database instance migrates at a time through a MySQL advisory lock;
  * - every applied migration is permanently bound to its SHA-256 checksum;
  * - historical files are never repaired, expanded or tolerated at runtime;
- * - any SQL failure aborts startup; there is no DDL error allow-list;
- * - HTTP schema mutation is disabled by default.
+ * - any SQL failure aborts startup; there is no DDL error allow-list.
  */
 final class Migrator
 {
@@ -31,7 +31,7 @@ final class Migrator
 
     public static function run(): void
     {
-        if (!self::executionAllowed() || self::$ran) {
+        if (PHP_SAPI !== 'cli' || self::$ran) {
             return;
         }
 
@@ -73,15 +73,6 @@ final class Migrator
                 self::releaseLock($db);
             }
         }
-    }
-
-    private static function executionAllowed(): bool
-    {
-        if (PHP_SAPI === 'cli') {
-            return true;
-        }
-
-        return strtolower(Environment::get('TUGERES_ALLOW_HTTP_MIGRATIONS', 'false')) === 'true';
     }
 
     private static function acquireLock(PDO $db): bool
