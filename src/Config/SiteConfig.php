@@ -96,8 +96,12 @@ class SiteConfig
 
     public static function isGeoConfigured(): bool
     {
-        return Configuration::isConfigured('delivery.origin.latitude')
-            && Configuration::isConfigured('delivery.origin.longitude');
+        try {
+            ConfigurationCompleteness::assertDeliveryReady();
+            return true;
+        } catch (ConfigurationIncompleteException) {
+            return false;
+        }
     }
 
     public static function deliveryRadiusKm(): int
