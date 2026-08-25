@@ -3,7 +3,9 @@ FROM php:8.2.33-apache-bookworm
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libzip-dev libcurl4-openssl-dev curl unzip \
     && docker-php-ext-install pdo_mysql zip curl opcache \
-    && a2enmod rewrite headers expires \
+    && rm -f /etc/apache2/mods-enabled/mpm_event.load /etc/apache2/mods-enabled/mpm_event.conf \
+             /etc/apache2/mods-enabled/mpm_worker.load /etc/apache2/mods-enabled/mpm_worker.conf \
+    && a2enmod mpm_prefork rewrite headers expires \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer:2.10.2 /usr/bin/composer /usr/bin/composer
@@ -18,6 +20,7 @@ RUN composer dump-autoload --no-dev --classmap-authoritative --no-interaction \
     && sed -ri 's!/var/www/html!/var/www/html/public!g' /etc/apache2/sites-available/000-default.conf \
     && printf '<Directory /var/www/html/public>\n    AllowOverride All\n    Require all granted\n</Directory>\n' > /etc/apache2/conf-available/tugeres.conf \
     && a2enconf tugeres \
+    && apache2ctl configtest \
     && chmod +x /var/www/html/docker/entrypoint.sh \
     && mkdir -p /var/www/html/public/uploads /var/www/html/storage \
     && chown -R www-data:www-data /var/www/html/public/uploads /var/www/html/storage
