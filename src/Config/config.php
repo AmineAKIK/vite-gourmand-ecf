@@ -2,6 +2,7 @@
 // src/config/config.php
 
 use App\Config\Environment;
+use App\Config\OperatorConfiguration;
 
 $rootDir = dirname(__DIR__, 2);
 $autoload = $rootDir . '/vendor/autoload.php';
@@ -22,9 +23,11 @@ define('DB_USER', Environment::get('DB_USER', 'vg'));
 define('DB_PASS', Environment::get('DB_PASS', 'vg'));
 define('DB_CHARSET', 'utf8mb4');
 
-define('STRIPE_SECRET_KEY', Environment::get('STRIPE_SECRET_KEY'));
-define('STRIPE_PUBLISHABLE_KEY', Environment::get('STRIPE_PUBLISHABLE_KEY'));
-define('STRIPE_WEBHOOK_SECRET', Environment::get('STRIPE_WEBHOOK_SECRET'));
+// Compatibility aliases for legacy Stripe consumers. Resolution and validation
+// are owned by the typed operator registry, not by independent getenv calls.
+define('STRIPE_SECRET_KEY', OperatorConfiguration::string('operator.stripe.secret_key'));
+define('STRIPE_PUBLISHABLE_KEY', OperatorConfiguration::string('operator.stripe.publishable_key'));
+define('STRIPE_WEBHOOK_SECRET', OperatorConfiguration::string('operator.stripe.webhook_secret'));
 
 define('BREVO_API_KEY', Environment::get('BREVO_API_KEY'));
 define('MAIL_FROM', Environment::get('MAIL_FROM', 'noreply@vitegourmand.fr'));
