@@ -2,6 +2,7 @@
 
 namespace App\Config;
 
+use InvalidArgumentException;
 use UnexpectedValueException;
 
 final class DesignTokens
@@ -9,10 +10,26 @@ final class DesignTokens
     /** @return array<string,string> */
     public static function cssVariables(): array
     {
+        return self::fromTheme(
+            self::color('theme.primary_color'),
+            self::color('theme.secondary_color'),
+            self::color('theme.background_color'),
+        );
+    }
+
+    /** @return array<string,string> */
+    public static function fromTheme(string $primary, string $accent, string $background): array
+    {
+        foreach ([$primary, $accent, $background] as $color) {
+            if (!preg_match('/^#[0-9A-Fa-f]{6}$/', $color)) {
+                throw new InvalidArgumentException('Theme colors must use six-digit hexadecimal notation.');
+            }
+        }
+
         return [
-            '--brand-primary' => self::color('theme.primary_color'),
-            '--brand-accent' => self::color('theme.secondary_color'),
-            '--surface-page' => self::color('theme.background_color'),
+            '--brand-primary' => strtoupper($primary),
+            '--brand-accent' => strtoupper($accent),
+            '--surface-page' => strtoupper($background),
             '--surface-card' => '#FFFFFF',
             '--text-primary' => '#1F2937',
             '--text-muted' => '#6B7280',
@@ -40,6 +57,6 @@ final class DesignTokens
             throw new UnexpectedValueException($key . ' must resolve to a six-digit hexadecimal color.');
         }
 
-        return strtoupper($value);
+        return $value;
     }
 }
