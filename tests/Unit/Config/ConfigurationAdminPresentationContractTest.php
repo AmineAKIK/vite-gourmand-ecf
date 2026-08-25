@@ -28,7 +28,7 @@ final class ConfigurationAdminPresentationContractTest extends TestCase
             self::assertStringContainsString("'" . $storageKey . "'", $source);
         }
 
-        self::assertStringContainsString("$config[$storageKey] = ''", $source);
+        self::assertStringContainsString("$config[$storageKey] = ''", str_replace('$config[$storageKey]', '$config[$storageKey]', $source));
     }
 
     public function testTenantAdminCannotPersistCronSecret(): void
@@ -37,7 +37,7 @@ final class ConfigurationAdminPresentationContractTest extends TestCase
             dirname(__DIR__, 3) . '/src/Controllers/Admin/ParametresController.php',
         );
 
-        self::assertStringContainsString("array_key_exists('cron_secret_token', _POST)", str_replace('$', "\u0001", $source));
+        self::assertStringContainsString("array_key_exists('cron_secret_token', $_POST)", $source);
         self::assertStringContainsString('CRON_SECRET_TOKEN', $source);
     }
 
