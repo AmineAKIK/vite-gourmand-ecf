@@ -24,6 +24,7 @@ final class V1BaselineContractTest extends TestCase
         self::assertStringNotContainsString('LegacyAlterTableCompatibility', $this->sql);
         self::assertStringNotContainsString('plat_allergene', $this->sql);
         self::assertStringNotContainsString('allergenes TEXT', $this->sql);
+        self::assertStringNotContainsString('CREATE TABLE geocache', $this->sql);
     }
 
     public function testBaselineContainsCurrentCriticalStructures(): void

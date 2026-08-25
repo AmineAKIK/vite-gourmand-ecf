@@ -71,6 +71,84 @@ jobs:
             echo 'No newly added PHP files to style-check.'
           fi
 
+  v1-database:
+    name: MySQL 8.4 V1 fresh-install gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APP_ENV: production
+      DB_HOST: 127.0.0.1
+      DB_NAME: tugeres_ci
+      DB_USER: tugeres
+      DB_PASS: tugeres
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: tugeres_ci
+          MYSQL_USER: tugeres
+          MYSQL_PASSWORD: tugeres
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql
+          coverage: none
+
+      - name: Install locked dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Prove partial databases fail closed
+        shell: bash
+        run: |
+          set -euo pipefail
+          php -r '$db = new PDO("mysql:host=127.0.0.1;dbname=tugeres_ci;charset=utf8mb4", "tugeres", "tugeres", [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]); $db->exec("CREATE TABLE partial_marker (id INT PRIMARY KEY)");'
+
+          set +e
+          output="$(php bin/migrate.php 2>&1)"
+          status=$?
+          set -e
+
+          printf '%s\n' "$output"
+          test "$status" -ne 0
+          grep -F 'schéma incomplet/incompatible' <<< "$output"
+
+          php -r '$db = new PDO("mysql:host=127.0.0.1;dbname=tugeres_ci;charset=utf8mb4", "tugeres", "tugeres", [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION]); $db->exec("DROP TABLE partial_marker");'
+
+      - name: Provision a truly empty V1 database
+        run: php bin/migrate.php
+
+      - name: Verify canonical schema and snapshot fingerprint
+        shell: bash
+        run: |
+          set -euo pipefail
+          php bin/verify-v1-schema.php
+          php bin/verify-v1-schema.php --fingerprint > /tmp/v1-before.json
+
+      - name: Re-run provisioning to prove idempotence
+        run: php bin/migrate.php
+
+      - name: Prove second pass is a schema no-op
+        shell: bash
+        run: |
+          set -euo pipefail
+          php bin/verify-v1-schema.php --fingerprint > /tmp/v1-after.json
+          cmp /tmp/v1-before.json /tmp/v1-after.json
+
   docker:
     name: Production image build
     runs-on: ubuntu-latest

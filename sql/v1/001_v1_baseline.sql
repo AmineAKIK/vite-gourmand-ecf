@@ -6,9 +6,6 @@
 --   * It contains the final schema directly; no pre-release transition is replayed.
 --   * Tenant branding, catalogue/demo content and commercial policy values are NOT seeded here.
 --   * Product/market reference data is seeded only when stable identifiers are required by the runtime.
---
--- IMPORTANT: this baseline is intentionally not wired into the current production migrator yet.
--- PR C/D will switch fresh provisioning to this contract after review.
 
 SET NAMES utf8mb4;
 SET time_zone = '+00:00';
@@ -97,13 +94,6 @@ CREATE TABLE horaire (
     heure_ouverture VARCHAR(10) NULL,
     heure_fermeture VARCHAR(10) NULL,
     CONSTRAINT uk_horaire_jour UNIQUE (jour)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
-
-CREATE TABLE geocache (
-    ville_key VARCHAR(191) PRIMARY KEY,
-    lat DECIMAL(10,7) NOT NULL,
-    lng DECIMAL(10,7) NOT NULL,
-    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- -----------------------------------------------------------------------------
