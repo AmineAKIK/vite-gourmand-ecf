@@ -4,18 +4,12 @@
     <div class="row g-2">
         <?php foreach ($platsByCategorie as $categorie => $platsGroupe): ?>
         <div class="col-12 col-lg-4">
-            <p class="fw-semibold small text-vg mb-1"><?= sanitize($categorie) ?></p>
+            <p class="fw-semibold small text-brand mb-1"><?= sanitize($categorie) ?></p>
             <?php foreach ($platsGroupe as $plat): ?>
-            <?php $inputId = ($idPrefix ?? 'plat') . '-' . (int)$plat['plat_id']; ?>
+            <?php $inputId = ($idPrefix ?? 'plat') . '-' . (int) $plat['plat_id']; ?>
             <div class="form-check">
-                <input class="form-check-input" type="checkbox"
-                    name="plats[]"
-                    value="<?= (int)$plat['plat_id'] ?>"
-                    id="<?= sanitize($inputId) ?>"
-                    <?= in_array((int)$plat['plat_id'], $selectedPlatIds ?? [], true) ? 'checked' : '' ?>>
-                <label class="form-check-label small" for="<?= sanitize($inputId) ?>">
-                    <?= sanitize($plat['titre']) ?>
-                </label>
+                <input class="form-check-input" type="checkbox" name="plats[]" value="<?= (int) $plat['plat_id'] ?>" id="<?= sanitize($inputId) ?>" <?= in_array((int) $plat['plat_id'], $selectedPlatIds ?? [], true) ? 'checked' : '' ?>>
+                <label class="form-check-label small" for="<?= sanitize($inputId) ?>"><?= sanitize($plat['titre']) ?></label>
             </div>
             <?php endforeach; ?>
         </div>

@@ -148,7 +148,7 @@ $nbUtilises = count(array_filter($coutsMatiere ?? [], fn($row) => (int)($row['nb
                     <input type="date" class="form-control form-control-sm" id="filtre-fin" name="date_fin" value="<?= sanitize($dateFin ?? '') ?>">
                 </div>
                 <div class="col-12 col-xl-2 d-flex gap-2">
-                    <button type="submit" class="btn btn-vg btn-sm flex-grow-1"><i class="bi bi-funnel me-1"></i>Filtrer</button>
+                    <button type="submit" class="btn btn-brand btn-sm flex-grow-1"><i class="bi bi-funnel me-1"></i>Filtrer</button>
                     <a href="/admin/stats" class="btn btn-outline-secondary btn-sm <?= $activeFilters ? '' : 'disabled' ?>">Réinitialiser</a>
                 </div>
             </form>
@@ -222,7 +222,7 @@ $nbUtilises = count(array_filter($coutsMatiere ?? [], fn($row) => (int)($row['nb
                                             <td class="text-end text-nowrap text-muted"><?= sanitize(formatPrice($tva)) ?></td>
                                         <?php endif; ?>
                                         <td class="text-end"><?= sanitize(number_format($share, 0, ',', ' ')) ?> %</td>
-                                        <td class="text-end fw-bold text-vg text-nowrap"><?= sanitize(formatPrice($ca)) ?></td>
+                                        <td class="text-end fw-bold text-brand text-nowrap"><?= sanitize(formatPrice($ca)) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -236,7 +236,7 @@ $nbUtilises = count(array_filter($coutsMatiere ?? [], fn($row) => (int)($row['nb
                                         <td class="text-end text-nowrap text-muted"><?= sanitize(formatPrice($menuSalesTva)) ?></td>
                                     <?php endif; ?>
                                     <td class="text-end">100 %</td>
-                                    <td class="text-end fw-bold text-vg text-nowrap"><?= sanitize(formatPrice($menuSalesTtc)) ?></td>
+                                    <td class="text-end fw-bold text-brand text-nowrap"><?= sanitize(formatPrice($menuSalesTtc)) ?></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -275,7 +275,7 @@ $nbUtilises = count(array_filter($coutsMatiere ?? [], fn($row) => (int)($row['nb
                                             <td class="text-end text-nowrap"><?= sanitize(formatPrice($mois['ca_ht'] ?? 0)) ?></td>
                                             <td class="text-end text-nowrap text-muted"><?= sanitize(formatPrice($mois['tva_collectee'] ?? 0)) ?></td>
                                         <?php endif; ?>
-                                        <td class="text-end fw-bold text-vg text-nowrap"><?= sanitize(formatPrice($mois['ca_ttc'] ?? 0)) ?></td>
+                                        <td class="text-end fw-bold text-brand text-nowrap"><?= sanitize(formatPrice($mois['ca_ttc'] ?? 0)) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -343,7 +343,7 @@ $nbUtilises = count(array_filter($coutsMatiere ?? [], fn($row) => (int)($row['nb
                 <div class="col-12 col-lg-4">
                     <div class="card h-100 shadow-sm comptabilite-export-card">
                         <div class="card-body d-flex flex-column">
-                            <div class="comptabilite-export-icon mb-3"><i class="bi <?= sanitize($export['icon']) ?> text-vg" style="font-size:2rem"></i></div>
+                            <div class="comptabilite-export-icon mb-3"><i class="bi <?= sanitize($export['icon']) ?> text-brand" style="font-size:2rem"></i></div>
                             <h3 class="h6 fw-bold mb-1"><?= sanitize($export['title']) ?></h3>
                             <p class="small text-muted flex-grow-1"><?= sanitize($export['description']) ?></p>
                             <form method="GET" action="/admin/comptabilite/export" class="comptabilite-export-form mt-2">
@@ -358,7 +358,7 @@ $nbUtilises = count(array_filter($coutsMatiere ?? [], fn($row) => (int)($row['nb
                                         <input type="date" class="form-control form-control-sm" name="date_fin" value="<?= date('Y-m-d') ?>">
                                     </div>
                                 </div>
-                                <button type="submit" class="btn btn-vg btn-sm w-100"><i class="bi bi-download me-1"></i>Télécharger</button>
+                                <button type="submit" class="btn btn-brand btn-sm w-100"><i class="bi bi-download me-1"></i>Télécharger</button>
                             </form>
                         </div>
                     </div>

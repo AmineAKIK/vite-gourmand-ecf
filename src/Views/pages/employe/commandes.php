@@ -92,7 +92,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                 <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#filtres-avances-commandes" aria-expanded="<?= $activeAdvancedFilters ? 'true' : 'false' ?>" aria-controls="filtres-avances-commandes">
                     <i class="bi bi-sliders me-1"></i>Avancés
                 </button>
-                <button type="submit" class="btn btn-vg btn-sm" aria-label="Appliquer les filtres">
+                <button type="submit" class="btn btn-brand btn-sm" aria-label="Appliquer les filtres">
                     <i class="bi bi-funnel me-1"></i>Filtrer
                 </button>
                 <a href="/employe/commandes" class="btn btn-outline-secondary btn-sm btn-reset-filters">
@@ -142,10 +142,10 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
     <!-- Toggle vue Liste / Calendrier -->
     <div class="d-flex align-items-center gap-2 mb-3">
         <div class="btn-group" role="group" aria-label="Mode d'affichage">
-            <button type="button" class="btn btn-sm btn-vg active" id="btn-vue-liste" aria-pressed="true">
+            <button type="button" class="btn btn-sm btn-brand active" id="btn-vue-liste" aria-pressed="true">
                 <i class="bi bi-list-ul me-1"></i>Liste
             </button>
-            <button type="button" class="btn btn-sm btn-vg-outline" id="btn-vue-calendrier" aria-pressed="false">
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-vue-calendrier" aria-pressed="false">
                 <i class="bi bi-calendar3 me-1"></i>Calendrier
             </button>
         </div>
@@ -225,7 +225,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                         <div><dt>Commande</dt><dd><code><?= sanitize($cmd['numero_commande'] ?? '') ?></code></dd></div>
                                     </dl>
                                     <?php if (!empty($cmd['instructions'])): ?>
-                                    <div class="mt-2 p-2 rounded small" style="background:var(--vg-creme);border-left:3px solid var(--vg-or)">
+                                    <div class="mt-2 p-2 rounded small" style="background:var(--surface-page);border-left:3px solid var(--brand-secondary)">
                                         <strong><i class="bi bi-chat-left-text me-1"></i>Remarques client :</strong>
                                         <?= nl2br(sanitize($cmd['instructions'])) ?>
                                     </div>
@@ -377,7 +377,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                                 <tfoot>
                                                     <tr>
                                                         <th colspan="6" class="text-end commande-total-label">Total commande</th>
-                                                        <th class="text-end text-nowrap text-vg commande-total-value"><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></th>
+                                                        <th class="text-end text-nowrap text-brand commande-total-value"><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></th>
                                                     </tr>
                                                 </tfoot>
                                             </table>
@@ -424,7 +424,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                                     ></textarea>
                                                 </div>
 
-                                                <button type="submit" class="btn btn-vg btn-sm" aria-label="Mettre à jour le statut de la commande" <?= empty($statutsDisponibles) ? 'disabled' : '' ?>>
+                                                <button type="submit" class="btn btn-brand btn-sm" aria-label="Mettre à jour le statut de la commande" <?= empty($statutsDisponibles) ? 'disabled' : '' ?>>
                                                     <i class="bi bi-check-lg me-1"></i>Mettre à jour
                                                 </button>
                                             </div>
@@ -451,7 +451,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                             <?php if ($soldeRestant > 0): ?>
                                             <div class="commande-paiement-row">
                                                 <span class="text-muted small">Solde restant</span>
-                                                <strong class="text-vg"><?= sanitize(formatPrice($soldeRestant)) ?></strong>
+                                                <strong class="text-brand"><?= sanitize(formatPrice($soldeRestant)) ?></strong>
                                             </div>
                                             <?php endif; ?>
                                         </div>
@@ -541,7 +541,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                                                placeholder="N° virement, chèque...">
                                                     </div>
                                                     <div class="col-12 text-end">
-                                                        <button type="submit" class="btn btn-vg btn-sm">
+                                                        <button type="submit" class="btn btn-brand btn-sm">
                                                             <i class="bi bi-check-lg me-1"></i>Enregistrer
                                                         </button>
                                                     </div>

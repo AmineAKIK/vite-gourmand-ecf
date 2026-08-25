@@ -139,10 +139,10 @@ $activeTab = $_GET['tab'] ?? 'identite';
                             <label class="form-label fw-medium" for="couleur_principale">Couleur principale</label>
                             <div class="input-group">
                                 <input type="color" class="form-control form-control-color" id="couleur_principale_picker"
-                                       value="<?= $cfg('couleur_principale', '#8B1A2B') ?>"
+                                       value="<?= $cfg('couleur_principale', '#64748B') ?>"
                                        oninput="document.getElementById('couleur_principale').value=this.value">
                                 <input type="text" class="form-control" id="couleur_principale" name="couleur_principale"
-                                       value="<?= $cfg('couleur_principale', '#8B1A2B') ?>" maxlength="7"
+                                       value="<?= $cfg('couleur_principale', '#64748B') ?>" maxlength="7"
                                        pattern="^#[0-9A-Fa-f]{6}$"
                                        oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value))document.getElementById('couleur_principale_picker').value=this.value">
                             </div>
@@ -151,10 +151,10 @@ $activeTab = $_GET['tab'] ?? 'identite';
                             <label class="form-label fw-medium" for="couleur_secondaire">Couleur secondaire</label>
                             <div class="input-group">
                                 <input type="color" class="form-control form-control-color" id="couleur_secondaire_picker"
-                                       value="<?= $cfg('couleur_secondaire', '#D4A843') ?>"
+                                       value="<?= $cfg('couleur_secondaire', '#6B7280') ?>"
                                        oninput="document.getElementById('couleur_secondaire').value=this.value">
                                 <input type="text" class="form-control" id="couleur_secondaire" name="couleur_secondaire"
-                                       value="<?= $cfg('couleur_secondaire', '#D4A843') ?>" maxlength="7"
+                                       value="<?= $cfg('couleur_secondaire', '#6B7280') ?>" maxlength="7"
                                        pattern="^#[0-9A-Fa-f]{6}$"
                                        oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value))document.getElementById('couleur_secondaire_picker').value=this.value">
                             </div>
@@ -163,19 +163,19 @@ $activeTab = $_GET['tab'] ?? 'identite';
                             <label class="form-label fw-medium" for="couleur_fond">Couleur de fond</label>
                             <div class="input-group">
                                 <input type="color" class="form-control form-control-color" id="couleur_fond_picker"
-                                       value="<?= $cfg('couleur_fond', '#FDF6EC') ?>"
+                                       value="<?= $cfg('couleur_fond', '#FFFFFF') ?>"
                                        oninput="document.getElementById('couleur_fond').value=this.value">
                                 <input type="text" class="form-control" id="couleur_fond" name="couleur_fond"
-                                       value="<?= $cfg('couleur_fond', '#FDF6EC') ?>" maxlength="7"
+                                       value="<?= $cfg('couleur_fond', '#FFFFFF') ?>" maxlength="7"
                                        pattern="^#[0-9A-Fa-f]{6}$"
                                        oninput="if(/^#[0-9A-Fa-f]{6}$/.test(this.value))document.getElementById('couleur_fond_picker').value=this.value">
                             </div>
                         </div>
                         <div class="col-12 col-lg-6 align-self-end">
-                            <div class="p-3 rounded d-flex gap-3 align-items-center" style="background:var(--vg-creme)">
-                                <span class="fw-semibold" style="color:var(--vg-bordeaux)">Aperçu →</span>
-                                <span class="badge" id="preview-badge" style="background:var(--vg-bordeaux);color:#fff">Principale</span>
-                                <span class="badge" id="preview-badge2" style="background:var(--vg-or);color:#fff">Secondaire</span>
+                            <div class="p-3 rounded d-flex gap-3 align-items-center" style="background:var(--surface-page)">
+                                <span class="fw-semibold" style="color:var(--brand-primary)">Aperçu →</span>
+                                <span class="badge" id="preview-badge" style="background:var(--brand-primary);color:#fff">Principale</span>
+                                <span class="badge" id="preview-badge2" style="background:var(--brand-secondary);color:#fff">Secondaire</span>
                             </div>
                         </div>
                     </div>
@@ -232,7 +232,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                         </div>
                     </div>
 
-                    <button type="submit" class="btn btn-vg">
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-save me-1"></i>Enregistrer l'identité
                     </button>
                 </form>
@@ -250,7 +250,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
             <!-- Textes hero -->
             <div class="card shadow-sm mb-4">
                 <div class="card-header fw-semibold">
-                    <i class="bi bi-type me-2 text-vg"></i>Textes de la page d'accueil
+                    <i class="bi bi-type me-2 text-brand"></i>Textes de la page d'accueil
                 </div>
                 <div class="card-body d-flex flex-column gap-4">
                     <div>
@@ -283,7 +283,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
             <!-- Images -->
             <div class="card shadow-sm mb-4">
                 <div class="card-header fw-semibold">
-                    <i class="bi bi-images me-2 text-vg"></i>Images du site
+                    <i class="bi bi-images me-2 text-brand"></i>Images du site
                 </div>
                 <div class="card-body">
                     <div class="row g-4">
@@ -362,7 +362,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-vg">
+            <button type="submit" class="btn btn-brand">
                 <i class="bi bi-save me-1"></i>Enregistrer la personnalisation
             </button>
         </form>
@@ -379,9 +379,9 @@ $activeTab = $_GET['tab'] ?? 'identite';
                     <table class="table align-middle mb-0" aria-label="Horaires d'ouverture">
                         <thead>
                             <tr style="background:rgba(0,0,0,.03); border-bottom:1px solid rgba(0,0,0,.08);">
-                                <th scope="col" class="ps-3 text-vg fw-semibold">Jour</th>
-                                <th scope="col" class="text-vg fw-semibold">Ouverture</th>
-                                <th scope="col" class="text-vg fw-semibold pe-3">Fermeture</th>
+                                <th scope="col" class="ps-3 text-brand fw-semibold">Jour</th>
+                                <th scope="col" class="text-brand fw-semibold">Ouverture</th>
+                                <th scope="col" class="text-brand fw-semibold pe-3">Fermeture</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -408,7 +408,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                     </table>
                 </div>
                 <div class="d-flex gap-2 p-3 border-top">
-                    <button type="submit" class="btn btn-vg">
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-save me-1"></i>Enregistrer les horaires
                     </button>
                 </div>
@@ -496,7 +496,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                     </div>
 
                     <div class="mt-3">
-                        <button type="submit" class="btn btn-vg">
+                        <button type="submit" class="btn btn-brand">
                             <i class="bi bi-save me-1"></i>Enregistrer entreprise
                         </button>
                     </div>
@@ -544,7 +544,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                     </div>
 
                     <div class="mt-3">
-                        <button type="submit" class="btn btn-vg">
+                        <button type="submit" class="btn btn-brand">
                             <i class="bi bi-save me-1"></i>Enregistrer régime fiscal
                         </button>
                     </div>
@@ -640,7 +640,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                                        placeholder="Art. 278bis CGI…" maxlength="255">
                             </div>
                             <div class="col-12">
-                                <button type="submit" class="btn btn-vg btn-sm">
+                                <button type="submit" class="btn btn-brand btn-sm">
                                     <i class="bi bi-plus me-1"></i>Créer le taux
                                 </button>
                             </div>
@@ -707,9 +707,9 @@ $activeTab = $_GET['tab'] ?? 'identite';
                         </div>
                     </div>
 
-                    <div class="p-3 rounded mb-3" style="background:var(--vg-creme)">
+                    <div class="p-3 rounded mb-3" style="background:var(--surface-page)">
                         <small class="text-muted">
-                            <i class="bi bi-info-circle me-1 text-vg"></i>
+                            <i class="bi bi-info-circle me-1 text-brand"></i>
                             Exemple : seuil <strong id="prev-seuil"><?= $cfg('reduction_seuil', '100.00') ?> €</strong>,
                             taux <strong id="prev-taux"><?= $cfg('reduction_taux', '10') ?>%</strong>
                             → réduction de <strong id="prev-montant"><?= number_format($reductionExAmt, 2) ?> €</strong>
@@ -717,7 +717,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                         </small>
                     </div>
 
-                    <button type="submit" class="btn btn-vg">
+                    <button type="submit" class="btn btn-brand">
                         <i class="bi bi-save me-1"></i>Enregistrer tarification
                     </button>
                 </form>
@@ -778,7 +778,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                     </div>
 
                     <div class="mt-3">
-                        <button type="submit" class="btn btn-vg">
+                        <button type="submit" class="btn btn-brand">
                             <i class="bi bi-save me-1"></i>Enregistrer conditions
                         </button>
                     </div>
@@ -824,7 +824,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                         </div>
                     </div>
                     <div class="mt-3">
-                        <button type="submit" class="btn btn-vg">
+                        <button type="submit" class="btn btn-brand">
                             <i class="bi bi-save me-1"></i>Enregistrer les pages légales
                         </button>
                     </div>
@@ -869,7 +869,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                             <div class="form-text">Chaîne aléatoire longue — utilisée comme clé secrète dans l'URL cron.</div>
                         </div>
                     </div>
-                    <button type="submit" class="btn btn-vg mt-3">
+                    <button type="submit" class="btn btn-brand mt-3">
                         <i class="bi bi-save me-1"></i>Enregistrer
                     </button>
                 </form>
@@ -928,9 +928,9 @@ $activeTab = $_GET['tab'] ?? 'identite';
         input.addEventListener('input', function () { apply(this.value); });
         if (picker) picker.addEventListener('input', function () { apply(this.value); });
     }
-    bindColor('couleur_principale', 'couleur_principale_picker', '--vg-bordeaux', 'preview-badge');
-    bindColor('couleur_secondaire', 'couleur_secondaire_picker', '--vg-or', 'preview-badge2');
-    bindColor('couleur_fond',       'couleur_fond_picker',       '--vg-creme', null);
+    bindColor('couleur_principale', 'couleur_principale_picker', '--brand-primary', 'preview-badge');
+    bindColor('couleur_secondaire', 'couleur_secondaire_picker', '--brand-secondary', 'preview-badge2');
+    bindColor('couleur_fond',       'couleur_fond_picker',       '--surface-page', null);
 
     // Exemple réduction
     var seuil    = document.getElementById('reduction_seuil');

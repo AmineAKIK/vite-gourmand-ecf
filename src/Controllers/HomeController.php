@@ -2,19 +2,29 @@
 
 namespace App\Controllers;
 
+use App\Config\Configuration;
 use App\Models\AvisModel;
-use App\Models\SiteConfigModel;
 use App\Models\SiteImageModel;
 
-class HomeController {
-    public function index(): void {
-        $avisValides   = AvisModel::getHomepage();
-        $siteImages    = SiteImageModel::getAll();
-        $heroUrl        = imageUrl($siteImages['hero']        ?? null, 'images/hero-traiteur.webp');
-        $preparationUrl = imageUrl($siteImages['preparation'] ?? null, 'images/preparation-traiteur-generique.webp');
-        $preloadImages   = [$heroUrl];
-        $heroSousTitre   = SiteConfigModel::get('hero_sous_titre', siteSlogan());
-        $heroParagraphe  = SiteConfigModel::get('hero_paragraphe', '');
-        view('pages/home', compact('avisValides', 'preloadImages', 'heroUrl', 'preparationUrl', 'heroSousTitre', 'heroParagraphe'));
+class HomeController
+{
+    public function index(): void
+    {
+        $avisValides = AvisModel::getHomepage();
+        $siteImages = SiteImageModel::getAll();
+        $heroUrl = isset($siteImages['hero']) && $siteImages['hero'] !== ''
+            ? imageUrl($siteImages['hero'], '')
+            : null;
+        $preloadImages = $heroUrl !== null ? [$heroUrl] : [];
+        $heroSousTitre = Configuration::get('content.home.hero_subtitle');
+        $heroParagraphe = Configuration::get('content.home.hero_paragraph');
+
+        view('pages/home', compact(
+            'avisValides',
+            'preloadImages',
+            'heroUrl',
+            'heroSousTitre',
+            'heroParagraphe',
+        ));
     }
 }

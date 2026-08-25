@@ -30,7 +30,7 @@ $archiveStatus = $document['archive_status'] ?? null;
             <i class="bi bi-pencil me-1"></i>Retour éditeur
         </a>
         <?php endif; ?>
-        <button type="button" class="btn btn-vg btn-sm" data-print-document>
+        <button type="button" class="btn btn-brand btn-sm" data-print-document>
             <i class="bi bi-printer me-1"></i>Imprimer
         </button>
         <a href="/employe/document/pdf?id=<?= (int)$document['document_id'] ?>" class="btn btn-outline-secondary btn-sm" <?= $isFinalise ? '' : 'aria-disabled="true" tabindex="-1" style="pointer-events:none;opacity:.5"' ?>>

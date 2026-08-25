@@ -11,7 +11,8 @@ class SiteConfig
     private static ?array $cache = null;
 
     /**
-     * Legacy presentation access only. Commercial settings must use Configuration.
+     * Compatibility access for persisted presentation fields not migrated to a canonical key yet.
+     * New code must use Configuration directly.
      */
     public static function get(string $key, string|float|int $default = ''): string
     {
@@ -29,42 +30,42 @@ class SiteConfig
 
     public static function name(): string
     {
-        return self::get('site_nom', 'Mon Traiteur');
+        return self::requiredString('brand.name');
     }
 
     public static function slogan(): string
     {
-        return self::get('site_slogan', 'Traiteur');
+        return self::optionalString('brand.slogan');
     }
 
     public static function domain(): string
     {
-        return self::get('site_domaine', $_SERVER['HTTP_HOST'] ?? 'localhost');
+        return self::optionalString('brand.domain');
     }
 
     public static function email(): string
     {
-        return self::get('site_email', MAIL_FROM);
+        return self::requiredString('contact.email');
     }
 
     public static function phone(): string
     {
-        return self::get('site_telephone', '');
+        return self::requiredString('contact.phone');
     }
 
     public static function address(): string
     {
-        return self::get('site_adresse', '');
+        return self::optionalString('contact.address.line1');
     }
 
     public static function postalCode(): string
     {
-        return self::get('site_code_postal', '');
+        return self::optionalString('contact.address.postal_code');
     }
 
     public static function city(): string
     {
-        return self::get('site_ville', '');
+        return self::optionalString('contact.address.city');
     }
 
     public static function fullAddress(): string
@@ -75,13 +76,14 @@ class SiteConfig
 
     public static function color(string $key = 'couleur_principale'): string
     {
-        $defaults = [
-            'couleur_principale' => '#8B1A2B',
-            'couleur_secondaire' => '#D4A843',
-            'couleur_fond' => '#FDF6EC',
-        ];
+        $canonical = match ($key) {
+            'couleur_principale' => 'theme.primary_color',
+            'couleur_secondaire' => 'theme.secondary_color',
+            'couleur_fond' => 'theme.background_color',
+            default => throw new UnexpectedValueException('Unknown theme color key: ' . $key),
+        };
 
-        return self::get($key, $defaults[$key] ?? '#333333');
+        return self::requiredString($canonical);
     }
 
     public static function lat(): float
@@ -163,15 +165,36 @@ class SiteConfig
     public static function deliveryPricingLabel(): string
     {
         return 'Livraison gratuite à ' . self::city() . '. '
-            . number_format(self::deliveryBase(), 2, ',', ' ') . ' €'
-            . ' + '
-            . number_format(self::deliveryKm(), 2, ',', ' ')
-            . ' €/km au-delà.';
+            . number_format(self::deliveryBase(), 2, ',', ' ') . ' € + '
+            . number_format(self::deliveryKm(), 2, ',', ' ') . ' €/km au-delà.';
     }
 
     public static function commandesMaxParJour(): int
     {
         return self::requiredInt('order.capacity.max_per_day');
+    }
+
+    private static function requiredString(string $key): string
+    {
+        $value = Configuration::get($key);
+        if (!is_string($value) || trim($value) === '') {
+            throw new UnexpectedValueException($key . ' must resolve to a non-empty string.');
+        }
+
+        return $value;
+    }
+
+    private static function optionalString(string $key): string
+    {
+        $value = Configuration::get($key);
+        if ($value === null) {
+            return '';
+        }
+        if (!is_string($value)) {
+            throw new UnexpectedValueException($key . ' must resolve to a string.');
+        }
+
+        return $value;
     }
 
     private static function requiredFloat(string $key): float

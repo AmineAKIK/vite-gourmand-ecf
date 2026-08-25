@@ -8,11 +8,11 @@ $statutIndex   = array_search($statutActuel, $statuts);
 <div class="container py-5 suivi-page">
 
     <div class="mb-4 d-flex align-items-center gap-3 flex-wrap">
-        <a href="/mon-compte" class="btn btn-vg-outline btn-sm">
+        <a href="/mon-compte" class="btn btn-outline-secondary btn-sm">
             <i class="bi bi-arrow-left me-1"></i>Mes commandes
         </a>
         <h1 class="h3 fw-bold mb-0">
-            Suivi — <span class="text-vg"><?= sanitize($commande['numero_commande'] ?? '') ?></span>
+            Suivi — <span class="text-brand"><?= sanitize($commande['numero_commande'] ?? '') ?></span>
         </h1>
         <?= commandeStatusBadge($statutActuel) ?>
     </div>
@@ -70,7 +70,7 @@ $statutIndex   = array_search($statutActuel, $statuts);
         <div class="col-lg-5">
             <div class="card h-100 shadow-sm">
                 <div class="card-header fw-semibold">
-                    <i class="bi bi-receipt me-2 text-vg"></i>Récapitulatif
+                    <i class="bi bi-receipt me-2 text-brand"></i>Récapitulatif
                 </div>
                 <div class="card-body">
                     <dl class="mb-0 small">
@@ -97,14 +97,14 @@ $statutIndex   = array_search($statutActuel, $statuts);
                         </div>
                         <div class="d-flex align-items-baseline gap-2 mb-0">
                             <dt class="text-muted fw-normal suivi-dt">Total</dt>
-                            <dd class="mb-0"><strong class="text-vg"><?= sanitize(formatPrice($commande['prix_total'] ?? 0)) ?></strong></dd>
+                            <dd class="mb-0"><strong class="text-brand"><?= sanitize(formatPrice($commande['prix_total'] ?? 0)) ?></strong></dd>
                         </div>
                     </dl>
 
                     <hr class="my-3">
 
                     <a href="/contact?sujet=<?= urlencode('Commande #' . ($commande['numero_commande'] ?? '')) ?>"
-                       class="btn btn-vg-outline btn-sm w-100">
+                       class="btn btn-outline-secondary btn-sm w-100">
                         <i class="bi bi-chat-dots me-2"></i>Contacter le traiteur
                     </a>
                 </div>
@@ -115,7 +115,7 @@ $statutIndex   = array_search($statutActuel, $statuts);
         <div class="col-lg-7">
             <div class="card shadow-sm">
                 <div class="card-header fw-semibold">
-                    <i class="bi bi-clock-history me-2 text-vg"></i>Historique
+                    <i class="bi bi-clock-history me-2 text-brand"></i>Historique
                 </div>
                 <div class="card-body">
                     <?php if (empty($historique)): ?>
@@ -125,7 +125,7 @@ $statutIndex   = array_search($statutActuel, $statuts);
                         <?php foreach ($historique as $i => $h): ?>
                         <li class="d-flex gap-3 <?= $i < count($historique) - 1 ? 'mb-4' : '' ?>">
                             <div class="d-flex flex-column align-items-center">
-                                <div class="rounded-circle bg-vg d-flex align-items-center justify-content-center text-white"
+                                <div class="rounded-circle bg-brand d-flex align-items-center justify-content-center text-white"
                                      style="width:34px;height:34px;min-width:34px;" aria-hidden="true">
                                     <?php if ($i === 0): ?>
                                         <i class="bi bi-flag-fill fs-6"></i>
@@ -187,11 +187,11 @@ $statutIndex   = array_search($statutActuel, $statuts);
     font-size: 1rem; position: relative; z-index: 1;
     transition: background .2s;
 }
-.suivi-step--done .suivi-step-icon    { background: var(--vg-bordeaux, #8B1A2B); color: #fff; }
-.suivi-step--current .suivi-step-icon { background: var(--vg-or, #D4A843); color: #fff; box-shadow: 0 0 0 4px rgba(212,168,67,.25); }
+.suivi-step--done .suivi-step-icon    { background: var(--brand-primary, #64748B); color: #fff; }
+.suivi-step--current .suivi-step-icon { background: var(--brand-secondary, #6B7280); color: #fff; box-shadow: 0 0 0 4px rgba(212,168,67,.25); }
 .suivi-step--pending .suivi-step-icon { background: #e9ecef; color: #adb5bd; }
 .suivi-step-label { font-size: .7rem; margin-top: .35rem; color: #6c757d; line-height: 1.2; }
-.suivi-step--done .suivi-step-label    { color: var(--vg-bordeaux, #8B1A2B); font-weight: 600; }
+.suivi-step--done .suivi-step-label    { color: var(--brand-primary, #64748B); font-weight: 600; }
 .suivi-step--current .suivi-step-label { color: #856404; font-weight: 700; }
 
 .suivi-step-connector {
@@ -202,5 +202,5 @@ $statutIndex   = array_search($statutActuel, $statuts);
     z-index: 0;
 }
 .suivi-step--done + .suivi-step .suivi-step-connector,
-.suivi-step--done .suivi-step-connector { background: var(--vg-bordeaux, #8B1A2B); }
+.suivi-step--done .suivi-step-connector { background: var(--brand-primary, #64748B); }
 </style>

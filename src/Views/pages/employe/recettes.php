@@ -42,7 +42,7 @@ $activeTab = $_GET['tab'] ?? 'recettes';
                     <span class="fw-semibold me-2"><?= sanitize($plat['titre']) ?></span>
                     <span class="badge bg-secondary me-2"><?= sanitize($plat['categorie']) ?></span>
                     <?php if ($cout > 0): ?>
-                        <span class="badge" style="background:var(--vg-primary)">Coût : <?= sanitize(formatPrice($cout)) ?>/portion</span>
+                        <span class="badge" style="background:var(--brand-primary)">Coût : <?= sanitize(formatPrice($cout)) ?>/portion</span>
                     <?php else: ?>
                         <span class="badge bg-light text-muted">Aucune recette</span>
                     <?php endif; ?>
@@ -97,7 +97,7 @@ $activeTab = $_GET['tab'] ?? 'recettes';
                             <?php endif; ?>
                         </div>
 
-                        <button type="submit" class="btn btn-vg btn-sm">
+                        <button type="submit" class="btn btn-brand btn-sm">
                             <i class="bi bi-save me-1"></i>Enregistrer la fiche
                         </button>
                     </form>
@@ -142,7 +142,7 @@ $activeTab = $_GET['tab'] ?? 'recettes';
                     <input type="number" name="seuil_alerte" class="form-control" step="0.001" min="0" placeholder="optionnel">
                 </div>
                 <div class="col-12 col-lg-2 d-flex align-items-end">
-                    <button type="submit" class="btn btn-vg w-100"><i class="bi bi-plus-circle me-1"></i>Créer</button>
+                    <button type="submit" class="btn btn-brand w-100"><i class="bi bi-plus-circle me-1"></i>Créer</button>
                 </div>
             </form>
         </div>
@@ -235,7 +235,7 @@ $activeTab = $_GET['tab'] ?? 'recettes';
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
-                        <button type="submit" class="btn btn-vg">Enregistrer</button>
+                        <button type="submit" class="btn btn-brand">Enregistrer</button>
                     </div>
                 </form>
             </div>
@@ -278,7 +278,7 @@ $activeTab = $_GET['tab'] ?? 'recettes';
                     <input type="text" name="motif" class="form-control" maxlength="200" placeholder="optionnel">
                 </div>
                 <div class="col-12 col-lg-1 d-flex align-items-end">
-                    <button type="submit" class="btn btn-vg w-100"><i class="bi bi-plus-circle"></i></button>
+                    <button type="submit" class="btn btn-brand w-100"><i class="bi bi-plus-circle"></i></button>
                 </div>
             </form>
         </div>

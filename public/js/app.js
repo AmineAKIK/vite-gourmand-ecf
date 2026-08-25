@@ -1,21 +1,18 @@
-// public/js/app.js
-
 (function () {
     function isAbortError(error) {
         return error && (error.name === 'AbortError' || error.code === 20);
     }
 
-    window.vgIsAbortError = isAbortError;
+    window.tugeresIsAbortError = isAbortError;
 
-    window.vgFetchJson = async function (url, options) {
+    window.tugeresFetchJson = async function (url, options) {
         options = options || {};
         var headers = new Headers(options.headers || {});
         headers.set('X-Requested-With', 'XMLHttpRequest');
         headers.set('Accept', 'application/json');
 
-        var response = await fetch(url, Object.assign({}, options, { headers: headers }));
+        var response = await fetch(url, Object.assign({}, options, {headers: headers}));
         var data = null;
-
         try {
             data = await response.json();
         } catch (error) {
@@ -33,24 +30,18 @@
         return data;
     };
 
-    window.vgDebounce = function (fn, delay) {
+    window.tugeresDebounce = function (fn, delay) {
         var timer = null;
         return function () {
             var args = arguments;
             var context = this;
             clearTimeout(timer);
-            timer = setTimeout(function () {
-                fn.apply(context, args);
-            }, delay);
+            timer = setTimeout(function () { fn.apply(context, args); }, delay);
         };
     };
 }());
 
 document.addEventListener('DOMContentLoaded', function () {
-    /* Réouverture automatique d'un modal après erreur de validation côté serveur
-       Le serveur redirige avec ?open_modal=xxx&modal_error=message
-       URLSearchParams décode déjà les paramètres ; ne pas rappeler decodeURIComponent().
-    */
     var params = new URLSearchParams(window.location.search);
     var openModal = params.get('open_modal');
     var modalError = params.get('modal_error');
@@ -72,44 +63,40 @@ document.addEventListener('DOMContentLoaded', function () {
                 }
             }
             bootstrap.Modal.getOrCreateInstance(el).show();
-            var cleanUrl = window.location.pathname;
-            window.history.replaceState({}, '', cleanUrl);
+            window.history.replaceState({}, '', window.location.pathname);
         }
     }
 
     document.querySelectorAll('.alert.alert-dismissible').forEach(function (alert) {
-        setTimeout(function () {
-            var bsAlert = bootstrap.Alert.getOrCreateInstance(alert);
-            bsAlert.close();
-        }, 4000);
+        setTimeout(function () { bootstrap.Alert.getOrCreateInstance(alert).close(); }, 4000);
     });
 
     var confirmedForms = new WeakSet();
 
     function ensureConfirmModal() {
-        var existing = document.getElementById('vgConfirmModal');
+        var existing = document.getElementById('appConfirmModal');
         if (existing) return existing;
 
         var wrapper = document.createElement('div');
         wrapper.innerHTML = [
-            '<div class="modal fade vg-confirm-modal" id="vgConfirmModal" tabindex="-1" aria-labelledby="vgConfirmTitle" aria-hidden="true">',
-            '  <div class="modal-dialog modal-dialog-centered vg-confirm-dialog">',
-            '    <div class="modal-content vg-confirm-content">',
-            '      <div class="vg-confirm-icon" data-confirm-icon><i class="bi bi-exclamation-circle" aria-hidden="true"></i></div>',
-            '      <div class="vg-confirm-body">',
-            '        <h2 class="vg-confirm-title" id="vgConfirmTitle">Confirmer l’action</h2>',
-            '        <p class="vg-confirm-message" data-confirm-message>Êtes-vous sûr de vouloir effectuer cette action ?</p>',
+            '<div class="modal fade confirm-modal" id="appConfirmModal" tabindex="-1" aria-labelledby="appConfirmTitle" aria-hidden="true">',
+            '  <div class="modal-dialog modal-dialog-centered confirm-dialog">',
+            '    <div class="modal-content confirm-content">',
+            '      <div class="confirm-icon" data-confirm-icon><i class="bi bi-exclamation-circle" aria-hidden="true"></i></div>',
+            '      <div class="confirm-body">',
+            '        <h2 class="confirm-title" id="appConfirmTitle">Confirmer l’action</h2>',
+            '        <p class="confirm-message" data-confirm-message>Êtes-vous sûr de vouloir effectuer cette action ?</p>',
             '      </div>',
-            '      <div class="vg-confirm-actions">',
-            '        <button type="button" class="btn btn-vg-outline" data-bs-dismiss="modal" data-confirm-cancel>Annuler</button>',
-            '        <button type="button" class="btn btn-vg" data-confirm-submit>Confirmer</button>',
+            '      <div class="confirm-actions">',
+            '        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal" data-confirm-cancel>Annuler</button>',
+            '        <button type="button" class="btn btn-brand" data-confirm-submit>Confirmer</button>',
             '      </div>',
             '    </div>',
             '  </div>',
             '</div>'
         ].join('');
         document.body.appendChild(wrapper.firstElementChild);
-        return document.getElementById('vgConfirmModal');
+        return document.getElementById('appConfirmModal');
     }
 
     function inferConfirmVariant(source) {
@@ -125,14 +112,14 @@ document.addEventListener('DOMContentLoaded', function () {
     function openConfirmDialog(options) {
         options = options || {};
         var modalEl = ensureConfirmModal();
-        var titleEl = modalEl.querySelector('#vgConfirmTitle');
+        var titleEl = modalEl.querySelector('#appConfirmTitle');
         var messageEl = modalEl.querySelector('[data-confirm-message]');
         var iconEl = modalEl.querySelector('[data-confirm-icon] i');
         var submitBtn = modalEl.querySelector('[data-confirm-submit]');
         var variant = options.variant || 'warning';
 
-        modalEl.classList.toggle('vg-confirm-modal--danger', variant === 'danger');
-        modalEl.classList.toggle('vg-confirm-modal--warning', variant !== 'danger');
+        modalEl.classList.toggle('confirm-modal--danger', variant === 'danger');
+        modalEl.classList.toggle('confirm-modal--warning', variant !== 'danger');
         titleEl.textContent = options.title || (variant === 'danger' ? 'Confirmer cette action' : 'Confirmation');
         messageEl.textContent = options.message || 'Êtes-vous sûr de vouloir effectuer cette action ?';
         submitBtn.textContent = options.confirmLabel || (variant === 'danger' ? 'Confirmer' : 'Continuer');
@@ -140,27 +127,20 @@ document.addEventListener('DOMContentLoaded', function () {
 
         return new Promise(function (resolve) {
             var modal = bootstrap.Modal.getOrCreateInstance(modalEl);
-
             function cleanup(result) {
                 submitBtn.removeEventListener('click', onConfirm);
                 modalEl.removeEventListener('hidden.bs.modal', onHidden);
                 resolve(result);
             }
-            function onConfirm() {
-                modal.hide();
-                cleanup(true);
-            }
-            function onHidden() {
-                cleanup(false);
-            }
-
-            submitBtn.addEventListener('click', onConfirm, { once: true });
-            modalEl.addEventListener('hidden.bs.modal', onHidden, { once: true });
+            function onConfirm() { modal.hide(); cleanup(true); }
+            function onHidden() { cleanup(false); }
+            submitBtn.addEventListener('click', onConfirm, {once: true});
+            modalEl.addEventListener('hidden.bs.modal', onHidden, {once: true});
             modal.show();
         });
     }
 
-    window.vgConfirm = openConfirmDialog;
+    window.tugeresConfirm = openConfirmDialog;
 
     function confirmOptionsFrom(source, fallbackMessage) {
         var dataset = source && source.dataset ? source.dataset : {};
@@ -187,43 +167,41 @@ document.addEventListener('DOMContentLoaded', function () {
 
     document.querySelectorAll('[data-confirm]').forEach(function (el) {
         if (el.tagName === 'FORM') {
-            el.addEventListener('submit', function (e) {
+            el.addEventListener('submit', function (event) {
                 if (confirmedForms.has(el)) {
                     confirmedForms.delete(el);
                     return;
                 }
-                e.preventDefault();
+                event.preventDefault();
                 openConfirmDialog(confirmOptionsFrom(el)).then(function (ok) {
-                    if (ok) submitConfirmedForm(el, e.submitter);
+                    if (ok) submitConfirmedForm(el, event.submitter);
                 });
             });
             return;
         }
 
-        el.addEventListener('click', function (e) {
-            e.preventDefault();
+        el.addEventListener('click', function (event) {
+            event.preventDefault();
             openConfirmDialog(confirmOptionsFrom(el)).then(function (ok) {
                 if (!ok) return;
                 if (el.form) {
                     submitConfirmedForm(el.form, el);
                     return;
                 }
-                if (el.tagName === 'A' && el.href) {
-                    window.location.href = el.href;
-                }
+                if (el.tagName === 'A' && el.href) window.location.href = el.href;
             });
         });
     });
 
     document.querySelectorAll('form.form-confirm:not([data-confirm])').forEach(function (form) {
-        form.addEventListener('submit', function (e) {
+        form.addEventListener('submit', function (event) {
             if (confirmedForms.has(form)) {
                 confirmedForms.delete(form);
                 return;
             }
-            e.preventDefault();
-            openConfirmDialog(confirmOptionsFrom(form, 'Êtes-vous sûr de vouloir effectuer cette action ?')).then(function (ok) {
-                if (ok) submitConfirmedForm(form, e.submitter);
+            event.preventDefault();
+            openConfirmDialog(confirmOptionsFrom(form)).then(function (ok) {
+                if (ok) submitConfirmedForm(form, event.submitter);
             });
         });
     });
@@ -236,12 +214,12 @@ document.addEventListener('DOMContentLoaded', function () {
             Array.from(input.files).forEach(function (file) {
                 if (!file.type.startsWith('image/')) return;
                 var reader = new FileReader();
-                reader.onload = function (e) {
+                reader.onload = function (event) {
                     var wrap = document.createElement('div');
                     wrap.style.cssText = 'position:relative;display:inline-block;';
                     var img = document.createElement('img');
-                    img.src = e.target.result;
-                    img.style.cssText = 'width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid rgba(139,26,43,0.2);';
+                    img.src = event.target.result;
+                    img.style.cssText = 'width:70px;height:70px;object-fit:cover;border-radius:8px;border:1px solid var(--border-subtle);';
                     img.alt = file.name;
                     wrap.appendChild(img);
                     container.appendChild(wrap);
@@ -256,7 +234,6 @@ document.addEventListener('DOMContentLoaded', function () {
             var input = document.getElementById(button.dataset.passwordToggle);
             var icon = button.querySelector('i');
             if (!input || !icon) return;
-
             var reveal = input.type === 'password';
             input.type = reveal ? 'text' : 'password';
             icon.className = reveal ? 'bi bi-eye-slash' : 'bi bi-eye';
@@ -264,8 +241,6 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     document.querySelectorAll('[data-print-document]').forEach(function (button) {
-        button.addEventListener('click', function () {
-            window.print();
-        });
+        button.addEventListener('click', function () { window.print(); });
     });
 });
