@@ -2,13 +2,10 @@
 
 namespace App\Controllers;
 
+use App\Config\OperatorConfiguration;
 use App\Domain\StripeCheckoutContract;
-use App\Models\CommandeModel;
 use App\Models\MenuModel;
-use App\Models\PaiementModel;
 use App\Models\PaymentAttemptModel;
-use App\Models\UserModel;
-use App\Services\MailService;
 
 class StripeController
 {
@@ -22,12 +19,13 @@ class StripeController
             redirect('/panier');
         }
 
-        if (!STRIPE_SECRET_KEY || str_starts_with(STRIPE_SECRET_KEY, 'sk_test_REMPLACER')) {
+        $stripeSecretKey = OperatorConfiguration::string('operator.stripe.secret_key');
+        if ($stripeSecretKey === '' || str_starts_with($stripeSecretKey, 'sk_test_REMPLACER')) {
             flash('error', 'Le paiement en ligne n\'est pas encore configuré. Choisissez un autre mode de paiement.');
             redirect('/panier');
         }
 
-        \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
+        \Stripe\Stripe::setApiKey($stripeSecretKey);
         $stripeExpiresAt = null;
 
         if (isset($pending['draft'], $pending['attempt'])) {
@@ -131,7 +129,7 @@ class StripeController
             $discounts = [['coupon' => $coupon->id]];
         }
 
-        $baseUrl = rtrim(BASE_URL, '/');
+        $baseUrl = rtrim(OperatorConfiguration::string('operator.base_url'), '/');
         $metadata = [
             'numero_commande' => $commandeData['numero_commande'],
             'utilisateur_id' => (string) $commandeData['utilisateur_id'],
@@ -185,92 +183,6 @@ class StripeController
         exit;
     }
 
-    public function success(): void
-    {
-        requireAuth();
-
-        $sessionId = sanitize($_GET['session_id'] ?? '');
-        $pending = $this->loadPendingPayment();
-
-        if (!$pending || !$sessionId) {
-            flash('error', 'Paiement non confirmé.');
-            redirect('/mon-compte');
-        }
-
-        \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
-        try {
-            $stripeSession = \Stripe\Checkout\Session::retrieve($sessionId);
-        } catch (\Throwable $e) {
-            flash('error', 'Impossible de vérifier le paiement. Contactez-nous.');
-            redirect('/mon-compte');
-        }
-
-        if ($stripeSession->payment_status !== 'paid') {
-            flash('error', 'Le paiement n\'a pas été complété.');
-            redirect('/panier');
-        }
-
-        $commandeData = $pending['commande_data'];
-        $pricing = $pending['pricing'];
-        $panier = $pending['panier'];
-
-        try {
-            $commandeId = CommandeModel::create($commandeData, $pricing['lignes']);
-        } catch (\Throwable $e) {
-            flash('error', 'Erreur lors de la création de la commande. Contactez-nous avec votre référence de paiement Stripe : ' . $sessionId);
-            redirect('/mon-compte');
-        }
-
-        $user = currentUser();
-
-        try {
-            \App\Models\StockModel::consommerPourCommande($commandeId, (int) $user['id']);
-        } catch (\Throwable $e) {
-            error_log(sprintf(
-                '[stock] consommation impossible pour commande_id=%d via Stripe: %s',
-                $commandeId,
-                $e->getMessage(),
-            ));
-        }
-
-        PaiementModel::create([
-            'commande_id' => $commandeId,
-            'type_paiement' => 'paiement_unique',
-            'montant' => $commandeData['prix_total'],
-            'mode' => 'cb_online',
-            'date_paiement' => date('Y-m-d'),
-            'reference' => $stripeSession->payment_intent ?? $sessionId,
-            'note' => 'Paiement Stripe — session ' . $sessionId,
-        ], (int) $user['id']);
-
-        if (isset($pending['draft'], $pending['attempt'])) {
-            try {
-                PaymentAttemptModel::markAttemptStatus(
-                    (int) $pending['attempt']['attempt_id'],
-                    'paid',
-                    isset($stripeSession->payment_intent) ? (string) $stripeSession->payment_intent : null,
-                );
-                PaymentAttemptModel::attachCommande((int) $pending['draft']['draft_id'], $commandeId);
-            } catch (\Throwable $e) {
-                error_log('[payment] finalisation tracking draft impossible commande_id=' . $commandeId . ': ' . $e->getMessage());
-            }
-        }
-
-        $userFull = UserModel::findById($user['id']);
-        MailService::sendCommandeConfirmation($userFull['email'], $commandeData, $panier);
-
-        unset(
-            $_SESSION['stripe_pending'],
-            $_SESSION['stripe_draft_id'],
-            $_SESSION['stripe_attempt_id'],
-            $_SESSION['stripe_session_id'],
-        );
-        $_SESSION['panier'] = [];
-
-        flash('success', 'Paiement confirmé ! Commande #' . $commandeData['numero_commande'] . ' passée avec succès.');
-        redirect('/mon-compte');
-    }
-
     public function cancel(): void
     {
         if (isset($_SESSION['stripe_draft_id'])) {
@@ -287,57 +199,6 @@ class StripeController
         unset($_SESSION['stripe_session_id'], $_SESSION['stripe_draft_id'], $_SESSION['stripe_attempt_id']);
         flash('error', 'Paiement annulé. Votre commande n\'a pas été enregistrée.');
         redirect('/panier');
-    }
-
-    public function webhook(): void
-    {
-        $payload = file_get_contents('php://input');
-        $sigHeader = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
-
-        if (!STRIPE_WEBHOOK_SECRET || str_starts_with(STRIPE_WEBHOOK_SECRET, 'whsec_REMPLACER')) {
-            http_response_code(400);
-            exit;
-        }
-
-        \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
-        try {
-            $event = \Stripe\Webhook::constructEvent($payload, $sigHeader, STRIPE_WEBHOOK_SECRET);
-        } catch (\Throwable $e) {
-            http_response_code(400);
-            exit;
-        }
-
-        if ($event->type === 'checkout.session.completed') {
-            $session = $event->data->object;
-            $ref = $session->client_reference_id;
-
-            $commande = db()->fetchOne(
-                'SELECT commande_id, prix_total FROM commande WHERE numero_commande = ?',
-                [$ref],
-            );
-
-            if ($commande) {
-                $already = db()->fetchOne(
-                    "SELECT paiement_id FROM paiement WHERE commande_id = ? AND mode = 'cb_online'",
-                    [$commande['commande_id']],
-                );
-                if (!$already) {
-                    PaiementModel::create([
-                        'commande_id' => $commande['commande_id'],
-                        'type_paiement' => 'paiement_unique',
-                        'montant' => $commande['prix_total'],
-                        'mode' => 'cb_online',
-                        'date_paiement' => date('Y-m-d'),
-                        'reference' => $session->payment_intent ?? $session->id,
-                        'note' => 'Paiement Stripe via webhook — session ' . $session->id,
-                    ], null);
-                }
-            }
-        }
-
-        http_response_code(200);
-        echo json_encode(['received' => true]);
-        exit;
     }
 
     private function preparePersistedAttempt(array $pending): array
@@ -429,40 +290,38 @@ class StripeController
         $user = currentUser();
         $draftId = (int) ($_SESSION['stripe_draft_id'] ?? 0);
 
-        if ($draftId > 0 && $user) {
-            try {
-                $draft = PaymentAttemptModel::findDraftForUser($draftId, (int) $user['id']);
-                if (!$draft || $draft['status'] !== 'pending_payment') {
-                    return null;
-                }
-                if (!empty($draft['expires_at']) && strtotime((string) $draft['expires_at']) < time()) {
-                    PaymentAttemptModel::markDraftStatus($draftId, 'failed');
-                    return null;
-                }
-
-                $attemptId = (int) ($_SESSION['stripe_attempt_id'] ?? 0);
-                $attempt = $attemptId > 0
-                    ? PaymentAttemptModel::findAttemptForDraft($attemptId, $draftId)
-                    : PaymentAttemptModel::latestAttemptForDraft($draftId);
-                if (!$attempt || (string) $attempt['provider'] !== 'stripe') {
-                    return null;
-                }
-
-                return [
-                    'commande_data' => $draft['commande_data'],
-                    'pricing' => $draft['pricing'],
-                    'panier' => $draft['panier'],
-                    'draft' => $draft,
-                    'attempt' => $attempt,
-                ];
-            } catch (\Throwable $e) {
-                error_log('[payment] lecture draft impossible draft_id=' . $draftId . ': ' . $e->getMessage());
-                return null;
-            }
+        if ($draftId <= 0 || !$user) {
+            return null;
         }
 
-        $legacy = $_SESSION['stripe_pending'] ?? null;
+        try {
+            $draft = PaymentAttemptModel::findDraftForUser($draftId, (int) $user['id']);
+            if (!$draft || $draft['status'] !== 'pending_payment') {
+                return null;
+            }
+            if (!empty($draft['expires_at']) && strtotime((string) $draft['expires_at']) < time()) {
+                PaymentAttemptModel::markDraftStatus($draftId, 'failed');
+                return null;
+            }
 
-        return is_array($legacy) ? $legacy : null;
+            $attemptId = (int) ($_SESSION['stripe_attempt_id'] ?? 0);
+            $attempt = $attemptId > 0
+                ? PaymentAttemptModel::findAttemptForDraft($attemptId, $draftId)
+                : PaymentAttemptModel::latestAttemptForDraft($draftId);
+            if (!$attempt || (string) $attempt['provider'] !== 'stripe') {
+                return null;
+            }
+
+            return [
+                'commande_data' => $draft['commande_data'],
+                'pricing' => $draft['pricing'],
+                'panier' => $draft['panier'],
+                'draft' => $draft,
+                'attempt' => $attempt,
+            ];
+        } catch (\Throwable $e) {
+            error_log('[payment] lecture draft impossible draft_id=' . $draftId . ': ' . $e->getMessage());
+            return null;
+        }
     }
 }
