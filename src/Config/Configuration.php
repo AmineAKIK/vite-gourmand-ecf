@@ -36,21 +36,9 @@ final class Configuration
             return self::$resolver;
         }
 
-        $environment = [];
-        foreach (ConfigurationRegistry::forScope(ConfigurationScope::OPERATOR) as $definition) {
-            if ($definition->source !== ConfigurationSource::ENVIRONMENT || $definition->storageKey === null) {
-                continue;
-            }
-
-            $value = Environment::get($definition->storageKey);
-            if ($value !== '') {
-                $environment[$definition->storageKey] = $value;
-            }
-        }
-
         return self::$resolver = new ConfigurationResolver(
             SiteConfigModel::getAll(),
-            $environment,
+            OperatorConfiguration::environmentSnapshot(),
         );
     }
 }
