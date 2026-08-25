@@ -4,10 +4,10 @@ namespace App\Controllers\Workspace;
 
 use App\Models\CommandeModel;
 use App\Models\FacturationModel;
+use App\Services\BillingDeliveryService;
 use App\Services\BillingDocumentStorage;
 use App\Services\BillingDraftService;
 use App\Services\BillingFinalizationService;
-use App\Services\MailService;
 use App\Services\PricingService;
 use App\Services\QuoteDecisionService;
 use InvalidArgumentException;
@@ -78,19 +78,15 @@ class DocumentController
 
             $result = BillingFinalizationService::finalize($documentId, currentUser()['id'] ?? null);
             $numero = $result['numero'];
-            $archiveAbsolute = $result['archive'];
             $document = FacturationModel::getById($documentId);
 
             if ($document
                 && ($document['type_document'] ?? '') === 'devis'
                 && !empty($document['client_email'])
-                && $archiveAbsolute !== null
+                && $result['archive'] !== null
             ) {
                 try {
-                    $commande = CommandeModel::getById((int)$document['commande_id']);
-                    MailService::sendDevis($document, $commande ?: [], $archiveAbsolute);
-                    BillingDocumentStorage::migrateExisting($documentId);
-                    FacturationModel::markSent($documentId, currentUser()['id'] ?? null);
+                    BillingDeliveryService::sendFinalized($documentId, currentUser()['id'] ?? null);
                     flash('success', 'Devis finalisé (' . $numero . ') et envoyé au client.');
                 } catch (Throwable $mailErr) {
                     error_log('sendDevis auto : ' . $mailErr->getMessage());
@@ -131,14 +127,9 @@ class DocumentController
 
         $documentId = (int)($_POST['document_id'] ?? 0);
         try {
-            $document = FacturationModel::getById($documentId);
-            if (!$document) throw new \InvalidArgumentException('Document introuvable.');
-
-            $token = QuoteDecisionService::createSignatureToken($documentId);
-            $signatureUrl = rtrim(BASE_URL, '/') . '/devis/accepter?token=' . urlencode($token);
-            MailService::sendDevisSignatureRequest($document, $signatureUrl);
+            BillingDeliveryService::sendSignatureRequest($documentId);
             flash('success', 'Email de signature envoyé au client.');
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             flash('error', $e->getMessage());
         }
         redirect($documentId ? '/employe/document/apercu?id=' . $documentId : '/employe/commandes');
@@ -178,25 +169,7 @@ class DocumentController
 
         $documentId = (int)($_POST['document_id'] ?? 0);
         try {
-            $document = FacturationModel::getById($documentId);
-            if (!$document) {
-                throw new InvalidArgumentException('Document introuvable.');
-            }
-            if (($document['statut'] ?? '') !== 'finalise') {
-                throw new InvalidArgumentException('Seuls les documents finalisés peuvent être envoyés.');
-            }
-
-            $archiveAbsolute = BillingDocumentStorage::ensureArchive($documentId);
-            $document = FacturationModel::getById($documentId) ?: $document;
-            $commande = CommandeModel::getById((int)$document['commande_id']);
-            if (($document['type_document'] ?? '') === 'devis') {
-                MailService::sendDevis($document, $commande ?: [], $archiveAbsolute);
-            } else {
-                MailService::sendDocumentFacturation($document, $commande ?: [], $archiveAbsolute);
-            }
-            BillingDocumentStorage::migrateExisting($documentId);
-            FacturationModel::markSent($documentId, currentUser()['id'] ?? null);
-
+            BillingDeliveryService::sendFinalized($documentId, currentUser()['id'] ?? null);
             flash('success', 'Document envoyé au client.');
             redirect('/employe/document/apercu?id=' . $documentId);
         } catch (Throwable $e) {
