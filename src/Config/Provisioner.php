@@ -9,7 +9,7 @@ use Throwable;
 /**
  * Owns the one-time V1 database provisioning contract.
  *
- * - Empty database: apply the canonical V1 baseline and record its checksum.
+ * - Truly empty database: apply the canonical V1 baseline and record its checksum.
  * - Complete existing database: do not replay the baseline.
  * - Partial/incompatible database: fail closed; never attempt repair.
  *
@@ -71,8 +71,7 @@ final class Provisioner
             throw new RuntimeException('Le provisioning de schéma est réservé au CLI/startup.');
         }
 
-        $db = Database::getConnection();
-        self::runWithConnection($db);
+        self::runWithConnection(Database::getConnection());
     }
 
     public static function runWithConnection(PDO $db): void
@@ -85,7 +84,7 @@ final class Provisioner
                 throw new RuntimeException('Impossible d’obtenir le verrou de provisioning dans le délai imparti.');
             }
 
-            $tables = self::applicationTables($db);
+            $tables = self::databaseTables($db);
             if ($tables === []) {
                 self::applyBaseline($db);
                 return;
@@ -123,7 +122,7 @@ final class Provisioner
             $db->exec($statement);
         }
 
-        self::assertCompleteExistingSchema(self::applicationTables($db));
+        self::assertCompleteExistingSchema(self::databaseTables($db));
         self::ensureTrackingTable($db);
 
         $checksum = hash('sha256', $sql);
@@ -163,8 +162,8 @@ final class Provisioner
         $stmt->execute([self::BASELINE_NAME]);
         $stored = $stmt->fetchColumn();
         if ($stored === false) {
-            // Pre-V1 development databases can exist until the explicit reset.
-            // They are accepted only if the complete V1 table contract is present.
+            // Temporary bridge for the current pre-release Railway database until
+            // its explicit V1 reset. It must already satisfy the complete V1 table contract.
             return;
         }
 
@@ -191,14 +190,13 @@ final class Provisioner
     }
 
     /** @return list<string> */
-    private static function applicationTables(PDO $db): array
+    private static function databaseTables(PDO $db): array
     {
         $stmt = $db->query(
             "SELECT TABLE_NAME
              FROM information_schema.TABLES
              WHERE TABLE_SCHEMA = DATABASE()
                AND TABLE_TYPE = 'BASE TABLE'
-               AND TABLE_NAME <> 'schema_migrations'
              ORDER BY TABLE_NAME"
         );
 
