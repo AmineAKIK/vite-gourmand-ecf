@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
+use App\Config\OperatorConfiguration;
 use App\Domain\StripeSuccessReconciliation;
 use App\Domain\StripeWebhookContract;
 use App\Models\NotificationModel;
-use App\Models\PaiementModel;
 use App\Models\PaymentAttemptModel;
 use App\Models\UserModel;
 use App\Services\MailService;
@@ -20,15 +20,17 @@ final class StripeFulfillmentController
     {
         $payload = file_get_contents('php://input');
         $sigHeader = $_SERVER['HTTP_STRIPE_SIGNATURE'] ?? '';
+        $stripeSecretKey = OperatorConfiguration::string('operator.stripe.secret_key');
+        $webhookSecret = OperatorConfiguration::string('operator.stripe.webhook_secret');
 
-        if (!STRIPE_WEBHOOK_SECRET || str_starts_with(STRIPE_WEBHOOK_SECRET, 'whsec_REMPLACER')) {
+        if ($stripeSecretKey === '' || $webhookSecret === '') {
             http_response_code(400);
             exit;
         }
 
-        \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
+        \Stripe\Stripe::setApiKey($stripeSecretKey);
         try {
-            $event = \Stripe\Webhook::constructEvent($payload, $sigHeader, STRIPE_WEBHOOK_SECRET);
+            $event = \Stripe\Webhook::constructEvent($payload, $sigHeader, $webhookSecret);
         } catch (Throwable $e) {
             error_log('[stripe-webhook] signature invalide: ' . $e->getMessage());
             http_response_code(400);
@@ -40,7 +42,9 @@ final class StripeFulfillmentController
             $sessionData = $this->sessionData($session);
             $metadata = $sessionData['metadata'];
 
-            if ((int) ($metadata['draft_id'] ?? 0) > 0 && (int) ($metadata['attempt_id'] ?? 0) > 0) {
+            if ((int) ($metadata['draft_id'] ?? 0) <= 0 || (int) ($metadata['attempt_id'] ?? 0) <= 0) {
+                error_log('[stripe-webhook] session sans contrat V1 ignorée event=' . (string) $event->id);
+            } else {
                 try {
                     $result = StripeWebhookFulfillmentService::fulfillCheckoutSessionCompleted(
                         (string) $event->id,
@@ -56,8 +60,6 @@ final class StripeFulfillmentController
                 if ($result['processed'] && !$result['duplicate'] && $result['commande_id'] !== null) {
                     $this->afterFulfillment($result['commande_id'], $result['commande_data'], $result['panier']);
                 }
-            } else {
-                $this->processLegacyCompletedSession($session);
             }
         }
 
@@ -92,12 +94,13 @@ final class StripeFulfillmentController
             redirect('/mon-compte');
         }
 
-        if (!STRIPE_SECRET_KEY || str_starts_with(STRIPE_SECRET_KEY, 'sk_test_REMPLACER')) {
+        $stripeSecretKey = OperatorConfiguration::string('operator.stripe.secret_key');
+        if ($stripeSecretKey === '') {
             flash('error', 'Impossible de vérifier votre paiement. Contactez-nous.');
             redirect('/mon-compte');
         }
 
-        \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
+        \Stripe\Stripe::setApiKey($stripeSecretKey);
         try {
             $stripeSession = \Stripe\Checkout\Session::retrieve($sessionId);
         } catch (Throwable $e) {
@@ -200,40 +203,6 @@ final class StripeFulfillmentController
             'payment_intent' => isset($session->payment_intent) ? (string) $session->payment_intent : null,
             'metadata' => $metadata,
         ];
-    }
-
-    private function processLegacyCompletedSession(object $session): void
-    {
-        $ref = (string) ($session->client_reference_id ?? '');
-        if ($ref === '') {
-            return;
-        }
-
-        $commande = db()->fetchOne(
-            'SELECT commande_id, prix_total FROM commande WHERE numero_commande = ?',
-            [$ref],
-        );
-        if (!$commande) {
-            return;
-        }
-
-        $already = db()->fetchOne(
-            "SELECT paiement_id FROM paiement WHERE commande_id = ? AND mode = 'cb_online'",
-            [$commande['commande_id']],
-        );
-        if ($already) {
-            return;
-        }
-
-        PaiementModel::create([
-            'commande_id' => $commande['commande_id'],
-            'type_paiement' => 'paiement_unique',
-            'montant' => $commande['prix_total'],
-            'mode' => 'cb_online',
-            'date_paiement' => date('Y-m-d'),
-            'reference' => $session->payment_intent ?? $session->id,
-            'note' => 'Paiement Stripe legacy via webhook — session ' . $session->id,
-        ], null);
     }
 
     private function afterFulfillment(int $commandeId, ?array $commandeData, ?array $panier): void
