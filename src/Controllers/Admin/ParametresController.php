@@ -13,14 +13,40 @@ use App\Services\PricingService;
 
 class ParametresController
 {
+    /** @var list<string> */
+    private const NO_UI_DEFAULTS = [
+        'livraison_lat',
+        'livraison_lng',
+        'livraison_rayon_max_km',
+        'livraison_base',
+        'livraison_km',
+        'commandes_max_par_jour',
+        'reduction_seuil',
+        'reduction_taux',
+        'regime_tva',
+        'acompte_taux_defaut',
+        'delai_paiement_jours',
+        'penalites_retard_taux',
+        'indemnite_recouvrement',
+    ];
+
     public function index(): void
     {
-        $config      = SiteConfigModel::getAll();
-        $tauxTva     = PricingService::tauxTvaActifs();
+        $config = SiteConfigModel::getAll();
+        foreach (self::NO_UI_DEFAULTS as $storageKey) {
+            if (!array_key_exists($storageKey, $config)) {
+                $config[$storageKey] = '';
+            }
+        }
+
+        // Secrets opérateur ne sont jamais exposés à la vue tenant.
+        unset($config['cron_secret_token']);
+
+        $tauxTva = PricingService::tauxTvaActifs();
         $tousLesToux = db()->fetchAll(
             'SELECT * FROM taux_tva ORDER BY actif DESC, taux ASC, libelle ASC'
         );
-        $images   = SiteImageModel::getAll();
+        $images = SiteImageModel::getAll();
         $horaires = HoraireModel::getAll();
         view('pages/admin/parametres', compact('config', 'tauxTva', 'tousLesToux', 'images', 'horaires'));
     }
@@ -30,6 +56,11 @@ class ParametresController
         verifyCsrf();
 
         $section = $this->postedSection();
+        if (array_key_exists('cron_secret_token', $_POST)) {
+            flash('error', 'Le secret cron est géré par l’opérateur via CRON_SECRET_TOKEN et ne peut pas être stocké ici.');
+            redirect('/admin/parametres#' . $section);
+        }
+
         $written = false;
 
         try {
@@ -67,12 +98,12 @@ class ParametresController
     {
         verifyCsrf();
 
-        $libelle   = trim($_POST['libelle']   ?? '');
-        $taux      = trim($_POST['taux']      ?? '');
+        $libelle = trim($_POST['libelle'] ?? '');
+        $taux = trim($_POST['taux'] ?? '');
         $categorie = trim($_POST['categorie'] ?? 'general');
-        $note      = trim($_POST['note']      ?? '');
+        $note = trim($_POST['note'] ?? '');
 
-        if (!$libelle || !is_numeric($taux) || (float)$taux < 0 || (float)$taux > 100) {
+        if (!$libelle || !is_numeric($taux) || (float) $taux < 0 || (float) $taux > 100) {
             flash('error', 'Libellé et taux (0–100) sont obligatoires.');
             redirect('/admin/parametres#tva');
         }
@@ -82,7 +113,7 @@ class ParametresController
 
         db()->execute(
             'INSERT INTO taux_tva (libelle, taux, categorie, actif, par_defaut, note) VALUES (?, ?, ?, 1, 0, ?)',
-            [$libelle, number_format((float)$taux, 2, '.', ''), $categorie, $note ?: null]
+            [$libelle, number_format((float) $taux, 2, '.', ''), $categorie, $note ?: null]
         );
         flash('success', 'Taux TVA créé.');
         redirect('/admin/parametres#tva');
@@ -92,8 +123,8 @@ class ParametresController
     {
         verifyCsrf();
 
-        $id    = (int)($_POST['taux_id'] ?? 0);
-        $actif = (int)($_POST['actif']   ?? 0);
+        $id = (int) ($_POST['taux_id'] ?? 0);
+        $actif = (int) ($_POST['actif'] ?? 0);
         if (!$id) {
             redirect('/admin/parametres#tva');
         }
@@ -107,7 +138,7 @@ class ParametresController
     {
         verifyCsrf();
 
-        $id        = (int)($_POST['taux_id']  ?? 0);
+        $id = (int) ($_POST['taux_id'] ?? 0);
         $categorie = trim($_POST['categorie'] ?? '');
         if (!$id || !in_array($categorie, ['menu', 'livraison', 'general'], true)) {
             redirect('/admin/parametres#tva');
