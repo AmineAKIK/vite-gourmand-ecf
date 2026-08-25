@@ -32,15 +32,15 @@ class ParametresController
 
     public function index(): void
     {
-        $config = SiteConfigModel::getAll();
+        $storageKeys = self::tenantStorageKeys();
+        $storedConfig = SiteConfigModel::getAll();
+        $config = array_intersect_key($storedConfig, array_fill_keys($storageKeys, true));
+
         foreach (self::NO_UI_DEFAULTS as $storageKey) {
             if (!array_key_exists($storageKey, $config)) {
                 $config[$storageKey] = '';
             }
         }
-
-        // Secrets opérateur ne sont jamais exposés à la vue tenant.
-        unset($config['cron_secret_token']);
 
         $tauxTva = PricingService::tauxTvaActifs();
         $tousLesToux = db()->fetchAll(
@@ -56,8 +56,10 @@ class ParametresController
         verifyCsrf();
 
         $section = $this->postedSection();
-        if (array_key_exists('cron_secret_token', $_POST)) {
-            flash('error', 'Le secret cron est géré par l’opérateur via CRON_SECRET_TOKEN et ne peut pas être stocké ici.');
+        $allowedPostKeys = array_merge(self::tenantStorageKeys(), ['csrf_token', '_section']);
+        $unexpectedKeys = array_diff(array_keys($_POST), $allowedPostKeys);
+        if ($unexpectedKeys !== []) {
+            flash('error', 'Un paramètre non reconnu ou réservé à l’opérateur a été refusé.');
             redirect('/admin/parametres#' . $section);
         }
 
@@ -190,6 +192,19 @@ class ParametresController
 
         flash('success', 'Page d\'accueil mise à jour.');
         redirect('/admin/parametres#personnalisation');
+    }
+
+    /** @return list<string> */
+    private static function tenantStorageKeys(): array
+    {
+        $keys = [];
+        foreach (ConfigurationRegistry::siteConfigDefinitions() as $definition) {
+            if ($definition->storageKey !== null) {
+                $keys[] = $definition->storageKey;
+            }
+        }
+
+        return $keys;
     }
 
     private function postedSection(): string
