@@ -6,26 +6,29 @@ use PDO;
 use RuntimeException;
 
 /**
- * Expands legacy MySQL-incompatible ALTER TABLE statements without changing
- * the historical migration files or their checksums.
+ * Expands known legacy MySQL-incompatible ALTER TABLE statements without
+ * changing the historical migration files or their checksums.
  *
- * Some historical migrations use `ADD COLUMN IF NOT EXISTS` inside a compound
- * ALTER TABLE. MySQL does not accept that syntax. The adapter decomposes only
- * those statements into single DDL operations and proves idempotence from
- * information_schema before execution.
+ * Compatibility is deliberately allow-listed by migration name. New migrations
+ * never inherit this behavior implicitly: invalid future SQL must fail closed.
  */
 final class LegacyAlterTableCompatibility
 {
+    private const SUPPORTED_MIGRATIONS = [
+        '040_payment_refund_integrity.sql',
+        '041_facturation_financial_state.sql',
+    ];
+
     /** @return list<string> */
-    public static function expand(PDO $db, string $statement): array
+    public static function expand(PDO $db, string $migration, string $statement): array
     {
-        if (stripos($statement, 'ADD COLUMN IF NOT EXISTS') === false) {
+        if (!self::supports($migration, $statement)) {
             return [$statement];
         }
 
         $parsed = self::parseAlterTable($statement);
         if ($parsed === null) {
-            throw new RuntimeException('ALTER TABLE legacy non analysable.');
+            throw new RuntimeException('ALTER TABLE legacy non analysable pour ' . $migration . '.');
         }
 
         [$tableToken, $tableName, $actions] = $parsed;
@@ -58,6 +61,12 @@ final class LegacyAlterTableCompatibility
         }
 
         return $expanded;
+    }
+
+    private static function supports(string $migration, string $statement): bool
+    {
+        return in_array($migration, self::SUPPORTED_MIGRATIONS, true)
+            && stripos($statement, 'ADD COLUMN IF NOT EXISTS') !== false;
     }
 
     /** @return array{0:string,1:string,2:list<string>}|null */
