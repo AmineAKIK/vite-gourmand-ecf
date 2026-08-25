@@ -14,6 +14,17 @@ final class ConfigurationCompleteness
             'delivery.base_fee',
             'delivery.per_km_fee',
         ],
+        'ordering' => [
+            'contact.address.city',
+            'delivery.origin.latitude',
+            'delivery.origin.longitude',
+            'delivery.radius_km',
+            'delivery.base_fee',
+            'delivery.per_km_fee',
+            'order.capacity.max_per_day',
+            'discount.threshold',
+            'discount.rate_percent',
+        ],
         'checkout' => [
             'contact.address.city',
             'delivery.origin.latitude',
@@ -47,6 +58,11 @@ final class ConfigurationCompleteness
         self::assertReady('delivery');
     }
 
+    public static function assertOrderingReady(): void
+    {
+        self::assertReady('ordering');
+    }
+
     public static function assertCheckoutReady(): void
     {
         self::assertReady('checkout');
@@ -58,12 +74,17 @@ final class ConfigurationCompleteness
     }
 
     /** @return list<string> */
+    public static function keys(string $context): array
+    {
+        return self::CONTEXTS[$context] ?? [];
+    }
+
+    /** @return list<string> */
     public static function missing(string $context): array
     {
-        $keys = self::CONTEXTS[$context] ?? [];
         $missing = [];
 
-        foreach ($keys as $key) {
+        foreach (self::keys($context) as $key) {
             if (!Configuration::isConfigured($key)) {
                 $missing[] = $key;
                 continue;
