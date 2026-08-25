@@ -26,7 +26,7 @@ class PricingService
         string $ville,
         string $codePostal
     ): array {
-        ConfigurationCompleteness::assertCheckoutReady();
+        ConfigurationCompleteness::assertOrderingReady();
 
         $tauxTvaMenu = self::defaultTauxTvaByCategorie('menu');
         $tauxTvaLivraison = self::defaultTauxTvaByCategorie('livraison');
