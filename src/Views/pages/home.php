@@ -1,105 +1,39 @@
-<?php
-// src/views/pages/home.php
-$pageTitle = buildPageTitle();
-?>
+<?php $pageTitle = buildPageTitle(); ?>
 
-<!-- HERO -->
 <section class="hero hero-home text-center" aria-label="Présentation de l'entreprise">
-    <img
-        src="<?= sanitize($heroUrl ?? '/images/hero-traiteur.webp') ?>"
-        class="hero-bg"
-        alt=""
-        aria-hidden="true"
-        fetchpriority="high"
-        decoding="async"
-    >
+    <?php if (!empty($heroUrl)): ?>
+        <img src="<?= sanitize($heroUrl) ?>" class="hero-bg" alt="" aria-hidden="true" fetchpriority="high" decoding="async">
+    <?php endif; ?>
     <div class="container hero-content">
         <h1 class="fw-bold mb-3"><?= sanitize(siteName()) ?></h1>
-        <p class="subtitle mb-4"><?= sanitize($heroSousTitre ?? siteSlogan()) ?></p>
-        <?php if (!empty($heroParagraphe)): ?>
-        <p class="lead text-white-50 mb-5 col-lg-8 mx-auto">
-            <?= nl2br(htmlspecialchars($heroParagraphe ?? '', ENT_QUOTES, 'UTF-8')) ?>
-        </p>
+        <?php $subtitle = is_string($heroSousTitre ?? null) && trim($heroSousTitre) !== '' ? $heroSousTitre : siteSlogan(); ?>
+        <?php if ($subtitle !== ''): ?><p class="subtitle mb-4"><?= sanitize($subtitle) ?></p><?php endif; ?>
+        <?php if (is_string($heroParagraphe ?? null) && trim($heroParagraphe) !== ''): ?>
+            <p class="lead text-white-50 mb-0 col-lg-8 mx-auto"><?= nl2br(htmlspecialchars($heroParagraphe, ENT_QUOTES, 'UTF-8')) ?></p>
         <?php endif; ?>
     </div>
 </section>
 
-<!-- ATOUTS -->
-<section class="py-5 bg-creme" aria-labelledby="atouts-titre">
+<?php if (!empty($avisValides)): ?>
+<section class="py-5 bg-surface-subtle" aria-labelledby="avis-titre">
     <div class="container">
-        <div class="row g-4 align-items-center">
-            <div class="col-lg-5">
-                <img
-                    src="<?= sanitize($preparationUrl ?? '/images/preparation-traiteur-generique.webp') ?>"
-                    class="img-fluid professional-img"
-                    alt="Préparation traiteur"
-                    loading="lazy"
-                    decoding="async"
-                    width="1000"
-                    height="700"
-                >
-            </div>
-            <div class="col-lg-7">
-                <h2 id="atouts-titre" class="mb-4 text-center text-lg-start">Une équipe professionnelle à votre service</h2>
-                <!-- 3 atouts fixes — contenu naturellement impair.
-                     Règle de parité non applicable. Saut 1→3 col volontaire :
-                     col-md-6 produirait un orphelin structurel garanti.
-                     Palier intermédiaire inexistant pour ce contenu. -->
-                <div class="row g-4 text-center text-lg-start">
-                    <div class="col-12 col-lg-4">
-                        <div class="p-3">
-                            <i class="bi bi-award display-5 text-vg mb-3"></i>
-                            <h3 class="h5">25 ans d'expérience</h3>
-                            <p class="text-muted">Notre équipe coordonne chaque prestation avec rigueur, ponctualité et sens du détail.</p>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-4">
-                        <div class="p-3">
-                            <i class="bi bi-clipboard-check display-5 text-vg mb-3"></i>
-                            <h3 class="h5">Organisation maîtrisée</h3>
-                            <p class="text-muted">Les commandes, les délais, les quantités et la livraison sont suivis avec méthode.</p>
-                        </div>
-                    </div>
-                    <div class="col-12 col-lg-4">
-                        <div class="p-3">
-                            <i class="bi bi-stars display-5 text-vg mb-3"></i>
-                            <h3 class="h5">Qualité constante</h3>
-                            <p class="text-muted">Chaque menu est préparé avec des produits sélectionnés et une présentation soignée.</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-</section>
-
-<!-- AVIS CLIENTS -->
-<section class="py-5 bg-creme" aria-labelledby="avis-titre">
-    <div class="container">
-        <h2 id="avis-titre" class="text-center mb-5">Ils nous font confiance</h2>
-        <?php if (empty($avisValides)): ?>
-            <div class="alert alert-info text-center mb-0" role="status">
-                Les premiers retours clients seront publiés ici très bientôt.
-            </div>
-        <?php else: ?>
+        <h2 id="avis-titre" class="text-center mb-5">Avis clients</h2>
         <div class="row g-4">
             <?php foreach ($avisValides as $avis): ?>
-            <div class="col-12 col-md-6 col-lg-4">
-                <article class="card h-100 border-0 shadow-sm p-3" style="background:var(--vg-creme);">
-                    <div class="card-body">
-                        <div class="stars mb-2" aria-label="Note : <?= (int)$avis['note'] ?> sur 5">
-                            <?= str_repeat('★', (int)$avis['note']) . str_repeat('☆', 5 - (int)$avis['note']) ?>
+                <div class="col-12 col-md-6 col-lg-4">
+                    <article class="card h-100 p-3">
+                        <div class="card-body">
+                            <div class="stars mb-2" aria-label="Note : <?= (int) $avis['note'] ?> sur 5"><?= str_repeat('★', (int) $avis['note']) . str_repeat('☆', 5 - (int) $avis['note']) ?></div>
+                            <p class="card-text fst-italic">“<?= htmlspecialchars(html_entity_decode(trim($avis['description'] ?? ''), ENT_QUOTES, 'UTF-8'), ENT_COMPAT, 'UTF-8') ?>”</p>
+                            <footer class="text-muted small mt-3">
+                                <strong><?= sanitize(personFullName($avis)) ?></strong>
+                                <?php if (!empty($avis['menu_titre'])): ?> · Menu : <?= sanitize($avis['menu_titre']) ?><?php endif; ?>
+                            </footer>
                         </div>
-                        <p class="card-text fst-italic">"<?= htmlspecialchars(html_entity_decode(trim($avis['description'] ?? ''), ENT_QUOTES, 'UTF-8'), ENT_COMPAT, 'UTF-8') ?>"</p>
-                        <footer class="text-muted small mt-3">
-                            <strong><?= sanitize(personFullName($avis)) ?></strong>
-                            · Menu : <?= sanitize($avis['menu_titre']) ?>
-                        </footer>
-                    </div>
-                </article>
-            </div>
+                    </article>
+                </div>
             <?php endforeach; ?>
         </div>
-        <?php endif; ?>
     </div>
 </section>
+<?php endif; ?>
