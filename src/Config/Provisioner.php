@@ -127,7 +127,7 @@ final class Provisioner
 
         $checksum = hash('sha256', $sql);
         $stmt = $db->prepare(
-            'INSERT INTO schema_migrations (migration, checksum, applied_at) VALUES (?, ?, NOW())'
+            'INSERT INTO schema_migrations (migration, checksum, applied_at) VALUES (?, ?, NOW())',
         );
         $stmt->execute([self::BASELINE_NAME, $checksum]);
 
@@ -147,7 +147,7 @@ final class Provisioner
 
         if ($missing !== []) {
             throw new RuntimeException(
-                'Base non vide mais schéma incomplet/incompatible ; tables manquantes : ' . implode(', ', $missing)
+                'Base non vide mais schéma incomplet/incompatible ; tables manquantes : ' . implode(', ', $missing),
             );
         }
     }
@@ -185,7 +185,7 @@ final class Provisioner
                 migration VARCHAR(255) NOT NULL PRIMARY KEY,
                 checksum CHAR(64) NOT NULL,
                 applied_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
-            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci',
         );
     }
 
@@ -197,7 +197,7 @@ final class Provisioner
              FROM information_schema.TABLES
              WHERE TABLE_SCHEMA = DATABASE()
                AND TABLE_TYPE = 'BASE TABLE'
-             ORDER BY TABLE_NAME"
+             ORDER BY TABLE_NAME",
         );
 
         $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
@@ -208,7 +208,7 @@ final class Provisioner
     {
         $stmt = $db->prepare(
             'SELECT COUNT(*) FROM information_schema.TABLES
-             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?',
         );
         $stmt->execute([$table]);
 
