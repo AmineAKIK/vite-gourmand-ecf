@@ -40,7 +40,7 @@ final class ProvisionerContractTest extends TestCase
         $method->setAccessible(true);
 
         $tables = Provisioner::requiredTables();
-        $tables = array_values(array_filter($tables, static fn (string $table): bool => $table !== 'paiement'));
+        $tables = array_values(array_filter($tables, static fn(string $table): bool => $table !== 'paiement'));
 
         $this->expectException(RuntimeException::class);
         $this->expectExceptionMessage('paiement');
