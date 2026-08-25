@@ -2,13 +2,15 @@
 
 namespace App\Services;
 
+use App\Config\Configuration;
+use App\Config\ConfigurationCompleteness;
 use App\Config\Database;
 use App\Config\SiteConfig;
 use App\Domain\Money;
 use App\Domain\OrderPricingCalculator;
 use App\Geo\DeliveryResolver;
 use InvalidArgumentException;
-use Throwable;
+use RuntimeException;
 
 class PricingService
 {
@@ -24,6 +26,8 @@ class PricingService
         string $ville,
         string $codePostal
     ): array {
+        ConfigurationCompleteness::assertCheckoutReady();
+
         $tauxTvaMenu = self::defaultTauxTvaByCategorie('menu');
         $tauxTvaLivraison = self::defaultTauxTvaByCategorie('livraison');
         $tauxTvaMenuId = self::defaultTauxTvaIdByCategorie('menu');
@@ -163,9 +167,12 @@ class PricingService
 
     public static function regimeTva(): string
     {
-        $regime = SiteConfig::get('regime_tva', 'assujetti');
+        $regime = Configuration::get('tax.regime');
+        if (!is_string($regime)) {
+            throw new RuntimeException('configuration_incomplete:billing:tax.regime');
+        }
 
-        return in_array($regime, ['assujetti', 'non_assujetti'], true) ? $regime : 'assujetti';
+        return $regime;
     }
 
     public static function isAssujetti(): bool
@@ -175,56 +182,39 @@ class PricingService
 
     public static function defaultTauxTvaByCategorie(string $categorie): float
     {
-        try {
-            $stmt = Database::getConnection()->prepare(
-                'SELECT taux FROM taux_tva WHERE categorie = ? AND par_defaut = 1 AND actif = 1 LIMIT 1'
-            );
-            $stmt->execute([$categorie]);
-            $taux = $stmt->fetchColumn();
-            if ($taux !== false) {
-                return (float) $taux;
-            }
-        } catch (Throwable) {
-            // Compatibilité temporaire avec les installations antérieures à la migration TVA.
+        $stmt = Database::getConnection()->prepare(
+            'SELECT taux FROM taux_tva WHERE categorie = ? AND par_defaut = 1 AND actif = 1 LIMIT 1'
+        );
+        $stmt->execute([$categorie]);
+        $taux = $stmt->fetchColumn();
+        if ($taux === false) {
+            throw new RuntimeException('configuration_incomplete:tax_rate:' . $categorie);
         }
 
-        return self::isAssujetti() ? 10.0 : 0.0;
+        return (float) $taux;
     }
 
-    public static function defaultTauxTvaIdByCategorie(string $categorie): ?int
+    public static function defaultTauxTvaIdByCategorie(string $categorie): int
     {
-        try {
-            $stmt = Database::getConnection()->prepare(
-                'SELECT taux_id FROM taux_tva WHERE categorie = ? AND par_defaut = 1 AND actif = 1 LIMIT 1'
-            );
-            $stmt->execute([$categorie]);
-            $id = $stmt->fetchColumn();
-
-            return $id !== false ? (int) $id : null;
-        } catch (Throwable) {
-            return null;
+        $stmt = Database::getConnection()->prepare(
+            'SELECT taux_id FROM taux_tva WHERE categorie = ? AND par_defaut = 1 AND actif = 1 LIMIT 1'
+        );
+        $stmt->execute([$categorie]);
+        $id = $stmt->fetchColumn();
+        if ($id === false) {
+            throw new RuntimeException('configuration_incomplete:tax_rate:' . $categorie);
         }
+
+        return (int) $id;
     }
 
     public static function tauxTvaActifs(): array
     {
-        try {
-            $stmt = Database::getConnection()->prepare(
-                'SELECT taux_id, libelle, taux, categorie, par_defaut FROM taux_tva WHERE actif = 1 ORDER BY taux ASC, libelle ASC'
-            );
-            $stmt->execute();
+        $stmt = Database::getConnection()->prepare(
+            'SELECT taux_id, libelle, taux, categorie, par_defaut FROM taux_tva WHERE actif = 1 ORDER BY taux ASC, libelle ASC'
+        );
+        $stmt->execute();
 
-            return $stmt->fetchAll();
-        } catch (Throwable) {
-            return [
-                [
-                    'taux_id' => null,
-                    'libelle' => 'Restauration traiteur – 10%',
-                    'taux' => 10.0,
-                    'categorie' => 'menu',
-                    'par_defaut' => 1,
-                ],
-            ];
-        }
+        return $stmt->fetchAll();
     }
 }
