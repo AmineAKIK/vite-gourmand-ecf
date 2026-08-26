@@ -67,6 +67,7 @@ final class StripePaymentWebhookGateway implements PaymentWebhookGateway
                 objectId: $objectId,
                 occurredAt: $occurredAt,
                 paymentIntentId: $objectId,
+                metadata: is_object($object) ? self::metadata($object) : [],
             ),
             default => new PaymentProviderEvent(
                 provider: $this->provider(),
@@ -77,5 +78,18 @@ final class StripePaymentWebhookGateway implements PaymentWebhookGateway
                 occurredAt: $occurredAt,
             ),
         };
+    }
+
+    /** @return array<string,string> */
+    private static function metadata(object $object): array
+    {
+        $metadata = [];
+        foreach (['draft_id', 'attempt_id', 'numero_commande', 'utilisateur_id', 'expected_total_cents', 'currency'] as $key) {
+            if (isset($object->metadata->{$key})) {
+                $metadata[$key] = (string) $object->metadata->{$key};
+            }
+        }
+
+        return $metadata;
     }
 }
