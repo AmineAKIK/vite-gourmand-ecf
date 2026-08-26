@@ -36,7 +36,7 @@ final class PaymentMoneyBoundaryContractTest extends TestCase
         $source = file_get_contents(dirname(__DIR__, 3) . '/src/Services/StripeWebhookFulfillmentService.php');
         self::assertIsString($source);
 
-        self::assertStringContainsString("'montant_cents' => (int) $validated['amount_total']", $source);
+        self::assertStringContainsString('\'montant_cents\' => (int) $validated[\'amount_total\']', $source);
         self::assertStringContainsString('$commandeData[\'prix_total_cents\'] = (int) $validated[\'amount_total\']', $source);
         self::assertStringNotContainsString('Money::toDecimal(', $source);
     }
