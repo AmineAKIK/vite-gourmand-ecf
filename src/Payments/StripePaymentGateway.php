@@ -72,6 +72,7 @@ final class StripePaymentGateway implements PaymentGateway
             'success_url' => $request->successUrl,
             'cancel_url' => $request->cancelUrl,
             'metadata' => $metadata,
+            'payment_intent_data' => ['metadata' => $metadata],
             'client_reference_id' => $request->orderReference,
             'expires_at' => $request->expiresAt,
         ], [
