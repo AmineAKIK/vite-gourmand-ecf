@@ -2,15 +2,17 @@
 
 namespace App\Controllers;
 
+use App\Config\ConfigurationIncompleteException;
 use App\Config\Database;
 use App\Config\PlanConfig;
 use App\Config\SiteConfig;
-use App\Geo\Exception\DeliveryGeoNotConfiguredException;
 use App\Geo\Exception\DeliveryOutOfRangeException;
+use App\Geo\Exception\DeliveryProviderUnavailableException;
 use App\Models\CommandeModel;
 use App\Models\PaymentAttemptModel;
 use App\Models\UserModel;
 use App\Services\CommandeService;
+use App\Services\DeliveryQuoteService;
 use App\Services\MailService;
 use App\Services\OrderAdmissionService;
 use App\Services\OrderReferenceGenerator;
@@ -31,10 +33,14 @@ class CommandeController {
         }
 
         try {
-            $prixCents = \App\Geo\DeliveryResolver::computeDeliveryPriceCents($adresse, $ville, $codePostal);
-        } catch (DeliveryGeoNotConfiguredException $e) {
+            $quote = DeliveryQuoteService::quote($adresse, $ville, $codePostal);
+        } catch (ConfigurationIncompleteException) {
             http_response_code(503);
             echo json_encode(['ok' => false, 'message' => 'Le service de livraison n\'est pas encore configuré. Contactez le traiteur.']);
+            return;
+        } catch (DeliveryProviderUnavailableException) {
+            http_response_code(503);
+            echo json_encode(['ok' => false, 'message' => 'Le service de validation d\'adresse est temporairement indisponible. Veuillez réessayer.']);
             return;
         } catch (DeliveryOutOfRangeException $e) {
             http_response_code(422);
@@ -42,22 +48,17 @@ class CommandeController {
             return;
         }
 
-        if ($prixCents === null) {
+        if ($quote === null) {
             http_response_code(422);
             echo json_encode(['ok' => false, 'message' => 'Adresse non reconnue ou incohérente avec le code postal.']);
             return;
         }
 
-        $adresseResolue = resolveAdresseLivraison($adresse, $ville, $codePostal);
-        $distance = $adresseResolue
-            ? distanceKmDepuisCoordonnees((float)$adresseResolue['lat'], (float)$adresseResolue['lng'])
-            : null;
-
         echo json_encode([
-            'ok'       => true,
-            'distance' => $distance,
-            'prix_cents' => $prixCents,
-            'adresse'  => $adresseResolue['label'] ?? null,
+            'ok' => true,
+            'distance' => $quote['distance_km'],
+            'prix_cents' => $quote['price_cents'],
+            'adresse' => $quote['resolved']['label'] ?? null,
         ]);
     }
 
@@ -137,8 +138,11 @@ class CommandeController {
         } catch (DeliveryOutOfRangeException $e) {
             flash('error', $e->getMessage());
             redirect('/panier');
-        } catch (DeliveryGeoNotConfiguredException) {
+        } catch (ConfigurationIncompleteException) {
             flash('error', 'Le service de livraison n\'est pas encore configuré. Contactez le traiteur.');
+            redirect('/panier');
+        } catch (DeliveryProviderUnavailableException) {
+            flash('error', 'Le service de validation d\'adresse est temporairement indisponible. Veuillez réessayer.');
             redirect('/panier');
         } catch (\InvalidArgumentException $e) {
             flash('error', $e->getMessage());
@@ -325,8 +329,10 @@ class CommandeController {
             $pricing = PricingService::computeOrderTotal($panierItemsFromLignes, $adresse, $ville, $codePostal);
         } catch (DeliveryOutOfRangeException $e) {
             redirect('/mon-compte?open_modal=modif_' . (int)$commande['commande_id'] . '&modal_error=' . urlencode($e->getMessage()));
-        } catch (DeliveryGeoNotConfiguredException) {
+        } catch (ConfigurationIncompleteException) {
             redirect('/mon-compte?open_modal=modif_' . (int)$commande['commande_id'] . '&modal_error=' . urlencode('Le service de livraison n\'est pas encore configuré.'));
+        } catch (DeliveryProviderUnavailableException) {
+            redirect('/mon-compte?open_modal=modif_' . (int)$commande['commande_id'] . '&modal_error=' . urlencode('Le service de validation d\'adresse est temporairement indisponible. Veuillez réessayer.'));
         } catch (\InvalidArgumentException $e) {
             redirect('/mon-compte?open_modal=modif_' . (int)$commande['commande_id'] . '&modal_error=' . urlencode($e->getMessage()));
         }
