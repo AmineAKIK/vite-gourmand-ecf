@@ -13,20 +13,21 @@ final class OrderPricingCalculatorTest extends TestCase
     {
         $result = OrderPricingCalculator::calculate([
             ['menu_id' => 1, 'prix_par_personne' => '12.50', 'nombre_personne' => 4],
-        ], 750, 10000, 10.0);
+        ], 750, 10000, 1000);
 
         self::assertSame(5000, $result['total_brut_cents']);
         self::assertSame(0, $result['remise_globale_cents']);
         self::assertSame(5000, $result['total_menus_net_cents']);
         self::assertSame(5750, $result['total_ttc_cents']);
         self::assertSame(5000, $result['lignes'][0]['prix_menu_net_cents']);
+        self::assertSame(0, $result['taux_reduction_basis_points']);
     }
 
     public function testThresholdDiscountIsAppliedExactlyOnce(): void
     {
         $result = OrderPricingCalculator::calculate([
             ['menu_id' => 1, 'prix_par_personne' => '25.00', 'nombre_personne' => 4],
-        ], 1000, 10000, 10.0);
+        ], 1000, 10000, 1000);
 
         self::assertSame(10000, $result['total_brut_cents']);
         self::assertSame(1000, $result['remise_globale_cents']);
@@ -34,6 +35,7 @@ final class OrderPricingCalculatorTest extends TestCase
         self::assertSame(10000, $result['total_ttc_cents']);
         self::assertSame(10000, $result['lignes'][0]['prix_menu_brut_cents']);
         self::assertSame(9000, $result['lignes'][0]['prix_menu_net_cents']);
+        self::assertSame(1000, $result['taux_reduction_basis_points']);
     }
 
     public function testDiscountAllocationPreservesExactGlobalTotal(): void
@@ -42,7 +44,7 @@ final class OrderPricingCalculatorTest extends TestCase
             ['menu_id' => 1, 'prix_par_personne' => '10.01', 'nombre_personne' => 1],
             ['menu_id' => 2, 'prix_par_personne' => '20.02', 'nombre_personne' => 1],
             ['menu_id' => 3, 'prix_par_personne' => '30.03', 'nombre_personne' => 1],
-        ], 0, 1, 10.0);
+        ], 0, 1, 1000);
 
         $allocated = array_sum(array_column($result['lignes'], 'remise_appliquee_cents'));
         $netLines = array_sum(array_column($result['lignes'], 'prix_menu_net_cents'));
@@ -59,7 +61,7 @@ final class OrderPricingCalculatorTest extends TestCase
     {
         $result = OrderPricingCalculator::calculate([
             ['menu_id' => 1, 'prix_par_personne' => '10.00', 'nombre_personne' => 1],
-        ], -500, 0, 0.0);
+        ], -500, 0, 0);
 
         self::assertSame(0, $result['prix_livraison_cents']);
         self::assertSame(1000, $result['total_ttc_cents']);
