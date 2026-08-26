@@ -2,7 +2,9 @@
 
 namespace App\Controllers;
 
+use App\Config\ConfigurationIncompleteException;
 use App\Models\MenuModel;
+use App\Services\PaymentMethodRegistry;
 
 class PanierController
 {
@@ -10,7 +12,15 @@ class PanierController
     {
         requireAuth();
         $panier = $_SESSION['panier'] ?? [];
-        view('pages/panier/index', compact('panier'));
+        $paymentMethods = PaymentMethodRegistry::checkoutMethods();
+        $paymentConfigurationError = null;
+        try {
+            PaymentMethodRegistry::assertCheckoutAvailable();
+        } catch (ConfigurationIncompleteException $e) {
+            $paymentConfigurationError = $e->getMessage();
+        }
+
+        view('pages/panier/index', compact('panier', 'paymentMethods', 'paymentConfigurationError'));
     }
 
     public function add(): void

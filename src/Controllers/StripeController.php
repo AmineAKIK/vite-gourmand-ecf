@@ -2,16 +2,26 @@
 
 namespace App\Controllers;
 
+use App\Config\ConfigurationIncompleteException;
 use App\Config\OperatorConfiguration;
 use App\Domain\StripeCheckoutContract;
 use App\Models\MenuModel;
 use App\Models\PaymentAttemptModel;
+use App\Services\PaymentMethodRegistry;
 
 class StripeController
 {
     public function checkout(): void
     {
         requireAuth();
+
+        try {
+            PaymentMethodRegistry::requireCheckoutMethod('cb_online');
+        } catch (ConfigurationIncompleteException|\InvalidArgumentException $e) {
+            error_log('[payment] checkout Stripe indisponible: ' . $e->getMessage());
+            flash('error', 'Le paiement en ligne n’est plus disponible. Choisissez un autre moyen de paiement.');
+            redirect('/panier');
+        }
 
         $pending = $this->loadPendingPayment();
         if (!$pending) {

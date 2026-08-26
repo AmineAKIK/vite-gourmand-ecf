@@ -2,7 +2,9 @@
 
 namespace App\Controllers\Admin;
 
+use App\Config\ConfigurationIncompleteException;
 use App\Config\ConfigurationInvalidException;
+use App\Config\Database;
 use App\Config\ConfigurationRegistry;
 use App\Config\ConfigurationWriter;
 use App\Domain\BrandAsset;
@@ -10,7 +12,10 @@ use App\Models\HoraireModel;
 use App\Models\SiteConfigModel;
 use App\Models\SiteImageModel;
 use App\Services\MenuAdminService;
+use App\Services\PaymentMethodRegistry;
 use App\Services\PricingService;
+use InvalidArgumentException;
+use Throwable;
 
 class ParametresController
 {
@@ -40,6 +45,12 @@ class ParametresController
 
     public function index(): void
     {
+        if (($_GET['view'] ?? '') === 'payment-methods') {
+            $paymentMethods = PaymentMethodRegistry::tenantPolicies();
+            view('pages/admin/payment_methods', compact('paymentMethods'));
+            return;
+        }
+
         $storageKeys = self::tenantStorageKeys();
         $storedConfig = SiteConfigModel::getAll();
         $config = array_intersect_key($storedConfig, array_fill_keys($storageKeys, true));
@@ -64,6 +75,11 @@ class ParametresController
         verifyCsrf();
 
         $section = $this->postedSection();
+        if ($section === 'payment_methods') {
+            $this->updatePaymentMethods();
+            return;
+        }
+
         $allowedPostKeys = array_merge(self::tenantStorageKeys(), ['csrf_token', '_section']);
         foreach ($_POST as $postKey => $postValue) {
             if (in_array($postKey, $allowedPostKeys, true)) {
@@ -211,6 +227,60 @@ class ParametresController
         redirect('/admin/parametres#personnalisation');
     }
 
+    private function updatePaymentMethods(): void
+    {
+        $posted = $_POST['payment_methods'] ?? [];
+        if (!is_array($posted)) {
+            flash('error', 'Configuration des moyens de paiement invalide.');
+            redirect('/admin/parametres?view=payment-methods');
+        }
+
+        $db = Database::getConnection();
+        $db->beginTransaction();
+        try {
+            foreach (array_keys(PaymentMethodRegistry::capabilities()) as $code) {
+                $policy = $posted[$code] ?? [];
+                if (!is_array($policy)) {
+                    throw new InvalidArgumentException('Politique de paiement invalide : ' . $code);
+                }
+
+                PaymentMethodRegistry::saveTenantPolicy(
+                    $code,
+                    isset($policy['active']),
+                    isset($policy['checkout_enabled']),
+                    isset($policy['manual_collection_enabled']),
+                    isset($policy['allow_deposit']),
+                    isset($policy['allow_balance']),
+                    isset($policy['allow_single_payment']),
+                    is_string($policy['instructions'] ?? null) ? $policy['instructions'] : '',
+                );
+            }
+            $db->commit();
+        } catch (ConfigurationIncompleteException $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            flash('error', 'Configuration opérateur manquante : ' . implode(', ', $e->keys()) . '.');
+            redirect('/admin/parametres?view=payment-methods');
+        } catch (InvalidArgumentException $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            flash('error', $e->getMessage());
+            redirect('/admin/parametres?view=payment-methods');
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            error_log('[payment] mise à jour registry impossible: ' . $e->getMessage());
+            flash('error', 'Impossible de mettre à jour les moyens de paiement.');
+            redirect('/admin/parametres?view=payment-methods');
+        }
+
+        flash('success', 'Moyens de paiement mis à jour.');
+        redirect('/admin/parametres?view=payment-methods');
+    }
+
     /** @return list<string> */
     private static function tenantStorageKeys(): array
     {
@@ -233,7 +303,7 @@ class ParametresController
 
         return in_array(
             $section,
-            ['identite', 'entreprise', 'fiscal', 'paiement', 'tarification', 'legal', 'avance'],
+            ['identite', 'entreprise', 'fiscal', 'paiement', 'payment_methods', 'tarification', 'legal', 'avance'],
             true,
         ) ? $section : 'identite';
     }

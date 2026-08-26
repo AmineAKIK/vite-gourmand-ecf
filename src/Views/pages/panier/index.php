@@ -95,18 +95,28 @@
                 <div class="card mb-4">
                     <div class="card-body">
                         <h2 class="h5 mb-3 d-flex align-items-center gap-2"><span class="badge bg-brand">3</span><span>Mode de paiement <small class="d-block text-muted fw-normal">Comment souhaitez-vous régler ?</small></span></h2>
-                        <div class="row g-2">
-                            <?php $modesActifs = db()->fetchAll("SELECT * FROM mode_paiement WHERE actif = 1 ORDER BY mode_id"); ?>
-                            <?php foreach ($modesActifs as $mode): ?>
-                                <div class="col-12 col-sm-6">
-                                    <label class="d-flex align-items-center gap-2 border rounded p-3">
-                                        <input type="radio" name="mode_paiement" value="<?= sanitize($mode['code']) ?>" class="form-check-input mt-0" required <?= $mode['code'] === 'virement' ? 'checked' : '' ?>>
-                                        <span class="small fw-medium"><?= sanitize($mode['libelle']) ?></span>
-                                        <?php if ($mode['code'] === 'cb_online'): ?><i class="bi bi-shield-lock ms-auto text-success" title="Paiement sécurisé par Stripe"></i><?php endif; ?>
-                                    </label>
-                                </div>
-                            <?php endforeach; ?>
-                        </div>
+                        <?php if (empty($paymentMethods)): ?>
+                            <div class="alert alert-warning mb-0" role="alert">
+                                Aucun moyen de paiement n’est actuellement disponible. Contactez le traiteur avant de finaliser la commande.
+                            </div>
+                        <?php else: ?>
+                            <div class="row g-2">
+                                <?php foreach ($paymentMethods as $index => $mode): ?>
+                                    <div class="col-12 col-sm-6">
+                                        <label class="d-flex align-items-start gap-2 border rounded p-3 h-100">
+                                            <input type="radio" name="mode_paiement" value="<?= sanitize($mode['code']) ?>" class="form-check-input mt-1" required <?= $index === 0 ? 'checked' : '' ?>>
+                                            <span class="small">
+                                                <span class="fw-medium d-block"><?= sanitize($mode['label']) ?></span>
+                                                <?php if (!empty($mode['instructions'])): ?>
+                                                    <span class="text-muted d-block mt-1"><?= sanitize($mode['instructions']) ?></span>
+                                                <?php endif; ?>
+                                            </span>
+                                            <?php if (($mode['provider'] ?? null) === 'stripe'): ?><i class="bi bi-shield-lock ms-auto text-success" title="Paiement sécurisé en ligne"></i><?php endif; ?>
+                                        </label>
+                                    </div>
+                                <?php endforeach; ?>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 </div>
 
@@ -161,6 +171,7 @@ const codePostalInput = document.getElementById('code_postal_livraison');
 const dateInput = document.getElementById('date_prestation');
 const heureInput = document.getElementById('heure_livraison');
 const submitBtn = document.getElementById('btn-finaliser');
+const paymentInputs = Array.from(document.querySelectorAll('input[name="mode_paiement"]'));
 const totalBrutCents = <?= json_encode($totalBrutCents) ?>;
 const reductionSeuilCents = <?= json_encode(reductionSeuilCents()) ?>;
 const reductionTauxBasisPoints = <?= json_encode(reductionTauxPourcentage() * 100) ?>;
@@ -172,7 +183,8 @@ let livraisonDebounceTimer = null;
 function checkForm() {
     const date = dateInput ? dateInput.value.trim() : '';
     const heure = heureInput ? heureInput.value.trim() : '';
-    if (submitBtn) submitBtn.disabled = !(livraisonOk && date && heure);
+    const paymentSelected = paymentInputs.some(input => input.checked);
+    if (submitBtn) submitBtn.disabled = !(livraisonOk && date && heure && paymentSelected);
 }
 
 async function updateLivraison() {
@@ -255,6 +267,7 @@ async function checkDispo() {
 
 dateInput && dateInput.addEventListener('change', checkDispo);
 heureInput && heureInput.addEventListener('change', checkForm);
+paymentInputs.forEach(input => input.addEventListener('change', checkForm));
 window.addEventListener('load', updateLivraison);
 checkForm();
 

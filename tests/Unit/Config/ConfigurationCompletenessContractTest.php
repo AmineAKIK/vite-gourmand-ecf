@@ -18,12 +18,14 @@ final class ConfigurationCompletenessContractTest extends TestCase
         self::assertNotContains('operator.stripe.secret_key', $ordering);
     }
 
-    public function testCheckoutAddsOperatorStripeRequirements(): void
+    public function testCheckoutRemainsProviderAgnostic(): void
     {
         $checkout = ConfigurationCompleteness::keys('checkout');
 
-        self::assertContains('operator.stripe.secret_key', $checkout);
-        self::assertContains('operator.base_url', $checkout);
+        self::assertContains('order.capacity.max_per_day', $checkout);
+        self::assertNotContains('operator.stripe.secret_key', $checkout);
+        self::assertNotContains('operator.stripe.webhook_secret', $checkout);
+        self::assertNotContains('operator.base_url', $checkout);
     }
 
     public function testBillingRequiresLegalAndPaymentConfiguration(): void

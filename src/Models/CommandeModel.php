@@ -14,7 +14,7 @@ class CommandeModel
 
     /**
      * $commandeData: numero_commande, utilisateur_id, date_prestation, heure_livraison,
-     *                adresse_livraison, ville_livraison, code_postal_livraison, prix_total_cents, prix_livraison_cents
+     *                adresse_livraison, ville_livraison, code_postal_livraison, prix_total_cents, payment_method_code, prix_livraison_cents
      * $lignes: produit de PricingService::computeOrderTotal()['lignes'], chaque entrée contient :
      *   menu_id, nombre_personne, prix_menu_cents, prix_livraison_cents, prix_total_ligne_cents,
      *   prix_par_personne_snapshot_cents, taux_tva_menu_basis_points, taux_tva_livraison_basis_points,
@@ -38,8 +38,8 @@ class CommandeModel
 
             $stmt = $db->prepare("
                 INSERT INTO commande (numero_commande, utilisateur_id, date_prestation,
-                    heure_livraison, adresse_livraison, ville_livraison, code_postal_livraison, prix_total_cents, currency, instructions)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    heure_livraison, adresse_livraison, ville_livraison, code_postal_livraison, prix_total_cents, currency, payment_method_code, instructions)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
                 $commandeData['numero_commande'],
@@ -51,6 +51,7 @@ class CommandeModel
                 $commandeData['code_postal_livraison'],
                 (int) $commandeData['prix_total_cents'],
                 (string) $commandeData['currency'],
+                (string) $commandeData['payment_method_code'],
                 $commandeData['instructions'] ?? null,
             ]);
             $commandeId = (int)$db->lastInsertId();
