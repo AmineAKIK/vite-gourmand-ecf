@@ -33,7 +33,6 @@ jobs:
                   raise SystemExit(f'missing replacement marker in {path}: {old[:80]!r}')
               p.write_text(text.replace(old, new, 1))
 
-          # Offline orders: ingredient consumption must be part of the order transaction.
           replace_once(
               'src/Models/CommandeModel.php',
               'use App\\Models\\NotificationModel;\nuse RuntimeException;',
@@ -45,7 +44,6 @@ jobs:
               "            InventoryLedgerService::consumeOrder($db, $commandeId, (int) $commandeData['utilisateur_id']);\n\n            self::addHistorique($commandeId, null, OrderStatus::initial(), 'Commande passée', $commandeData['utilisateur_id']);",
           )
 
-          # Remove the old post-commit, fail-open stock consumption path.
           p = Path('src/Controllers/CommandeController.php')
           text = p.read_text()
           pattern = re.compile(
@@ -57,7 +55,6 @@ jobs:
               raise SystemExit('unable to remove non-blocking offline stock path')
           p.write_text(text)
 
-          # Stripe already has one encompassing transaction: call the ledger directly in it.
           replace_once('src/Services/StripeWebhookFulfillmentService.php', 'use App\\Models\\StockModel;\n', '')
           replace_once(
               'src/Services/StripeWebhookFulfillmentService.php',
@@ -65,7 +62,6 @@ jobs:
               '            InventoryLedgerService::consumeOrder($db, $commandeId, null);',
           )
 
-          # Recipes get their own canonical write boundary.
           replace_once(
               'src/Controllers/Workspace/RecetteController.php',
               'use App\\Services\\CatalogIntegrityService;\n',
@@ -81,15 +77,12 @@ jobs:
               "        $quantite = (float) str_replace(',', '.', $_POST['quantite'] ?? 0);",
               "        $quantite = trim((string) ($_POST['quantite'] ?? ''));",
           )
-
-          # New manual movements are unambiguous entry/exit only.
           replace_once(
               'src/Views/pages/employe/recettes.php',
               '                        <option value="ajustement">Ajustement (inventaire)</option>\n',
               '',
           )
 
-          # Catalog service no longer owns recipes.
           p = Path('src/Services/CatalogIntegrityService.php')
           text = p.read_text()
           text, count = re.subn(
@@ -112,7 +105,6 @@ jobs:
               raise SystemExit('unable to remove recipe-only ingredient helper')
           p.write_text(text)
 
-          # IngredientModel and RecetteModel become read models; canonical services own writes.
           p = Path('src/Models/IngredientModel.php')
           text = p.read_text()
           start = text.find('    public static function create(array $data): int')
@@ -129,22 +121,11 @@ jobs:
               raise SystemExit('unable to remove RecetteModel sync API')
           p.write_text(text[:start].rstrip() + '\n}\n')
 
-          # Keep the legacy StockModel façade thin but do not coerce exact request quantities to float.
           replace_once(
               'src/Models/StockModel.php',
               'public static function addMouvement(int $ingredientId, string $type, float $quantite, ?string $motif, ?int $commandeId, ?int $creePar): int',
               'public static function addMouvement(int $ingredientId, string $type, mixed $quantite, ?string $motif, ?int $commandeId, ?int $creePar): int',
           )
-
-          # Exercise ledger invariants against the real MySQL 8.4 fresh-install database.
-          replace_once(
-              '.github/workflows/quality.yml',
-              '      - name: Verify canonical schema and snapshot fingerprint\n',
-              '      - name: Verify inventory invariants against MySQL\n        run: php bin/verify-inventory-invariants.php\n\n      - name: Verify canonical schema and snapshot fingerprint\n',
-          )
-
-          # One-shot workflow removes itself from the branch before committing.
-          Path('.github/workflows/phase5-inventory-finalize.yml').unlink()
           PY
 
           php -l src/Models/CommandeModel.php
@@ -158,6 +139,6 @@ jobs:
 
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -A
+          git add src/Models/CommandeModel.php src/Controllers/CommandeController.php src/Services/StripeWebhookFulfillmentService.php src/Controllers/Workspace/RecetteController.php src/Views/pages/employe/recettes.php src/Services/CatalogIntegrityService.php src/Models/IngredientModel.php src/Models/RecetteModel.php src/Models/StockModel.php
           git commit -m 'Phase 5: enforce recipe and inventory transaction invariants'
           git push origin HEAD:v1/inventory-invariants
