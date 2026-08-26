@@ -143,16 +143,6 @@ class SiteConfig
         return $value;
     }
 
-    private static function requiredFloat(string $key): float
-    {
-        $value = Configuration::get($key);
-        if (!is_float($value) && !is_int($value)) {
-            throw new UnexpectedValueException($key . ' must resolve to a numeric value.');
-        }
-
-        return (float) $value;
-    }
-
     private static function requiredInt(string $key): int
     {
         $value = Configuration::get($key);
