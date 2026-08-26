@@ -18,35 +18,52 @@ final class PaymentMethodRegistry
     public const CHECKOUT_STRATEGY_CREATE_ORDER = 'create_order';
     public const CHECKOUT_STRATEGY_PROVIDER_CONFIRMATION = 'provider_confirmation';
 
-    /** @var array<string,array{label:string,provider:?string,checkout_strategy:string,supports_manual_collection:bool}> */
+    public const ORDER_EFFECT_CREATE_INITIAL = 'create_initial_order';
+    public const ORDER_EFFECT_CONFIRM_AFTER_PROVIDER = 'confirm_after_provider';
+
+    /**
+     * Product capabilities are code invariants. Tenant policy lives in mode_paiement.
+     *
+     * @var array<string,array{
+     *   label:string,
+     *   provider:?string,
+     *   checkout_strategy:string,
+     *   order_status_effect:string,
+     *   supports_manual_collection:bool
+     * }>
+     */
     private const CAPABILITIES = [
         'virement' => [
             'label' => 'Virement bancaire',
             'provider' => null,
             'checkout_strategy' => self::CHECKOUT_STRATEGY_CREATE_ORDER,
+            'order_status_effect' => self::ORDER_EFFECT_CREATE_INITIAL,
             'supports_manual_collection' => true,
         ],
         'cheque' => [
             'label' => 'Chèque',
             'provider' => null,
             'checkout_strategy' => self::CHECKOUT_STRATEGY_CREATE_ORDER,
+            'order_status_effect' => self::ORDER_EFFECT_CREATE_INITIAL,
             'supports_manual_collection' => true,
         ],
         'especes' => [
             'label' => 'Espèces',
             'provider' => null,
             'checkout_strategy' => self::CHECKOUT_STRATEGY_CREATE_ORDER,
+            'order_status_effect' => self::ORDER_EFFECT_CREATE_INITIAL,
             'supports_manual_collection' => true,
         ],
         'cb_online' => [
             'label' => 'Carte bancaire en ligne',
             'provider' => 'stripe',
             'checkout_strategy' => self::CHECKOUT_STRATEGY_PROVIDER_CONFIRMATION,
+            'order_status_effect' => self::ORDER_EFFECT_CONFIRM_AFTER_PROVIDER,
             'supports_manual_collection' => false,
         ],
     ];
 
-    /** @return array<string,array{label:string,provider:?string,checkout_strategy:string,supports_manual_collection:bool}> */
+    /** @return array<string,array<string,mixed>> */
     public static function capabilities(): array
     {
         return self::CAPABILITIES;
@@ -100,13 +117,17 @@ final class PaymentMethodRegistry
     /** @return array<string,mixed> */
     public static function requireCheckoutMethod(string $code): array
     {
-        $method = self::findPolicy($code);
+        $method = self::findPolicy(trim($code));
         if (!$method['actif'] || !$method['checkout_enabled']) {
             throw new InvalidArgumentException('Mode de paiement indisponible pour le checkout.');
         }
 
         if (!$method['provider_ready']) {
-            throw new ConfigurationIncompleteException(self::providerRequiredKeys($method['provider']), 'payment:' . $code);
+            $missing = $method['provider_missing_keys'];
+            throw new ConfigurationIncompleteException(
+                $missing !== [] ? $missing : ['payment.provider'],
+                'payment:' . $method['code'],
+            );
         }
 
         return $method;
@@ -116,7 +137,7 @@ final class PaymentMethodRegistry
     public static function requireManualCollectionMethod(string $code, string $paymentType): array
     {
         self::assertPaymentType($paymentType);
-        $method = self::findPolicy($code);
+        $method = self::findPolicy(trim($code));
 
         if (!$method['actif']
             || !$method['manual_collection_enabled']
@@ -132,9 +153,34 @@ final class PaymentMethodRegistry
 
     public static function assertCheckoutAvailable(): void
     {
-        if (self::checkoutMethods() === []) {
+        $configured = array_values(array_filter(
+            self::tenantPolicies(),
+            static fn(array $method): bool => $method['actif'] && $method['checkout_enabled'],
+        ));
+
+        if ($configured === []) {
             throw new ConfigurationIncompleteException(['payment.methods'], 'checkout');
         }
+
+        foreach ($configured as $method) {
+            if ($method['provider_ready']) {
+                return;
+            }
+        }
+
+        $missing = [];
+        foreach ($configured as $method) {
+            foreach ($method['provider_missing_keys'] as $key) {
+                $missing[$key] = true;
+            }
+        }
+
+        $keys = array_keys($missing);
+        sort($keys);
+        throw new ConfigurationIncompleteException(
+            $keys !== [] ? $keys : ['payment.methods'],
+            'checkout',
+        );
     }
 
     public static function saveTenantPolicy(
@@ -147,17 +193,29 @@ final class PaymentMethodRegistry
         bool $allowSinglePayment,
         string $instructions,
     ): void {
+        $code = trim($code);
         $capability = self::capability($code);
         $instructions = trim($instructions);
+
         if (mb_strlen($instructions) > 2000) {
             throw new InvalidArgumentException('Les instructions de paiement sont trop longues.');
+        }
+        if (!$active && ($checkoutEnabled || $manualCollectionEnabled)) {
+            throw new InvalidArgumentException('Une méthode désactivée ne peut être disponible dans un parcours.');
+        }
+        if ($active && !$checkoutEnabled && !$manualCollectionEnabled) {
+            throw new InvalidArgumentException('Une méthode active doit être disponible dans au moins un parcours.');
+        }
+        if ($active && !$allowDeposit && !$allowBalance && !$allowSinglePayment) {
+            throw new InvalidArgumentException('Une méthode active doit autoriser au moins un type d’encaissement.');
         }
         if (!$capability['supports_manual_collection'] && $manualCollectionEnabled) {
             throw new InvalidArgumentException('Ce moyen de paiement ne peut pas être encaissé manuellement.');
         }
-        if ($checkoutEnabled && $code === 'cb_online' && ($allowDeposit || $allowBalance || !$allowSinglePayment)) {
+        if ($code === 'cb_online' && ($manualCollectionEnabled || $allowDeposit || $allowBalance || !$allowSinglePayment)) {
             throw new InvalidArgumentException('La carte en ligne V1 accepte uniquement le paiement unique intégral.');
         }
+
         if ($active && $checkoutEnabled) {
             $missing = self::providerMissingKeys($capability['provider']);
             if ($missing !== []) {
@@ -206,14 +264,11 @@ final class PaymentMethodRegistry
         throw new RuntimeException('Politique de paiement introuvable.');
     }
 
-    /**
-     * @param array{label:string,provider:?string,checkout_strategy:string,supports_manual_collection:bool} $capability
-     * @param array<string,mixed>|null $row
-     * @return array<string,mixed>
-     */
+    /** @param array<string,mixed> $capability @param array<string,mixed>|null $row @return array<string,mixed> */
     private static function policy(string $code, array $capability, ?array $row): array
     {
         $provider = $capability['provider'];
+        $providerMissingKeys = self::providerMissingKeys($provider);
 
         return [
             'code' => $code,
@@ -228,8 +283,10 @@ final class PaymentMethodRegistry
             'provider' => $provider,
             'requires_external_provider' => $provider !== null,
             'checkout_strategy' => $capability['checkout_strategy'],
+            'order_status_effect' => $capability['order_status_effect'],
             'supports_manual_collection' => $capability['supports_manual_collection'],
-            'provider_ready' => self::providerMissingKeys($provider) === [],
+            'provider_ready' => $providerMissingKeys === [],
+            'provider_missing_keys' => $providerMissingKeys,
         ];
     }
 
@@ -252,7 +309,7 @@ final class PaymentMethodRegistry
         return $indexed;
     }
 
-    /** @return array{label:string,provider:?string,checkout_strategy:string,supports_manual_collection:bool} */
+    /** @return array<string,mixed> */
     private static function capability(string $code): array
     {
         $capability = self::CAPABILITIES[$code] ?? null;
@@ -305,6 +362,7 @@ final class PaymentMethodRegistry
                     $missing[] = $key;
                     continue;
                 }
+
                 $value = OperatorConfiguration::string($key);
                 if ($value === '' || str_contains($value, 'REMPLACER')) {
                     $missing[] = $key;
