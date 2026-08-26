@@ -71,8 +71,12 @@ class MenuAdminController
     public function deleteMenu(): void
     {
         verifyCsrf();
-        MenuModel::delete((int) ($_POST['menu_id'] ?? 0));
-        flash('success', 'Menu supprimé.');
+        try {
+            CatalogIntegrityService::deactivateMenu((int) ($_POST['menu_id'] ?? 0));
+            flash('success', 'Menu supprimé.');
+        } catch (Throwable $e) {
+            flash('error', $e->getMessage());
+        }
         redirect('/employe/menus');
     }
 
@@ -109,14 +113,8 @@ class MenuAdminController
     public function deletePlat(): void
     {
         verifyCsrf();
-        $platId = (int) ($_POST['plat_id'] ?? 0);
-        if (MenuModel::platIsUsed($platId)) {
-            flash('error', 'Impossible de supprimer un plat utilisé dans un menu. Retirez-le d’abord des menus concernés.');
-            redirect('/employe/menus');
-        }
-
         try {
-            MenuModel::deletePlat($platId);
+            CatalogIntegrityService::deletePlat((int) ($_POST['plat_id'] ?? 0));
             flash('success', 'Plat supprimé.');
         } catch (Throwable $e) {
             flash('error', $e->getMessage());
