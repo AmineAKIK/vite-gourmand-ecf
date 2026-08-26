@@ -223,6 +223,9 @@ jobs:
           $db->exec('ALTER TABLE paiement DROP CHECK chk_paiement_montant');
           PHP
 
+      - name: Reproduce Railway partial order-history migration state
+        run: php bin/prepare-order-history-partial-fixture.php
+
       - name: Apply forward-only migrations to historical complete schema
         run: php bin/migrate.php
 
@@ -254,6 +257,21 @@ jobs:
                   'taux_tva_livraison_id',
               ],
               'paiement' => ['montant_cents'],
+              'commande_historique' => [
+                  'ancien_statut_guard',
+                  'nouveau_statut_guard',
+                  'commentaire_guard',
+                  'modifie_par_guard',
+              ],
+              'commande_historique_guard' => [
+                  'historique_id',
+                  'commande_id',
+                  'ancien_statut_guard',
+                  'nouveau_statut_guard',
+                  'commentaire_guard',
+                  'modifie_par_guard',
+                  'created_at',
+              ],
           ];
           $forbidden = [
               'commande' => ['prix_total'],
@@ -263,6 +281,8 @@ jobs:
                   'taux_reduction_snapshot', 'remise_appliquee', 'taux_tva_id',
               ],
               'paiement' => ['montant'],
+              'commande_historique' => [],
+              'commande_historique_guard' => [],
           ];
 
           foreach ($required as $table => $columns) {
@@ -283,6 +303,55 @@ jobs:
               }
           }
 
+          foreach (['ancien_statut_guard', 'nouveau_statut_guard', 'commentaire_guard'] as $column) {
+              foreach ([['commande_historique', true], ['commande_historique_guard', false]] as [$table, $generated]) {
+                  $stmt = $db->prepare(
+                      'SELECT COLUMN_TYPE, CHARACTER_SET_NAME, COLLATION_NAME, EXTRA
+                       FROM information_schema.COLUMNS
+                       WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?'
+                  );
+                  $stmt->execute([$table, $column]);
+                  $row = $stmt->fetch(PDO::FETCH_ASSOC);
+                  if (!is_array($row) || strtolower((string) $row['COLUMN_TYPE']) !== 'binary(32)') {
+                      throw new RuntimeException("Invalid binary history guard {$table}.{$column}");
+                  }
+                  if ($row['CHARACTER_SET_NAME'] !== null || $row['COLLATION_NAME'] !== null) {
+                      throw new RuntimeException("Collation-dependent history guard {$table}.{$column}");
+                  }
+                  $isGenerated = str_contains(strtoupper((string) $row['EXTRA']), 'GENERATED');
+                  if ($isGenerated !== $generated) {
+                      throw new RuntimeException("Invalid generated mode {$table}.{$column}");
+                  }
+              }
+          }
+
+          foreach (['fk_commande_historique_commande', 'fk_commande_historique_user'] as $constraint) {
+              $stmt = $db->prepare(
+                  'SELECT DELETE_RULE FROM information_schema.REFERENTIAL_CONSTRAINTS
+                   WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?'
+              );
+              $stmt->execute(['commande_historique', $constraint]);
+              if ($stmt->fetchColumn() !== 'RESTRICT') {
+                  throw new RuntimeException("Invalid history FK rule {$constraint}");
+              }
+          }
+
+          $stmt = $db->prepare(
+              'SELECT UPDATE_RULE, DELETE_RULE FROM information_schema.REFERENTIAL_CONSTRAINTS
+               WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?'
+          );
+          $stmt->execute(['commande_historique_guard', 'fk_commande_historique_guard_event']);
+          $guardRule = $stmt->fetch(PDO::FETCH_ASSOC);
+          if (!is_array($guardRule) || $guardRule['UPDATE_RULE'] !== 'RESTRICT' || $guardRule['DELETE_RULE'] !== 'RESTRICT') {
+              throw new RuntimeException('Invalid immutable history guard FK rules.');
+          }
+
+          $historyCount = (int) $db->query('SELECT COUNT(*) FROM commande_historique')->fetchColumn();
+          $guardCount = (int) $db->query('SELECT COUNT(*) FROM commande_historique_guard')->fetchColumn();
+          if ($historyCount !== $guardCount) {
+              throw new RuntimeException('Historical status events were not fully backfilled into the immutable guard.');
+          }
+
           foreach (['v_paiements_commande', 'v_ca_stats', 'v_ca_commandes', 'v_ca_mensuel', 'v_ca_par_menu'] as $view) {
               $stmt = $db->prepare(
                   'SELECT COUNT(*) FROM information_schema.VIEWS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
@@ -293,11 +362,14 @@ jobs:
               }
           }
 
-          $stmt = $db->prepare('SELECT checksum FROM schema_migrations WHERE migration = ?');
-          $stmt->execute(['002_canonical_money.sql']);
-          $checksum = $stmt->fetchColumn();
-          if (!is_string($checksum) || $checksum !== hash('sha256', (string) file_get_contents('sql/v1/migrations/002_canonical_money.sql'))) {
-              throw new RuntimeException('Canonical money migration tracking invalid.');
+          foreach (['002_canonical_money.sql', '003_payment_method_registry.sql', '004_immutable_order_status_history.sql'] as $migration) {
+              $stmt = $db->prepare('SELECT checksum FROM schema_migrations WHERE migration = ?');
+              $stmt->execute([$migration]);
+              $checksum = $stmt->fetchColumn();
+              $path = 'sql/v1/migrations/' . $migration;
+              if (!is_string($checksum) || $checksum !== hash('sha256', (string) file_get_contents($path))) {
+                  throw new RuntimeException("Migration tracking invalid: {$migration}");
+              }
           }
           PHP
 

@@ -40,6 +40,7 @@ final class OrderStatusHistoryArchitectureContractTest extends TestCase
         self::assertStringNotContainsString('INSERT INTO commande_historique', $cancellation);
         self::assertStringNotContainsString('CommandeModel::addHistorique', $stripe);
         self::assertStringContainsString('INSERT INTO commande_historique_guard', $history);
+        self::assertStringContainsString('nouveau_statut_guard', $history);
     }
 
     public function testMigrationMakesHistoryRelationallyImmutableWithoutPrivilegedTriggers(): void
@@ -49,8 +50,10 @@ final class OrderStatusHistoryArchitectureContractTest extends TestCase
         self::assertStringContainsString('CREATE TABLE commande_historique_guard', $migration);
         self::assertStringContainsString('uk_commande_historique_immutable', $migration);
         self::assertStringContainsString('fk_commande_historique_guard_event', $migration);
-        self::assertStringContainsString('commentaire_guard CHAR(64)', $migration);
-        self::assertStringContainsString("SHA2(COALESCE(commentaire, ''), 256)", $migration);
+        self::assertStringContainsString('ancien_statut_guard BINARY(32)', $migration);
+        self::assertStringContainsString('nouveau_statut_guard BINARY(32)', $migration);
+        self::assertStringContainsString('commentaire_guard BINARY(32)', $migration);
+        self::assertStringContainsString("UNHEX(SHA2(COALESCE(commentaire, ''), 256))", $migration);
         self::assertStringContainsString('ON UPDATE RESTRICT ON DELETE RESTRICT', $migration);
         self::assertSame(3, substr_count($migration, 'ON DELETE RESTRICT'));
         self::assertStringNotContainsString('CREATE TRIGGER', $migration);
@@ -65,10 +68,21 @@ final class OrderStatusHistoryArchitectureContractTest extends TestCase
         self::assertStringContainsString("REFERENCED_TABLE_NAME = 'commande'", $migration);
         self::assertStringContainsString("COLUMN_NAME = 'modifie_par'", $migration);
         self::assertStringContainsString("REFERENCED_TABLE_NAME = 'utilisateur'", $migration);
-        self::assertStringContainsString('PREPARE drop_history_order_fk_stmt', $migration);
-        self::assertStringContainsString('PREPARE drop_history_actor_fk_stmt', $migration);
+        self::assertStringContainsString('PREPARE drop_history_order_fks_stmt', $migration);
+        self::assertStringContainsString('PREPARE drop_history_actor_fks_stmt', $migration);
         self::assertStringNotContainsString('DROP FOREIGN KEY fk_commande_historique_commande', $migration);
         self::assertStringNotContainsString('DROP FOREIGN KEY fk_commande_historique_user', $migration);
+    }
+
+    public function testMigrationCanResumeAfterUntrackedDerivedGuardArtifacts(): void
+    {
+        $migration = $this->source('sql/v1/migrations/004_immutable_order_status_history.sql');
+
+        self::assertStringContainsString('DROP TABLE IF EXISTS commande_historique_guard', $migration);
+        self::assertStringContainsString('uk_commande_historique_immutable', $migration);
+        self::assertStringContainsString('information_schema.STATISTICS', $migration);
+        self::assertStringContainsString('PREPARE drop_history_guard_columns_stmt', $migration);
+        self::assertStringContainsString("'nouveau_statut_guard'", $migration);
     }
 
     public function testEmployeeDeletionPreservesActorLinkByAnonymizingWhenAudited(): void
