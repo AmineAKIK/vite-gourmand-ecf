@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Payments;
 
 use App\Config\OperatorConfiguration;
-use App\Domain\StripeCheckoutContract;
 use RuntimeException;
 use Stripe\StripeClient;
 
@@ -53,7 +52,7 @@ final class StripePaymentGateway implements PaymentGateway
                 'duration' => 'once',
                 'name' => 'Réduction commande',
             ], [
-                'idempotency_key' => StripeCheckoutContract::idempotencyKey($request->attemptId, 'coupon'),
+                'idempotency_key' => PaymentCheckoutContract::idempotencyKey($request->attemptId, 'coupon'),
             ]);
             $discounts[] = ['coupon' => $coupon->id];
         }
@@ -78,7 +77,7 @@ final class StripePaymentGateway implements PaymentGateway
             'client_reference_id' => $request->orderReference,
             'expires_at' => $request->expiresAt,
         ], [
-            'idempotency_key' => StripeCheckoutContract::idempotencyKey($request->attemptId, 'checkout-session'),
+            'idempotency_key' => PaymentCheckoutContract::idempotencyKey($request->attemptId, 'checkout-session'),
         ]);
 
         return $this->mapSession($session);
