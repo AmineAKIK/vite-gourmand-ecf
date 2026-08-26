@@ -85,14 +85,14 @@ final class DeliveryArchitectureContractTest extends TestCase
         }
 
         self::assertFileDoesNotExist(
-            dirname(__DIR__, 3) . '/src/Geo/Exception/DeliveryGeoNotConfiguredException.php'
+            dirname(__DIR__, 3) . '/src/Geo/Exception/DeliveryGeoNotConfiguredException.php',
         );
     }
 
     public function testProviderOutageAndConfigurationIncompleteRemainDistinct503Boundaries(): void
     {
         $providerException = file_get_contents(
-            dirname(__DIR__, 3) . '/src/Geo/Exception/DeliveryProviderUnavailableException.php'
+            dirname(__DIR__, 3) . '/src/Geo/Exception/DeliveryProviderUnavailableException.php',
         );
         $controller = file_get_contents(dirname(__DIR__, 3) . '/src/Controllers/CommandeController.php');
         self::assertIsString($providerException);
@@ -106,10 +106,10 @@ final class DeliveryArchitectureContractTest extends TestCase
     public function testNoTemporaryDeliveryFinalizerArtifactsRemain(): void
     {
         self::assertFileDoesNotExist(
-            dirname(__DIR__, 3) . '/bin/phase4_delivery_policy_finalize_clean.py'
+            dirname(__DIR__, 3) . '/bin/phase4_delivery_policy_finalize_clean.py',
         );
         self::assertFileDoesNotExist(
-            dirname(__DIR__, 3) . '/.github/workflows/phase4-delivery-policy-clean-once.yml'
+            dirname(__DIR__, 3) . '/.github/workflows/phase4-delivery-policy-clean-once.yml',
         );
     }
 }
