@@ -1,52 +1,62 @@
 <?php
 
-declare(strict_types=1);
-
 namespace Tests\Unit\Config;
 
 use App\Config\ConfigurationRegistry;
 use App\Config\ConfigurationScope;
 use App\Config\ConfigurationSource;
+use App\Config\ConfigurationType;
 use InvalidArgumentException;
+use OutOfBoundsException;
 use PHPUnit\Framework\TestCase;
 
 final class ConfigurationRegistryTest extends TestCase
 {
-    public function testMarketProfileIsFixedAndCanonical(): void
+    public function testCanonicalTenantKeysMapToLegacyStorageWithoutLeakingItToConsumers(): void
     {
-        $expected = [
-            'market.country' => 'FR',
-            'market.currency' => 'EUR',
-            'market.locale' => 'fr-FR',
-            'market.timezone' => 'Europe/Paris',
-        ];
+        $brand = ConfigurationRegistry::get('brand.name');
+        self::assertSame(ConfigurationScope::TENANT, $brand->scope);
+        self::assertSame(ConfigurationType::STRING, $brand->type);
+        self::assertSame(ConfigurationSource::SITE_CONFIG, $brand->source);
+        self::assertSame('site_nom', $brand->storageKey);
+        self::assertTrue($brand->required);
 
-        foreach ($expected as $key => $value) {
-            $definition = ConfigurationRegistry::get($key);
-            self::assertSame(ConfigurationScope::MARKET, $definition->scope, $key);
-            self::assertSame(ConfigurationSource::FIXED, $definition->source, $key);
-            self::assertSame($value, $definition->defaultValue, $key);
-            self::assertNull($definition->storageKey, $key);
+        $delivery = ConfigurationRegistry::get('delivery.radius_km');
+        self::assertSame('livraison_rayon_max_km', $delivery->storageKey);
+        self::assertFalse($delivery->hasDefault());
+    }
+
+    public function testMarketProfileIsFixedAndExplicit(): void
+    {
+        $currency = ConfigurationRegistry::get('market.currency');
+        self::assertSame(ConfigurationScope::MARKET, $currency->scope);
+        self::assertSame(ConfigurationSource::FIXED, $currency->source);
+        self::assertSame('EUR', $currency->defaultValue);
+        self::assertNull($currency->storageKey);
+        self::assertNull($currency->editableRole);
+
+        self::assertSame('fr-FR', ConfigurationRegistry::get('market.locale')->defaultValue);
+        self::assertSame('Europe/Paris', ConfigurationRegistry::get('market.timezone')->defaultValue);
+    }
+
+    public function testCommercialPoliciesHaveNoSilentFallbacks(): void
+    {
+        foreach ([
+            'delivery.radius_km',
+            'delivery.base_fee',
+            'delivery.per_km_fee',
+            'order.capacity.max_per_day',
+            'discount.threshold',
+            'discount.rate_percent',
+            'payment.deposit.default_rate_percent',
+            'payment.terms_days',
+        ] as $key) {
+            self::assertFalse(ConfigurationRegistry::get($key)->hasDefault(), $key);
         }
     }
 
-    public function testTenantConfigurationUsesSiteConfigAndAdminAuthority(): void
+    public function testSecretsAreOperatorEnvironmentConfigurationOnly(): void
     {
-        foreach (ConfigurationRegistry::forScope(ConfigurationScope::TENANT) as $key => $definition) {
-            self::assertSame(ConfigurationSource::SITE_CONFIG, $definition->source, $key);
-            self::assertSame('administrateur', $definition->editableRole, $key);
-            self::assertFalse($definition->sensitive, $key);
-            self::assertNotNull($definition->storageKey, $key);
-        }
-    }
-
-    public function testOperatorConfigurationUsesEnvironmentAndKeepsSecretsSensitive(): void
-    {
-        foreach (ConfigurationRegistry::forScope(ConfigurationScope::OPERATOR) as $key => $definition) {
-            self::assertSame(ConfigurationSource::ENV, $definition->source, $key);
-            self::assertNull($definition->editableRole, $key);
-        }
-
         foreach ([
             'operator.database.password',
             'operator.stripe.secret_key',
@@ -55,8 +65,10 @@ final class ConfigurationRegistryTest extends TestCase
             'operator.cron.token',
         ] as $key) {
             $definition = ConfigurationRegistry::get($key);
-            self::assertTrue($definition->sensitive, $key);
             self::assertSame(ConfigurationScope::OPERATOR, $definition->scope, $key);
+            self::assertSame(ConfigurationSource::ENVIRONMENT, $definition->source, $key);
+            self::assertTrue($definition->sensitive, $key);
+            self::assertSame('operator', $definition->editableRole, $key);
         }
 
         self::assertSame('CRON_SECRET_TOKEN', ConfigurationRegistry::get('operator.cron.token')->storageKey);
@@ -96,5 +108,21 @@ final class ConfigurationRegistryTest extends TestCase
     {
         $this->expectException(InvalidArgumentException::class);
         ConfigurationRegistry::get('delivery.radius_km')->normalize('0');
+    }
+
+    public function testUnknownKeysFailClosed(): void
+    {
+        $this->expectException(OutOfBoundsException::class);
+        ConfigurationRegistry::get('legacy.magic_fallback');
+    }
+
+    public function testStorageLookupResolvesTheCanonicalDefinition(): void
+    {
+        $definition = ConfigurationRegistry::byStorageKey(
+            ConfigurationSource::SITE_CONFIG,
+            'entreprise_nom',
+        );
+
+        self::assertSame('business.legal_name', $definition->key);
     }
 }
