@@ -59,7 +59,7 @@ final class InventoryArchitectureContractTest extends TestCase
         $ledger = $this->source('src/Services/InventoryLedgerService.php');
 
         self::assertStringContainsString('SELECT actif FROM ingredient WHERE ingredient_id = ? FOR UPDATE', $ledger);
-        self::assertStringContainsString("if ($type === 'sortie')", $ledger);
+        self::assertStringContainsString("if (\$type === 'sortie')", $ledger);
         self::assertStringContainsString('Stock insuffisant : une sortie ne peut pas rendre le stock négatif.', $ledger);
         self::assertStringContainsString('movementByOperationKey($db, $operationKey)', $ledger);
     }
