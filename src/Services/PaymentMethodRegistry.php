@@ -52,22 +52,14 @@ final class PaymentMethodRegistry
         return self::CAPABILITIES;
     }
 
-    /**
-     * @return list<array{
-     *   code:string,label:string,actif:bool,checkout_enabled:bool,manual_collection_enabled:bool,
-     *   allow_deposit:bool,allow_balance:bool,allow_single_payment:bool,instructions:string,
-     *   provider:?string,requires_external_provider:bool,checkout_strategy:string,supports_manual_collection:bool,
-     *   provider_ready:bool
-     * }>
-     */
+    /** @return list<array<string,mixed>> */
     public static function tenantPolicies(): array
     {
         $rows = self::loadRows();
         $policies = [];
 
         foreach (self::CAPABILITIES as $code => $capability) {
-            $row = $rows[$code] ?? null;
-            $policies[] = self::policy($code, $capability, $row);
+            $policies[] = self::policy($code, $capability, $rows[$code] ?? null);
         }
 
         return $policies;
@@ -165,6 +157,12 @@ final class PaymentMethodRegistry
         }
         if ($checkoutEnabled && $code === 'cb_online' && ($allowDeposit || $allowBalance || !$allowSinglePayment)) {
             throw new InvalidArgumentException('La carte en ligne V1 accepte uniquement le paiement unique intégral.');
+        }
+        if ($active && $checkoutEnabled) {
+            $missing = self::providerMissingKeys($capability['provider']);
+            if ($missing !== []) {
+                throw new ConfigurationIncompleteException($missing, 'payment:' . $code);
+            }
         }
 
         $stmt = Database::getConnection()->prepare(
