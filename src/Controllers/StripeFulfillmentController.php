@@ -9,6 +9,7 @@ use App\Models\PaymentAttemptModel;
 use App\Models\UserModel;
 use App\Payments\PaymentGatewayFactory;
 use App\Payments\PaymentSuccessReconciliation;
+use App\Services\AdditionalProviderPaymentReconciliationService;
 use App\Services\MailService;
 use App\Services\PaymentWebhookFulfillmentService;
 use Throwable;
@@ -33,6 +34,9 @@ final class StripeFulfillmentController
 
         try {
             $result = PaymentWebhookFulfillmentService::handle($event);
+            if ($result['processed'] && $result['duplicate'] && $result['commande_id'] !== null) {
+                AdditionalProviderPaymentReconciliationService::recordIfNeeded($event, $result['commande_id']);
+            }
         } catch (Throwable $e) {
             error_log('[payment-webhook] reconciliation échouée provider=' . $event->provider . ' event=' . $event->id . ': ' . $e->getMessage());
             http_response_code(500);
