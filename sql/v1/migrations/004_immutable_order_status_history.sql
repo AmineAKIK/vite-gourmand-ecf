@@ -2,9 +2,13 @@
 -- Historical events must survive both actor account cleanup and any attempted
 -- parent-order deletion. Actor privacy is handled by anonymizing the user row.
 
+-- MySQL keeps constraint names reserved until an ALTER TABLE statement ends,
+-- so dropping and recreating the same names must be done in separate statements.
 ALTER TABLE commande_historique
     DROP FOREIGN KEY fk_commande_historique_commande,
-    DROP FOREIGN KEY fk_commande_historique_user,
+    DROP FOREIGN KEY fk_commande_historique_user;
+
+ALTER TABLE commande_historique
     ADD CONSTRAINT fk_commande_historique_commande
         FOREIGN KEY (commande_id) REFERENCES commande(commande_id) ON DELETE RESTRICT,
     ADD CONSTRAINT fk_commande_historique_user
