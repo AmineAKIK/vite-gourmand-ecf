@@ -149,6 +149,152 @@ jobs:
           php bin/verify-v1-schema.php --fingerprint > /tmp/v1-after.json
           cmp /tmp/v1-before.json /tmp/v1-after.json
 
+  v1-existing-database:
+    name: MySQL 8.4 V1 existing-schema gate
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      APP_ENV: production
+      DB_HOST: 127.0.0.1
+      DB_NAME: tugeres_existing_ci
+      DB_USER: tugeres
+      DB_PASS: tugeres
+
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_DATABASE: tugeres_existing_ci
+          MYSQL_USER: tugeres
+          MYSQL_PASSWORD: tugeres
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql
+          coverage: none
+
+      - name: Install locked dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+
+      - name: Build complete historical schema without V1 constraint names
+        shell: bash
+        run: |
+          set -euo pipefail
+          php <<'PHP'
+          <?php
+          require 'vendor/autoload.php';
+
+          $db = new PDO(
+              'mysql:host=127.0.0.1;dbname=tugeres_existing_ci;charset=utf8mb4',
+              'tugeres',
+              'tugeres',
+              [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
+          );
+          $sql = file_get_contents('sql/v1/001_v1_baseline.sql');
+          if (!is_string($sql)) {
+              throw new RuntimeException('Baseline unreadable.');
+          }
+          foreach (App\Config\SqlStatementSplitter::split($sql) as $statement) {
+              $db->exec($statement);
+          }
+          $db->exec('ALTER TABLE commande DROP CHECK chk_commande_prix_total');
+          $db->exec('ALTER TABLE commande_ligne DROP FOREIGN KEY fk_commande_ligne_taux_tva');
+          $db->exec('ALTER TABLE commande_ligne DROP CHECK chk_commande_ligne_montants');
+          $db->exec('ALTER TABLE paiement DROP CHECK chk_paiement_montant');
+          PHP
+
+      - name: Apply forward-only migrations to historical complete schema
+        run: php bin/migrate.php
+
+      - name: Verify canonical existing-schema target
+        shell: bash
+        run: |
+          set -euo pipefail
+          php <<'PHP'
+          <?php
+          $db = new PDO(
+              'mysql:host=127.0.0.1;dbname=tugeres_existing_ci;charset=utf8mb4',
+              'tugeres',
+              'tugeres',
+              [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION],
+          );
+
+          $required = [
+              'commande' => ['prix_total_cents', 'currency'],
+              'commande_ligne' => [
+                  'prix_menu_cents',
+                  'prix_livraison_cents',
+                  'prix_total_ligne_cents',
+                  'prix_par_personne_snapshot_cents',
+                  'taux_tva_menu_basis_points',
+                  'taux_tva_livraison_basis_points',
+                  'taux_reduction_basis_points',
+                  'remise_appliquee_cents',
+                  'taux_tva_menu_id',
+                  'taux_tva_livraison_id',
+              ],
+              'paiement' => ['montant_cents'],
+          ];
+          $forbidden = [
+              'commande' => ['prix_total'],
+              'commande_ligne' => [
+                  'prix_menu', 'prix_livraison', 'prix_total_ligne',
+                  'prix_par_personne_snapshot', 'taux_tva_snapshot',
+                  'taux_reduction_snapshot', 'remise_appliquee', 'taux_tva_id',
+              ],
+              'paiement' => ['montant'],
+          ];
+
+          foreach ($required as $table => $columns) {
+              $stmt = $db->prepare(
+                  'SELECT COLUMN_NAME FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
+              );
+              $stmt->execute([$table]);
+              $present = array_fill_keys(array_map('strval', $stmt->fetchAll(PDO::FETCH_COLUMN)), true);
+              foreach ($columns as $column) {
+                  if (!isset($present[$column])) {
+                      throw new RuntimeException("Missing canonical column {$table}.{$column}");
+                  }
+              }
+              foreach ($forbidden[$table] as $column) {
+                  if (isset($present[$column])) {
+                      throw new RuntimeException("Stale column {$table}.{$column}");
+                  }
+              }
+          }
+
+          foreach (['v_paiements_commande', 'v_ca_stats', 'v_ca_commandes', 'v_ca_mensuel', 'v_ca_par_menu'] as $view) {
+              $stmt = $db->prepare(
+                  'SELECT COUNT(*) FROM information_schema.VIEWS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?'
+              );
+              $stmt->execute([$view]);
+              if ((int) $stmt->fetchColumn() !== 1) {
+                  throw new RuntimeException("Missing canonical view {$view}");
+              }
+          }
+
+          $stmt = $db->prepare('SELECT checksum FROM schema_migrations WHERE migration = ?');
+          $stmt->execute(['002_canonical_money.sql']);
+          $checksum = $stmt->fetchColumn();
+          if (!is_string($checksum) || $checksum !== hash('sha256', (string) file_get_contents('sql/v1/migrations/002_canonical_money.sql'))) {
+              throw new RuntimeException('Canonical money migration tracking invalid.');
+          }
+          PHP
+
   docker:
     name: Production image build
     runs-on: ubuntu-latest
