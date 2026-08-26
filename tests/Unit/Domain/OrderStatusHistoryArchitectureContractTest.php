@@ -56,6 +56,21 @@ final class OrderStatusHistoryArchitectureContractTest extends TestCase
         self::assertStringNotContainsString('CREATE TRIGGER', $migration);
     }
 
+    public function testMigrationDiscoversHistoricalForeignKeysByRelationship(): void
+    {
+        $migration = $this->source('sql/v1/migrations/004_immutable_order_status_history.sql');
+
+        self::assertStringContainsString('information_schema.KEY_COLUMN_USAGE', $migration);
+        self::assertStringContainsString("COLUMN_NAME = 'commande_id'", $migration);
+        self::assertStringContainsString("REFERENCED_TABLE_NAME = 'commande'", $migration);
+        self::assertStringContainsString("COLUMN_NAME = 'modifie_par'", $migration);
+        self::assertStringContainsString("REFERENCED_TABLE_NAME = 'utilisateur'", $migration);
+        self::assertStringContainsString('PREPARE drop_history_order_fk_stmt', $migration);
+        self::assertStringContainsString('PREPARE drop_history_actor_fk_stmt', $migration);
+        self::assertStringNotContainsString('DROP FOREIGN KEY fk_commande_historique_commande', $migration);
+        self::assertStringNotContainsString('DROP FOREIGN KEY fk_commande_historique_user', $migration);
+    }
+
     public function testEmployeeDeletionPreservesActorLinkByAnonymizingWhenAudited(): void
     {
         $model = $this->source('src/Models/UserModel.php');

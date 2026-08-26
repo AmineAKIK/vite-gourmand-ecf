@@ -1,10 +1,57 @@
 -- V1 forward-only: make order status history a true append-only audit log.
 -- No trigger/SUPER privilege is required. Immutability is enforced relationally:
 -- every history row is referenced by a guard row through a composite immutable key.
+--
+-- Historical pre-V1 databases may have equivalent foreign keys under arbitrary
+-- names. Discover them by relationship instead of assuming baseline names.
 
-ALTER TABLE commande_historique
-    DROP FOREIGN KEY fk_commande_historique_commande,
-    DROP FOREIGN KEY fk_commande_historique_user;
+SET @history_order_fk = (
+    SELECT CONSTRAINT_NAME
+    FROM information_schema.KEY_COLUMN_USAGE
+    WHERE CONSTRAINT_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'commande_historique'
+      AND COLUMN_NAME = 'commande_id'
+      AND REFERENCED_TABLE_NAME = 'commande'
+      AND REFERENCED_COLUMN_NAME = 'commande_id'
+    ORDER BY CONSTRAINT_NAME
+    LIMIT 1
+);
+SET @drop_history_order_fk_sql = IF(
+    @history_order_fk IS NULL,
+    'DO 0',
+    CONCAT(
+        'ALTER TABLE `commande_historique` DROP FOREIGN KEY `',
+        REPLACE(@history_order_fk, '`', '``'),
+        '`'
+    )
+);
+PREPARE drop_history_order_fk_stmt FROM @drop_history_order_fk_sql;
+EXECUTE drop_history_order_fk_stmt;
+DEALLOCATE PREPARE drop_history_order_fk_stmt;
+
+SET @history_actor_fk = (
+    SELECT CONSTRAINT_NAME
+    FROM information_schema.KEY_COLUMN_USAGE
+    WHERE CONSTRAINT_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'commande_historique'
+      AND COLUMN_NAME = 'modifie_par'
+      AND REFERENCED_TABLE_NAME = 'utilisateur'
+      AND REFERENCED_COLUMN_NAME = 'utilisateur_id'
+    ORDER BY CONSTRAINT_NAME
+    LIMIT 1
+);
+SET @drop_history_actor_fk_sql = IF(
+    @history_actor_fk IS NULL,
+    'DO 0',
+    CONCAT(
+        'ALTER TABLE `commande_historique` DROP FOREIGN KEY `',
+        REPLACE(@history_actor_fk, '`', '``'),
+        '`'
+    )
+);
+PREPARE drop_history_actor_fk_stmt FROM @drop_history_actor_fk_sql;
+EXECUTE drop_history_actor_fk_stmt;
+DEALLOCATE PREPARE drop_history_actor_fk_stmt;
 
 ALTER TABLE commande_historique
     ADD CONSTRAINT fk_commande_historique_commande
