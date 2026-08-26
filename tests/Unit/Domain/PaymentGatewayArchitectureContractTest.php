@@ -39,11 +39,21 @@ final class PaymentGatewayArchitectureContractTest extends TestCase
         self::assertIsString($controller);
         self::assertIsString($attemptModel);
 
-        self::assertStringContainsString("$provider = strtolower(trim((string) ($paymentMethod['provider'] ?? '')));", $controller);
+        self::assertStringContainsString(
+            <<<'PHP'
+            $provider = strtolower(trim((string) ($paymentMethod['provider'] ?? '')));
+            PHP,
+            $controller,
+        );
         self::assertStringContainsString('PaymentGatewayFactory::supports($provider)', $controller);
         self::assertStringContainsString('$provider,', $attemptModel);
         self::assertStringNotContainsString("VALUES (?, 'stripe',", $attemptModel);
-        self::assertStringNotContainsString("$attemptStmt->execute([$draftId, 'stripe'", $attemptModel);
+        self::assertStringNotContainsString(
+            <<<'PHP'
+            $attemptStmt->execute([$draftId, 'stripe'
+            PHP,
+            $attemptModel,
+        );
     }
 
     public function testStripeCheckoutContractIsOnlyCompatibilityFacade(): void
