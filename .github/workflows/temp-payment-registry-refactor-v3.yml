@@ -1,0 +1,63 @@
+name: Temporary payment registry refactor v3
+
+on:
+  push:
+    branches:
+      - v1/payment-method-registry
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Replace ambiguous call with structurally scoped mutation
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('tools/temp-payment-registry-refactor.php')
+          text = p.read_text()
+          old = '''replaceOnce('src/Controllers/CommandeController.php', "            'currency'                    => \\$pricing['currency'],\\n            'prix_livraison_cents'        => \\$pricing['prix_livraison_cents'],", "            'currency'                    => \\$pricing['currency'],\\n            'payment_method_code'         => (string) \\$paymentMethod['code'],\\n            'prix_livraison_cents'        => \\$pricing['prix_livraison_cents'],");'''
+          new = '''(static function (): void {
+              $path = 'src/Controllers/CommandeController.php';
+              $text = file_get_contents($path);
+              if ($text === false) { throw new RuntimeException('Cannot read ' . $path); }
+              $start = strpos($text, '$commandeData = [');
+              if ($start === false) { throw new RuntimeException('commandeData creation block missing'); }
+              $end = strpos($text, "\\n        ];", $start);
+              if ($end === false) { throw new RuntimeException('commandeData creation block end missing'); }
+              $length = $end + strlen("\\n        ];") - $start;
+              $segment = substr($text, $start, $length);
+              $old = "            'currency'                    => \\$pricing['currency'],\\n            'prix_livraison_cents'        => \\$pricing['prix_livraison_cents'],";
+              $new = "            'currency'                    => \\$pricing['currency'],\\n            'payment_method_code'         => (string) \\$paymentMethod['code'],\\n            'prix_livraison_cents'        => \\$pricing['prix_livraison_cents'],";
+              if (substr_count($segment, $old) !== 1) { throw new RuntimeException('payment snapshot anchor not unique inside commandeData'); }
+              $segment = str_replace($old, $new, $segment, $count);
+              if ($count !== 1) { throw new RuntimeException('payment snapshot replacement failed'); }
+              file_put_contents($path, substr($text, 0, $start) . $segment . substr($text, $start + $length));
+          })();'''
+          if text.count(old) != 1:
+              raise SystemExit(f'expected one ambiguous call to replace, found {text.count(old)}')
+          p.write_text(text.replace(old, new, 1))
+      - name: Validate and apply deterministic refactor
+        run: |
+          php -l tools/temp-payment-registry-refactor.php
+          php tools/temp-payment-registry-refactor.php
+          rm -f .github/workflows/temp-payment-registry-refactor-v2.yml
+          rm -f .github/workflows/temp-payment-registry-refactor-v3.yml
+      - name: Validate changed PHP syntax and diff
+        run: |
+          git diff --check
+          git diff --name-only --diff-filter=ACM | grep -E '\.php$' | xargs -r -n1 php -l
+      - name: Commit deterministic refactor
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Phase 4: wire payment registry across checkout and admin"
+          git push
