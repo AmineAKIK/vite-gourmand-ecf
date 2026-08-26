@@ -15,7 +15,6 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
 
     <?php partial('partials/page_title_bar', ['icon' => 'bi-list-check', 'title' => 'Gestion des commandes']); ?>
 
-    <!-- Formulaire de filtres -->
     <div class="filtres-panel commandes-filter-panel p-3 mb-4">
         <form method="GET" action="/employe/commandes" class="commande-filter-form" role="search" aria-label="Filtrer les commandes">
             <div class="commande-filter-field commande-filter-status">
@@ -32,15 +31,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
 
             <div class="commande-filter-field commande-filter-search">
                 <label for="filtre-q" class="form-label form-label-sm">Recherche globale</label>
-                <input
-                    type="text"
-                    class="form-control form-control-sm"
-                    id="filtre-q"
-                    name="q"
-                    value="<?= sanitize($filters['q'] ?? '') ?>"
-                    placeholder="Client, email, téléphone, commande..."
-                    aria-label="Rechercher une commande"
-                >
+                <input type="text" class="form-control form-control-sm" id="filtre-q" name="q" value="<?= sanitize($filters['q'] ?? '') ?>" placeholder="Client, email, téléphone, commande..." aria-label="Rechercher une commande">
             </div>
 
             <div class="commande-filter-field commande-filter-period">
@@ -60,9 +51,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                     ];
                     ?>
                     <?php foreach ($periodes as $value => $label): ?>
-                        <option value="<?= sanitize($value) ?>" <?= ($filters['periode'] ?? '') === $value ? 'selected' : '' ?>>
-                            <?= sanitize($label) ?>
-                        </option>
+                        <option value="<?= sanitize($value) ?>" <?= ($filters['periode'] ?? '') === $value ? 'selected' : '' ?>><?= sanitize($label) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
@@ -81,50 +70,31 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                     ];
                     ?>
                     <?php foreach ($tris as $value => $label): ?>
-                        <option value="<?= sanitize($value) ?>" <?= ($filters['tri'] ?? 'date_prestation_desc') === $value ? 'selected' : '' ?>>
-                            <?= sanitize($label) ?>
-                        </option>
+                        <option value="<?= sanitize($value) ?>" <?= ($filters['tri'] ?? 'date_prestation_desc') === $value ? 'selected' : '' ?>><?= sanitize($label) ?></option>
                     <?php endforeach; ?>
                 </select>
             </div>
 
             <div class="commande-filter-actions">
-                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#filtres-avances-commandes" aria-expanded="<?= $activeAdvancedFilters ? 'true' : 'false' ?>" aria-controls="filtres-avances-commandes">
-                    <i class="bi bi-sliders me-1"></i>Avancés
-                </button>
-                <button type="submit" class="btn btn-brand btn-sm" aria-label="Appliquer les filtres">
-                    <i class="bi bi-funnel me-1"></i>Filtrer
-                </button>
-                <a href="/employe/commandes" class="btn btn-outline-secondary btn-sm btn-reset-filters">
-                    Réinitialiser
-                </a>
+                <button type="button" class="btn btn-outline-secondary btn-sm" data-bs-toggle="collapse" data-bs-target="#filtres-avances-commandes" aria-expanded="<?= $activeAdvancedFilters ? 'true' : 'false' ?>" aria-controls="filtres-avances-commandes"><i class="bi bi-sliders me-1"></i>Avancés</button>
+                <button type="submit" class="btn btn-brand btn-sm" aria-label="Appliquer les filtres"><i class="bi bi-funnel me-1"></i>Filtrer</button>
+                <a href="/employe/commandes" class="btn btn-outline-secondary btn-sm btn-reset-filters">Réinitialiser</a>
             </div>
 
             <div class="collapse commande-advanced-filters <?= $activeAdvancedFilters ? 'show' : '' ?>" id="filtres-avances-commandes">
                 <div class="commande-advanced-grid">
-                    <div>
-                        <label for="filtre-date-debut" class="form-label form-label-sm">Du</label>
-                        <input type="date" class="form-control form-control-sm" id="filtre-date-debut" name="date_debut" value="<?= sanitize($filters['date_debut'] ?? '') ?>">
-                    </div>
-                    <div>
-                        <label for="filtre-date-fin" class="form-label form-label-sm">Au</label>
-                        <input type="date" class="form-control form-control-sm" id="filtre-date-fin" name="date_fin" value="<?= sanitize($filters['date_fin'] ?? '') ?>">
-                    </div>
+                    <div><label for="filtre-date-debut" class="form-label form-label-sm">Du</label><input type="date" class="form-control form-control-sm" id="filtre-date-debut" name="date_debut" value="<?= sanitize($filters['date_debut'] ?? '') ?>"></div>
+                    <div><label for="filtre-date-fin" class="form-label form-label-sm">Au</label><input type="date" class="form-control form-control-sm" id="filtre-date-fin" name="date_fin" value="<?= sanitize($filters['date_fin'] ?? '') ?>"></div>
                     <div>
                         <label for="filtre-menu" class="form-label form-label-sm">Menu</label>
                         <select class="form-select form-select-sm" id="filtre-menu" name="menu_id" aria-label="Filtrer par menu">
                             <option value="">Tous les menus</option>
                             <?php foreach ($menus as $menu): ?>
-                                <option value="<?= (int)$menu['menu_id'] ?>" <?= (string)($filters['menu_id'] ?? '') === (string)$menu['menu_id'] ? 'selected' : '' ?>>
-                                    <?= sanitize($menu['titre'] ?? '') ?>
-                                </option>
+                                <option value="<?= (int)$menu['menu_id'] ?>" <?= (string)($filters['menu_id'] ?? '') === (string)$menu['menu_id'] ? 'selected' : '' ?>><?= sanitize($menu['titre'] ?? '') ?></option>
                             <?php endforeach; ?>
                         </select>
                     </div>
-                    <div>
-                        <label for="filtre-ville" class="form-label form-label-sm">Ville</label>
-                        <input type="text" class="form-control form-control-sm" id="filtre-ville" name="ville" value="<?= sanitize($filters['ville'] ?? '') ?>" placeholder="Bordeaux, Pessac...">
-                    </div>
+                    <div><label for="filtre-ville" class="form-label form-label-sm">Ville</label><input type="text" class="form-control form-control-sm" id="filtre-ville" name="ville" value="<?= sanitize($filters['ville'] ?? '') ?>" placeholder="Bordeaux, Pessac..."></div>
                     <div>
                         <label for="filtre-montant" class="form-label form-label-sm">Montant</label>
                         <select class="form-select form-select-sm" id="filtre-montant" name="montant" aria-label="Filtrer par montant">
@@ -139,27 +109,17 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
         </form>
     </div>
 
-    <!-- Toggle vue Liste / Calendrier -->
     <div class="d-flex align-items-center gap-2 mb-3">
         <div class="btn-group" role="group" aria-label="Mode d'affichage">
-            <button type="button" class="btn btn-sm btn-brand active" id="btn-vue-liste" aria-pressed="true">
-                <i class="bi bi-list-ul me-1"></i>Liste
-            </button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-vue-calendrier" aria-pressed="false">
-                <i class="bi bi-calendar3 me-1"></i>Calendrier
-            </button>
+            <button type="button" class="btn btn-sm btn-brand active" id="btn-vue-liste" aria-pressed="true"><i class="bi bi-list-ul me-1"></i>Liste</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="btn-vue-calendrier" aria-pressed="false"><i class="bi bi-calendar3 me-1"></i>Calendrier</button>
         </div>
         <span class="text-muted small" id="vue-label-count"><?= count($commandes) ?> commande<?= count($commandes) > 1 ? 's' : '' ?></span>
     </div>
 
-    <!-- Vue Calendrier -->
-    <div id="vue-calendrier" class="mb-4" style="display:none">
-        <div id="fullcalendar" style="background:#fff;padding:16px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.08)"></div>
-    </div>
+    <div id="vue-calendrier" class="mb-4" style="display:none"><div id="fullcalendar" style="background:#fff;padding:16px;border-radius:8px;box-shadow:0 1px 4px rgba(0,0,0,.08)"></div></div>
 
-    <!-- Vue Liste -->
     <div id="vue-liste">
-    <!-- Tableau commandes -->
     <?php if (empty($commandes)): ?>
         <div class="alert alert-info">Aucune commande ne correspond aux critères.</div>
     <?php else: ?>
@@ -169,26 +129,19 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                 $statutActuel = $cmd['statut'] ?? null;
                 $statutsDisponibles = $statutsMiseAJour;
                 $commandeId = (int)$cmd['commande_id'];
-                $lignesCommande    = $lignesByCommande[$commandeId] ?? [];
+                $lignesCommande = $lignesByCommande[$commandeId] ?? [];
                 $documentsCommande = $documentsByCommande[$commandeId] ?? [];
                 $paiementsSynthese = $paiementsByCommande[$commandeId] ?? null;
-                $totalEncaisse     = (float)($paiementsSynthese['total_encaisse'] ?? 0);
-                $prixTotal         = (float)($cmd['prix_total_cents'] ?? 0);
-                $soldeRestant      = max(0, round($prixTotal - $totalEncaisse, 2));
-                $statutPaiement    = \App\Models\PaiementModel::statutPaiement($totalEncaisse, $prixTotal);
+                $totalEncaisseCents = (int)($paiementsSynthese['total_encaisse_cents'] ?? 0);
+                $prixTotalCents = (int)($cmd['prix_total_cents'] ?? 0);
+                $soldeRestantCents = max(0, $prixTotalCents - $totalEncaisseCents);
+                $statutPaiement = \App\Models\PaiementModel::statutPaiement($totalEncaisseCents, $prixTotalCents);
                 $peutAnnuler = $statutActuel !== commandeCancelledStatus()
                     && commandeCanTransition($statutActuel, commandeCancelledStatus());
             ?>
             <div class="accordion-item commande-card mb-3" id="cmd-<?= $commandeId ?>">
                 <h2 class="accordion-header" id="heading<?= $cmd['commande_id'] ?>">
-                    <button
-                        class="accordion-button collapsed commande-card-header py-3"
-                        type="button"
-                        data-bs-toggle="collapse"
-                        data-bs-target="#collapse<?= $cmd['commande_id'] ?>"
-                        aria-expanded="false"
-                        aria-controls="collapse<?= $cmd['commande_id'] ?>"
-                    >
+                    <button class="accordion-button collapsed commande-card-header py-3" type="button" data-bs-toggle="collapse" data-bs-target="#collapse<?= $cmd['commande_id'] ?>" aria-expanded="false" aria-controls="collapse<?= $cmd['commande_id'] ?>">
                         <div class="commande-row-summary">
                             <code class="commande-numero"><?= sanitize($cmd['numero_commande'] ?? '') ?></code>
                             <strong class="commande-client"><?= sanitize(personFullName($cmd)) ?></strong>
@@ -203,8 +156,6 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                 <div id="collapse<?= $cmd['commande_id'] ?>" class="accordion-collapse collapse" aria-labelledby="heading<?= $cmd['commande_id'] ?>" data-bs-parent="#accordionCommandes">
                     <div class="accordion-body commande-card-body">
                         <div class="row g-4 align-items-start">
-
-                            <!-- Informations de la commande -->
                             <div class="col-12 col-lg-5">
                                 <section class="commande-section">
                                     <h3 class="h6 fw-bold">Client</h3>
@@ -225,48 +176,21 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                         <div><dt>Commande</dt><dd><code><?= sanitize($cmd['numero_commande'] ?? '') ?></code></dd></div>
                                     </dl>
                                     <?php if (!empty($cmd['instructions'])): ?>
-                                    <div class="mt-2 p-2 rounded small" style="background:var(--surface-page);border-left:3px solid var(--brand-secondary)">
-                                        <strong><i class="bi bi-chat-left-text me-1"></i>Remarques client :</strong>
-                                        <?= nl2br(sanitize($cmd['instructions'])) ?>
-                                    </div>
+                                    <div class="mt-2 p-2 rounded small" style="background:var(--surface-page);border-left:3px solid var(--brand-secondary)"><strong><i class="bi bi-chat-left-text me-1"></i>Remarques client :</strong> <?= nl2br(sanitize($cmd['instructions'])) ?></div>
                                     <?php endif ?>
                                 </section>
 
                                 <section class="commande-section mt-3">
                                     <h3 class="h6 fw-bold">Documents</h3>
                                     <div class="commande-doc-actions">
+                                        <?php foreach ([['devis','bi-file-earmark-plus','Devis'],['acompte','bi-file-earmark-check','Acompte'],['facture','bi-file-earmark-text','Facture'],['ticket','bi-receipt','Ticket']] as [$docTypeCreate,$docIconCreate,$docLabelCreate]): ?>
                                         <form method="POST" action="/employe/document/creer">
                                             <?= csrfField() ?>
                                             <input type="hidden" name="commande_id" value="<?= $commandeId ?>">
-                                            <input type="hidden" name="type_document" value="devis">
-                                            <button type="submit" class="btn btn-outline-secondary btn-sm">
-                                                <i class="bi bi-file-earmark-plus me-1"></i>Devis
-                                            </button>
+                                            <input type="hidden" name="type_document" value="<?= sanitize($docTypeCreate) ?>">
+                                            <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi <?= sanitize($docIconCreate) ?> me-1"></i><?= sanitize($docLabelCreate) ?></button>
                                         </form>
-                                        <form method="POST" action="/employe/document/creer">
-                                            <?= csrfField() ?>
-                                            <input type="hidden" name="commande_id" value="<?= $commandeId ?>">
-                                            <input type="hidden" name="type_document" value="acompte">
-                                            <button type="submit" class="btn btn-outline-secondary btn-sm">
-                                                <i class="bi bi-file-earmark-check me-1"></i>Acompte
-                                            </button>
-                                        </form>
-                                        <form method="POST" action="/employe/document/creer">
-                                            <?= csrfField() ?>
-                                            <input type="hidden" name="commande_id" value="<?= $commandeId ?>">
-                                            <input type="hidden" name="type_document" value="facture">
-                                            <button type="submit" class="btn btn-outline-secondary btn-sm">
-                                                <i class="bi bi-file-earmark-text me-1"></i>Facture
-                                            </button>
-                                        </form>
-                                        <form method="POST" action="/employe/document/creer">
-                                            <?= csrfField() ?>
-                                            <input type="hidden" name="commande_id" value="<?= $commandeId ?>">
-                                            <input type="hidden" name="type_document" value="ticket">
-                                            <button type="submit" class="btn btn-outline-secondary btn-sm">
-                                                <i class="bi bi-receipt me-1"></i>Ticket
-                                            </button>
-                                        </form>
+                                        <?php endforeach; ?>
                                     </div>
 
                                     <?php if (empty($documentsCommande)): ?>
@@ -275,58 +199,34 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                         <div class="commande-doc-list mt-2">
                                             <?php foreach ($documentsCommande as $doc): ?>
                                                 <?php
-                                                $docType  = $doc['type_document'] ?? 'document';
+                                                $docType = $doc['type_document'] ?? 'document';
                                                 $docLabel = match ($docType) {
-                                                    'ticket'  => 'Ticket',
-                                                    'devis'   => 'Devis',
+                                                    'ticket' => 'Ticket',
+                                                    'devis' => 'Devis',
                                                     'acompte' => 'Acompte',
-                                                    default   => 'Facture',
+                                                    default => 'Facture',
                                                 };
-                                                $docIcon  = match ($docType) {
-                                                    'ticket'  => 'bi-receipt',
-                                                    'devis'   => 'bi-file-earmark-plus',
+                                                $docIcon = match ($docType) {
+                                                    'ticket' => 'bi-receipt',
+                                                    'devis' => 'bi-file-earmark-plus',
                                                     'acompte' => 'bi-file-earmark-check',
-                                                    default   => 'bi-file-earmark-text',
+                                                    default => 'bi-file-earmark-text',
                                                 };
                                                 $docStatut = $doc['statut'] ?? 'brouillon';
                                                 $docStatutLabel = $docStatut === 'finalise' ? 'Finalisé' : ucfirst((string)$docStatut);
                                                 ?>
                                                 <article class="commande-doc-item">
                                                     <div class="commande-doc-top">
-                                                        <span class="commande-doc-type">
-                                                            <i class="bi <?= sanitize($docIcon) ?>" aria-hidden="true"></i>
-                                                            <?= sanitize($docLabel) ?>
-                                                        </span>
-                                                        <?php if (!empty($doc['sent_at'])): ?>
-                                                            <span class="commande-doc-state-icons">
-                                                                <i class="bi bi-envelope-check text-success" title="Envoyé" aria-label="Envoyé"></i>
-                                                            </span>
-                                                        <?php elseif (!empty($doc['archive_path'])): ?>
-                                                            <span class="commande-doc-state-icons">
-                                                                <i class="bi bi-archive text-muted" title="Archivé" aria-label="Archivé"></i>
-                                                            </span>
-                                                        <?php endif; ?>
+                                                        <span class="commande-doc-type"><i class="bi <?= sanitize($docIcon) ?>" aria-hidden="true"></i> <?= sanitize($docLabel) ?></span>
+                                                        <?php if (!empty($doc['sent_at'])): ?><span class="commande-doc-state-icons"><i class="bi bi-envelope-check text-success" title="Envoyé" aria-label="Envoyé"></i></span>
+                                                        <?php elseif (!empty($doc['archive_path'])): ?><span class="commande-doc-state-icons"><i class="bi bi-archive text-muted" title="Archivé" aria-label="Archivé"></i></span><?php endif; ?>
                                                         <span class="commande-doc-status"><?= sanitize($docStatutLabel) ?></span>
                                                     </div>
                                                     <div class="commande-doc-bottom">
                                                         <strong class="commande-doc-price"><?= sanitize(formatPrice($doc['total_ttc'] ?? 0)) ?></strong>
                                                         <span class="commande-doc-icon-actions">
-                                                            <a
-                                                                href="/employe/document/apercu?id=<?= (int)$doc['document_id'] ?>"
-                                                                class="commande-doc-icon-btn"
-                                                                aria-label="Aperçu <?= sanitize(strtolower($docLabel)) ?>"
-                                                                title="Aperçu"
-                                                            >
-                                                                <i class="bi bi-eye" aria-hidden="true"></i>
-                                                            </a>
-                                                            <a
-                                                                href="/employe/document/edit?id=<?= (int)$doc['document_id'] ?>"
-                                                                class="commande-doc-icon-btn"
-                                                                aria-label="Éditer <?= sanitize(strtolower($docLabel)) ?>"
-                                                                title="Éditer"
-                                                            >
-                                                                <i class="bi bi-pencil" aria-hidden="true"></i>
-                                                            </a>
+                                                            <a href="/employe/document/apercu?id=<?= (int)$doc['document_id'] ?>" class="commande-doc-icon-btn" aria-label="Aperçu <?= sanitize(strtolower($docLabel)) ?>" title="Aperçu"><i class="bi bi-eye" aria-hidden="true"></i></a>
+                                                            <a href="/employe/document/edit?id=<?= (int)$doc['document_id'] ?>" class="commande-doc-icon-btn" aria-label="Éditer <?= sanitize(strtolower($docLabel)) ?>" title="Éditer"><i class="bi bi-pencil" aria-hidden="true"></i></a>
                                                         </span>
                                                     </div>
                                                 </article>
@@ -336,31 +236,18 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                 </section>
                             </div>
 
-                            <!-- Mise à jour du statut -->
                             <div class="col-12 col-lg-7">
                                 <div class="commande-action-stack">
                                     <section class="commande-section">
                                         <h3 class="h6 fw-bold">Lignes de commande</h3>
                                         <div class="commande-lines-table">
                                             <table class="table table-sm align-middle mb-0">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Menu</th>
-                                                        <th class="text-end">Pers.</th>
-                                                        <th class="text-end">Brut</th>
-                                                        <th class="text-end">Remise</th>
-                                                        <th class="text-end">Net menu</th>
-                                                        <th class="text-end">Livraison</th>
-                                                        <th class="text-end">Total</th>
-                                                    </tr>
-                                                </thead>
+                                                <thead><tr><th>Menu</th><th class="text-end">Pers.</th><th class="text-end">Brut</th><th class="text-end">Remise</th><th class="text-end">Net menu</th><th class="text-end">Livraison</th><th class="text-end">Total</th></tr></thead>
                                                 <tbody>
                                                     <?php foreach ($lignesCommande as $ligne): ?>
                                                         <?php
                                                             $nbPersonnes = (int)($ligne['nombre_personne'] ?? 0);
-                                                            $brutMenu = !empty($ligne['prix_par_personne'])
-                                                                ? round((float)$ligne['prix_par_personne'] * $nbPersonnes, 2)
-                                                                : (float)($ligne['prix_menu_cents'] ?? 0);
+                                                            $brutMenu = !empty($ligne['prix_par_personne']) ? round((float)$ligne['prix_par_personne'] * $nbPersonnes, 2) : (float)($ligne['prix_menu_cents'] ?? 0);
                                                             $remiseMenu = max(0, $brutMenu - (float)($ligne['prix_menu_cents'] ?? 0));
                                                         ?>
                                                         <tr>
@@ -374,12 +261,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                                         </tr>
                                                     <?php endforeach; ?>
                                                 </tbody>
-                                                <tfoot>
-                                                    <tr>
-                                                        <th colspan="6" class="text-end commande-total-label">Total commande</th>
-                                                        <th class="text-end text-nowrap text-brand commande-total-value"><?= sanitize(formatMoneyCents($cmd['prix_total_cents'] ?? 0)) ?></th>
-                                                    </tr>
-                                                </tfoot>
+                                                <tfoot><tr><th colspan="6" class="text-end commande-total-label">Total commande</th><th class="text-end text-nowrap text-brand commande-total-value"><?= sanitize(formatMoneyCents($cmd['prix_total_cents'] ?? 0)) ?></th></tr></tfoot>
                                             </table>
                                         </div>
                                     </section>
@@ -390,103 +272,46 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                             <?= csrfField() ?>
                                             <input type="hidden" name="commande_id" value="<?= (int)$cmd['commande_id'] ?>">
                                             <input type="hidden" name="action" value="changer_statut">
-
                                             <div class="commande-status-form">
                                                 <div>
                                                     <label for="statut-<?= $cmd['commande_id'] ?>" class="form-label form-label-sm">Nouveau statut</label>
-                                                    <select
-                                                        class="form-select form-select-sm"
-                                                        id="statut-<?= $cmd['commande_id'] ?>"
-                                                        name="statut"
-                                                        aria-label="Sélectionner le nouveau statut"
-                                                        <?= empty($statutsDisponibles) ? 'disabled' : '' ?>
-                                                    >
-                                                        <?php foreach ($statutsDisponibles as $s): ?>
-                                                            <option value="<?= sanitize($s) ?>" <?= ($cmd['statut'] ?? '') === $s ? 'selected' : '' ?>>
-                                                                <?= sanitize(commandeStatusLabel($s)) ?>
-                                                            </option>
-                                                        <?php endforeach; ?>
+                                                    <select class="form-select form-select-sm" id="statut-<?= $cmd['commande_id'] ?>" name="statut" aria-label="Sélectionner le nouveau statut" <?= empty($statutsDisponibles) ? 'disabled' : '' ?>>
+                                                        <?php foreach ($statutsDisponibles as $s): ?><option value="<?= sanitize($s) ?>" <?= ($cmd['statut'] ?? '') === $s ? 'selected' : '' ?>><?= sanitize(commandeStatusLabel($s)) ?></option><?php endforeach; ?>
                                                     </select>
-                                                    <?php if (empty($statutsDisponibles)): ?>
-                                                        <div class="form-text">Aucun changement de statut disponible.</div>
-                                                    <?php endif; ?>
+                                                    <?php if (empty($statutsDisponibles)): ?><div class="form-text">Aucun changement de statut disponible.</div><?php endif; ?>
                                                 </div>
-
-                                                <div>
-                                                    <label for="commentaire-<?= $cmd['commande_id'] ?>" class="form-label form-label-sm">Commentaire (optionnel)</label>
-                                                    <textarea
-                                                        class="form-control form-control-sm"
-                                                        id="commentaire-<?= $cmd['commande_id'] ?>"
-                                                        name="commentaire"
-                                                        rows="2"
-                                                        maxlength="500"
-                                                        aria-label="Commentaire sur le changement de statut"
-                                                    ></textarea>
-                                                </div>
-
-                                                <button type="submit" class="btn btn-brand btn-sm" aria-label="Mettre à jour le statut de la commande" <?= empty($statutsDisponibles) ? 'disabled' : '' ?>>
-                                                    <i class="bi bi-check-lg me-1"></i>Mettre à jour
-                                                </button>
+                                                <div><label for="commentaire-<?= $cmd['commande_id'] ?>" class="form-label form-label-sm">Commentaire (optionnel)</label><textarea class="form-control form-control-sm" id="commentaire-<?= $cmd['commande_id'] ?>" name="commentaire" rows="2" maxlength="500" aria-label="Commentaire sur le changement de statut"></textarea></div>
+                                                <button type="submit" class="btn btn-brand btn-sm" aria-label="Mettre à jour le statut de la commande" <?= empty($statutsDisponibles) ? 'disabled' : '' ?>><i class="bi bi-check-lg me-1"></i>Mettre à jour</button>
                                             </div>
                                         </form>
                                     </section>
 
-                                    <!-- Paiements -->
                                     <section class="commande-section">
-                                        <h3 class="h6 fw-bold d-flex align-items-center gap-2">
-                                            Paiements
-                                            <?= paiementStatusBadge($statutPaiement) ?>
-                                        </h3>
-
-                                        <!-- Synthèse encaissement -->
+                                        <h3 class="h6 fw-bold d-flex align-items-center gap-2">Paiements <?= paiementStatusBadge($statutPaiement) ?></h3>
                                         <div class="commande-paiement-synthese mb-3">
-                                            <div class="commande-paiement-row">
-                                                <span class="text-muted small">Total commande</span>
-                                                <strong><?= sanitize(formatPrice($prixTotal)) ?></strong>
-                                            </div>
-                                            <div class="commande-paiement-row">
-                                                <span class="text-muted small">Encaissé</span>
-                                                <strong class="text-success"><?= sanitize(formatPrice($totalEncaisse)) ?></strong>
-                                            </div>
-                                            <?php if ($soldeRestant > 0): ?>
-                                            <div class="commande-paiement-row">
-                                                <span class="text-muted small">Solde restant</span>
-                                                <strong class="text-brand"><?= sanitize(formatPrice($soldeRestant)) ?></strong>
-                                            </div>
-                                            <?php endif; ?>
+                                            <div class="commande-paiement-row"><span class="text-muted small">Total commande</span><strong><?= sanitize(formatMoneyCents($prixTotalCents)) ?></strong></div>
+                                            <div class="commande-paiement-row"><span class="text-muted small">Encaissé</span><strong class="text-success"><?= sanitize(formatMoneyCents($totalEncaisseCents)) ?></strong></div>
+                                            <?php if ($soldeRestantCents > 0): ?><div class="commande-paiement-row"><span class="text-muted small">Solde restant</span><strong class="text-brand"><?= sanitize(formatMoneyCents($soldeRestantCents)) ?></strong></div><?php endif; ?>
                                         </div>
 
-                                        <!-- Historique des paiements -->
-                                        <?php
-                                        $histoPaiements = isset($paiementsHistorique) ? ($paiementsHistorique[$commandeId] ?? []) : [];
-                                        ?>
+                                        <?php $histoPaiements = isset($paiementsHistorique) ? ($paiementsHistorique[$commandeId] ?? []) : []; ?>
                                         <?php if (!empty($histoPaiements)): ?>
                                         <div class="commande-paiement-historique mb-3">
                                             <?php foreach ($histoPaiements as $p): ?>
                                             <div class="commande-paiement-item">
                                                 <div class="commande-paiement-item-info">
-                                                    <span class="badge bg-secondary me-1">
-                                                        <?= sanitize(paiementTypeLabel($p['type_paiement'] ?? '')) ?>
-                                                    </span>
+                                                    <span class="badge bg-secondary me-1"><?= sanitize(paiementTypeLabel($p['type_paiement'] ?? '')) ?></span>
                                                     <span class="small text-muted"><?= sanitize(formatDateFr($p['date_paiement'] ?? null)) ?></span>
-                                                    <?php if (!empty($p['mode'])): ?>
-                                                    <span class="small text-muted">· <?= sanitize($p['mode']) ?></span>
-                                                    <?php endif; ?>
-                                                    <?php if (!empty($p['reference'])): ?>
-                                                    <span class="small text-muted">· Réf. <?= sanitize($p['reference']) ?></span>
-                                                    <?php endif; ?>
+                                                    <?php if (!empty($p['mode'])): ?><span class="small text-muted">· <?= sanitize($p['mode']) ?></span><?php endif; ?>
+                                                    <?php if (!empty($p['reference'])): ?><span class="small text-muted">· Réf. <?= sanitize($p['reference']) ?></span><?php endif; ?>
                                                 </div>
                                                 <div class="commande-paiement-item-actions">
-                                                    <strong class="small"><?= sanitize(formatPrice($p['montant'] ?? 0)) ?></strong>
+                                                    <strong class="small"><?= sanitize(formatMoneyCents((int)($p['montant_cents'] ?? 0))) ?></strong>
                                                     <form method="POST" action="/employe/paiement/supprimer" class="d-inline">
                                                         <?= csrfField() ?>
                                                         <input type="hidden" name="paiement_id" value="<?= (int)$p['paiement_id'] ?>">
                                                         <input type="hidden" name="commande_id" value="<?= $commandeId ?>">
-                                                        <button type="submit" class="btn btn-link btn-sm text-danger p-0 ms-2"
-                                                                data-confirm="Supprimer ce paiement ?"
-                                                                aria-label="Supprimer ce paiement">
-                                                            <i class="bi bi-trash" aria-hidden="true"></i>
-                                                        </button>
+                                                        <button type="submit" class="btn btn-link btn-sm text-danger p-0 ms-2" data-confirm="Supprimer ce paiement ?" aria-label="Supprimer ce paiement"><i class="bi bi-trash" aria-hidden="true"></i></button>
                                                     </form>
                                                 </div>
                                             </div>
@@ -494,191 +319,73 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                         </div>
                                         <?php endif; ?>
 
-                                        <!-- Formulaire enregistrement paiement -->
                                         <?php if ($statutPaiement !== 'solde'): ?>
                                         <details class="commande-paiement-form-toggle">
-                                            <summary class="btn btn-outline-secondary btn-sm">
-                                                <i class="bi bi-plus-circle me-1"></i>Enregistrer un paiement
-                                            </summary>
+                                            <summary class="btn btn-outline-secondary btn-sm"><i class="bi bi-plus-circle me-1"></i>Enregistrer un paiement</summary>
                                             <form method="POST" action="/employe/paiement/enregistrer" class="commande-paiement-form mt-3">
                                                 <?= csrfField() ?>
                                                 <input type="hidden" name="commande_id" value="<?= $commandeId ?>">
                                                 <div class="row g-2">
-                                                    <div class="col-6 col-lg-4">
-                                                        <label class="form-label form-label-sm">Type</label>
-                                                        <select class="form-select form-select-sm" name="type_paiement" required>
-                                                            <option value="acompte">Acompte</option>
-                                                            <option value="solde">Solde</option>
-                                                            <option value="paiement_unique" <?= $statutPaiement === 'non_paye' ? 'selected' : '' ?>>Paiement unique</option>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-6 col-lg-4">
-                                                        <label class="form-label form-label-sm">Mode</label>
-                                                        <select class="form-select form-select-sm" name="mode" required>
-                                                            <?php foreach ($modesPaiement as $mp): ?>
-                                                            <option value="<?= sanitize($mp['code']) ?>"><?= sanitize($mp['libelle']) ?></option>
-                                                            <?php endforeach; ?>
-                                                        </select>
-                                                    </div>
-                                                    <div class="col-6 col-lg-4">
-                                                        <label class="form-label form-label-sm">Montant (€)</label>
-                                                        <input type="number" step="0.01" min="0.01" class="form-control form-control-sm"
-                                                               name="montant"
-                                                               value="<?= $soldeRestant > 0 ? sanitize(formatPriceInput($soldeRestant)) : '' ?>"
-                                                               required>
-                                                    </div>
-                                                    <div class="col-6 col-lg-4">
-                                                        <label class="form-label form-label-sm">Date</label>
-                                                        <input type="date" class="form-control form-control-sm"
-                                                               name="date_paiement"
-                                                               value="<?= date('Y-m-d') ?>"
-                                                               required>
-                                                    </div>
-                                                    <div class="col-12 col-lg-8">
-                                                        <label class="form-label form-label-sm">Référence (optionnel)</label>
-                                                        <input type="text" class="form-control form-control-sm"
-                                                               name="reference"
-                                                               placeholder="N° virement, chèque...">
-                                                    </div>
-                                                    <div class="col-12 text-end">
-                                                        <button type="submit" class="btn btn-brand btn-sm">
-                                                            <i class="bi bi-check-lg me-1"></i>Enregistrer
-                                                        </button>
-                                                    </div>
+                                                    <div class="col-6 col-lg-4"><label class="form-label form-label-sm">Type</label><select class="form-select form-select-sm" name="type_paiement" required><option value="acompte">Acompte</option><option value="solde">Solde</option><option value="paiement_unique" <?= $statutPaiement === 'non_paye' ? 'selected' : '' ?>>Paiement unique</option></select></div>
+                                                    <div class="col-6 col-lg-4"><label class="form-label form-label-sm">Mode</label><select class="form-select form-select-sm" name="mode" required><?php foreach ($modesPaiement as $mp): ?><option value="<?= sanitize($mp['code']) ?>"><?= sanitize($mp['libelle']) ?></option><?php endforeach; ?></select></div>
+                                                    <div class="col-6 col-lg-4"><label class="form-label form-label-sm">Montant (€)</label><input type="number" step="0.01" min="0.01" class="form-control form-control-sm" name="montant" value="<?= $soldeRestantCents > 0 ? sanitize(\App\Domain\Money::toDecimalString($soldeRestantCents)) : '' ?>" required></div>
+                                                    <div class="col-6 col-lg-4"><label class="form-label form-label-sm">Date</label><input type="date" class="form-control form-control-sm" name="date_paiement" value="<?= date('Y-m-d') ?>" required></div>
+                                                    <div class="col-12 col-lg-8"><label class="form-label form-label-sm">Référence (optionnel)</label><input type="text" class="form-control form-control-sm" name="reference" placeholder="N° virement, chèque..."></div>
+                                                    <div class="col-12 text-end"><button type="submit" class="btn btn-brand btn-sm"><i class="bi bi-check-lg me-1"></i>Enregistrer</button></div>
                                                 </div>
                                             </form>
                                         </details>
                                         <?php endif; ?>
                                     </section>
 
-                                    <!-- Annulation si la commande est encore modifiable -->
                                     <?php if ($peutAnnuler): ?>
                                     <section class="commande-danger-zone">
-                                        <div class="commande-danger-header">
-                                            <div>
-                                                <h3 class="h6 fw-bold mb-1">Annulation</h3>
-                                                <p class="small mb-0">Action sensible avec motif obligatoire.</p>
-                                            </div>
-                                            <button
-                                                type="button"
-                                                class="btn btn-outline-danger btn-sm"
-                                                data-bs-toggle="collapse"
-                                                data-bs-target="#annulation-<?= (int)$cmd['commande_id'] ?>"
-                                                aria-expanded="false"
-                                                aria-controls="annulation-<?= (int)$cmd['commande_id'] ?>"
-                                            >
-                                                Annuler cette commande
-                                            </button>
-                                        </div>
-
+                                        <div class="commande-danger-header"><div><h3 class="h6 fw-bold mb-1">Annulation</h3><p class="small mb-0">Action sensible avec motif obligatoire.</p></div><button type="button" class="btn btn-outline-danger btn-sm" data-bs-toggle="collapse" data-bs-target="#annulation-<?= (int)$cmd['commande_id'] ?>" aria-expanded="false" aria-controls="annulation-<?= (int)$cmd['commande_id'] ?>">Annuler cette commande</button></div>
                                         <div class="collapse" id="annulation-<?= (int)$cmd['commande_id'] ?>">
-                                            <form
-                                                method="POST"
-                                                action="/employe/commande/statut"
-                                                class="commande-cancel-form form-confirm"
-                                                data-confirm="Confirmer l'annulation définitive de cette commande ?"
-                                            >
+                                            <form method="POST" action="/employe/commande/statut" class="commande-cancel-form form-confirm" data-confirm="Confirmer l'annulation définitive de cette commande ?">
                                                 <?= csrfField() ?>
                                                 <input type="hidden" name="commande_id" value="<?= (int)$cmd['commande_id'] ?>">
                                                 <input type="hidden" name="action" value="annuler">
                                                 <input type="hidden" name="statut" value="<?= sanitize(commandeCancelledStatus()) ?>">
-
-                                                <div>
-                                                    <label for="motif-<?= $cmd['commande_id'] ?>" class="form-label form-label-sm">Motif d'annulation</label>
-                                                    <textarea
-                                                        class="form-control form-control-sm"
-                                                        id="motif-<?= $cmd['commande_id'] ?>"
-                                                        name="commentaire"
-                                                        rows="2"
-                                                        maxlength="500"
-                                                        required
-                                                        aria-required="true"
-                                                        aria-label="Motif de l'annulation"
-                                                    ></textarea>
-                                                </div>
-
-                                                <div>
-                                                    <label for="contact-<?= $cmd['commande_id'] ?>" class="form-label form-label-sm">Contacter le client par</label>
-                                                    <select
-                                                        class="form-select form-select-sm"
-                                                        id="contact-<?= $cmd['commande_id'] ?>"
-                                                        name="mode_contact"
-                                                        aria-label="Mode de contact pour l'annulation"
-                                                    >
-                                                        <option value="mail">Email</option>
-                                                        <option value="gsm">GSM</option>
-                                                    </select>
-                                                </div>
-
-                                                <div class="form-check commande-cancel-confirm">
-                                                    <input
-                                                        class="form-check-input"
-                                                        type="checkbox"
-                                                        id="confirm-annulation-<?= $cmd['commande_id'] ?>"
-                                                        name="confirmation_annulation"
-                                                        value="1"
-                                                        required
-                                                        aria-required="true"
-                                                    >
-                                                    <label class="form-check-label small" for="confirm-annulation-<?= $cmd['commande_id'] ?>">
-                                                        Je confirme que cette annulation est volontaire et que le client sera informé.
-                                                    </label>
-                                                </div>
-
-                                                <button type="submit" class="btn btn-danger btn-sm" aria-label="Confirmer l'annulation de la commande">
-                                                    <i class="bi bi-x-circle me-1"></i>Confirmer l'annulation
-                                                </button>
+                                                <div><label for="motif-<?= $cmd['commande_id'] ?>" class="form-label form-label-sm">Motif d'annulation</label><textarea class="form-control form-control-sm" id="motif-<?= $cmd['commande_id'] ?>" name="commentaire" rows="2" maxlength="500" required aria-required="true" aria-label="Motif de l'annulation"></textarea></div>
+                                                <div><label for="contact-<?= $cmd['commande_id'] ?>" class="form-label form-label-sm">Contacter le client par</label><select class="form-select form-select-sm" id="contact-<?= $cmd['commande_id'] ?>" name="mode_contact" aria-label="Mode de contact pour l'annulation"><option value="mail">Email</option><option value="gsm">GSM</option></select></div>
+                                                <div class="form-check commande-cancel-confirm"><input class="form-check-input" type="checkbox" id="confirm-annulation-<?= $cmd['commande_id'] ?>" name="confirmation_annulation" value="1" required aria-required="true"><label class="form-check-label small" for="confirm-annulation-<?= $cmd['commande_id'] ?>">Je confirme que cette annulation est volontaire et que le client sera informé.</label></div>
+                                                <button type="submit" class="btn btn-danger btn-sm" aria-label="Confirmer l'annulation de la commande"><i class="bi bi-x-circle me-1"></i>Confirmer l'annulation</button>
                                             </form>
                                         </div>
                                     </section>
                                     <?php endif; ?>
                                 </div>
                             </div>
-
-                        </div><!-- /row -->
-                    </div><!-- /accordion-body -->
+                        </div>
+                    </div>
                 </div>
-            </div><!-- /accordion-item -->
+            </div>
             <?php endforeach; ?>
-        </div><!-- /accordion -->
+        </div>
     <?php endif; ?>
 
     <?php if (isset($paginator) && $paginator->totalPages > 1): ?>
     <div class="mt-4 d-flex flex-column flex-sm-row align-items-center justify-content-between gap-2">
-        <p class="text-muted small mb-0">
-            <?= $paginator->total ?> commande<?= $paginator->total > 1 ? 's' : '' ?>
-            — page <?= $paginator->page ?> / <?= $paginator->totalPages ?>
-        </p>
+        <p class="text-muted small mb-0"><?= $paginator->total ?> commande<?= $paginator->total > 1 ? 's' : '' ?> — page <?= $paginator->page ?> / <?= $paginator->totalPages ?></p>
         <?= $paginator->renderLinks() ?>
     </div>
     <?php endif; ?>
-    </div><!-- /#vue-liste -->
-
+    </div>
 </div>
 
-<!-- FullCalendar -->
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.css" nonce="<?= cspNonce() ?>">
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js" nonce="<?= cspNonce() ?>"></script>
 <script src="https://cdn.jsdelivr.net/npm/@fullcalendar/core@6.1.15/locales/fr.global.min.js" nonce="<?= cspNonce() ?>"></script>
 
 <script nonce="<?= cspNonce() ?>">
 (function () {
-    const btnListe      = document.getElementById('btn-vue-liste');
-    const btnCal        = document.getElementById('btn-vue-calendrier');
-    const vueListe      = document.getElementById('vue-liste');
-    const vueCal        = document.getElementById('vue-calendrier');
-    const labelCount    = document.getElementById('vue-label-count');
-
+    const btnListe = document.getElementById('btn-vue-liste');
+    const btnCal = document.getElementById('btn-vue-calendrier');
+    const vueListe = document.getElementById('vue-liste');
+    const vueCal = document.getElementById('vue-calendrier');
+    const labelCount = document.getElementById('vue-label-count');
     let calInstance = null;
-
-    const statutColors = {
-        en_attente:     '#f59e0b',
-        accepte:        '#10b981',
-        en_preparation: '#3b82f6',
-        livre:          '#6366f1',
-        annule:         '#ef4444',
-        termine:        '#6b7280',
-    };
 
     function initCalendar() {
         if (calInstance) return;
@@ -686,45 +393,28 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
         calInstance = new FullCalendar.Calendar(el, {
             locale: 'fr',
             initialView: 'dayGridMonth',
-            headerToolbar: {
-                left:   'prev,next today',
-                center: 'title',
-                right:  'dayGridMonth,timeGridWeek,listWeek',
-            },
+            headerToolbar: {left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek'},
             height: 'auto',
-            events: {
-                url: '/employe/commandes/calendrier',
-                method: 'GET',
-                failure: () => { labelCount.textContent = 'Erreur de chargement'; },
-            },
+            events: {url: '/employe/commandes/calendrier', method: 'GET', failure: () => { labelCount.textContent = 'Erreur de chargement'; }},
             eventClick: function (info) {
                 const p = info.event.extendedProps;
-                const url = '/employe/commandes#commande-' + p.commande_id;
                 btnListe.click();
                 window.location.hash = '#commande-' + p.commande_id;
             },
             eventDidMount: function (info) {
                 const p = info.event.extendedProps;
-                info.el.title =
-                    info.event.title + '\n' +
-                    'Heure : ' + (p.heure || '—') + '\n' +
-                    'Menu : ' + (p.menu || '—') + '\n' +
-                    'Total : ' + new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(p.prix);
+                info.el.title = info.event.title + '\n' + 'Heure : ' + (p.heure || '—') + '\n' + 'Menu : ' + (p.menu || '—') + '\n' + 'Total : ' + new Intl.NumberFormat('fr-FR', {style: 'currency', currency: 'EUR'}).format(Number(p.prix || 0) / 100);
             },
-            loading: function (isLoading) {
-                labelCount.textContent = isLoading ? 'Chargement…' : '';
-            },
-            eventsSet: function (events) {
-                labelCount.textContent = events.length + ' commande' + (events.length > 1 ? 's' : '');
-            },
+            loading: function (isLoading) { labelCount.textContent = isLoading ? 'Chargement…' : ''; },
+            eventsSet: function (events) { labelCount.textContent = events.length + ' commande' + (events.length > 1 ? 's' : ''); },
             noEventsContent: 'Aucune commande sur cette période.',
         });
         calInstance.render();
     }
 
     btnCal.addEventListener('click', function () {
-        vueListe.style.display  = 'none';
-        vueCal.style.display    = '';
+        vueListe.style.display = 'none';
+        vueCal.style.display = '';
         btnCal.classList.add('active');
         btnCal.setAttribute('aria-pressed', 'true');
         btnListe.classList.remove('active');
@@ -734,8 +424,8 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
     });
 
     btnListe.addEventListener('click', function () {
-        vueCal.style.display    = 'none';
-        vueListe.style.display  = '';
+        vueCal.style.display = 'none';
+        vueListe.style.display = '';
         btnListe.classList.add('active');
         btnListe.setAttribute('aria-pressed', 'true');
         btnCal.classList.remove('active');
@@ -743,9 +433,6 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
         localStorage.setItem('commandes_vue', 'liste');
     });
 
-    // Restaurer la dernière vue
-    if (localStorage.getItem('commandes_vue') === 'calendrier') {
-        btnCal.click();
-    }
+    if (localStorage.getItem('commandes_vue') === 'calendrier') btnCal.click();
 })();
 </script>
