@@ -24,6 +24,7 @@ final class StripeCheckoutSessionMapper
             amountTotalCents: isset($session->amount_total) ? (int) $session->amount_total : null,
             currency: isset($session->currency) ? strtolower((string) $session->currency) : null,
             paymentIntentId: isset($session->payment_intent) ? (string) $session->payment_intent : null,
+            clientReferenceId: isset($session->client_reference_id) ? (string) $session->client_reference_id : null,
             metadata: $metadata,
         );
     }
