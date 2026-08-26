@@ -174,32 +174,6 @@ final class CatalogIntegrityService
         }
     }
 
-    public static function saveRecipe(int $platId, array $lines): void
-    {
-        $lines = CatalogIntegrityPolicy::recipeLines($lines);
-        $ingredientIds = array_column($lines, 'ingredient_id');
-
-        $db = Database::getConnection();
-        $db->beginTransaction();
-        try {
-            self::lockPlat($db, $platId);
-            self::assertActiveIngredientIds($db, $ingredientIds);
-            $db->prepare('DELETE FROM recette_ligne WHERE plat_id = ?')->execute([$platId]);
-            if ($lines !== []) {
-                $insert = $db->prepare('INSERT INTO recette_ligne (plat_id, ingredient_id, grammage) VALUES (?, ?, ?)');
-                foreach ($lines as $line) {
-                    $insert->execute([$platId, $line['ingredient_id'], $line['grammage']]);
-                }
-            }
-            $db->commit();
-        } catch (Throwable $e) {
-            if ($db->inTransaction()) {
-                $db->rollBack();
-            }
-            throw $e;
-        }
-    }
-
     /** @return array{path:string,menu_id:int}|null */
     public static function detachImage(int $imageId): ?array
     {
@@ -239,23 +213,6 @@ final class CatalogIntegrityService
             self::assertIdsExist($db, 'regime', 'regime_id', [(int) $data['regime_id']], 'Régime introuvable.');
         }
         self::assertIdsExist($db, 'plat', 'plat_id', $platIds, 'Un plat sélectionné est introuvable.');
-    }
-
-    private static function assertActiveIngredientIds(PDO $db, array $ids): void
-    {
-        if ($ids === []) {
-            return;
-        }
-        $placeholders = implode(',', array_fill(0, count($ids), '?'));
-        $stmt = $db->prepare("SELECT ingredient_id FROM ingredient WHERE actif = 1 AND ingredient_id IN ({$placeholders}) FOR UPDATE");
-        $stmt->execute($ids);
-        $found = array_map('intval', array_column($stmt->fetchAll(), 'ingredient_id'));
-        sort($found);
-        $expected = array_values(array_unique(array_map('intval', $ids)));
-        sort($expected);
-        if ($found !== $expected) {
-            throw new RuntimeException('Ingrédient introuvable ou désactivé.');
-        }
     }
 
     private static function assertIdsExist(PDO $db, string $table, string $column, array $ids, string $message): void

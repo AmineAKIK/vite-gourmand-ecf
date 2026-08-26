@@ -8,9 +8,7 @@ use InvalidArgumentException;
 
 final class CatalogIntegrityPolicy
 {
-    /**
-     * @return list<int>
-     */
+    /** @return list<int> */
     public static function ids(array $values): array
     {
         $ids = [];
@@ -25,9 +23,7 @@ final class CatalogIntegrityPolicy
         return array_values($ids);
     }
 
-    /**
-     * @return list<array{ingredient_id:int,grammage:string}>
-     */
+    /** @return list<array{ingredient_id:int,grammage:string}> */
     public static function recipeLines(array $lines): array
     {
         $normalized = [];
@@ -36,18 +32,13 @@ final class CatalogIntegrityPolicy
             if ($ingredientId === false) {
                 throw new InvalidArgumentException('Ingrédient de recette invalide.');
             }
-
-            $raw = str_replace(',', '.', trim((string) ($line['grammage'] ?? '')));
-            if ($raw === '' || !is_numeric($raw) || (float) $raw <= 0) {
-                throw new InvalidArgumentException('Chaque quantité de recette doit être strictement positive.');
-            }
             if (isset($normalized[(int) $ingredientId])) {
                 throw new InvalidArgumentException('Un ingrédient ne peut apparaître qu’une fois dans une recette.');
             }
 
             $normalized[(int) $ingredientId] = [
                 'ingredient_id' => (int) $ingredientId,
-                'grammage' => number_format((float) $raw, 3, '.', ''),
+                'grammage' => InventoryQuantity::normalizePositive($line['grammage'] ?? ''),
             ];
         }
 
@@ -80,34 +71,37 @@ final class CatalogIntegrityPolicy
         }
     }
 
-    /**
-     * @return array{libelle:string,unite:string,prix_unitaire:string,seuil_alerte:?string}
-     */
+    /** @return array{libelle:string,unite:string,prix_unitaire:string,seuil_alerte:?string} */
     public static function ingredientPayload(array $data): array
     {
         $libelle = trim((string) ($data['libelle'] ?? ''));
-        $unite = trim((string) ($data['unite'] ?? 'kg'));
-        $priceRaw = str_replace(',', '.', trim((string) ($data['prix_unitaire'] ?? '0')));
-        $thresholdRaw = str_replace(',', '.', trim((string) ($data['seuil_alerte'] ?? '')));
+        $unite = InventoryQuantity::assertUnit((string) ($data['unite'] ?? 'kg'));
+        $price = self::normalizePrice((string) ($data['prix_unitaire'] ?? '0'));
+        $thresholdRaw = trim((string) ($data['seuil_alerte'] ?? ''));
 
         if ($libelle === '') {
             throw new InvalidArgumentException('Le libellé de l’ingrédient est obligatoire.');
-        }
-        if ($unite === '') {
-            throw new InvalidArgumentException('L’unité de l’ingrédient est obligatoire.');
-        }
-        if (!is_numeric($priceRaw) || (float) $priceRaw < 0) {
-            throw new InvalidArgumentException('Le prix unitaire de l’ingrédient est invalide.');
-        }
-        if ($thresholdRaw !== '' && (!is_numeric($thresholdRaw) || (float) $thresholdRaw < 0)) {
-            throw new InvalidArgumentException('Le seuil d’alerte de l’ingrédient est invalide.');
         }
 
         return [
             'libelle' => $libelle,
             'unite' => $unite,
-            'prix_unitaire' => number_format((float) $priceRaw, 4, '.', ''),
-            'seuil_alerte' => $thresholdRaw === '' ? null : number_format((float) $thresholdRaw, 3, '.', ''),
+            'prix_unitaire' => $price,
+            'seuil_alerte' => $thresholdRaw === '' ? null : InventoryQuantity::normalizeNonNegative($thresholdRaw),
         ];
+    }
+
+    private static function normalizePrice(string $value): string
+    {
+        $raw = str_replace(',', '.', trim($value));
+        if ($raw === '' || preg_match('/^\d+(?:\.\d{1,4})?$/', $raw) !== 1) {
+            throw new InvalidArgumentException('Le prix unitaire de l’ingrédient est invalide.');
+        }
+
+        [$whole, $fraction] = array_pad(explode('.', $raw, 2), 2, '');
+        $whole = ltrim($whole, '0');
+        $whole = $whole === '' ? '0' : $whole;
+
+        return $whole . '.' . str_pad($fraction, 4, '0');
     }
 }

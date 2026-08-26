@@ -10,23 +10,32 @@ final class InventoryMovementPolicy
 {
     public static function assertType(string $type): void
     {
-        if (!in_array($type, ['entree', 'sortie', 'ajustement'], true)) {
-            throw new InvalidArgumentException('Type de mouvement invalide.');
+        if (!in_array($type, ['entree', 'sortie'], true)) {
+            throw new InvalidArgumentException('Type de mouvement invalide. Les nouveaux mouvements doivent être des entrées ou des sorties.');
         }
     }
 
-    public static function assertQuantity(float $quantity): void
+    public static function normalizeQuantity(mixed $quantity): string
     {
-        if (!is_finite($quantity) || $quantity <= 0) {
-            throw new InvalidArgumentException('La quantité doit être positive.');
-        }
+        return InventoryQuantity::normalizePositive($quantity);
+    }
+
+    public static function assertQuantity(mixed $quantity): void
+    {
+        self::normalizeQuantity($quantity);
     }
 
     public static function reversalType(string $type): string
     {
-        self::assertType($type);
-
-        return $type === 'sortie' ? 'entree' : 'sortie';
+        return match ($type) {
+            'entree' => 'sortie',
+            'sortie' => 'entree',
+            // Historical V1 rows used `ajustement` as a positive delta. A reversal
+            // must therefore subtract the same quantity without allowing new
+            // ambiguous adjustment movements to be created.
+            'ajustement' => 'sortie',
+            default => throw new InvalidArgumentException('Type de mouvement historique invalide.'),
+        };
     }
 
     public static function orderConsumptionKey(int $commandeId, int $ingredientId): string

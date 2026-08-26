@@ -36,40 +36,6 @@ class IngredientModel
         return $stmt->fetch() ?: null;
     }
 
-    public static function create(array $data): int
-    {
-        $db = Database::getConnection();
-        $db->prepare(
-            'INSERT INTO ingredient (libelle, unite, prix_unitaire, seuil_alerte) VALUES (?, ?, ?, ?)'
-        )->execute([
-            $data['libelle'],
-            $data['unite']        ?? 'kg',
-            (float)($data['prix_unitaire'] ?? 0),
-            isset($data['seuil_alerte']) && $data['seuil_alerte'] !== '' ? (float)$data['seuil_alerte'] : null,
-        ]);
-        return (int)$db->lastInsertId();
-    }
-
-    public static function update(int $id, array $data): void
-    {
-        Database::getConnection()->prepare(
-            'UPDATE ingredient SET libelle=?, unite=?, prix_unitaire=?, seuil_alerte=? WHERE ingredient_id=?'
-        )->execute([
-            $data['libelle'],
-            $data['unite']        ?? 'kg',
-            (float)($data['prix_unitaire'] ?? 0),
-            isset($data['seuil_alerte']) && $data['seuil_alerte'] !== '' ? (float)$data['seuil_alerte'] : null,
-            $id,
-        ]);
-    }
-
-    public static function delete(int $id): void
-    {
-        Database::getConnection()->prepare(
-            'DELETE FROM ingredient WHERE ingredient_id = ?'
-        )->execute([$id]);
-    }
-
     /** Stock courant calculé depuis les mouvements */
     public static function stockCourant(int $id): float
     {

@@ -78,29 +78,4 @@ class RecetteModel
 
         return $result;
     }
-
-    /** Sauvegarde toutes les lignes de recette d'un plat (remplace l'existant) */
-    public static function syncLignes(int $platId, array $lignes): void
-    {
-        $db = Database::getConnection();
-        $db->beginTransaction();
-        try {
-            $db->prepare('DELETE FROM recette_ligne WHERE plat_id = ?')->execute([$platId]);
-            if ($lignes) {
-                $stmt = $db->prepare(
-                    'INSERT INTO recette_ligne (plat_id, ingredient_id, grammage) VALUES (?, ?, ?)'
-                );
-                foreach ($lignes as $ligne) {
-                    $grammage = (float)($ligne['grammage'] ?? 0);
-                    if ($grammage > 0 && !empty($ligne['ingredient_id'])) {
-                        $stmt->execute([$platId, (int)$ligne['ingredient_id'], $grammage]);
-                    }
-                }
-            }
-            $db->commit();
-        } catch (\Throwable $e) {
-            $db->rollBack();
-            throw $e;
-        }
-    }
 }

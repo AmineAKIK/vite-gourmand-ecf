@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Domain\InventoryMovementPolicy;
+use App\Domain\InventoryQuantity;
 use PDO;
 use RuntimeException;
 
@@ -42,8 +43,7 @@ final class InventoryLedgerService
              VALUES (?, ?, ?)',
         );
         foreach ($rows as $row) {
-            $quantity = (float) $row['quantite'];
-            InventoryMovementPolicy::assertQuantity($quantity);
+            $quantity = InventoryQuantity::normalizePositive((string) $row['quantite']);
             $insert->execute([$commandeId, (int) $row['ingredient_id'], $quantity]);
         }
     }
@@ -70,7 +70,7 @@ final class InventoryLedgerService
 
         foreach ($stmt->fetchAll() as $row) {
             $ingredientId = (int) $row['ingredient_id'];
-            $quantity = (float) $row['quantite'];
+            $quantity = InventoryQuantity::normalizePositive((string) $row['quantite']);
             self::appendMovement(
                 $db,
                 $ingredientId,
@@ -81,6 +81,7 @@ final class InventoryLedgerService
                 $creePar,
                 InventoryMovementPolicy::orderConsumptionKey($commandeId, $ingredientId),
                 null,
+                false,
             );
         }
     }
@@ -114,12 +115,13 @@ final class InventoryLedgerService
                 $db,
                 (int) $movement['ingredient_id'],
                 'entree',
-                (float) $movement['quantite'],
+                InventoryQuantity::normalizePositive((string) $movement['quantite']),
                 'Restitution annulation commande #' . $commandeId,
                 $commandeId,
                 $creePar,
                 InventoryMovementPolicy::reversalKey($movementId),
                 $movementId,
+                false,
             );
         }
     }
@@ -128,23 +130,23 @@ final class InventoryLedgerService
         PDO $db,
         int $ingredientId,
         string $type,
-        float $quantity,
+        mixed $quantity,
         ?string $motif,
         ?int $creePar,
     ): int {
         InventoryMovementPolicy::assertType($type);
-        InventoryMovementPolicy::assertQuantity($quantity);
 
         return self::appendMovement(
             $db,
             $ingredientId,
             $type,
-            $quantity,
+            InventoryMovementPolicy::normalizeQuantity($quantity),
             $motif,
             null,
             $creePar,
             null,
             null,
+            true,
         );
     }
 
@@ -169,12 +171,13 @@ final class InventoryLedgerService
             $db,
             (int) $movement['ingredient_id'],
             InventoryMovementPolicy::reversalType((string) $movement['type_mouvement']),
-            (float) $movement['quantite'],
+            InventoryQuantity::normalizePositive((string) $movement['quantite']),
             'Contre-passation du mouvement #' . $mouvementId,
             null,
             $creePar,
             InventoryMovementPolicy::reversalKey($mouvementId),
             $mouvementId,
+            false,
         );
     }
 
@@ -182,35 +185,43 @@ final class InventoryLedgerService
         PDO $db,
         int $ingredientId,
         string $type,
-        float $quantity,
+        string $quantity,
         ?string $motif,
         ?int $commandeId,
         ?int $creePar,
         ?string $operationKey,
         ?int $reversalOf,
+        bool $requireActiveIngredient,
     ): int {
+        self::requireTransaction($db);
         InventoryMovementPolicy::assertType($type);
-        InventoryMovementPolicy::assertQuantity($quantity);
+        $quantity = InventoryMovementPolicy::normalizeQuantity($quantity);
         if ($ingredientId <= 0) {
             throw new RuntimeException('Ingrédient invalide.');
         }
 
-        if ($operationKey === null) {
-            $stmt = $db->prepare(
-                'INSERT INTO mouvement_stock
-                    (ingredient_id, type_mouvement, quantite, motif, commande_id, cree_par, operation_key, reversal_of_mouvement_id)
-                 VALUES (?, ?, ?, ?, ?, ?, NULL, ?)',
-            );
-            $stmt->execute([$ingredientId, $type, $quantity, $motif, $commandeId, $creePar, $reversalOf]);
+        self::lockIngredient($db, $ingredientId, $requireActiveIngredient);
 
-            return (int) $db->lastInsertId();
+        if ($operationKey !== null) {
+            $existing = self::movementByOperationKey($db, $operationKey);
+            if ($existing !== null) {
+                self::assertSameOperation($existing, $ingredientId, $type, $quantity, $commandeId, $reversalOf);
+                return (int) $existing['mouvement_id'];
+            }
+        }
+
+        if ($type === 'sortie') {
+            $availableMilliunits = self::currentStockMilliunits($db, $ingredientId);
+            $requestedMilliunits = InventoryQuantity::milliunits($quantity);
+            if ($availableMilliunits < $requestedMilliunits) {
+                throw new RuntimeException('Stock insuffisant : une sortie ne peut pas rendre le stock négatif.');
+            }
         }
 
         $stmt = $db->prepare(
             'INSERT INTO mouvement_stock
                 (ingredient_id, type_mouvement, quantite, motif, commande_id, cree_par, operation_key, reversal_of_mouvement_id)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-             ON DUPLICATE KEY UPDATE mouvement_id = LAST_INSERT_ID(mouvement_id)',
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         );
         $stmt->execute([
             $ingredientId,
@@ -222,25 +233,73 @@ final class InventoryLedgerService
             $operationKey,
             $reversalOf,
         ]);
-        $movementId = (int) $db->lastInsertId();
 
-        $verify = $db->prepare(
-            'SELECT ingredient_id, type_mouvement, quantite, commande_id, reversal_of_mouvement_id
-             FROM mouvement_stock WHERE mouvement_id = ?',
+        return (int) $db->lastInsertId();
+    }
+
+    private static function lockIngredient(PDO $db, int $ingredientId, bool $requireActive): void
+    {
+        $stmt = $db->prepare('SELECT actif FROM ingredient WHERE ingredient_id = ? FOR UPDATE');
+        $stmt->execute([$ingredientId]);
+        $active = $stmt->fetchColumn();
+        if ($active === false) {
+            throw new RuntimeException('Ingrédient introuvable.');
+        }
+        if ($requireActive && (int) $active !== 1) {
+            throw new RuntimeException('Ingrédient désactivé : mouvement manuel interdit.');
+        }
+    }
+
+    private static function currentStockMilliunits(PDO $db, int $ingredientId): int
+    {
+        $stmt = $db->prepare(
+            "SELECT COALESCE(ROUND(SUM(
+                CASE
+                    WHEN type_mouvement = 'entree' THEN quantite
+                    WHEN type_mouvement = 'sortie' THEN -quantite
+                    WHEN type_mouvement = 'ajustement' THEN quantite
+                    ELSE 0
+                END
+            ) * 1000), 0)
+             FROM mouvement_stock
+             WHERE ingredient_id = ?",
         );
-        $verify->execute([$movementId]);
-        $existing = $verify->fetch();
-        if (!$existing
-            || (int) $existing['ingredient_id'] !== $ingredientId
+        $stmt->execute([$ingredientId]);
+
+        return (int) $stmt->fetchColumn();
+    }
+
+    /** @return array<string,mixed>|null */
+    private static function movementByOperationKey(PDO $db, string $operationKey): ?array
+    {
+        $stmt = $db->prepare(
+            'SELECT mouvement_id, ingredient_id, type_mouvement, quantite, commande_id, reversal_of_mouvement_id
+             FROM mouvement_stock
+             WHERE operation_key = ?',
+        );
+        $stmt->execute([$operationKey]);
+        $row = $stmt->fetch();
+
+        return $row ?: null;
+    }
+
+    /** @param array<string,mixed> $existing */
+    private static function assertSameOperation(
+        array $existing,
+        int $ingredientId,
+        string $type,
+        string $quantity,
+        ?int $commandeId,
+        ?int $reversalOf,
+    ): void {
+        if ((int) $existing['ingredient_id'] !== $ingredientId
             || (string) $existing['type_mouvement'] !== $type
-            || abs((float) $existing['quantite'] - $quantity) > 0.0005
+            || InventoryQuantity::normalizePositive((string) $existing['quantite']) !== $quantity
             || (int) ($existing['commande_id'] ?? 0) !== (int) ($commandeId ?? 0)
             || (int) ($existing['reversal_of_mouvement_id'] ?? 0) !== (int) ($reversalOf ?? 0)
         ) {
             throw new RuntimeException('Collision de clé idempotente du ledger de stock.');
         }
-
-        return $movementId;
     }
 
     private static function requireTransaction(PDO $db): void
