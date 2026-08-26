@@ -14,7 +14,7 @@ SET @ddl = (
     SELECT IF(
         COUNT(*) > 0,
         'ALTER TABLE commande DROP CHECK chk_commande_prix_total',
-        'SELECT 1'
+        'DO 0'
     )
     FROM information_schema.TABLE_CONSTRAINTS
     WHERE CONSTRAINT_SCHEMA = DATABASE()
@@ -43,7 +43,7 @@ SET @ddl = (
     SELECT IF(
         COUNT(*) > 0,
         'ALTER TABLE commande_ligne DROP FOREIGN KEY fk_commande_ligne_taux_tva',
-        'SELECT 1'
+        'DO 0'
     )
     FROM information_schema.TABLE_CONSTRAINTS
     WHERE CONSTRAINT_SCHEMA = DATABASE()
@@ -59,7 +59,7 @@ SET @ddl = (
     SELECT IF(
         COUNT(*) > 0,
         'ALTER TABLE commande_ligne DROP CHECK chk_commande_ligne_montants',
-        'SELECT 1'
+        'DO 0'
     )
     FROM information_schema.TABLE_CONSTRAINTS
     WHERE CONSTRAINT_SCHEMA = DATABASE()
@@ -127,7 +127,7 @@ SET @ddl = (
     SELECT IF(
         COUNT(*) > 0,
         'ALTER TABLE paiement DROP CHECK chk_paiement_montant',
-        'SELECT 1'
+        'DO 0'
     )
     FROM information_schema.TABLE_CONSTRAINTS
     WHERE CONSTRAINT_SCHEMA = DATABASE()
