@@ -42,7 +42,7 @@ final class PaymentMethodRegistryContractTest extends TestCase
         self::assertStringContainsString('PaymentMethodRegistry::requireCheckoutMethod($modePaiement)', $commande);
         self::assertStringContainsString('checkout_strategy', $commande);
         self::assertStringNotContainsString('SELECT code FROM mode_paiement', $commande);
-        self::assertStringNotContainsString("$modePaiement === 'cb_online'", $commande);
+        self::assertStringNotContainsString('$modePaiement === \'cb_online\'', $commande);
 
         self::assertStringContainsString('PaymentMethodRegistry::checkoutMethods()', $panierController);
         self::assertStringNotContainsString('SELECT * FROM mode_paiement', $panierView);
