@@ -3,6 +3,7 @@
 namespace App\Config;
 
 use App\Domain\BrandAsset;
+use App\Domain\Money;
 use App\Models\SiteConfigModel;
 use App\Models\SiteImageModel;
 use UnexpectedValueException;
@@ -126,24 +127,24 @@ class SiteConfig
         return array_values(array_map('strval', $value));
     }
 
-    public static function deliveryBase(): float
+    public static function deliveryBaseCents(): int
     {
-        return self::requiredFloat('delivery.base_fee');
+        return Money::fromDecimal(self::requiredString('delivery.base_fee'));
     }
 
-    public static function deliveryKm(): float
+    public static function deliveryPerKmCents(): int
     {
-        return self::requiredFloat('delivery.per_km_fee');
+        return Money::fromDecimal(self::requiredString('delivery.per_km_fee'));
     }
 
-    public static function discountThreshold(): float
+    public static function discountThresholdCents(): int
     {
-        return self::requiredFloat('discount.threshold');
+        return Money::fromDecimal(self::requiredString('discount.threshold'));
     }
 
-    public static function discountRate(): float
+    public static function discountRatePercent(): int
     {
-        return self::requiredFloat('discount.rate_percent');
+        return self::requiredInt('discount.rate_percent');
     }
 
     public static function logoUrl(): ?string
@@ -166,8 +167,8 @@ class SiteConfig
     public static function deliveryPricingLabel(): string
     {
         return 'Livraison gratuite à ' . self::city() . '. '
-            . number_format(self::deliveryBase(), 2, ',', ' ') . ' € + '
-            . number_format(self::deliveryKm(), 2, ',', ' ') . ' €/km au-delà.';
+            . Money::toDecimalString(self::deliveryBaseCents()) . ' € + '
+            . Money::toDecimalString(self::deliveryPerKmCents()) . ' €/km au-delà.';
     }
 
     public static function commandesMaxParJour(): int

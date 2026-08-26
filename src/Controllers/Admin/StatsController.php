@@ -78,11 +78,11 @@ class StatsController
                 AnalyticsTrustPolicy::csvText($row['client']),
                 AnalyticsTrustPolicy::csvText($row['client_email']),
                 $row['nb_personnes'],
-                number_format((float)$row['total_ht'], 2, ',', ''),
-                number_format((float)$row['total_tva'], 2, ',', ''),
-                number_format((float)$row['total_ttc'], 2, ',', ''),
-                number_format((float)$row['montant_encaisse'], 2, ',', ''),
-                number_format((float)$row['solde_restant'], 2, ',', ''),
+                \App\Domain\Money::toDecimalString((int)$row['total_ht_cents']),
+                \App\Domain\Money::toDecimalString((int)$row['total_tva_cents']),
+                \App\Domain\Money::toDecimalString((int)$row['total_ttc_cents']),
+                \App\Domain\Money::toDecimalString((int)$row['montant_encaisse_cents']),
+                \App\Domain\Money::toDecimalString((int)$row['solde_restant_cents']),
                 AnalyticsTrustPolicy::csvText($row['statut_paiement']),
                 AnalyticsTrustPolicy::csvText($row['statut']),
             ], ';');
@@ -146,16 +146,16 @@ class StatsController
                         AnalyticsTrustPolicy::csvText($r['client_email']),
                         AnalyticsTrustPolicy::csvText($r['menu_titre']),
                         $r['nombre_personne'],
-                        number_format((float)$r['prix_brut_menu'], 2, ',', ''),
-                        number_format((float)$r['remise'], 2, ',', ''),
-                        number_format((float)$r['prix_net_menu'], 2, ',', ''),
-                        number_format((float)$r['frais_livraison'], 2, ',', ''),
-                        number_format((float)$r['total_ligne_ttc'], 2, ',', ''),
+                        \App\Domain\Money::toDecimalString((int)$r['prix_brut_menu_cents']),
+                        \App\Domain\Money::toDecimalString((int)$r['remise_cents']),
+                        \App\Domain\Money::toDecimalString((int)$r['prix_net_menu_cents']),
+                        \App\Domain\Money::toDecimalString((int)$r['frais_livraison_cents']),
+                        \App\Domain\Money::toDecimalString((int)$r['total_ligne_ttc_cents']),
                     ];
                     if ($isAssujetti) {
-                        $row[] = number_format((float)$r['taux_tva'], 2, ',', '');
-                        $row[] = number_format((float)$r['total_ligne_ht'], 2, ',', '');
-                        $row[] = number_format((float)$r['tva_ligne'], 2, ',', '');
+                        $row[] = number_format(((int)$r['taux_tva_menu_basis_points']) / 100, 2, ',', '');
+                        $row[] = \App\Domain\Money::toDecimalString((int)$r['total_ligne_ht_cents']);
+                        $row[] = \App\Domain\Money::toDecimalString((int)$r['tva_ligne_cents']);
                     }
                     fputcsv($out, $row, ';');
                 }
@@ -174,12 +174,12 @@ class StatsController
                         AnalyticsTrustPolicy::csvText($r['annee_mois']),
                         $r['nb_commandes'],
                         $r['nb_personnes'],
-                        number_format((float)$r['panier_moyen_ttc'], 2, ',', ''),
-                        number_format((float)$r['ca_ttc'], 2, ',', ''),
+                        \App\Domain\Money::toDecimalString((int)$r['panier_moyen_ttc_cents']),
+                        \App\Domain\Money::toDecimalString((int)$r['ca_ttc_cents']),
                     ];
                     if ($isAssujetti) {
-                        $row[] = number_format((float)$r['ca_ht'], 2, ',', '');
-                        $row[] = number_format((float)$r['tva_collectee'], 2, ',', '');
+                        $row[] = \App\Domain\Money::toDecimalString((int)$r['ca_ht_cents']);
+                        $row[] = \App\Domain\Money::toDecimalString((int)$r['tva_collectee_cents']);
                     }
                     fputcsv($out, $row, ';');
                 }
@@ -206,16 +206,16 @@ class StatsController
                         AnalyticsTrustPolicy::csvText($r['client']),
                         AnalyticsTrustPolicy::csvText($r['client_email']),
                         $r['nb_personnes'],
-                        number_format((float)$r['total_ttc'], 2, ',', ''),
+                        \App\Domain\Money::toDecimalString((int)$r['total_ttc_cents']),
                     ];
                     if ($isAssujetti) {
-                        $row[] = number_format((float)$r['total_ht'], 2, ',', '');
-                        $row[] = number_format((float)$r['total_tva'], 2, ',', '');
+                        $row[] = \App\Domain\Money::toDecimalString((int)$r['total_ht_cents']);
+                        $row[] = \App\Domain\Money::toDecimalString((int)$r['total_tva_cents']);
                     }
                     array_push(
                         $row,
-                        number_format((float)$r['montant_encaisse'], 2, ',', ''),
-                        number_format((float)$r['solde_restant'], 2, ',', ''),
+                        \App\Domain\Money::toDecimalString((int)$r['montant_encaisse_cents']),
+                        \App\Domain\Money::toDecimalString((int)$r['solde_restant_cents']),
                         AnalyticsTrustPolicy::csvText($r['statut_paiement']),
                         AnalyticsTrustPolicy::csvText($r['statut']),
                     );

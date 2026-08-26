@@ -31,7 +31,7 @@ class CommandeController {
         }
 
         try {
-            $prix = \App\Geo\DeliveryResolver::computeDeliveryPrice($adresse, $ville, $codePostal);
+            $prixCents = \App\Geo\DeliveryResolver::computeDeliveryPriceCents($adresse, $ville, $codePostal);
         } catch (DeliveryGeoNotConfiguredException $e) {
             http_response_code(503);
             echo json_encode(['ok' => false, 'message' => 'Le service de livraison n\'est pas encore configuré. Contactez le traiteur.']);
@@ -42,7 +42,7 @@ class CommandeController {
             return;
         }
 
-        if ($prix === null) {
+        if ($prixCents === null) {
             http_response_code(422);
             echo json_encode(['ok' => false, 'message' => 'Adresse non reconnue ou incohérente avec le code postal.']);
             return;
@@ -56,7 +56,7 @@ class CommandeController {
         echo json_encode([
             'ok'       => true,
             'distance' => $distance,
-            'prix'     => $prix,
+            'prix_cents' => $prixCents,
             'adresse'  => $adresseResolue['label'] ?? null,
         ]);
     }

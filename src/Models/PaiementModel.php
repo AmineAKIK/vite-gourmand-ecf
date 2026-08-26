@@ -35,11 +35,11 @@ class PaiementModel
         $row = $stmt->fetch();
         return $row ?: [
             'commande_id' => $commandeId,
-            'total_encaisse' => 0.00,
-            'total_acomptes' => 0.00,
-            'total_soldes' => 0.00,
-            'total_paiements_uniques' => 0.00,
-            'total_rembourse' => 0.00,
+            'total_encaisse_cents' => 0,
+            'total_acomptes_cents' => 0,
+            'total_soldes_cents' => 0,
+            'total_paiements_uniques_cents' => 0,
+            'total_rembourse_cents' => 0,
             'nb_paiements' => 0,
             'derniere_date_paiement' => null,
         ];
@@ -60,15 +60,15 @@ class PaiementModel
         return $indexed;
     }
 
-    public static function statutPaiement(float $totalEncaisse, float $prixTotal): string
+    public static function statutPaiement(int $totalEncaisseCents, int $prixTotalCents): string
     {
-        if ($prixTotal <= 0) {
+        if ($prixTotalCents <= 0) {
             return 'non_paye';
         }
-        if ($totalEncaisse >= $prixTotal - 0.01) {
+        if ($totalEncaisseCents >= $prixTotalCents) {
             return 'solde';
         }
-        if ($totalEncaisse > 0) {
+        if ($totalEncaisseCents > 0) {
             return 'acompte';
         }
         return 'non_paye';

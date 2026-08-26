@@ -57,7 +57,7 @@ class StatsService
                 s.currency,
                 COUNT(DISTINCT s.commande_id) AS nb,
                 SUM(s.prix_net_menu_cents) AS ca_cents,
-                SUM(CAST(ROUND(s.prix_net_menu_cents * 10000 / (10000 + s.taux_tva_basis_points)) AS SIGNED)) AS ca_ht_cents,
+                SUM(CAST(ROUND(s.prix_net_menu_cents * 10000 / (10000 + s.taux_tva_menu_basis_points)) AS SIGNED)) AS ca_ht_cents,
                 SUM(s.nombre_personne) AS nb_personnes,
                 CAST(ROUND(AVG(s.prix_net_menu_cents)) AS SIGNED) AS prix_moyen_menu_cents
             FROM v_ca_stats s
@@ -188,7 +188,7 @@ class StatsService
                    s.prix_brut_menu_cents, s.remise_appliquee_cents AS remise_cents,
                    s.prix_net_menu_cents, s.prix_livraison_cents AS frais_livraison_cents,
                    s.prix_total_ligne_cents AS total_ligne_ttc_cents,
-                   s.taux_tva_basis_points,
+                   s.taux_tva_menu_basis_points,
                    s.prix_total_ligne_ht_cents AS total_ligne_ht_cents,
                    s.tva_ligne_cents, s.statut
             FROM v_ca_stats s WHERE 1=1

@@ -17,7 +17,7 @@ class PricingService
      * Calcule tous les montants d'une commande.
      *
      * Le contrat financier canonique est exprimé en centimes entiers. Les champs
-     * historiques en euros restent présents pour compatibilité avec la base et les vues.
+     * Aucune valeur monétaire transactionnelle n'est exposée en float.
      */
     public static function computeOrderTotal(
         array $panierItems,
@@ -27,8 +27,8 @@ class PricingService
     ): array {
         ConfigurationCompleteness::assertOrderingReady();
 
-        $tauxTvaMenu = self::defaultTauxTvaByCategorie('menu');
-        $tauxTvaLivraison = self::defaultTauxTvaByCategorie('livraison');
+        $tauxTvaMenuBasisPoints = self::defaultTauxTvaBasisPointsByCategorie('menu');
+        $tauxTvaLivraisonBasisPoints = self::defaultTauxTvaBasisPointsByCategorie('livraison');
         $tauxTvaMenuId = self::defaultTauxTvaIdByCategorie('menu');
         $tauxTvaLivraisonId = self::defaultTauxTvaIdByCategorie('livraison');
         $seuilReduction = Configuration::get('discount.threshold');
@@ -40,8 +40,8 @@ class PricingService
         $discountRateBasisPoints = $tauxReduction * 100;
         $regimeTva = self::regimeTva();
 
-        $prixLivraison = DeliveryResolver::computeDeliveryPrice($adresse, $ville, $codePostal);
-        if ($prixLivraison === null) {
+        $prixLivraisonCents = DeliveryResolver::computeDeliveryPriceCents($adresse, $ville, $codePostal);
+        if ($prixLivraisonCents === null) {
             throw new InvalidArgumentException(
                 'Adresse de livraison non reconnue ou incohérente avec la ville et le code postal.'
             );
@@ -49,7 +49,7 @@ class PricingService
 
         $pricing = OrderPricingCalculator::calculate(
             $panierItems,
-            Money::fromDecimal($prixLivraison),
+            $prixLivraisonCents,
             $discountThresholdCents,
             $discountRateBasisPoints
         );
@@ -62,12 +62,13 @@ class PricingService
             $lignes[] = [
                 'menu_id' => $line['menu_id'],
                 'nombre_personne' => $line['nombre_personne'],
-                'prix_par_personne_cents' => $line['prix_par_personne_cents'],
-                'prix_menu_brut_cents' => $line['prix_menu_brut_cents'],
-                'prix_menu_net_cents' => $line['prix_menu_net_cents'],
+                'prix_par_personne_snapshot_cents' => $line['prix_par_personne_cents'],
+                'prix_menu_cents' => $line['prix_menu_net_cents'],
                 'remise_appliquee_cents' => $line['remise_appliquee_cents'],
-                'taux_tva_basis_points' => $tauxTvaMenu,
-                'taux_tva_id' => $tauxTvaMenuId,
+                'taux_tva_menu_basis_points' => $tauxTvaMenuBasisPoints,
+                'taux_tva_livraison_basis_points' => $tauxTvaLivraisonBasisPoints,
+                'taux_tva_menu_id' => $tauxTvaMenuId,
+                'taux_tva_livraison_id' => $tauxTvaLivraisonId,
                 'taux_reduction_basis_points' => $pricing['taux_reduction_basis_points'],
                 'prix_livraison_cents' => $prixLivraisonCents,
                 'prix_total_ligne_cents' => $prixTotalLigneCents,
@@ -85,9 +86,9 @@ class PricingService
             'snapshots' => [
                 'seuil_reduction_cents' => $discountThresholdCents,
                 'taux_reduction_basis_points' => $pricing['taux_reduction_basis_points'],
-                'taux_tva_menu' => $tauxTvaMenu,
+                'taux_tva_menu_basis_points' => $tauxTvaMenuBasisPoints,
                 'taux_tva_menu_id' => $tauxTvaMenuId,
-                'taux_tva_livraison' => $tauxTvaLivraison,
+                'taux_tva_livraison_basis_points' => $tauxTvaLivraisonBasisPoints,
                 'taux_tva_livraison_id' => $tauxTvaLivraisonId,
                 'regime_tva' => $regimeTva,
             ],
@@ -172,7 +173,7 @@ class PricingService
         return self::regimeTva() === 'assujetti';
     }
 
-    public static function defaultTauxTvaByCategorie(string $categorie): float
+    public static function defaultTauxTvaBasisPointsByCategorie(string $categorie): int
     {
         $stmt = Database::getConnection()->prepare(
             'SELECT taux FROM taux_tva WHERE categorie = ? AND par_defaut = 1 AND actif = 1 LIMIT 1'
@@ -183,7 +184,7 @@ class PricingService
             throw new RuntimeException('configuration_incomplete:tax_rate:' . $categorie);
         }
 
-        return (float) $taux;
+        return Money::percentToBasisPoints((string) $taux);
     }
 
     public static function defaultTauxTvaIdByCategorie(string $categorie): int

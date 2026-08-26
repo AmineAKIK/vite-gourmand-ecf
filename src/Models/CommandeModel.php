@@ -17,8 +17,8 @@ class CommandeModel
      *                adresse_livraison, ville_livraison, code_postal_livraison, prix_total_cents, prix_livraison_cents
      * $lignes: produit de PricingService::computeOrderTotal()['lignes'], chaque entrée contient :
      *   menu_id, nombre_personne, prix_menu_cents, prix_livraison_cents, prix_total_ligne_cents,
-     *   prix_par_personne_snapshot_cents, taux_tva_basis_points, taux_reduction_basis_points,
-     *   remise_appliquee_cents, taux_tva_id
+     *   prix_par_personne_snapshot_cents, taux_tva_menu_basis_points, taux_tva_livraison_basis_points,
+     *   taux_reduction_basis_points, remise_appliquee_cents, taux_tva_menu_id, taux_tva_livraison_id
      */
     public static function create(array $commandeData, array $lignes): int {
         // Vérification quota plan SaaS (fail-open si DB indisponible)
@@ -59,9 +59,11 @@ class CommandeModel
                 INSERT INTO commande_ligne (
                     commande_id, menu_id, nombre_personne,
                     prix_menu_cents, prix_livraison_cents, prix_total_ligne_cents,
-                    prix_par_personne_snapshot_cents, taux_tva_basis_points,
-                    taux_reduction_basis_points, remise_appliquee_cents, taux_tva_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    prix_par_personne_snapshot_cents,
+                    taux_tva_menu_basis_points, taux_tva_livraison_basis_points,
+                    taux_reduction_basis_points, remise_appliquee_cents,
+                    taux_tva_menu_id, taux_tva_livraison_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             foreach ($lignes as $ligne) {
@@ -73,10 +75,12 @@ class CommandeModel
                     (int)$ligne['prix_livraison_cents'],
                     (int)$ligne['prix_total_ligne_cents'],
                     (int)($ligne['prix_par_personne_snapshot_cents'] ?? 0),
-                    (int)($ligne['taux_tva_basis_points'] ?? 0),
-                    (int)($ligne['taux_reduction_basis_points'] ?? 0),
-                    (int)($ligne['remise_appliquee_cents'] ?? 0),
-                    isset($ligne['taux_tva_id']) ? (int)$ligne['taux_tva_id'] : null,
+                    (int)$ligne['taux_tva_menu_basis_points'],
+                    (int)$ligne['taux_tva_livraison_basis_points'],
+                    (int)$ligne['taux_reduction_basis_points'],
+                    (int)$ligne['remise_appliquee_cents'],
+                    isset($ligne['taux_tva_menu_id']) ? (int)$ligne['taux_tva_menu_id'] : null,
+                    isset($ligne['taux_tva_livraison_id']) ? (int)$ligne['taux_tva_livraison_id'] : null,
                 ]);
 
                 $stockStmt2 = $db->prepare("SELECT quantite_restante FROM menu WHERE menu_id = ?");

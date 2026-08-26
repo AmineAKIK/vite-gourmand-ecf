@@ -153,7 +153,7 @@ class DeliveryResolver
             self::normalizeLabel($resolved['city'] ?? '') === self::normalizeLabel(SiteConfig::city())
             && in_array((string) ($resolved['postcode'] ?? ''), SiteConfig::freePostalCodes(), true)
         ) {
-            return ['price' => 0.0, 'distance' => $distance, 'resolved' => $resolved];
+            return ['price_cents' => 0, 'distance' => $distance, 'resolved' => $resolved];
         }
 
         $rayonMax = SiteConfig::deliveryRadiusKm();
@@ -169,17 +169,20 @@ class DeliveryResolver
             );
         }
 
+        $distanceHundredthsKm = (int) round($distance * 100);
+        $variableCents = intdiv((SiteConfig::deliveryPerKmCents() * $distanceHundredthsKm) + 50, 100);
+
         return [
-            'price' => round(SiteConfig::deliveryBase() + (SiteConfig::deliveryKm() * $distance), 2),
+            'price_cents' => SiteConfig::deliveryBaseCents() + $variableCents,
             'distance' => $distance,
             'resolved' => $resolved,
         ];
     }
 
-    public static function computeDeliveryPrice(string $adresse, string $ville, string $codePostal): ?float
+    public static function computeDeliveryPriceCents(string $adresse, string $ville, string $codePostal): ?int
     {
         $quote = self::deliveryQuote($adresse, $ville, $codePostal);
-        return $quote !== null ? (float) $quote['price'] : null;
+        return $quote !== null ? (int) $quote['price_cents'] : null;
     }
 
     private static function userAgent(): string
