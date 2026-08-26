@@ -307,3 +307,15 @@ jobs:
               }
           }
           PHP
+
+  docker:
+    name: Production image build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build production image
+        run: docker build --pull --tag tugeres-ci:${{ github.sha }} .
