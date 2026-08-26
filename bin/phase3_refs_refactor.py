@@ -237,7 +237,7 @@ final class ReferenceAndAssetContractTest extends TestCase
         self::assertStringNotContainsString("'VG-'", $runtime);
         self::assertStringNotContainsString('generateNumeroCommande', $runtime);
         self::assertStringNotContainsString("SiteImageModel::get('", $runtime);
-        self::assertStringNotContainsString("SiteImageModel::set($", $runtime);
+        self::assertStringNotContainsString("SiteImageModel::set('", $runtime);
     }
 }
 ''', encoding='utf-8')
