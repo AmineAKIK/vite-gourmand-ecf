@@ -48,6 +48,7 @@ for path in Path('src').rglob('*.php'):
 p = Path('src/Controllers/CommandeController.php')
 text = p.read_text()
 text = text.replace("            'prix_total_cents'            => $pricing['total_ttc'],\n            'prix_livraison_cents'        => $pricing['prix_livraison_cents'],", "            'prix_total_cents'            => $pricing['total_ttc_cents'],\n            'currency'                    => $pricing['currency'],\n            'prix_livraison_cents'        => $pricing['prix_livraison_cents'],")
+text = text.replace("formatPrice($payload['prix_total_cents'])", "formatMoneyCents($payload['prix_total_cents'])")
 p.write_text(text)
 
 # CommandeModel writes only canonical columns; no decimal mirror.
