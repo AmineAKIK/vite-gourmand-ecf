@@ -39,7 +39,7 @@ final class PaymentWebhookArchitectureContractTest extends TestCase
     {
         $source = $this->source('src/Payments/StripePaymentGateway.php');
 
-        self::assertStringContainsString("'payment_intent_data' => ['metadata' => $metadata]", $source);
+        self::assertStringContainsString("'payment_intent_data' => ['metadata' => \$metadata]", $source);
     }
 
     public function testProviderInboxMigrationIsForwardOnlyAndPreservesLegacyEvents(): void
