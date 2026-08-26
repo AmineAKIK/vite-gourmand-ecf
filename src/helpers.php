@@ -10,8 +10,8 @@ use App\Config\SiteConfig;
 use App\Core\Formatter;
 use App\Core\Session;
 use App\Core\View;
+use App\Domain\DeliveryPolicy;
 use App\Domain\OrderStatus;
-use App\Geo\DeliveryResolver;
 use App\Models\SiteConfigModel;
 use App\Security\Csrf;
 use App\Security\Guard;
@@ -146,20 +146,6 @@ function paiementStatusBadge(string $statut): string
 }
 
 // ---------------------------------------------------------------------------
-// Geo / Delivery
-// ---------------------------------------------------------------------------
-
-function normalizeLocationLabel(string $value): string      { return DeliveryResolver::normalizeLabel($value); }
-function resolveAdresseLivraison(string $a, string $v, string $cp): ?array
-{
-    return DeliveryResolver::resolveAddress($a, $v, $cp);
-}
-function distanceKmDepuisCoordonnees(float $lat, float $lon): float
-{
-    return DeliveryResolver::distanceKmFromCoords($lat, $lon);
-}
-
-// ---------------------------------------------------------------------------
 // Site config
 // ---------------------------------------------------------------------------
 
@@ -177,20 +163,9 @@ function sitePostalCode(): string                           { return SiteConfig:
 function siteCity(): string                                 { return SiteConfig::city(); }
 function siteFullAddress(): string                          { return SiteConfig::fullAddress(); }
 function siteColor(string $key = 'couleur_principale'): string { return SiteConfig::color($key); }
-function siteLat(): float                                   { return SiteConfig::lat(); }
-function siteLng(): float                                   { return SiteConfig::lng(); }
-function sitePostalCodesFree(): array                       { return SiteConfig::freePostalCodes(); }
-function siteCityNormalized(): string
-{
-    return DeliveryResolver::normalizeLabel(SiteConfig::city());
-}
-function livraisonBaseCents(): int                          { return SiteConfig::deliveryBaseCents(); }
-function livraisonPerKmCents(): int                         { return SiteConfig::deliveryPerKmCents(); }
+function deliveryPricingLabel(): string                     { return DeliveryPolicy::fromConfiguration()->pricingLabel(); }
 function reductionSeuilCents(): int                         { return SiteConfig::discountThresholdCents(); }
 function reductionTauxPourcentage(): int                    { return SiteConfig::discountRatePercent(); }
-function livraisonRayonMaxKm(): int                         { return SiteConfig::deliveryRadiusKm(); }
-function livraisonGeoConfigured(): bool                     { return SiteConfig::isGeoConfigured(); }
-function deliveryPricingLabel(): string                     { return SiteConfig::deliveryPricingLabel(); }
 
 // ---------------------------------------------------------------------------
 // Misc
