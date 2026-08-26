@@ -3,20 +3,20 @@ $pageTitle   = buildPageTitle('Finances');
 $cspNonce    = $GLOBALS['csp_nonce'] ?? '';
 $isAssujetti = ($regimeTva ?? 'assujetti') === 'assujetti';
 
-$totalTTC     = (float)($synthese['total_ttc']        ?? 0);
-$totalHT      = (float)($synthese['total_ht']         ?? 0);
-$totalTVA     = (float)($synthese['total_tva']        ?? 0);
-$totalNb      = (int)($synthese['nb_commandes']       ?? 0);
-$encaisse     = (float)($synthese['montant_encaisse'] ?? 0);
-$soldeRestant = (float)($synthese['solde_restant']    ?? 0);
-$panierMoyen  = $totalNb > 0 ? $totalTTC / $totalNb : 0;
+$totalTtcCents = (int)($synthese['total_ttc_cents'] ?? 0);
+$totalHtCents = (int)($synthese['total_ht_cents'] ?? 0);
+$totalTvaCents = (int)($synthese['total_tva_cents'] ?? 0);
+$totalNb = (int)($synthese['nb_commandes'] ?? 0);
+$encaisseCents = (int)($synthese['montant_encaisse_cents'] ?? 0);
+$soldeRestantCents = (int)($synthese['solde_restant_cents'] ?? 0);
+$panierMoyenCents = $totalNb > 0 ? (int) round($totalTtcCents / $totalNb) : 0;
 
-$menuSalesTtc = array_sum(array_map(fn($row) => (float)($row['ca'] ?? 0), $caStats ?? []));
-$menuSalesHt  = array_sum(array_map(fn($row) => (float)($row['ca_ht'] ?? 0), $caStats ?? []));
+$menuSalesTtc = array_sum(array_map(fn($row) => (int)($row['ca_cents'] ?? 0), $caStats ?? []));
+$menuSalesHt  = array_sum(array_map(fn($row) => (int)($row['ca_ht_cents'] ?? 0), $caStats ?? []));
 $menuSalesTva = $menuSalesTtc - $menuSalesHt;
 $topMenu      = $caStats[0] ?? null;
 $topMenuShare = ($topMenu && $menuSalesTtc > 0)
-    ? ((float)$topMenu['ca'] / $menuSalesTtc) * 100
+    ? ((int)$topMenu['ca_cents'] / $menuSalesTtc) * 100
     : 0;
 
 $activeFilters = (int)($menuFilter ?? 0) > 0 || !empty($dateDebut) || !empty($dateFin);
@@ -30,10 +30,10 @@ if (!empty($dateDebut) && !empty($dateFin)) {
 }
 
 $chartLabels = array_map(fn($row) => $row['titre'] ?? '', $caStats ?? []);
-$chartData = array_map(fn($row) => round((float)($row['ca'] ?? 0), 2), $caStats ?? []);
+$chartData = array_map(fn($row) => ((int)($row['ca_cents'] ?? 0)) / 100, $caStats ?? []);
 $mensuelAsc = array_reverse($caMensuel ?? []);
 $chartMensuelLabels = array_map(fn($row) => $row['annee_mois'] ?? '', $mensuelAsc);
-$chartMensuelData = array_map(fn($row) => round((float)($row['ca_ttc'] ?? 0), 2), $mensuelAsc);
+$chartMensuelData = array_map(fn($row) => ((int)($row['ca_ttc_cents'] ?? 0)) / 100, $mensuelAsc);
 
 $exportStatsUrl = '/admin/stats/export?' . http_build_query(array_filter([
     'date_debut' => $dateDebut ?? '',
@@ -99,22 +99,22 @@ $nbUtilises = count(array_filter($coutsMatiere ?? [], fn($row) => (int)($row['nb
         <section class="stats-kpi-grid mb-4" aria-label="Indicateurs de synthèse">
             <article class="stats-kpi-card">
                 <span class="stats-kpi-label">CA commandes TTC</span>
-                <strong class="stats-kpi-value"><?= sanitize(formatPrice($totalTTC)) ?></strong>
+                <strong class="stats-kpi-value"><?= sanitize(formatMoneyCents($totalTtcCents)) ?></strong>
                 <?php if ($isAssujetti): ?>
-                    <span class="stats-kpi-note">HT : <?= sanitize(formatPrice($totalHT)) ?> · TVA : <?= sanitize(formatPrice($totalTVA)) ?></span>
+                    <span class="stats-kpi-note">HT : <?= sanitize(formatMoneyCents($totalHtCents)) ?> · TVA : <?= sanitize(formatMoneyCents($totalTvaCents)) ?></span>
                 <?php else: ?>
                     <span class="stats-kpi-note">Livraison incluse</span>
                 <?php endif; ?>
             </article>
             <article class="stats-kpi-card">
                 <span class="stats-kpi-label">Ventes menus TTC</span>
-                <strong class="stats-kpi-value"><?= sanitize(formatPrice($menuSalesTtc)) ?></strong>
+                <strong class="stats-kpi-value"><?= sanitize(formatMoneyCents($menuSalesTtc)) ?></strong>
                 <span class="stats-kpi-note">Hors livraison</span>
             </article>
             <article class="stats-kpi-card">
                 <span class="stats-kpi-label">Commandes</span>
                 <strong class="stats-kpi-value"><?= sanitize(formatInteger($totalNb)) ?></strong>
-                <span class="stats-kpi-note">Panier moyen commande <?= sanitize(formatPrice($panierMoyen)) ?></span>
+                <span class="stats-kpi-note">Panier moyen commande <?= sanitize(formatMoneyCents($panierMoyenCents)) ?></span>
             </article>
             <article class="stats-kpi-card">
                 <span class="stats-kpi-label">Meilleur menu</span>
@@ -207,8 +207,8 @@ $nbUtilises = count(array_filter($coutsMatiere ?? [], fn($row) => (int)($row['nb
                             <tbody>
                                 <?php foreach ($caStats as $row):
                                     $nb = (int)($row['nb'] ?? 0);
-                                    $ca = (float)($row['ca'] ?? 0);
-                                    $caHT = (float)($row['ca_ht'] ?? 0);
+                                    $ca = (int)($row['ca_cents'] ?? 0);
+                                    $caHT = (int)($row['ca_ht_cents'] ?? 0);
                                     $tva = $ca - $caHT;
                                     $average = $nb > 0 ? $ca / $nb : 0;
                                     $share = $menuSalesTtc > 0 ? ($ca / $menuSalesTtc) * 100 : 0;
@@ -216,13 +216,13 @@ $nbUtilises = count(array_filter($coutsMatiere ?? [], fn($row) => (int)($row['nb
                                     <tr>
                                         <td><?= sanitize($row['titre'] ?? '') ?></td>
                                         <td class="text-end"><?= sanitize(formatInteger($nb)) ?></td>
-                                        <td class="text-end text-nowrap"><?= sanitize(formatPrice($average)) ?></td>
+                                        <td class="text-end text-nowrap"><?= sanitize(formatMoneyCents((int) round($average))) ?></td>
                                         <?php if ($isAssujetti): ?>
-                                            <td class="text-end text-nowrap"><?= sanitize(formatPrice($caHT)) ?></td>
-                                            <td class="text-end text-nowrap text-muted"><?= sanitize(formatPrice($tva)) ?></td>
+                                            <td class="text-end text-nowrap"><?= sanitize(formatMoneyCents($caHT)) ?></td>
+                                            <td class="text-end text-nowrap text-muted"><?= sanitize(formatMoneyCents($tva)) ?></td>
                                         <?php endif; ?>
                                         <td class="text-end"><?= sanitize(number_format($share, 0, ',', ' ')) ?> %</td>
-                                        <td class="text-end fw-bold text-brand text-nowrap"><?= sanitize(formatPrice($ca)) ?></td>
+                                        <td class="text-end fw-bold text-brand text-nowrap"><?= sanitize(formatMoneyCents($ca)) ?></td>
                                     </tr>
                                 <?php endforeach; ?>
                             </tbody>
@@ -232,11 +232,11 @@ $nbUtilises = count(array_filter($coutsMatiere ?? [], fn($row) => (int)($row['nb
                                     <td class="text-end">—</td>
                                     <td class="text-end">—</td>
                                     <?php if ($isAssujetti): ?>
-                                        <td class="text-end text-nowrap"><?= sanitize(formatPrice($menuSalesHt)) ?></td>
-                                        <td class="text-end text-nowrap text-muted"><?= sanitize(formatPrice($menuSalesTva)) ?></td>
+                                        <td class="text-end text-nowrap"><?= sanitize(formatMoneyCents($menuSalesHt)) ?></td>
+                                        <td class="text-end text-nowrap text-muted"><?= sanitize(formatMoneyCents($menuSalesTva)) ?></td>
                                     <?php endif; ?>
                                     <td class="text-end">100 %</td>
-                                    <td class="text-end fw-bold text-brand text-nowrap"><?= sanitize(formatPrice($menuSalesTtc)) ?></td>
+                                    <td class="text-end fw-bold text-brand text-nowrap"><?= sanitize(formatMoneyCents($menuSalesTtc)) ?></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -308,24 +308,24 @@ $nbUtilises = count(array_filter($coutsMatiere ?? [], fn($row) => (int)($row['nb
         <section class="stats-kpi-grid mb-5" aria-label="Soldes globaux">
             <article class="stats-kpi-card">
                 <span class="stats-kpi-label">CA commandes TTC</span>
-                <strong class="stats-kpi-value"><?= sanitize(formatPrice($totalTTC)) ?></strong>
-                <?php if ($isAssujetti): ?><span class="stats-kpi-note">HT : <?= sanitize(formatPrice($totalHT)) ?></span><?php endif; ?>
+                <strong class="stats-kpi-value"><?= sanitize(formatMoneyCents($totalTtcCents)) ?></strong>
+                <?php if ($isAssujetti): ?><span class="stats-kpi-note">HT : <?= sanitize(formatMoneyCents($totalHtCents)) ?></span><?php endif; ?>
             </article>
             <?php if ($isAssujetti): ?>
                 <article class="stats-kpi-card">
                     <span class="stats-kpi-label">TVA calculée</span>
-                    <strong class="stats-kpi-value"><?= sanitize(formatPrice($totalTVA)) ?></strong>
+                    <strong class="stats-kpi-value"><?= sanitize(formatMoneyCents($totalTvaCents)) ?></strong>
                     <span class="stats-kpi-note">Selon les snapshots de taux des lignes</span>
                 </article>
             <?php endif; ?>
             <article class="stats-kpi-card">
                 <span class="stats-kpi-label">Encaissé net</span>
-                <strong class="stats-kpi-value"><?= sanitize(formatPrice($encaisse)) ?></strong>
+                <strong class="stats-kpi-value"><?= sanitize(formatMoneyCents($encaisseCents)) ?></strong>
                 <span class="stats-kpi-note">Remboursements déduits</span>
             </article>
             <article class="stats-kpi-card">
                 <span class="stats-kpi-label">Solde restant</span>
-                <strong class="stats-kpi-value"><?= sanitize(formatPrice($soldeRestant)) ?></strong>
+                <strong class="stats-kpi-value"><?= sanitize(formatMoneyCents($soldeRestantCents)) ?></strong>
                 <span class="stats-kpi-note"><?= sanitize(formatInteger($totalNb)) ?> commandes comptabilisées</span>
             </article>
         </section>

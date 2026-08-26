@@ -97,7 +97,7 @@ $statutIndex   = array_search($statutActuel, $statuts);
                         </div>
                         <div class="d-flex align-items-baseline gap-2 mb-0">
                             <dt class="text-muted fw-normal suivi-dt">Total</dt>
-                            <dd class="mb-0"><strong class="text-brand"><?= sanitize(formatPrice($commande['prix_total'] ?? 0)) ?></strong></dd>
+                            <dd class="mb-0"><strong class="text-brand"><?= sanitize(formatMoneyCents($commande['prix_total_cents'] ?? 0)) ?></strong></dd>
                         </div>
                     </dl>
 

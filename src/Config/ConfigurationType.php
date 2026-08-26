@@ -9,6 +9,7 @@ enum ConfigurationType: string
     case EMAIL = 'email';
     case INTEGER = 'integer';
     case DECIMAL = 'decimal';
+    case MONEY = 'money';
     case BOOLEAN = 'boolean';
     case ENUM = 'enum';
     case COLOR = 'color';

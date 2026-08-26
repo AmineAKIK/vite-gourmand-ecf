@@ -2,6 +2,8 @@
 
 namespace App\Core;
 
+use App\Domain\Money;
+
 class Formatter
 {
     public static function dateFr(?string $date, string $fallback = '—'): string
@@ -25,6 +27,16 @@ class Formatter
     public static function price(float|int|string|null $amount, int $decimals = 2): string
     {
         return number_format((float)($amount ?? 0), $decimals, ',', ' ') . ' €';
+    }
+
+    public static function moneyCents(int $cents): string
+    {
+        $decimal = Money::toDecimalString($cents);
+        $negative = str_starts_with($decimal, '-');
+        $unsigned = ltrim($decimal, '-');
+        [$whole, $fraction] = explode('.', $unsigned, 2);
+        $formatted = number_format((int) $whole, 0, ',', ' ') . ',' . $fraction . ' €';
+        return $negative ? '-' . $formatted : $formatted;
     }
 
     public static function priceInput(float|int|string|null $amount): string

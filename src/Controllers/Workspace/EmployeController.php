@@ -139,7 +139,7 @@ class EmployeController
                     'numero'          => $cmd['numero_commande'] ?? '',
                     'menu'            => $cmd['menu_titre'] ?? '',
                     'heure'           => $cmd['heure_livraison'] ?? '',
-                    'prix'            => (float)($cmd['prix_total'] ?? 0),
+                    'prix'            => (float)($cmd['prix_total_cents'] ?? 0),
                     'commande_id'     => (int)$cmd['commande_id'],
                 ],
             ];

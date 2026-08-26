@@ -89,6 +89,10 @@ function formatPrice(float|int|string|null $amount, int $decimals = 2): string
 {
     return Formatter::price($amount, $decimals);
 }
+function formatMoneyCents(int|string|null $cents): string
+{
+    return Formatter::moneyCents((int) ($cents ?? 0));
+}
 function formatPriceInput(float|int|string|null $amount): string
 {
     return Formatter::priceInput($amount);
@@ -180,12 +184,12 @@ function siteCityNormalized(): string
 {
     return DeliveryResolver::normalizeLabel(SiteConfig::city());
 }
-function livraisonBase(): float                             { return SiteConfig::deliveryBase(); }
-function livraisonKm(): float                               { return SiteConfig::deliveryKm(); }
+function livraisonBaseCents(): int                          { return SiteConfig::deliveryBaseCents(); }
+function livraisonPerKmCents(): int                         { return SiteConfig::deliveryPerKmCents(); }
+function reductionSeuilCents(): int                         { return SiteConfig::discountThresholdCents(); }
+function reductionTauxPourcentage(): int                    { return SiteConfig::discountRatePercent(); }
 function livraisonRayonMaxKm(): int                         { return SiteConfig::deliveryRadiusKm(); }
 function livraisonGeoConfigured(): bool                     { return SiteConfig::isGeoConfigured(); }
-function reductionSeuilMontant(): float                     { return SiteConfig::discountThreshold(); }
-function reductionTauxPourcentage(): float                  { return SiteConfig::discountRate(); }
 function deliveryPricingLabel(): string                     { return SiteConfig::deliveryPricingLabel(); }
 
 // ---------------------------------------------------------------------------

@@ -31,7 +31,7 @@ class CommandeController {
         }
 
         try {
-            $prix = \App\Geo\DeliveryResolver::computeDeliveryPrice($adresse, $ville, $codePostal);
+            $prixCents = \App\Geo\DeliveryResolver::computeDeliveryPriceCents($adresse, $ville, $codePostal);
         } catch (DeliveryGeoNotConfiguredException $e) {
             http_response_code(503);
             echo json_encode(['ok' => false, 'message' => 'Le service de livraison n\'est pas encore configuré. Contactez le traiteur.']);
@@ -42,7 +42,7 @@ class CommandeController {
             return;
         }
 
-        if ($prix === null) {
+        if ($prixCents === null) {
             http_response_code(422);
             echo json_encode(['ok' => false, 'message' => 'Adresse non reconnue ou incohérente avec le code postal.']);
             return;
@@ -56,7 +56,7 @@ class CommandeController {
         echo json_encode([
             'ok'       => true,
             'distance' => $distance,
-            'prix'     => $prix,
+            'prix_cents' => $prixCents,
             'adresse'  => $adresseResolue['label'] ?? null,
         ]);
     }
@@ -169,8 +169,9 @@ class CommandeController {
             'adresse_livraison'     => $adresse,
             'ville_livraison'       => $ville,
             'code_postal_livraison' => $codePostal,
-            'prix_total'            => $pricing['total_ttc'],
-            'prix_livraison'        => $pricing['prix_livraison'],
+            'prix_total_cents'            => $pricing['total_ttc_cents'],
+            'currency'                    => $pricing['currency'],
+            'prix_livraison_cents'        => $pricing['prix_livraison_cents'],
             'instructions'          => $instructions ?: null,
         ];
 
@@ -315,8 +316,8 @@ class CommandeController {
         $panierItemsFromLignes = array_map(fn($l) => [
             'menu_id'          => $l['menu_id'],
             'nombre_personne'  => $l['nombre_personne'],
-            'prix_par_personne'=> $l['prix_par_personne_snapshot'] > 0
-                                  ? $l['prix_par_personne_snapshot']
+            'prix_par_personne'=> $l['prix_par_personne_snapshot_cents'] > 0
+                                  ? $l['prix_par_personne_snapshot_cents']
                                   : $l['prix_par_personne'],   // fallback DB si snapshot absent
         ], $lignes);
 
@@ -338,8 +339,9 @@ class CommandeController {
             'adresse_livraison'     => $adresse,
             'ville_livraison'       => $ville,
             'code_postal_livraison' => $codePostal,
-            'prix_total'            => $pricing['total_ttc'],
-            'prix_livraison'        => $pricing['prix_livraison'],
+            'prix_total_cents'            => $pricing['total_ttc_cents'],
+            'currency'                    => $pricing['currency'],
+            'prix_livraison_cents'        => $pricing['prix_livraison_cents'],
             'instructions'          => $instructionsUpdate ?: null,
         ];
 
@@ -367,9 +369,9 @@ class CommandeController {
             redirect('/mon-compte?open_modal=modif_' . (int)$commande['commande_id'] . '&modal_error=' . urlencode('Impossible de modifier cette commande. Veuillez réessayer.'));
         }
 
-        $msg = 'Commande modifiée. Nouveau total : ' . formatPrice($payload['prix_total']);
-        if (abs($payload['prix_total'] - (float)$commande['prix_total']) > 0.01) {
-            $msg .= ' (ancien total : ' . formatPrice($commande['prix_total']) . ')';
+        $msg = 'Commande modifiée. Nouveau total : ' . formatMoneyCents($payload['prix_total_cents']);
+        if (abs($payload['prix_total_cents'] - (float)$commande['prix_total_cents']) > 0.01) {
+            $msg .= ' (ancien total : ' . formatPrice($commande['prix_total_cents']) . ')';
         }
         flash('success', $msg);
         redirect('/mon-compte');

@@ -20,7 +20,7 @@
                                     <td class="d-none d-xl-table-cell"><small class="text-muted"><?= sanitize($cmd['numero_commande']) ?></small></td>
                                     <td class="small"><?= sanitize($cmd['menu_titre']) ?></td>
                                     <td class="text-nowrap small"><?= sanitize(formatDateFr($cmd['date_prestation'] ?? null)) ?></td>
-                                    <td class="text-nowrap"><strong><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></strong></td>
+                                    <td class="text-nowrap"><strong><?= sanitize(formatMoneyCents($cmd['prix_total_cents'] ?? 0)) ?></strong></td>
                                     <td><?= commandeStatusBadge($cmd['statut'] ?? null) ?></td>
                                     <td>
                                         <div class="d-flex flex-wrap gap-2">

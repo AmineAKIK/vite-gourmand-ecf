@@ -24,7 +24,7 @@
                                 <div class="text-muted small mt-1"><?= (int) $item['nombre_personne'] ?> personnes · <?= sanitize(formatPrice($item['prix_par_personne'])) ?>/pers.</div>
                             </div>
                             <div class="text-end flex-shrink-0">
-                                <div class="fw-bold text-brand"><?= sanitize(formatPrice(round((float) $item['prix_par_personne'] * (int) $item['nombre_personne'], 2))) ?></div>
+                                <div class="fw-bold text-brand"><?= sanitize(formatMoneyCents(\App\Domain\Money::fromDecimal((string) $item['prix_par_personne']) * (int) $item['nombre_personne'])) ?></div>
                                 <form method="POST" action="/panier/retirer" class="mt-1">
                                     <?= csrfField() ?>
                                     <input type="hidden" name="index" value="<?= $i ?>">
@@ -127,21 +127,20 @@
                 <div class="card-body">
                     <h2 class="h5 mb-3">Récapitulatif</h2>
                     <?php
-                    $totalBrut = 0.0;
+                    $totalBrutCents = 0;
                     foreach ($panier as $item) {
-                        $totalBrut += round((float) $item['prix_par_personne'] * (int) $item['nombre_personne'], 2);
+                        $totalBrutCents += \App\Domain\Money::fromDecimal((string) $item['prix_par_personne']) * (int) $item['nombre_personne'];
                     }
-                    $totalBrut = round($totalBrut, 2);
                     ?>
                     <table class="table table-sm mb-3">
                         <?php foreach ($panier as $item): ?>
-                            <?php $prixLigne = round((float) $item['prix_par_personne'] * (int) $item['nombre_personne'], 2); ?>
+                            <?php $prixLigneCents = \App\Domain\Money::fromDecimal((string) $item['prix_par_personne']) * (int) $item['nombre_personne']; ?>
                             <tr>
                                 <td class="text-muted small"><?= sanitize($item['titre']) ?><br><span class="text-muted" style="font-size:.75rem"><?= (int) $item['nombre_personne'] ?> pers. · <?= sanitize(formatPrice($item['prix_par_personne'])) ?>/pers.</span></td>
-                                <td class="text-end fw-medium text-nowrap"><?= sanitize(formatPrice($prixLigne)) ?></td>
+                                <td class="text-end fw-medium text-nowrap"><?= sanitize(formatMoneyCents($prixLigneCents)) ?></td>
                             </tr>
                         <?php endforeach; ?>
-                        <tr class="border-top"><td class="text-muted">Sous-total menus</td><td class="text-end fw-medium"><?= sanitize(formatPrice($totalBrut)) ?></td></tr>
+                        <tr class="border-top"><td class="text-muted">Sous-total menus</td><td class="text-end fw-medium"><?= sanitize(formatMoneyCents($totalBrutCents)) ?></td></tr>
                         <tr><td class="text-muted">Livraison</td><td class="text-end" id="recap-livraison">—</td></tr>
                         <tr id="recap-remise-row" class="text-success" style="display:none"><td><i class="bi bi-tag me-1"></i>Réduction (<?= (int) reductionTauxPourcentage() ?>%)</td><td class="text-end fw-medium" id="recap-remise">—</td></tr>
                         <tr class="border-top fw-bold"><td>Total</td><td class="text-end text-brand" id="recap-total">—</td></tr>
@@ -162,9 +161,9 @@ const codePostalInput = document.getElementById('code_postal_livraison');
 const dateInput = document.getElementById('date_prestation');
 const heureInput = document.getElementById('heure_livraison');
 const submitBtn = document.getElementById('btn-finaliser');
-const totalBrut = <?= json_encode($totalBrut) ?>;
-const reductionSeuil = <?= json_encode(reductionSeuilMontant()) ?>;
-const reductionTaux = <?= json_encode(reductionTauxPourcentage() / 100) ?>;
+const totalBrutCents = <?= json_encode($totalBrutCents) ?>;
+const reductionSeuilCents = <?= json_encode(reductionSeuilCents()) ?>;
+const reductionTauxBasisPoints = <?= json_encode(reductionTauxPourcentage() * 100) ?>;
 let reqId = 0;
 let livraisonOk = false;
 let livraisonController = null;
@@ -198,18 +197,18 @@ async function updateLivraison() {
         const params = new URLSearchParams({adresse, ville, code_postal: codePostal});
         const data = await window.tugeresFetchJson('/livraison/calcul?' + params.toString(), {signal: livraisonController.signal});
         if (id !== reqId) return;
-        const livraison = parseFloat(data.prix);
+        const livraisonCents = Number(data.prix_cents);
         const remiseRow = document.getElementById('recap-remise-row');
-        let remise = 0;
-        if (reductionSeuil > 0 && totalBrut >= reductionSeuil) {
-            remise = Math.round(totalBrut * reductionTaux * 100) / 100;
-            document.getElementById('recap-remise').textContent = '-' + remise.toFixed(2) + ' €';
+        let remiseCents = 0;
+        if (reductionSeuilCents > 0 && totalBrutCents >= reductionSeuilCents) {
+            remiseCents = Math.round(totalBrutCents * reductionTauxBasisPoints / 10000);
+            document.getElementById('recap-remise').textContent = '-' + (remiseCents / 100).toFixed(2) + ' €';
             remiseRow.style.display = '';
         } else {
             remiseRow.style.display = 'none';
         }
-        document.getElementById('recap-livraison').textContent = livraison.toFixed(2) + ' €';
-        document.getElementById('recap-total').textContent = (totalBrut - remise + livraison).toFixed(2) + ' €';
+        document.getElementById('recap-livraison').textContent = (livraisonCents / 100).toFixed(2) + ' €';
+        document.getElementById('recap-total').textContent = ((totalBrutCents - remiseCents + livraisonCents) / 100).toFixed(2) + ' €';
         livraisonOk = true;
         checkForm();
     } catch (error) {

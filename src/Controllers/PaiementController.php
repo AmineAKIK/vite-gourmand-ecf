@@ -32,7 +32,7 @@ class PaiementController
             if ($documentId && in_array($_POST['type_paiement'] ?? '', ['acompte', 'paiement_unique'], true)) {
                 $synthese  = PaiementModel::getSyntheseByCommande($commandeId);
                 $encaisse  = (float)($synthese['total_encaisse'] ?? 0);
-                $prixTotal = (float)($commande['prix_total'] ?? 0);
+                $prixTotal = (float)($commande['prix_total_cents'] ?? 0);
                 $solde     = max(0, round($prixTotal - $encaisse, 2));
                 $db = Database::getConnection();
                 $db->prepare("UPDATE document_facturation SET montant_acompte_verse = ?, solde_a_regler = ? WHERE document_id = ?")

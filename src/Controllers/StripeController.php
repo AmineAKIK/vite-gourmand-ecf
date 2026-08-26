@@ -49,7 +49,7 @@ class StripeController
 
         $expectedCents = (int) ($pricing['total_ttc_cents'] ?? round($pricing['total_ttc'] * 100));
         $grossCents = (int) ($pricing['total_brut_cents'] ?? round($pricing['total_brut'] * 100));
-        $deliveryCents = (int) ($pricing['prix_livraison_cents'] ?? round($pricing['prix_livraison'] * 100));
+        $deliveryCents = (int) ($pricing['prix_livraison_cents'] ?? round($pricing['prix_livraison_cents'] * 100));
         $discountCents = (int) ($pricing['remise_globale_cents'] ?? round($pricing['remise_globale'] * 100));
 
         if ($grossCents + $deliveryCents - $discountCents !== $expectedCents) {
@@ -78,7 +78,7 @@ class StripeController
         foreach ($pricing['lignes'] as $ligne) {
             $menu = MenuModel::getById((int) $ligne['menu_id']);
             $lineGrossCents = (int) ($ligne['prix_menu_brut_cents'] ?? round(
-                ((float) $ligne['prix_par_personne_snapshot']) * ((int) $ligne['nombre_personne']) * 100,
+                ((float) $ligne['prix_par_personne_snapshot_cents']) * ((int) $ligne['nombre_personne']) * 100,
             ));
 
             $lineItems[] = [

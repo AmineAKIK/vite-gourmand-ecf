@@ -2,6 +2,7 @@
 
 namespace App\Config;
 
+use App\Domain\Money;
 use InvalidArgumentException;
 
 final class ConfigurationDefinition
@@ -67,6 +68,7 @@ final class ConfigurationDefinition
             ConfigurationType::INTEGER => $this->normalizeInteger($candidate),
             ConfigurationType::DECIMAL,
             ConfigurationType::COORDINATE => $this->normalizeDecimal($candidate),
+            ConfigurationType::MONEY => $this->normalizeMoney($candidate),
             ConfigurationType::BOOLEAN => $this->normalizeBoolean($candidate),
             ConfigurationType::ENUM => $this->normalizeEnum($candidate),
             ConfigurationType::COLOR => $this->normalizeColor($candidate),
@@ -140,6 +142,21 @@ final class ConfigurationDefinition
         $value = (float) $candidate;
         $this->assertNumericRange($value);
         return $value;
+    }
+
+    private function normalizeMoney(string $candidate): string
+    {
+        $cents = Money::fromDecimal($candidate);
+        $min = $this->constraints['min'] ?? null;
+        $max = $this->constraints['max'] ?? null;
+        if ($min !== null && $cents < Money::fromDecimal((string) $min)) {
+            throw new InvalidArgumentException('Configuration below minimum: ' . $this->key);
+        }
+        if ($max !== null && $cents > Money::fromDecimal((string) $max)) {
+            throw new InvalidArgumentException('Configuration above maximum: ' . $this->key);
+        }
+
+        return Money::toDecimalString($cents);
     }
 
     private function normalizeBoolean(string $candidate): bool

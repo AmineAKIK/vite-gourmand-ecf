@@ -91,7 +91,7 @@ final class ConfigurationRegistryTest extends TestCase
     public function testDefinitionsNormalizeValuesAccordingToTheirDeclaredType(): void
     {
         self::assertSame(42, ConfigurationRegistry::get('delivery.radius_km')->normalize('42'));
-        self::assertSame(4.75, ConfigurationRegistry::get('delivery.base_fee')->normalize('4.75'));
+        self::assertSame('4.75', ConfigurationRegistry::get('delivery.base_fee')->normalize('4.75'));
         self::assertSame('#AABBCC', ConfigurationRegistry::get('theme.primary_color')->normalize('#aabbcc'));
         self::assertSame('12345678901234', ConfigurationRegistry::get('business.siret')->normalize('123 456 789 01234'));
         self::assertSame(

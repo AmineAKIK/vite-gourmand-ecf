@@ -74,7 +74,7 @@ class UserController {
             );
             fputcsv($out, [
                 ...$textCells,
-                number_format((float)($cmd['prix_total'] ?? 0), 2, ',', ''),
+                number_format((float)($cmd['prix_total_cents'] ?? 0), 2, ',', ''),
                 AnalyticsTrustPolicy::csvCell((string) ($cmd['statut'] ?? '')),
             ], ';');
         }

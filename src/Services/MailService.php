@@ -148,8 +148,8 @@ class MailService
         $color      = htmlspecialchars($ctx['color'], ENT_QUOTES, 'UTF-8');
         $fond       = htmlspecialchars($ctx['fond'],  ENT_QUOTES, 'UTF-8');
         $name       = htmlspecialchars($ctx['name'],  ENT_QUOTES, 'UTF-8');
-        $livraison  = Formatter::price($commande['prix_livraison'] ?? 0);
-        $total      = Formatter::price($commande['prix_total']     ?? 0);
+        $livraison  = Formatter::price($commande['prix_livraison_cents'] ?? 0);
+        $total      = Formatter::price($commande['prix_total_cents']     ?? 0);
 
         $lignesHtml = '';
         foreach ($panier as $item) {
@@ -334,7 +334,7 @@ class MailService
                 $email,
                 'Confirmation de votre commande #' . $commande['numero_commande'],
                 self::wrap('Votre commande est confirmée !', self::bodyCommandeConfirmation($commande, $panier, $ctx), $ctx),
-                "Commande #{$commande['numero_commande']} confirmée — Menus : {$titresCsv} — Total : " . Formatter::price($commande['prix_total'] ?? 0)
+                "Commande #{$commande['numero_commande']} confirmée — Menus : {$titresCsv} — Total : " . Formatter::price($commande['prix_total_cents'] ?? 0)
             );
         } catch (Throwable $e) {
             error_log('Erreur mail commande : ' . $e->getMessage());

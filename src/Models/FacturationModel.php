@@ -4,6 +4,9 @@ namespace App\Models;
 
 use App\Config\Database;
 use App\Config\SiteConfig;
+use App\Domain\Money;
+use App\Domain\BusinessPolicy;
+use App\Config\Configuration;
 use InvalidArgumentException;
 use PDO;
 use RuntimeException;
@@ -122,7 +125,7 @@ class FacturationModel
         $lignes        = [];
 
         // Taux TVA livraison par défaut (depuis table taux_tva si disponible)
-        $tauxTvaLivraison = PricingService::defaultTauxTvaByCategorie('livraison');
+        $tauxTvaLivraison = PricingService::defaultTauxTvaBasisPointsByCategorie('livraison') / 100;
 
         foreach ($lignesCommande as $ligne) {
             $nbPersonnes = (int)($ligne['nombre_personne'] ?? 1);
@@ -130,19 +133,15 @@ class FacturationModel
 
             // Taux TVA : snapshot stocké au moment de la commande (migration 012)
             // Fallback sur PricingService si snapshot absent (commandes pré-migration)
-            $tauxTvaMenu = (float)($ligne['taux_tva_snapshot'] ?? 0) > 0
-                ? (float)$ligne['taux_tva_snapshot']
-                : PricingService::defaultTauxTvaByCategorie('menu');
+            $tauxTvaMenu = ((int)($ligne['taux_tva_menu_basis_points'] ?? 0)) / 100;
 
             // Prix brut menu (avant remise) : depuis le snapshot de prix/pers
             // Si snapshot absent (commandes pré-migration 012), fallback sur prix_par_personne DB actuel
-            $prixParPers = (float)($ligne['prix_par_personne_snapshot'] ?? 0) > 0
-                ? (float)$ligne['prix_par_personne_snapshot']
-                : (float)($ligne['prix_par_personne'] ?? 0);
-            $menuBrutTtc = round($prixParPers * $nbPersonnes, 2);
+            $prixParPersCents = (int)($ligne['prix_par_personne_snapshot_cents'] ?? 0);
+            $menuBrutTtc = (float) Money::toDecimalString($prixParPersCents * $nbPersonnes);
 
             // Prix net menu (après remise) : valeur réelle persistée
-            $menuNetTtc = (float)($ligne['prix_menu'] ?? 0);
+            $menuNetTtc = (float) Money::toDecimalString((int)($ligne['prix_menu_cents'] ?? 0));
 
             // Ligne menu au prix BRUT
             $computed = self::lineTotals(1, $menuBrutTtc, $tauxTvaMenu);
@@ -161,14 +160,12 @@ class FacturationModel
             $totals['tva'] += $computed['total_tva'];
             $totals['ttc'] += $computed['total_ttc'];
 
-            // Ligne remise : depuis le snapshot remise_appliquee (migration 012)
+            // Ligne remise : depuis le snapshot remise_appliquee_cents (migration 012)
             // Si snapshot absent, calcul depuis la différence brut/net
-            $remiseTtc = (float)($ligne['remise_appliquee'] ?? 0) > 0
-                ? (float)$ligne['remise_appliquee']
-                : round($menuBrutTtc - $menuNetTtc, 2);
+            $remiseTtc = (float) Money::toDecimalString((int)($ligne['remise_appliquee_cents'] ?? 0));
 
             if ($remiseTtc > 0.005) {
-                $tauxReduction = (float)($ligne['taux_reduction_snapshot'] ?? 0);
+                $tauxReduction = ((int)($ligne['taux_reduction_basis_points'] ?? 0)) / 100;
                 $remiseLabel = $tauxReduction > 0
                     ? 'Réduction volume (' . formatPriceInput($tauxReduction) . ' %)'
                     : 'Réduction volume';
@@ -190,7 +187,7 @@ class FacturationModel
             }
 
             // Ligne livraison (portée sur la première ligne commande uniquement)
-            $livraisonTtc = (float)($ligne['prix_livraison'] ?? 0);
+            $livraisonTtc = (float) Money::toDecimalString((int)($ligne['prix_livraison_cents'] ?? 0));
             if ($livraisonTtc > 0) {
                 $livraisonComputed = self::lineTotals(1, $livraisonTtc, $tauxTvaLivraison);
                 $lignes[] = [
@@ -682,7 +679,7 @@ class FacturationModel
         $validiteHtml = '';
         if ($isDevis) {
             $validiteHtml = '<section class="document-conditions"><p>'
-                . 'Ce devis est valable 30 jours à compter de sa date d\'émission.'
+                . 'Ce devis est valable ' . (new BusinessPolicy(static fn(string $key): mixed => Configuration::get($key)))->quoteValidityDays() . ' jours à compter de sa date d\'émission.'
                 . ' Pour l\'accepter, veuillez nous retourner ce document signé avec la mention « Bon pour accord ».'
                 . '</p></section>';
         }

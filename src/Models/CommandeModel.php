@@ -14,11 +14,11 @@ class CommandeModel
 
     /**
      * $commandeData: numero_commande, utilisateur_id, date_prestation, heure_livraison,
-     *                adresse_livraison, ville_livraison, code_postal_livraison, prix_total, prix_livraison
+     *                adresse_livraison, ville_livraison, code_postal_livraison, prix_total_cents, prix_livraison_cents
      * $lignes: produit de PricingService::computeOrderTotal()['lignes'], chaque entrée contient :
-     *   menu_id, nombre_personne, prix_menu, prix_livraison, prix_total_ligne,
-     *   prix_par_personne_snapshot, taux_tva_snapshot, taux_reduction_snapshot,
-     *   remise_appliquee, taux_tva_id
+     *   menu_id, nombre_personne, prix_menu_cents, prix_livraison_cents, prix_total_ligne_cents,
+     *   prix_par_personne_snapshot_cents, taux_tva_menu_basis_points, taux_tva_livraison_basis_points,
+     *   taux_reduction_basis_points, remise_appliquee_cents, taux_tva_menu_id, taux_tva_livraison_id
      */
     public static function create(array $commandeData, array $lignes): int {
         // Vérification quota plan SaaS (fail-open si DB indisponible)
@@ -38,8 +38,8 @@ class CommandeModel
 
             $stmt = $db->prepare("
                 INSERT INTO commande (numero_commande, utilisateur_id, date_prestation,
-                    heure_livraison, adresse_livraison, ville_livraison, code_postal_livraison, prix_total, instructions)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    heure_livraison, adresse_livraison, ville_livraison, code_postal_livraison, prix_total_cents, currency, instructions)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
                 $commandeData['numero_commande'],
@@ -49,7 +49,8 @@ class CommandeModel
                 $commandeData['adresse_livraison'],
                 $commandeData['ville_livraison'],
                 $commandeData['code_postal_livraison'],
-                $commandeData['prix_total'],
+                (int) $commandeData['prix_total_cents'],
+                (string) $commandeData['currency'],
                 $commandeData['instructions'] ?? null,
             ]);
             $commandeId = (int)$db->lastInsertId();
@@ -57,10 +58,12 @@ class CommandeModel
             $ligneStmt = $db->prepare("
                 INSERT INTO commande_ligne (
                     commande_id, menu_id, nombre_personne,
-                    prix_menu, prix_livraison, prix_total_ligne,
-                    prix_par_personne_snapshot, taux_tva_snapshot,
-                    taux_reduction_snapshot, remise_appliquee, taux_tva_id
-                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                    prix_menu_cents, prix_livraison_cents, prix_total_ligne_cents,
+                    prix_par_personne_snapshot_cents,
+                    taux_tva_menu_basis_points, taux_tva_livraison_basis_points,
+                    taux_reduction_basis_points, remise_appliquee_cents,
+                    taux_tva_menu_id, taux_tva_livraison_id
+                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ");
 
             foreach ($lignes as $ligne) {
@@ -68,14 +71,16 @@ class CommandeModel
                     $commandeId,
                     (int)$ligne['menu_id'],
                     (int)$ligne['nombre_personne'],
-                    (float)$ligne['prix_menu'],
-                    (float)$ligne['prix_livraison'],
-                    (float)$ligne['prix_total_ligne'],
-                    (float)($ligne['prix_par_personne_snapshot'] ?? 0),
-                    (float)($ligne['taux_tva_snapshot']          ?? 10.0),
-                    (float)($ligne['taux_reduction_snapshot']    ?? 0),
-                    (float)($ligne['remise_appliquee']           ?? 0),
-                    isset($ligne['taux_tva_id']) ? (int)$ligne['taux_tva_id'] : null,
+                    (int)$ligne['prix_menu_cents'],
+                    (int)$ligne['prix_livraison_cents'],
+                    (int)$ligne['prix_total_ligne_cents'],
+                    (int)($ligne['prix_par_personne_snapshot_cents'] ?? 0),
+                    (int)$ligne['taux_tva_menu_basis_points'],
+                    (int)$ligne['taux_tva_livraison_basis_points'],
+                    (int)$ligne['taux_reduction_basis_points'],
+                    (int)$ligne['remise_appliquee_cents'],
+                    isset($ligne['taux_tva_menu_id']) ? (int)$ligne['taux_tva_menu_id'] : null,
+                    isset($ligne['taux_tva_livraison_id']) ? (int)$ligne['taux_tva_livraison_id'] : null,
                 ]);
 
                 $stockStmt2 = $db->prepare("SELECT quantite_restante FROM menu WHERE menu_id = ?");
@@ -285,21 +290,21 @@ class CommandeModel
         if (!empty($filters['montant'])) {
             switch ($filters['montant']) {
                 case 'moins_250':
-                    $sql .= " AND c.prix_total < 250";
+                    $sql .= " AND c.prix_total_cents < 250";
                     break;
                 case '250_1000':
-                    $sql .= " AND c.prix_total BETWEEN 250 AND 1000";
+                    $sql .= " AND c.prix_total_cents BETWEEN 250 AND 1000";
                     break;
                 case 'plus_1000':
-                    $sql .= " AND c.prix_total > 1000";
+                    $sql .= " AND c.prix_total_cents > 1000";
                     break;
             }
         }
         $orderBy = match ($filters['tri'] ?? '') {
             'date_prestation_desc' => 'c.date_prestation DESC, c.date_commande DESC',
             'commande_recente' => 'c.date_commande DESC',
-            'montant_desc' => 'c.prix_total DESC, c.date_prestation ASC',
-            'montant_asc' => 'c.prix_total ASC, c.date_prestation ASC',
+            'montant_desc' => 'c.prix_total_cents DESC, c.date_prestation ASC',
+            'montant_asc' => 'c.prix_total_cents ASC, c.date_prestation ASC',
             'client_asc' => 'u.nom ASC, u.prenom ASC, c.date_prestation ASC',
             default => 'c.date_prestation ASC, c.date_commande DESC',
         };
@@ -373,9 +378,9 @@ class CommandeModel
         }
         if (!empty($filters['montant'])) {
             match ($filters['montant']) {
-                'moins_250'  => $sql .= " AND c.prix_total < 250",
-                '250_1000'   => $sql .= " AND c.prix_total BETWEEN 250 AND 1000",
-                'plus_1000'  => $sql .= " AND c.prix_total > 1000",
+                'moins_250'  => $sql .= " AND c.prix_total_cents < 250",
+                '250_1000'   => $sql .= " AND c.prix_total_cents BETWEEN 250 AND 1000",
+                'plus_1000'  => $sql .= " AND c.prix_total_cents > 1000",
                 default      => null,
             };
         }
@@ -402,7 +407,7 @@ class CommandeModel
         $db   = Database::getConnection();
         $stmt = $db->prepare("
             UPDATE commande SET date_prestation=?, heure_livraison=?, adresse_livraison=?,
-            ville_livraison=?, code_postal_livraison=?, prix_total=?, instructions=? WHERE commande_id=?
+            ville_livraison=?, code_postal_livraison=?, prix_total_cents=?, instructions=? WHERE commande_id=?
         ");
         $stmt->execute([
             $data['date_prestation'],
@@ -410,7 +415,7 @@ class CommandeModel
             $data['adresse_livraison'],
             $data['ville_livraison'],
             $data['code_postal_livraison'],
-            $data['prix_total'],
+            $data['prix_total_cents'],
             $data['instructions'] ?? null,
             $id,
         ]);
