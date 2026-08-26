@@ -46,8 +46,8 @@ final class PaymentMoneyBoundaryContractTest extends TestCase
         $source = file_get_contents(dirname(__DIR__, 3) . '/src/Services/OrderCancellationService.php');
         self::assertIsString($source);
 
-        self::assertStringContainsString("(int) $payment['montant_cents']", $source);
-        self::assertStringNotContainsString("$payment['montant']", $source);
+        self::assertStringContainsString('(int) $payment[\'montant_cents\']', $source);
+        self::assertStringNotContainsString('$payment[\'montant\']', $source);
         self::assertStringNotContainsString('use App\\Domain\\Money;', $source);
     }
 
@@ -58,7 +58,7 @@ final class PaymentMoneyBoundaryContractTest extends TestCase
 
         self::assertStringContainsString("['total_encaisse_cents']", $source);
         self::assertStringContainsString('formatMoneyCents($prixTotal)', $source);
-        self::assertStringContainsString("formatMoneyCents($p['montant_cents'] ?? 0)", $source);
+        self::assertStringContainsString('formatMoneyCents($p[\'montant_cents\'] ?? 0)', $source);
         self::assertStringContainsString('Money::toDecimalString($soldeRestant)', $source);
         self::assertStringContainsString('Number(p.prix || 0) / 100', $source);
     }
