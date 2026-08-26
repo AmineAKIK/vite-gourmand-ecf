@@ -173,7 +173,32 @@ final class PaymentWebhookFulfillmentService
      */
     private static function recordPaymentFailed(PDO $db, PaymentProviderEvent $event): array
     {
-        if ($event->paymentIntentId !== null && $event->paymentIntentId !== '') {
+        $draftId = (int) ($event->metadata['draft_id'] ?? 0);
+        $attemptId = (int) ($event->metadata['attempt_id'] ?? 0);
+
+        if ($draftId > 0 && $attemptId > 0) {
+            [$draft, $attempt] = self::lockDraftAndAttempt($db, $draftId, $attemptId);
+            if ((string) $attempt['provider'] !== $event->provider) {
+                throw new RuntimeException('Provider d’échec incohérent avec la tentative.');
+            }
+
+            $knownIntent = trim((string) ($attempt['provider_payment_intent_id'] ?? ''));
+            $eventIntent = trim((string) ($event->paymentIntentId ?? ''));
+            if ($knownIntent !== '' && $eventIntent !== '' && $knownIntent !== $eventIntent) {
+                throw new RuntimeException('Référence de paiement en échec incohérente.');
+            }
+
+            if ((string) $attempt['status'] !== 'paid' && (string) $draft['status'] !== 'consumed') {
+                $stmt = $db->prepare(
+                    "UPDATE payment_attempt
+                     SET status = 'failed',
+                         provider_payment_intent_id = COALESCE(provider_payment_intent_id, ?),
+                         last_error = 'Paiement fournisseur refusé.'
+                     WHERE attempt_id = ? AND draft_id = ? AND provider = ? AND status <> 'paid'",
+                );
+                $stmt->execute([$eventIntent !== '' ? $eventIntent : null, $attemptId, $draftId, $event->provider]);
+            }
+        } elseif ($event->paymentIntentId !== null && $event->paymentIntentId !== '') {
             $stmt = $db->prepare(
                 "UPDATE payment_attempt pa
                  JOIN order_draft od ON od.draft_id = pa.draft_id
