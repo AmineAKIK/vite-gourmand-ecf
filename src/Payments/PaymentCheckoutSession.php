@@ -17,8 +17,7 @@ final class PaymentCheckoutSession
         public readonly ?string $currency = null,
         public readonly ?string $paymentIntentId = null,
         public readonly array $metadata = [],
-    ) {
-    }
+    ) {}
 
     public function isOpen(): bool
     {
