@@ -35,13 +35,39 @@ final class OrderAvailabilityService
 
         $now ??= new DateTimeImmutable();
         $policy = new BusinessPolicy(static fn(string $key): mixed => Configuration::get($key));
-        $reason = self::scheduleReason($policy, $day, $now);
-
         $dayCount = OrderAdmissionService::countCommittedAndReservedForDay($db, $date);
         $dayMax = SiteConfig::commandesMaxParJour();
         $monthCount = OrderAdmissionService::countCommittedAndReservedForCurrentMonth($db);
         $monthMax = PlanConfig::maxCommandesMois();
 
+        return self::decide($policy, $day, $now, $dayCount, $dayMax, $monthCount, $monthMax);
+    }
+
+    /**
+     * @return array{
+     *   available:bool,
+     *   reason:?string,
+     *   message:?string,
+     *   count:int,
+     *   max:int,
+     *   month_count:int,
+     *   month_max:int
+     * }
+     */
+    public static function decide(
+        BusinessPolicy $policy,
+        DateTimeImmutable $day,
+        DateTimeImmutable $now,
+        int $dayCount,
+        int $dayMax,
+        int $monthCount,
+        int $monthMax,
+    ): array {
+        if ($dayCount < 0 || $dayMax < 0 || $monthCount < 0 || $monthMax < 0) {
+            throw new InvalidArgumentException('Compteurs de disponibilité invalides.');
+        }
+
+        $reason = self::scheduleReason($policy, $day, $now);
         if ($reason === null && $dayMax > 0 && $dayCount >= $dayMax) {
             $reason = 'day_capacity';
         }
