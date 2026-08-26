@@ -22,22 +22,30 @@ ALTER TABLE commande
     ADD CONSTRAINT chk_commande_currency CHECK (currency REGEXP '^[A-Z]{3}$');
 
 ALTER TABLE commande_ligne
+    DROP FOREIGN KEY fk_commande_ligne_taux_tva,
     DROP CHECK chk_commande_ligne_montants,
+    RENAME COLUMN taux_tva_id TO taux_tva_menu_id,
     ADD COLUMN prix_menu_cents BIGINT UNSIGNED NULL AFTER nombre_personne,
     ADD COLUMN prix_livraison_cents BIGINT UNSIGNED NULL AFTER prix_menu_cents,
     ADD COLUMN prix_total_ligne_cents BIGINT UNSIGNED NULL AFTER prix_livraison_cents,
     ADD COLUMN prix_par_personne_snapshot_cents BIGINT UNSIGNED NULL AFTER prix_total_ligne_cents,
-    ADD COLUMN taux_tva_basis_points INT UNSIGNED NULL AFTER prix_par_personne_snapshot_cents,
-    ADD COLUMN taux_reduction_basis_points INT UNSIGNED NULL AFTER taux_tva_basis_points,
-    ADD COLUMN remise_appliquee_cents BIGINT UNSIGNED NULL AFTER taux_reduction_basis_points;
+    ADD COLUMN taux_tva_menu_basis_points INT UNSIGNED NULL AFTER prix_par_personne_snapshot_cents,
+    ADD COLUMN taux_tva_livraison_basis_points INT UNSIGNED NULL AFTER taux_tva_menu_basis_points,
+    ADD COLUMN taux_reduction_basis_points INT UNSIGNED NULL AFTER taux_tva_livraison_basis_points,
+    ADD COLUMN remise_appliquee_cents BIGINT UNSIGNED NULL AFTER taux_reduction_basis_points,
+    ADD COLUMN taux_tva_livraison_id INT NULL AFTER taux_tva_menu_id;
 UPDATE commande_ligne
 SET prix_menu_cents = CAST(ROUND(prix_menu * 100) AS UNSIGNED),
     prix_livraison_cents = CAST(ROUND(prix_livraison * 100) AS UNSIGNED),
     prix_total_ligne_cents = CAST(ROUND(prix_total_ligne * 100) AS UNSIGNED),
     prix_par_personne_snapshot_cents = CAST(ROUND(prix_par_personne_snapshot * 100) AS UNSIGNED),
-    taux_tva_basis_points = CAST(ROUND(taux_tva_snapshot * 100) AS UNSIGNED),
+    taux_tva_menu_basis_points = CAST(ROUND(taux_tva_snapshot * 100) AS UNSIGNED),
+    -- Historical rows only had one tax snapshot. Reusing it for delivery is the only
+    -- lossless interpretation available for pre-migration data; new rows persist both.
+    taux_tva_livraison_basis_points = CAST(ROUND(taux_tva_snapshot * 100) AS UNSIGNED),
     taux_reduction_basis_points = CAST(ROUND(taux_reduction_snapshot * 100) AS UNSIGNED),
-    remise_appliquee_cents = CAST(ROUND(remise_appliquee * 100) AS UNSIGNED);
+    remise_appliquee_cents = CAST(ROUND(remise_appliquee * 100) AS UNSIGNED),
+    taux_tva_livraison_id = taux_tva_menu_id;
 ALTER TABLE commande_ligne
     DROP COLUMN prix_menu,
     DROP COLUMN prix_livraison,
@@ -50,7 +58,8 @@ ALTER TABLE commande_ligne
     MODIFY prix_livraison_cents BIGINT UNSIGNED NOT NULL,
     MODIFY prix_total_ligne_cents BIGINT UNSIGNED NOT NULL,
     MODIFY prix_par_personne_snapshot_cents BIGINT UNSIGNED NOT NULL,
-    MODIFY taux_tva_basis_points INT UNSIGNED NOT NULL,
+    MODIFY taux_tva_menu_basis_points INT UNSIGNED NOT NULL,
+    MODIFY taux_tva_livraison_basis_points INT UNSIGNED NOT NULL,
     MODIFY taux_reduction_basis_points INT UNSIGNED NOT NULL,
     MODIFY remise_appliquee_cents BIGINT UNSIGNED NOT NULL,
     ADD CONSTRAINT chk_commande_ligne_money_cents CHECK (
@@ -58,8 +67,13 @@ ALTER TABLE commande_ligne
         AND prix_par_personne_snapshot_cents >= 0 AND remise_appliquee_cents >= 0
     ),
     ADD CONSTRAINT chk_commande_ligne_rates CHECK (
-        taux_tva_basis_points <= 10000 AND taux_reduction_basis_points <= 10000
-    );
+        taux_tva_menu_basis_points <= 10000
+        AND taux_tva_livraison_basis_points <= 10000
+        AND taux_reduction_basis_points <= 10000
+    ),
+    ADD CONSTRAINT fk_commande_ligne_tva_menu FOREIGN KEY (taux_tva_menu_id) REFERENCES taux_tva(taux_id) ON DELETE SET NULL,
+    ADD CONSTRAINT fk_commande_ligne_tva_livraison FOREIGN KEY (taux_tva_livraison_id) REFERENCES taux_tva(taux_id) ON DELETE SET NULL,
+    ADD KEY idx_commande_ligne_tva_livraison (taux_tva_livraison_id);
 
 ALTER TABLE paiement
     DROP CHECK chk_paiement_montant,
@@ -74,7 +88,7 @@ ALTER TABLE paiement
 CREATE VIEW v_paiements_commande AS
 SELECT
     p.commande_id,
-    SUM(CASE WHEN p.nature = 'remboursement' THEN -p.montant_cents ELSE p.montant_cents END) AS total_encaisse_cents,
+    SUM(CASE WHEN p.nature = 'remboursement' THEN -CAST(p.montant_cents AS SIGNED) ELSE CAST(p.montant_cents AS SIGNED) END) AS total_encaisse_cents,
     SUM(CASE WHEN p.nature = 'encaissement' AND p.type_paiement = 'acompte' THEN p.montant_cents ELSE 0 END) AS total_acomptes_cents,
     SUM(CASE WHEN p.nature = 'encaissement' AND p.type_paiement = 'solde' THEN p.montant_cents ELSE 0 END) AS total_soldes_cents,
     SUM(CASE WHEN p.nature = 'encaissement' AND p.type_paiement = 'paiement_unique' THEN p.montant_cents ELSE 0 END) AS total_paiements_uniques_cents,
@@ -98,9 +112,15 @@ SELECT
     cl.prix_menu_cents AS prix_net_menu_cents,
     cl.prix_livraison_cents,
     cl.prix_total_ligne_cents,
-    cl.taux_tva_basis_points,
-    CAST(ROUND(cl.prix_total_ligne_cents * 10000 / (10000 + cl.taux_tva_basis_points)) AS SIGNED) AS prix_total_ligne_ht_cents,
-    cl.prix_total_ligne_cents - CAST(ROUND(cl.prix_total_ligne_cents * 10000 / (10000 + cl.taux_tva_basis_points)) AS SIGNED) AS tva_ligne_cents,
+    cl.taux_tva_menu_basis_points,
+    cl.taux_tva_livraison_basis_points,
+    CAST(ROUND(cl.prix_menu_cents * 10000 / (10000 + cl.taux_tva_menu_basis_points)) AS SIGNED)
+        + CAST(ROUND(cl.prix_livraison_cents * 10000 / (10000 + cl.taux_tva_livraison_basis_points)) AS SIGNED)
+        AS prix_total_ligne_ht_cents,
+    CAST(cl.prix_total_ligne_cents AS SIGNED)
+        - CAST(ROUND(cl.prix_menu_cents * 10000 / (10000 + cl.taux_tva_menu_basis_points)) AS SIGNED)
+        - CAST(ROUND(cl.prix_livraison_cents * 10000 / (10000 + cl.taux_tva_livraison_basis_points)) AS SIGNED)
+        AS tva_ligne_cents,
     c.statut,
     c.date_commande,
     c.date_prestation,
@@ -132,17 +152,24 @@ SELECT
     c.date_prestation,
     c.ville_livraison,
     c.prix_total_cents AS total_ttc_cents,
-    SUM(CAST(ROUND(cl.prix_total_ligne_cents * 10000 / (10000 + cl.taux_tva_basis_points)) AS SIGNED)) AS total_ht_cents,
-    SUM(cl.prix_total_ligne_cents - CAST(ROUND(cl.prix_total_ligne_cents * 10000 / (10000 + cl.taux_tva_basis_points)) AS SIGNED)) AS total_tva_cents,
+    SUM(
+        CAST(ROUND(cl.prix_menu_cents * 10000 / (10000 + cl.taux_tva_menu_basis_points)) AS SIGNED)
+        + CAST(ROUND(cl.prix_livraison_cents * 10000 / (10000 + cl.taux_tva_livraison_basis_points)) AS SIGNED)
+    ) AS total_ht_cents,
+    SUM(
+        CAST(cl.prix_total_ligne_cents AS SIGNED)
+        - CAST(ROUND(cl.prix_menu_cents * 10000 / (10000 + cl.taux_tva_menu_basis_points)) AS SIGNED)
+        - CAST(ROUND(cl.prix_livraison_cents * 10000 / (10000 + cl.taux_tva_livraison_basis_points)) AS SIGNED)
+    ) AS total_tva_cents,
     COUNT(cl.ligne_id) AS nb_menus,
     SUM(cl.nombre_personne) AS nb_personnes,
     SUM(cl.prix_livraison_cents) AS frais_livraison_cents,
     COALESCE(ch_accept.date_acceptation, c.date_commande) AS date_comptabilisation,
     COALESCE(vpc.total_encaisse_cents, 0) AS montant_encaisse_cents,
-    c.prix_total_cents - COALESCE(vpc.total_encaisse_cents, 0) AS solde_restant_cents,
+    CAST(c.prix_total_cents AS SIGNED) - COALESCE(vpc.total_encaisse_cents, 0) AS solde_restant_cents,
     CASE
         WHEN COALESCE(vpc.total_encaisse_cents, 0) <= 0 THEN 'non_paye'
-        WHEN c.prix_total_cents - COALESCE(vpc.total_encaisse_cents, 0) <= 0 THEN 'solde'
+        WHEN CAST(c.prix_total_cents AS SIGNED) - COALESCE(vpc.total_encaisse_cents, 0) <= 0 THEN 'solde'
         ELSE 'acompte_verse'
     END AS statut_paiement,
     u.prenom AS client_prenom,
@@ -187,7 +214,7 @@ SELECT
     COUNT(DISTINCT s.commande_id) AS nb_commandes,
     SUM(s.nombre_personne) AS nb_personnes,
     SUM(s.prix_net_menu_cents) AS ca_menu_ttc_cents,
-    SUM(CAST(ROUND(s.prix_net_menu_cents * 10000 / (10000 + s.taux_tva_basis_points)) AS SIGNED)) AS ca_menu_ht_cents,
+    SUM(CAST(ROUND(s.prix_net_menu_cents * 10000 / (10000 + s.taux_tva_menu_basis_points)) AS SIGNED)) AS ca_menu_ht_cents,
     CAST(ROUND(AVG(s.prix_net_menu_cents)) AS SIGNED) AS prix_moyen_menu_cents,
     ROUND(AVG(s.nombre_personne), 1) AS nb_personnes_moyen
 FROM v_ca_stats s
