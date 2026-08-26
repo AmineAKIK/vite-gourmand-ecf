@@ -21,11 +21,13 @@ final class PaymentAttemptModel
         array $pricing,
         array $panier,
         int $userId,
+        string $provider,
     ): array {
         $numeroCommande = (string) ($commandeData['numero_commande'] ?? '');
         $datePrestation = (string) ($commandeData['date_prestation'] ?? '');
         $expectedCents = (int) ($pricing['total_ttc_cents'] ?? 0);
         $currency = strtolower((string) ($pricing['currency'] ?? 'eur'));
+        $provider = self::normalizeProvider($provider);
 
         if (
             $numeroCommande === ''
@@ -77,7 +79,7 @@ final class PaymentAttemptModel
             ]);
             $draftId = (int) $db->lastInsertId();
             OrderAdmissionService::attachDraft($db, $reservationId, $draftId);
-            $attemptId = self::insertAttempt($db, $draftId, $expectedCents, $currency);
+            $attemptId = self::insertAttempt($db, $draftId, $expectedCents, $currency, $provider);
 
             $db->commit();
 
@@ -90,8 +92,9 @@ final class PaymentAttemptModel
         }
     }
 
-    public static function createRetryAttempt(int $draftId): int
+    public static function createRetryAttempt(int $draftId, string $provider): int
     {
+        $provider = self::normalizeProvider($provider);
         $db = Database::getConnection();
         $db->beginTransaction();
 
@@ -114,6 +117,7 @@ final class PaymentAttemptModel
                 $draftId,
                 (int) $draft['expected_total_cents'],
                 strtolower((string) $draft['currency']),
+                $provider,
             );
             $db->commit();
 
@@ -137,28 +141,26 @@ final class PaymentAttemptModel
         return $row ? self::hydrateDraft($row) : null;
     }
 
-    /**
-     * Resolve a persisted Stripe attempt from the provider session id and the authenticated owner.
-     *
-     * @return array{draft:array, attempt:array}|null
-     */
-    public static function findStripeContextForUser(string $sessionId, int $userId): ?array
+    /** @return array{draft:array, attempt:array}|null */
+    public static function findProviderContextForUser(string $provider, string $sessionId, int $userId): ?array
     {
-        if ($sessionId === '' || $userId <= 0) {
+        $provider = self::normalizeProvider($provider);
+        $sessionId = trim($sessionId);
+        if ($sessionId === '' || strlen($sessionId) > 255 || $userId <= 0) {
             return null;
         }
 
         $db = Database::getConnection();
         $stmt = $db->prepare(
-            "SELECT pa.attempt_id, pa.draft_id
+            'SELECT pa.attempt_id, pa.draft_id
              FROM payment_attempt pa
              JOIN order_draft od ON od.draft_id = pa.draft_id
-             WHERE pa.provider = 'stripe'
+             WHERE pa.provider = ?
                AND pa.provider_session_id = ?
                AND od.utilisateur_id = ?
-             LIMIT 1",
+             LIMIT 1',
         );
-        $stmt->execute([$sessionId, $userId]);
+        $stmt->execute([$provider, $sessionId, $userId]);
         $ids = $stmt->fetch();
         if (!$ids) {
             return null;
@@ -171,6 +173,12 @@ final class PaymentAttemptModel
         }
 
         return ['draft' => $draft, 'attempt' => $attempt];
+    }
+
+    /** @return array{draft:array, attempt:array}|null */
+    public static function findStripeContextForUser(string $sessionId, int $userId): ?array
+    {
+        return self::findProviderContextForUser('stripe', $sessionId, $userId);
     }
 
     public static function findAttemptForDraft(int $attemptId, int $draftId): ?array
@@ -195,18 +203,29 @@ final class PaymentAttemptModel
         return $row ?: null;
     }
 
-    public static function bindStripeSession(int $attemptId, string $sessionId): void
+    public static function bindProviderSession(int $attemptId, string $provider, string $sessionId): void
     {
+        $provider = self::normalizeProvider($provider);
+        $sessionId = trim($sessionId);
+        if ($sessionId === '' || strlen($sessionId) > 255) {
+            throw new RuntimeException('Référence de session paiement invalide.');
+        }
+
         $stmt = Database::getConnection()->prepare(
             "UPDATE payment_attempt
              SET provider_session_id = ?, status = 'checkout_created', last_error = NULL
-             WHERE attempt_id = ? AND provider = 'stripe'",
+             WHERE attempt_id = ? AND provider = ?",
         );
-        $stmt->execute([$sessionId, $attemptId]);
+        $stmt->execute([$sessionId, $attemptId, $provider]);
 
         if ($stmt->rowCount() !== 1) {
-            throw new RuntimeException('Tentative de paiement Stripe introuvable.');
+            throw new RuntimeException('Tentative de paiement fournisseur introuvable.');
         }
+    }
+
+    public static function bindStripeSession(int $attemptId, string $sessionId): void
+    {
+        self::bindProviderSession($attemptId, 'stripe', $sessionId);
     }
 
     public static function markAttemptStatus(int $attemptId, string $status, ?string $paymentIntentId = null): void
@@ -259,16 +278,31 @@ final class PaymentAttemptModel
         $stmt->execute([$commandeId, $draftId]);
     }
 
-    private static function insertAttempt(\PDO $db, int $draftId, int $expectedCents, string $currency): int
-    {
+    private static function insertAttempt(
+        \PDO $db,
+        int $draftId,
+        int $expectedCents,
+        string $currency,
+        string $provider,
+    ): int {
         $attemptStmt = $db->prepare(
             'INSERT INTO payment_attempt (
                 draft_id, provider, status, expected_amount_cents, currency
              ) VALUES (?, ?, ?, ?, ?)',
         );
-        $attemptStmt->execute([$draftId, 'stripe', 'created', $expectedCents, $currency]);
+        $attemptStmt->execute([$draftId, $provider, 'created', $expectedCents, $currency]);
 
         return (int) $db->lastInsertId();
+    }
+
+    private static function normalizeProvider(string $provider): string
+    {
+        $provider = strtolower(trim($provider));
+        if (!preg_match('/^[a-z][a-z0-9_-]{1,29}$/', $provider)) {
+            throw new RuntimeException('Fournisseur de paiement invalide.');
+        }
+
+        return $provider;
     }
 
     private static function hydrateDraft(array $row): array

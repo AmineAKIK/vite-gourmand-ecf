@@ -91,7 +91,7 @@ final class PaymentMethodRegistryContractTest extends TestCase
     {
         $completeness = $this->source('src/Config/ConfigurationCompleteness.php');
         $registry = $this->source('src/Services/PaymentMethodRegistry.php');
-        $stripeController = $this->source('src/Controllers/StripeController.php');
+        $checkoutController = $this->source('src/Controllers/StripeController.php');
 
         $checkoutBlockStart = strpos($completeness, "'checkout' => [");
         $billingBlockStart = strpos($completeness, "'billing' => [");
@@ -102,7 +102,8 @@ final class PaymentMethodRegistryContractTest extends TestCase
         self::assertStringNotContainsString('operator.stripe.secret_key', $checkoutBlock);
         self::assertStringContainsString("'operator.stripe.secret_key'", $registry);
         self::assertStringContainsString("'operator.stripe.webhook_secret'", $registry);
-        self::assertStringContainsString("PaymentMethodRegistry::requireCheckoutMethod('cb_online')", $stripeController);
+        self::assertStringContainsString('PaymentMethodRegistry::requireCheckoutMethod($paymentMethodCode)', $checkoutController);
+        self::assertStringNotContainsString("PaymentMethodRegistry::requireCheckoutMethod('cb_online')", $checkoutController);
     }
 
     public function testAdminWritesAllSupportedPoliciesAtomically(): void

@@ -12,6 +12,7 @@ use App\Geo\Exception\DeliveryProviderUnavailableException;
 use App\Models\CommandeModel;
 use App\Models\PaymentAttemptModel;
 use App\Models\UserModel;
+use App\Payments\PaymentGatewayFactory;
 use App\Services\CommandeService;
 use App\Services\DeliveryQuoteService;
 use App\Services\MailService;
@@ -189,20 +190,23 @@ class CommandeController {
             'instructions'          => $instructions ?: null,
         ];
 
-        // CB en ligne : draft + tentative + réservation admission sont persistés
+        // Paiement fournisseur : draft + tentative + réservation admission sont persistés
         // dans une transaction unique avant toute redirection externe.
         if ($paymentMethod['checkout_strategy'] === PaymentMethodRegistry::CHECKOUT_STRATEGY_PROVIDER_CONFIRMATION) {
-            if (($paymentMethod['provider'] ?? null) !== 'stripe') {
-                error_log('[payment] provider checkout non implémenté: ' . (string) ($paymentMethod['provider'] ?? 'none'));
+            $provider = strtolower(trim((string) ($paymentMethod['provider'] ?? '')));
+            if ($provider === '' || !PaymentGatewayFactory::supports($provider)) {
+                error_log('[payment] provider checkout non implémenté: ' . ($provider !== '' ? $provider : 'none'));
                 flash('error', 'Ce moyen de paiement en ligne n’est pas disponible.');
                 redirect('/panier');
             }
+
             try {
                 $draft = PaymentAttemptModel::createDraftWithAttempt(
                     $commandeData,
                     $pricing,
                     $panier,
-                    (int) $user['id']
+                    (int) $user['id'],
+                    $provider,
                 );
             } catch (\RuntimeException $e) {
                 error_log('[payment] création draft refusée ref=' . $numeroCommande . ': ' . $e->getMessage());
@@ -214,10 +218,16 @@ class CommandeController {
                 redirect('/panier');
             }
 
-            $_SESSION['stripe_draft_id'] = $draft['draft_id'];
-            $_SESSION['stripe_attempt_id'] = $draft['attempt_id'];
-            unset($_SESSION['stripe_pending']);
-            redirect('/stripe/checkout');
+            $_SESSION['payment_provider'] = $provider;
+            $_SESSION['payment_draft_id'] = $draft['draft_id'];
+            $_SESSION['payment_attempt_id'] = $draft['attempt_id'];
+            unset(
+                $_SESSION['stripe_pending'],
+                $_SESSION['stripe_draft_id'],
+                $_SESSION['stripe_attempt_id'],
+                $_SESSION['stripe_session_id'],
+            );
+            redirect(PaymentGatewayFactory::checkoutPath($provider));
         }
 
         $admissionDb = Database::getConnection();
