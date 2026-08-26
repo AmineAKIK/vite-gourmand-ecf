@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use App\Config\Database;
-use App\Domain\Money;
 use App\Services\PaymentLedgerService;
 use Throwable;
 
@@ -19,7 +18,6 @@ class PaiementModel
         $stmt = self::db()->prepare(
             "SELECT p.*,
                     CASE WHEN p.nature = 'remboursement' THEN -p.montant_cents ELSE p.montant_cents END AS montant_cents,
-                    (CASE WHEN p.nature = 'remboursement' THEN -p.montant_cents ELSE p.montant_cents END) / 100.0 AS montant,
                     u.prenom, u.nom
              FROM paiement p
              LEFT JOIN utilisateur u ON u.utilisateur_id = p.cree_par
@@ -34,7 +32,8 @@ class PaiementModel
     {
         $stmt = self::db()->prepare('SELECT * FROM v_paiements_commande WHERE commande_id = ?');
         $stmt->execute([$commandeId]);
-        $row = $stmt->fetch() ?: [
+        $row = $stmt->fetch();
+        return $row ?: [
             'commande_id' => $commandeId,
             'total_encaisse_cents' => 0,
             'total_acomptes_cents' => 0,
@@ -44,8 +43,6 @@ class PaiementModel
             'nb_paiements' => 0,
             'derniere_date_paiement' => null,
         ];
-
-        return self::withPresentationAmounts($row);
     }
 
     public static function getSynthesesByCommandeIds(array $ids): array
@@ -58,7 +55,7 @@ class PaiementModel
         $stmt->execute(array_values($ids));
         $indexed = [];
         foreach ($stmt->fetchAll() as $row) {
-            $indexed[(int) $row['commande_id']] = self::withPresentationAmounts($row);
+            $indexed[(int) $row['commande_id']] = $row;
         }
         return $indexed;
     }
@@ -132,16 +129,5 @@ class PaiementModel
         $stmt = self::db()->prepare('SELECT * FROM paiement WHERE paiement_id = ?');
         $stmt->execute([$paiementId]);
         return $stmt->fetch() ?: null;
-    }
-
-    private static function withPresentationAmounts(array $row): array
-    {
-        $row['total_encaisse'] = Money::toDecimalString((int)($row['total_encaisse_cents'] ?? 0));
-        $row['total_acomptes'] = Money::toDecimalString((int)($row['total_acomptes_cents'] ?? 0));
-        $row['total_soldes'] = Money::toDecimalString((int)($row['total_soldes_cents'] ?? 0));
-        $row['total_paiements_uniques'] = Money::toDecimalString((int)($row['total_paiements_uniques_cents'] ?? 0));
-        $row['total_rembourse'] = Money::toDecimalString((int)($row['total_rembourse_cents'] ?? 0));
-
-        return $row;
     }
 }
