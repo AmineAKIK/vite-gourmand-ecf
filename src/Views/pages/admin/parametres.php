@@ -229,6 +229,13 @@ $activeTab = $_GET['tab'] ?? 'identite';
                             <div class="form-text">0 = illimité.</div>
                         </div>
                         <div class="col-12 col-lg-6">
+                            <label class="form-label fw-medium" for="commande_dates_fermees">Dates exceptionnellement fermées</label>
+                            <input type="text" class="form-control" id="commande_dates_fermees" name="commande_dates_fermees"
+                                   value="<?= htmlspecialchars($config['commande_dates_fermees'] ?? '') ?>"
+                                   maxlength="500" placeholder="2026-12-25,2027-01-01">
+                            <div class="form-text">Dates YYYY-MM-DD séparées par des virgules. Le checkout les refusera automatiquement.</div>
+                        </div>
+                        <div class="col-12 col-lg-6">
                             <label class="form-label fw-medium" for="livraison_codes_postaux_gratuits">Codes postaux livraison gratuite</label>
                             <input type="text" class="form-control" id="livraison_codes_postaux_gratuits"
                                    name="livraison_codes_postaux_gratuits"

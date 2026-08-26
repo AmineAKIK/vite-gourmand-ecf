@@ -16,6 +16,7 @@ use App\Services\CommandeService;
 use App\Services\DeliveryQuoteService;
 use App\Services\MailService;
 use App\Services\OrderAdmissionService;
+use App\Services\OrderAvailabilityService;
 use App\Services\OrderReferenceGenerator;
 use App\Services\OrderTransitionService;
 use App\Services\PaymentMethodRegistry;
@@ -74,10 +75,11 @@ class CommandeController {
         }
 
         try {
-            $count = OrderAdmissionService::countCommittedAndReservedForDay(
-                Database::getConnection(),
-                $date,
-            );
+            $availability = OrderAvailabilityService::checkDate(Database::getConnection(), $date);
+        } catch (\InvalidArgumentException $e) {
+            http_response_code(422);
+            echo json_encode(['ok' => false, 'message' => $e->getMessage()]);
+            return;
         } catch (\Throwable $e) {
             error_log('[admission] calcul disponibilité impossible: ' . $e->getMessage());
             http_response_code(503);
@@ -85,12 +87,16 @@ class CommandeController {
             return;
         }
 
-        $max = SiteConfig::commandesMaxParJour();
         echo json_encode([
-            'ok'      => true,
-            'count'   => $count,
-            'max'     => $max,
-            'complet' => $max > 0 && $count >= $max,
+            'ok' => true,
+            'available' => $availability['available'],
+            'reason' => $availability['reason'],
+            'message' => $availability['message'],
+            'count' => $availability['count'],
+            'max' => $availability['max'],
+            'month_count' => $availability['month_count'],
+            'month_max' => $availability['month_max'],
+            'complet' => !$availability['available'],
         ]);
     }
 

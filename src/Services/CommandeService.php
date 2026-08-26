@@ -2,8 +2,6 @@
 
 namespace App\Services;
 
-use App\Config\Configuration;
-use App\Domain\BusinessPolicy;
 use App\Domain\InputPolicy;
 use DateTimeImmutable;
 use InvalidArgumentException;
@@ -30,8 +28,7 @@ class CommandeService
             throw new InvalidArgumentException('Date ou heure de prestation invalide.');
         }
 
-        $policy = new BusinessPolicy(static fn(string $key): mixed => Configuration::get($key));
-        $policy->assertOrderSchedule($datePrestation, new DateTimeImmutable());
+        OrderAvailabilityService::assertServiceAt($datePrestation, new DateTimeImmutable());
 
         $heureObj = DateTimeImmutable::createFromFormat('!H:i', $payload['heure_livraison']);
         if (!$heureObj) {

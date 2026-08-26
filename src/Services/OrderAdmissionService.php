@@ -191,6 +191,13 @@ final class OrderAdmissionService
         $reservationStmt->execute([$targetDate, $commandeId]);
     }
 
+    public static function countCommittedAndReservedForCurrentMonth(PDO $db): int
+    {
+        $monthKey = date('Y-m');
+        return self::countOrdersForMonth($db, $monthKey)
+            + self::countActiveReservationsForMonth($db, $monthKey);
+    }
+
     public static function countCommittedAndReservedForDay(PDO $db, string $datePrestation): int
     {
         if (!preg_match('/^\d{4}-\d{2}-\d{2}$/', $datePrestation)) {
