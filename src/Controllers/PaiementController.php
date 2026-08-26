@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Config\Database;
+use App\Domain\Money;
 use App\Models\CommandeModel;
 use App\Models\PaiementModel;
 use InvalidArgumentException;
@@ -24,19 +25,24 @@ class PaiementController
                 throw new InvalidArgumentException('Commande introuvable.');
             }
 
-            PaiementModel::create($_POST, (int)currentUser()['id']);
+            $paymentData = $_POST;
+            $paymentData['montant_cents'] = Money::fromDecimal((string)($_POST['montant'] ?? ''));
+            unset($paymentData['montant']);
+            PaiementModel::create($paymentData, (int)currentUser()['id']);
 
-            // Si type = acompte et qu'un document_id est lié, mettre à jour les champs
-            // montant_acompte_verse / solde_a_regler sur le document (pratique courante).
             $documentId = !empty($_POST['document_id']) ? (int)$_POST['document_id'] : null;
             if ($documentId && in_array($_POST['type_paiement'] ?? '', ['acompte', 'paiement_unique'], true)) {
-                $synthese  = PaiementModel::getSyntheseByCommande($commandeId);
-                $encaisse  = (float)($synthese['total_encaisse'] ?? 0);
-                $prixTotal = (float)($commande['prix_total_cents'] ?? 0);
-                $solde     = max(0, round($prixTotal - $encaisse, 2));
+                $synthese = PaiementModel::getSyntheseByCommande($commandeId);
+                $encaisseCents = (int)($synthese['total_encaisse_cents'] ?? 0);
+                $prixTotalCents = (int)($commande['prix_total_cents'] ?? 0);
+                $soldeCents = max(0, $prixTotalCents - $encaisseCents);
                 $db = Database::getConnection();
                 $db->prepare("UPDATE document_facturation SET montant_acompte_verse = ?, solde_a_regler = ? WHERE document_id = ?")
-                   ->execute([$encaisse, $solde, $documentId]);
+                   ->execute([
+                       Money::toDecimalString($encaisseCents),
+                       Money::toDecimalString($soldeCents),
+                       $documentId,
+                   ]);
             }
 
             flash('success', 'Paiement enregistré.');
