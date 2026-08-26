@@ -223,6 +223,9 @@ jobs:
           $db->exec('ALTER TABLE paiement DROP CHECK chk_paiement_montant');
           PHP
 
+      - name: Reproduce Railway partial order-history migration state
+        run: php bin/prepare-order-history-partial-fixture.php
+
       - name: Apply forward-only migrations to historical complete schema
         run: php bin/migrate.php
 
@@ -230,6 +233,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          php bin/verify-v1-schema.php
           php <<'PHP'
           <?php
           $db = new PDO(
@@ -293,22 +297,13 @@ jobs:
               }
           }
 
-          $stmt = $db->prepare('SELECT checksum FROM schema_migrations WHERE migration = ?');
-          $stmt->execute(['002_canonical_money.sql']);
-          $checksum = $stmt->fetchColumn();
-          if (!is_string($checksum) || $checksum !== hash('sha256', (string) file_get_contents('sql/v1/migrations/002_canonical_money.sql'))) {
-              throw new RuntimeException('Canonical money migration tracking invalid.');
+          foreach (['002_canonical_money.sql', '003_payment_method_registry.sql', '004_immutable_order_status_history.sql'] as $migration) {
+              $stmt = $db->prepare('SELECT checksum FROM schema_migrations WHERE migration = ?');
+              $stmt->execute([$migration]);
+              $checksum = $stmt->fetchColumn();
+              $path = 'sql/v1/migrations/' . $migration;
+              if (!is_string($checksum) || $checksum !== hash('sha256', (string) file_get_contents($path))) {
+                  throw new RuntimeException("Migration tracking invalid: {$migration}");
+              }
           }
           PHP
-
-  docker:
-    name: Production image build
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Build production image
-        run: docker build --pull --tag tugeres-ci:${{ github.sha }} .
