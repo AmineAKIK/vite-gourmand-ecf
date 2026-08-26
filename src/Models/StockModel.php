@@ -37,7 +37,7 @@ class StockModel
         return $stmt->fetchAll();
     }
 
-    public static function addMouvement(int $ingredientId, string $type, float $quantite, ?string $motif, ?int $commandeId, ?int $creePar): int
+    public static function addMouvement(int $ingredientId, string $type, mixed $quantite, ?string $motif, ?int $commandeId, ?int $creePar): int
     {
         if ($commandeId !== null) {
             throw new \InvalidArgumentException('Les mouvements de commande doivent passer par le ledger automatique.');

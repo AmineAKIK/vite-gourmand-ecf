@@ -9,7 +9,6 @@ use App\Domain\OrderStatus;
 use App\Domain\StripeWebhookContract;
 use App\Models\CommandeModel;
 use App\Models\PaiementModel;
-use App\Models\StockModel;
 use JsonException;
 use PDO;
 use RuntimeException;
@@ -99,7 +98,7 @@ final class StripeWebhookFulfillmentService
                 'note' => 'Paiement Stripe autoritatif — session ' . (string) $session['id'],
             ], null);
 
-            StockModel::consommerPourCommande($commandeId, null);
+            InventoryLedgerService::consumeOrder($db, $commandeId, null);
 
             $attemptStmt = $db->prepare(
                 "UPDATE payment_attempt

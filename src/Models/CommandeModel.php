@@ -6,6 +6,7 @@ use App\Config\Database;
 use App\Config\PlanConfig;
 use App\Domain\OrderStatus;
 use App\Models\NotificationModel;
+use App\Services\InventoryLedgerService;
 use RuntimeException;
 use Throwable;
 
@@ -92,6 +93,8 @@ class CommandeModel
                        ->execute([(int)$ligne['menu_id']]);
                 }
             }
+
+            InventoryLedgerService::consumeOrder($db, $commandeId, (int) $commandeData['utilisateur_id']);
 
             self::addHistorique($commandeId, null, OrderStatus::initial(), 'Commande passée', $commandeData['utilisateur_id']);
             $db->commit();

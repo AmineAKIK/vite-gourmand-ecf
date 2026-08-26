@@ -278,17 +278,6 @@ class CommandeController {
             error_log('[admission] consommation impossible ref=' . $numeroCommande . ': ' . $e->getMessage());
         }
 
-        // La consommation de stock reste non bloquante tant que le redesign métier
-        // n'est pas en place, mais une erreur doit être visible en production.
-        try {
-            \App\Models\StockModel::consommerPourCommande($commandeId, (int)$user['id']);
-        } catch (\Throwable $e) {
-            error_log(sprintf(
-                '[stock] consommation impossible pour commande_id=%d: %s',
-                $commandeId,
-                $e->getMessage()
-            ));
-        }
 
         $userFull = UserModel::findById($user['id']);
         MailService::sendCommandeConfirmation($userFull['email'], $commandeData, $panier);

@@ -6,7 +6,7 @@ use App\Models\IngredientModel;
 use App\Models\MenuModel;
 use App\Models\RecetteModel;
 use App\Models\StockModel;
-use App\Services\CatalogIntegrityService;
+use App\Services\RecipeService;
 use App\Services\IngredientCatalogService;
 
 class RecetteController
@@ -58,7 +58,7 @@ class RecetteController
         }
 
         try {
-            CatalogIntegrityService::saveRecipe($platId, $lignes);
+            RecipeService::save($platId, $lignes);
             flash('success', 'Fiche technique enregistrée.');
         } catch (\Throwable $e) {
             flash('error', $e->getMessage());
@@ -115,7 +115,7 @@ class RecetteController
 
         $ingredientId = (int) ($_POST['ingredient_id'] ?? 0);
         $type = sanitize($_POST['type_mouvement'] ?? '');
-        $quantite = (float) str_replace(',', '.', $_POST['quantite'] ?? 0);
+        $quantite = trim((string) ($_POST['quantite'] ?? ''));
         $motif = sanitize(trim($_POST['motif'] ?? ''));
         $user = currentUser();
 

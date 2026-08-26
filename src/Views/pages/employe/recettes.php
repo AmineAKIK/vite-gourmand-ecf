@@ -266,7 +266,6 @@ $activeTab = $_GET['tab'] ?? 'recettes';
                     <select name="type_mouvement" class="form-select">
                         <option value="entree">Entrée (réception)</option>
                         <option value="sortie">Sortie (consommation)</option>
-                        <option value="ajustement">Ajustement (inventaire)</option>
                     </select>
                 </div>
                 <div class="col-6 col-lg-2">
