@@ -33,6 +33,24 @@ final class PaymentCheckoutRequestTest extends TestCase
         self::assertSame(14500, $request->expectedAmountCents);
     }
 
+    public function testProviderPlaceholderIsAllowedInAValidHttpsCallback(): void
+    {
+        $request = new PaymentCheckoutRequest(
+            attemptId: 12,
+            draftId: 7,
+            orderReference: 'CMD-2026-001',
+            userId: 5,
+            expectedAmountCents: 14500,
+            currency: 'eur',
+            expiresAt: time() + 3600,
+            successUrl: 'https://example.test/stripe/success?session_id={CHECKOUT_SESSION_ID}',
+            cancelUrl: 'https://example.test/stripe/cancel',
+            items: [['name' => 'Menu', 'amount_cents' => 14500]],
+        );
+
+        self::assertStringContainsString('{CHECKOUT_SESSION_ID}', $request->successUrl);
+    }
+
     public function testRequestRejectsAmountThatDoesNotMatchItsLines(): void
     {
         $this->expectException(InvalidArgumentException::class);
