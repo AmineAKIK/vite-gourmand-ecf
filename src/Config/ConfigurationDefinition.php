@@ -235,6 +235,15 @@ final class ConfigurationDefinition
             throw new InvalidArgumentException('Configuration list too large: ' . $this->key);
         }
 
+        $itemPattern = $this->constraints['item_pattern'] ?? null;
+        if (is_string($itemPattern)) {
+            foreach ($items as $item) {
+                if (preg_match($itemPattern, $item) !== 1) {
+                    throw new InvalidArgumentException('Configuration list item invalid: ' . $this->key);
+                }
+            }
+        }
+
         return $items;
     }
 
