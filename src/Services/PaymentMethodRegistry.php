@@ -273,13 +273,13 @@ final class PaymentMethodRegistry
         return [
             'code' => $code,
             'label' => $capability['label'],
-            'actif' => (bool)($row['actif'] ?? false),
-            'checkout_enabled' => (bool)($row['checkout_enabled'] ?? false),
-            'manual_collection_enabled' => (bool)($row['manual_collection_enabled'] ?? false),
-            'allow_deposit' => (bool)($row['allow_deposit'] ?? true),
-            'allow_balance' => (bool)($row['allow_balance'] ?? true),
-            'allow_single_payment' => (bool)($row['allow_single_payment'] ?? true),
-            'instructions' => trim((string)($row['instructions'] ?? '')),
+            'actif' => (bool) ($row['actif'] ?? false),
+            'checkout_enabled' => (bool) ($row['checkout_enabled'] ?? false),
+            'manual_collection_enabled' => (bool) ($row['manual_collection_enabled'] ?? false),
+            'allow_deposit' => (bool) ($row['allow_deposit'] ?? true),
+            'allow_balance' => (bool) ($row['allow_balance'] ?? true),
+            'allow_single_payment' => (bool) ($row['allow_single_payment'] ?? true),
+            'instructions' => trim((string) ($row['instructions'] ?? '')),
             'provider' => $provider,
             'requires_external_provider' => $provider !== null,
             'checkout_strategy' => $capability['checkout_strategy'],
@@ -300,7 +300,7 @@ final class PaymentMethodRegistry
         );
         $indexed = [];
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
-            $code = (string)($row['code'] ?? '');
+            $code = (string) ($row['code'] ?? '');
             if (isset(self::CAPABILITIES[$code])) {
                 $indexed[$code] = $row;
             }
@@ -324,9 +324,9 @@ final class PaymentMethodRegistry
     private static function allowsPaymentType(array $method, string $paymentType): bool
     {
         return match ($paymentType) {
-            'acompte' => (bool)$method['allow_deposit'],
-            'solde' => (bool)$method['allow_balance'],
-            'paiement_unique' => (bool)$method['allow_single_payment'],
+            'acompte' => (bool) $method['allow_deposit'],
+            'solde' => (bool) $method['allow_balance'],
+            'paiement_unique' => (bool) $method['allow_single_payment'],
             default => false,
         };
     }
