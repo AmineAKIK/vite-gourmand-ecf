@@ -105,7 +105,7 @@ final class ConfigurationRegistry
             self::tenant('delivery.base_fee', 'livraison_base', ConfigurationType::MONEY, false, $admin, 'delivery', 'Frais fixes de livraison.', null, ['min' => 0.0]),
             self::tenant('delivery.per_km_fee', 'livraison_km', ConfigurationType::MONEY, false, $admin, 'delivery', 'Frais variables par kilomètre.', null, ['min' => 0.0]),
             self::tenant('order.capacity.max_per_day', 'commandes_max_par_jour', ConfigurationType::INTEGER, false, $admin, 'orders', 'Capacité maximale de commandes par jour.', null, ['min' => 0, 'max' => 999]),
-            self::tenant('order.blackout_dates', 'commande_dates_fermees', ConfigurationType::STRING_LIST, false, $admin, 'orders', 'Dates exceptionnelles fermées au format YYYY-MM-DD.', null, ['max_items' => 366]),
+            self::tenant('order.blackout_dates', 'commande_dates_fermees', ConfigurationType::STRING_LIST, false, $admin, 'orders', 'Dates exceptionnelles fermées au format YYYY-MM-DD.', null, ['max_items' => 366, 'item_pattern' => '/^\d{4}-\d{2}-\d{2}$/']),
             self::tenant('order.number_prefix', 'commande_prefixe', ConfigurationType::STRING, true, $admin, 'orders', 'Préfixe public des références de commande.', null, ['max_length' => 12, 'pattern' => '/^[A-Za-z0-9]+$/']),
             self::tenant('order.minimum_lead_hours', 'commande_delai_min_heures', ConfigurationType::INTEGER, true, $admin, 'orders', 'Délai minimum entre commande et prestation, en heures.', null, ['min' => 1, 'max' => 8760]),
             self::tenant('order.maximum_advance_days', 'commande_horizon_max_jours', ConfigurationType::INTEGER, true, $admin, 'orders', 'Horizon maximal de réservation, en jours.', null, ['min' => 1, 'max' => 1095]),
