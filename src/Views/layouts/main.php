@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title><?= sanitize($pageTitle ?? buildPageTitle()) ?></title>
+    <?php if (isset($metaDescription) && is_string($metaDescription) && trim($metaDescription) !== ''): ?><meta name="description" content="<?= sanitize($metaDescription) ?>"><?php endif; ?>
     <?php
     $siteLogo = \App\Config\SiteConfig::logoUrl();
     $siteFavicon = \App\Models\SiteImageModel::get('favicon');
@@ -13,10 +14,8 @@
     <?php if ($siteFavicon): ?>
         <link rel="icon" href="<?= sanitize($siteFavicon) ?>">
     <?php endif; ?>
-    <meta property="og:title" content="<?= sanitize(siteName()) ?><?= siteSlogan() !== '' ? ' — ' . sanitize(siteSlogan()) : '' ?>">
-    <?php if (siteSlogan() !== ''): ?>
-        <meta property="og:description" content="<?= sanitize(siteSlogan()) ?>">
-    <?php endif; ?>
+    <meta property="og:title" content="<?= sanitize($pageTitle ?? buildPageTitle()) ?>">
+    <?php if (isset($metaDescription) && is_string($metaDescription) && trim($metaDescription) !== ''): ?><meta property="og:description" content="<?= sanitize($metaDescription) ?>"><?php endif; ?>
     <?php if ($siteOgImage): ?>
         <meta property="og:image" content="<?= sanitize($siteOgImage) ?>">
     <?php endif; ?>
@@ -148,6 +147,8 @@
                 </ul>
             </section>
         </div>
+        <?php $footerText = \App\Config\Configuration::get('content.footer.text'); ?>
+        <?php if (is_string($footerText) && trim($footerText) !== ''): ?><p class="text-center text-secondary mt-3 mb-0"><?= sanitize($footerText) ?></p><?php endif; ?>
         <div class="text-center mt-3 pt-3 border-top border-secondary">
             <small class="text-secondary">Propulsé par <a href="<?= APP_VENDOR_URL ?>" target="_blank" rel="noopener"><?= APP_NAME ?></a> v<?= APP_VERSION ?></small>
         </div>

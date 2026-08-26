@@ -1,11 +1,11 @@
-<?php $pageTitle = buildPageTitle('Contact'); ?>
+<?php $pageTitle = is_string($seoTitle ?? null) && trim($seoTitle) !== '' ? $seoTitle : buildPageTitle('Contact'); ?>
 <div class="container py-5 contact-page">
     <div class="row justify-content-center">
         <div class="col-lg-7">
             <div class="text-center mb-5">
                 <i class="bi bi-envelope display-4 text-brand"></i>
-                <h1 class="fw-bold mt-2">Contactez-nous</h1>
-                <p class="text-muted">Une question ou une demande particulière ? Envoyez-nous votre message.</p>
+                <h1 class="fw-bold mt-2"><?= sanitize((is_string($contactTitle ?? null) && trim($contactTitle) !== '') ? $contactTitle : 'Contact') ?></h1>
+                <?php if (is_string($contactIntro ?? null) && trim($contactIntro) !== ''): ?><p class="text-muted"><?= sanitize($contactIntro) ?></p><?php endif; ?>
             </div>
             <div class="card p-4">
                 <form method="POST" action="/contact" novalidate>

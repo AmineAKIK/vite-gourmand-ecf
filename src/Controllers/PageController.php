@@ -2,19 +2,19 @@
 
 namespace App\Controllers;
 
-use App\Models\SiteConfigModel;
+use App\Config\Configuration;
 
 class PageController
 {
     public function mentions(): void
     {
-        $mentionsContenu = SiteConfigModel::get('mentions_contenu') ?? '';
+        $mentionsContenu = Configuration::get('legal.notices_content') ?? '';
         view('pages/mentions', compact('mentionsContenu'));
     }
 
     public function cgv(): void
     {
-        $cgvContenu = SiteConfigModel::get('cgv_contenu') ?? '';
+        $cgvContenu = Configuration::get('legal.terms_content') ?? '';
         view('pages/cgv', compact('cgvContenu'));
     }
 }

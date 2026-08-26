@@ -86,14 +86,14 @@ $activeTab = $_GET['tab'] ?? 'identite';
                         <div class="col-12 col-lg-4">
                             <label class="form-label fw-medium" for="site_nom">Nom du traiteur <span class="text-danger">*</span></label>
                             <input type="text" class="form-control" id="site_nom" name="site_nom"
-                                   value="<?= $cfg('site_nom', 'Mon Traiteur') ?>" maxlength="100" required>
+                                   value="<?= $cfg('site_nom') ?>" maxlength="100" required>
                             <div class="form-text">Affiché dans la navbar, les emails, les factures.</div>
                         </div>
                         <div class="col-12 col-lg-4">
                             <label class="form-label fw-medium" for="site_slogan">Slogan / accroche</label>
                             <input type="text" class="form-control" id="site_slogan" name="site_slogan"
                                    value="<?= $cfg('site_slogan') ?>" maxlength="100"
-                                   placeholder="Ex : Traiteur lyonnais depuis 1998">
+                                   placeholder="Accroche propre à votre entreprise">
                         </div>
                         <div class="col-12 col-lg-4">
                             <label class="form-label fw-medium" for="site_domaine">Nom de domaine</label>
@@ -261,7 +261,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                         <textarea id="hero_sous_titre" name="hero_sous_titre" class="form-control"
                                   rows="2" maxlength="60" required><?= $cfg('hero_sous_titre') ?></textarea>
                         <div class="d-flex justify-content-between">
-                            <div class="form-text">Accroche courte, mise en valeur en couleur dorée.</div>
+                            <div class="form-text">Accroche courte affichée dans le hero.</div>
                             <small class="text-muted mt-1"><span id="count-sous-titre">0</span>/60</small>
                         </div>
                     </div>
@@ -276,6 +276,24 @@ $activeTab = $_GET['tab'] ?? 'identite';
                             <div class="form-text">Appuie sur Entrée pour créer un saut de ligne.</div>
                             <small class="text-muted mt-1"><span id="count-paragraphe">0</span>/200</small>
                         </div>
+                    </div>
+                    <hr class="my-4">
+                    <h6 class="fw-semibold">Contenu éditorial & SEO</h6>
+                    <div class="row g-3">
+                        <div class="col-lg-6"><label class="form-label" for="home_intro_titre">Titre de présentation</label><input class="form-control" id="home_intro_titre" name="home_intro_titre" maxlength="120" value="<?= $cfg('home_intro_titre') ?>"></div>
+                        <div class="col-12"><label class="form-label" for="home_intro_texte">Texte de présentation</label><textarea class="form-control" id="home_intro_texte" name="home_intro_texte" rows="4" maxlength="2000"><?= $cfg('home_intro_texte') ?></textarea></div>
+                        <div class="col-lg-6"><label class="form-label" for="home_cta_libelle">CTA — libellé</label><input class="form-control" id="home_cta_libelle" name="home_cta_libelle" maxlength="80" value="<?= $cfg('home_cta_libelle') ?>"></div>
+                        <div class="col-lg-6"><label class="form-label" for="home_cta_url">CTA — URL</label><input class="form-control" id="home_cta_url" name="home_cta_url" maxlength="255" value="<?= $cfg('home_cta_url') ?>"></div>
+                        <div class="col-lg-6"><label class="form-label" for="home_avis_titre">Titre des avis</label><input class="form-control" id="home_avis_titre" name="home_avis_titre" maxlength="120" value="<?= $cfg('home_avis_titre') ?>"></div>
+                        <div class="col-lg-6"><label class="form-label" for="home_avis_description">Introduction des avis</label><input class="form-control" id="home_avis_description" name="home_avis_description" maxlength="500" value="<?= $cfg('home_avis_description') ?>"></div>
+                        <div class="col-lg-6"><label class="form-label" for="contact_titre">Titre contact</label><input class="form-control" id="contact_titre" name="contact_titre" maxlength="120" value="<?= $cfg('contact_titre') ?>"></div>
+                        <div class="col-lg-6"><label class="form-label" for="contact_delai_reponse_heures">Délai de réponse annoncé (h)</label><input type="number" min="1" max="720" class="form-control" id="contact_delai_reponse_heures" name="contact_delai_reponse_heures" value="<?= $cfg('contact_delai_reponse_heures') ?>"></div>
+                        <div class="col-12"><label class="form-label" for="contact_intro">Introduction contact</label><textarea class="form-control" id="contact_intro" name="contact_intro" maxlength="500" rows="2"><?= $cfg('contact_intro') ?></textarea></div>
+                        <div class="col-12"><label class="form-label" for="footer_texte">Texte du footer</label><textarea class="form-control" id="footer_texte" name="footer_texte" maxlength="500" rows="2"><?= $cfg('footer_texte') ?></textarea></div>
+                        <div class="col-lg-6"><label class="form-label" for="seo_home_titre">SEO accueil — titre</label><input class="form-control" id="seo_home_titre" name="seo_home_titre" maxlength="70" value="<?= $cfg('seo_home_titre') ?>"></div>
+                        <div class="col-lg-6"><label class="form-label" for="seo_home_description">SEO accueil — description</label><input class="form-control" id="seo_home_description" name="seo_home_description" maxlength="180" value="<?= $cfg('seo_home_description') ?>"></div>
+                        <div class="col-lg-6"><label class="form-label" for="seo_contact_titre">SEO contact — titre</label><input class="form-control" id="seo_contact_titre" name="seo_contact_titre" maxlength="70" value="<?= $cfg('seo_contact_titre') ?>"></div>
+                        <div class="col-lg-6"><label class="form-label" for="seo_contact_description">SEO contact — description</label><input class="form-control" id="seo_contact_description" name="seo_contact_description" maxlength="180" value="<?= $cfg('seo_contact_description') ?>"></div>
                     </div>
                 </div>
             </div>
@@ -311,7 +329,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                                 <img src="<?= sanitize($faviconUrl) ?>" alt="Favicon actuel"
                                      class="rounded mb-2" style="width:32px;height:32px;object-fit:contain;display:block;">
                             <?php else: ?>
-                                <p class="text-muted small mb-2">Aucun favicon — favicon par défaut utilisé.</p>
+                                <p class="text-muted small mb-2">Aucun favicon configuré.</p>
                             <?php endif; ?>
                             <input type="file" class="form-control" name="favicon"
                                    accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>">
@@ -326,7 +344,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                                 <img src="<?= sanitize($ogUrl) ?>" alt="og:image actuelle"
                                      class="img-fluid rounded mb-2" style="max-height:80px;width:100%;object-fit:cover;" id="preview-og_image">
                             <?php else: ?>
-                                <p class="text-muted small mb-2">Aucune — image par défaut utilisée.</p>
+                                <p class="text-muted small mb-2">Aucune image de partage configurée.</p>
                             <?php endif; ?>
                             <input type="file" class="form-control image-picker" name="og_image"
                                    accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>"
@@ -337,9 +355,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                         <!-- Image hero -->
                         <div class="col-12 col-lg-6">
                             <p class="fw-medium mb-2">Image de fond (bannière)</p>
-                            <img src="<?= sanitize(imageUrl($images['hero'] ?? null, 'images/hero-traiteur.webp')) ?>"
-                                 alt="Image hero actuelle" class="img-fluid rounded mb-2"
-                                 style="max-height:160px;width:100%;object-fit:cover;" id="preview-hero">
+                            <?php if (!empty($images['hero'])): ?><img src="<?= sanitize($images['hero']) ?>" alt="Image hero actuelle" class="img-fluid rounded mb-2" style="max-height:160px;width:100%;object-fit:cover;" id="preview-hero"><?php else: ?><p class="text-muted small">Aucune image hero configurée.</p><?php endif; ?>
                             <input type="file" class="form-control image-picker" name="hero"
                                    accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>"
                                    data-preview="preview-hero">
@@ -349,9 +365,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                         <!-- Image équipe -->
                         <div class="col-12 col-lg-6">
                             <p class="fw-medium mb-2">Image section "Notre équipe"</p>
-                            <img src="<?= sanitize(imageUrl($images['preparation'] ?? null, 'images/preparation-traiteur-generique.webp')) ?>"
-                                 alt="Image équipe actuelle" class="img-fluid rounded mb-2"
-                                 style="max-height:160px;width:100%;object-fit:cover;" id="preview-preparation">
+                            <?php if (!empty($images['preparation'])): ?><img src="<?= sanitize($images['preparation']) ?>" alt="Image de présentation actuelle" class="img-fluid rounded mb-2" style="max-height:160px;width:100%;object-fit:cover;" id="preview-preparation"><?php else: ?><p class="text-muted small">Aucune image de présentation configurée.</p><?php endif; ?>
                             <input type="file" class="form-control image-picker" name="preparation"
                                    accept="<?= sanitize(\App\Services\MenuAdminService::acceptedImageMimeTypes()) ?>"
                                    data-preview="preview-preparation">

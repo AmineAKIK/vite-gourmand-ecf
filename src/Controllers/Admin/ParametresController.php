@@ -166,16 +166,20 @@ class ParametresController
     {
         verifyCsrf();
 
-        $sousTitre = $_POST['hero_sous_titre'] ?? '';
-        $paragraphe = $_POST['hero_paragraphe'] ?? '';
-        if (!is_string($sousTitre) || !is_string($paragraphe)) {
-            flash('error', 'Le contenu de personnalisation est invalide.');
-            redirect('/admin/parametres#personnalisation');
-        }
-
+        $contentKeys = [
+            'hero_sous_titre', 'hero_paragraphe', 'home_intro_titre', 'home_intro_texte',
+            'home_cta_libelle', 'home_cta_url', 'home_avis_titre', 'home_avis_description',
+            'contact_titre', 'contact_intro', 'contact_delai_reponse_heures', 'footer_texte',
+            'seo_home_titre', 'seo_home_description', 'seo_contact_titre', 'seo_contact_description',
+        ];
         try {
-            ConfigurationWriter::writeStorageKey('hero_sous_titre', trim($sousTitre));
-            ConfigurationWriter::writeStorageKey('hero_paragraphe', trim($paragraphe, " \t\r"));
+            foreach ($contentKeys as $storageKey) {
+                $raw = $_POST[$storageKey] ?? '';
+                if (!is_string($raw)) {
+                    throw new ConfigurationInvalidException('Configuration invalid: ' . $storageKey);
+                }
+                ConfigurationWriter::writeStorageKey($storageKey, trim($raw));
+            }
         } catch (ConfigurationInvalidException) {
             flash('error', 'Le contenu de personnalisation est invalide ou trop long.');
             redirect('/admin/parametres#personnalisation');

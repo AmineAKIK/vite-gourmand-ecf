@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Config\Configuration;
 use App\Domain\InputPolicy;
 use App\Security\RateLimiter;
 use App\Services\MailService;
@@ -15,7 +16,11 @@ class ContactController
         } catch (\InvalidArgumentException) {
             $sujet = '';
         }
-        view('pages/contact', compact('sujet'));
+        $contactTitle = Configuration::get('content.contact.title');
+        $contactIntro = Configuration::get('content.contact.intro');
+        $seoTitle = Configuration::get('seo.contact.title');
+        $metaDescription = Configuration::get('seo.contact.description');
+        view('pages/contact', compact('sujet', 'contactTitle', 'contactIntro', 'seoTitle', 'metaDescription'));
     }
 
     public function send(): void
@@ -41,7 +46,12 @@ class ContactController
 
         MailService::sendContact($titre, $description, $email);
 
-        flash('success', 'Votre message a bien été envoyé ! Nous vous répondrons sous 48h.');
+        $slaHours = Configuration::get('contact.response_sla_hours');
+        $message = 'Votre message a bien été envoyé.';
+        if (is_int($slaHours) && $slaHours > 0) {
+            $message .= ' Délai de réponse annoncé : ' . $slaHours . ' h.';
+        }
+        flash('success', $message);
         redirect('/contact');
     }
 }
