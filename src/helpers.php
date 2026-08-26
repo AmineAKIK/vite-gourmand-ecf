@@ -192,11 +192,6 @@ function deliveryPricingLabel(): string                     { return SiteConfig:
 // Misc
 // ---------------------------------------------------------------------------
 
-function generateNumeroCommande(): string
-{
-    return 'VG-' . strtoupper(bin2hex(random_bytes(4))) . '-' . date('Ymd');
-}
-
 /**
  * Thin PDO wrapper for legacy code that hasn't been migrated to model classes yet.
  */

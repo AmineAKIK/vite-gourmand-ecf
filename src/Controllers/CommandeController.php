@@ -13,6 +13,7 @@ use App\Models\UserModel;
 use App\Services\CommandeService;
 use App\Services\MailService;
 use App\Services\OrderAdmissionService;
+use App\Services\OrderReferenceGenerator;
 use App\Services\OrderTransitionService;
 use App\Services\PricingService;
 
@@ -156,7 +157,7 @@ class CommandeController {
             redirect('/panier');
         }
 
-        $numeroCommande = generateNumeroCommande();
+        $numeroCommande = OrderReferenceGenerator::generate();
 
         $instructions = trim(sanitize($_POST['instructions'] ?? ''));
 
