@@ -17,6 +17,7 @@ final class PaymentMoneyBoundaryContractTest extends TestCase
         self::assertStringContainsString('canonicalCents', $source);
         self::assertStringNotContainsString('Money::fromDecimal((string) ($data[\'montant_cents\']', $source);
         self::assertStringNotContainsString('Money::fromDecimal((string) $existing[\'montant_cents\']', $source);
+        self::assertStringNotContainsString(' AS montant', $source);
     }
 
     public function testManualPaymentConvertsEuroInputBeforeLedger(): void
@@ -38,5 +39,27 @@ final class PaymentMoneyBoundaryContractTest extends TestCase
         self::assertStringContainsString("'montant_cents' => (int) $validated['amount_total']", $source);
         self::assertStringContainsString('$commandeData[\'prix_total_cents\'] = (int) $validated[\'amount_total\']', $source);
         self::assertStringNotContainsString('Money::toDecimal(', $source);
+    }
+
+    public function testStripeRefundUsesStoredCanonicalCentsDirectly(): void
+    {
+        $source = file_get_contents(dirname(__DIR__, 3) . '/src/Services/OrderCancellationService.php');
+        self::assertIsString($source);
+
+        self::assertStringContainsString("(int) $payment['montant_cents']", $source);
+        self::assertStringNotContainsString("$payment['montant']", $source);
+        self::assertStringNotContainsString('use App\\Domain\\Money;', $source);
+    }
+
+    public function testEmployeePaymentPresentationUsesCentsUntilInputBoundary(): void
+    {
+        $source = file_get_contents(dirname(__DIR__, 3) . '/src/Views/pages/employe/commandes.php');
+        self::assertIsString($source);
+
+        self::assertStringContainsString("['total_encaisse_cents']", $source);
+        self::assertStringContainsString('formatMoneyCents($prixTotal)', $source);
+        self::assertStringContainsString("formatMoneyCents($p['montant_cents'] ?? 0)", $source);
+        self::assertStringContainsString('Money::toDecimalString($soldeRestant)', $source);
+        self::assertStringContainsString('Number(p.prix || 0) / 100', $source);
     }
 }
