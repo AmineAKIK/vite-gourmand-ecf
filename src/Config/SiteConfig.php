@@ -88,55 +88,6 @@ class SiteConfig
         return self::requiredString($canonical);
     }
 
-    public static function lat(): float
-    {
-        return self::requiredFloat('delivery.origin.latitude');
-    }
-
-    public static function lng(): float
-    {
-        return self::requiredFloat('delivery.origin.longitude');
-    }
-
-    public static function isGeoConfigured(): bool
-    {
-        try {
-            ConfigurationCompleteness::assertDeliveryReady();
-            return true;
-        } catch (ConfigurationIncompleteException) {
-            return false;
-        }
-    }
-
-    public static function deliveryRadiusKm(): int
-    {
-        return self::requiredInt('delivery.radius_km');
-    }
-
-    /** @return list<string> */
-    public static function freePostalCodes(): array
-    {
-        $value = Configuration::get('delivery.free_postal_codes');
-        if ($value === null) {
-            return [];
-        }
-        if (!is_array($value)) {
-            throw new UnexpectedValueException('delivery.free_postal_codes must resolve to a string list.');
-        }
-
-        return array_values(array_map('strval', $value));
-    }
-
-    public static function deliveryBaseCents(): int
-    {
-        return Money::fromDecimal(self::requiredString('delivery.base_fee'));
-    }
-
-    public static function deliveryPerKmCents(): int
-    {
-        return Money::fromDecimal(self::requiredString('delivery.per_km_fee'));
-    }
-
     public static function discountThresholdCents(): int
     {
         return Money::fromDecimal(self::requiredString('discount.threshold'));
@@ -162,13 +113,6 @@ class SiteConfig
         $name = strtolower(self::name());
         $name = preg_replace('/[\s\-]+/', '_', $name);
         return preg_replace('/[^a-z0-9_]/', '', $name) ?: 'traiteur';
-    }
-
-    public static function deliveryPricingLabel(): string
-    {
-        return 'Livraison gratuite à ' . self::city() . '. '
-            . Money::toDecimalString(self::deliveryBaseCents()) . ' € + '
-            . Money::toDecimalString(self::deliveryPerKmCents()) . ' €/km au-delà.';
     }
 
     public static function commandesMaxParJour(): int
