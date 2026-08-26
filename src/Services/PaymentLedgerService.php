@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Domain\Money;
 use App\Domain\OrderStatus;
 use App\Domain\PaymentLedgerPolicy;
 use DateTimeImmutable;
@@ -20,7 +19,7 @@ final class PaymentLedgerService
 
         $commandeId = (int) ($data['commande_id'] ?? 0);
         $type = (string) ($data['type_paiement'] ?? '');
-        $amountCents = Money::fromDecimal((string) ($data['montant_cents'] ?? '0'));
+        $amountCents = self::canonicalCents($data['montant_cents'] ?? null);
         $mode = trim((string) ($data['mode'] ?? ''));
         $date = trim((string) ($data['date_paiement'] ?? ''));
         $reference = trim((string) ($data['reference'] ?? '')) ?: null;
@@ -134,7 +133,7 @@ final class PaymentLedgerService
     public static function stripeCollectionsForOrder(PDO $db, int $commandeId): array
     {
         $stmt = $db->prepare(
-            "SELECT p.*
+            "SELECT p.*, CAST(p.montant_cents AS DECIMAL(20,2)) / 100 AS montant
              FROM paiement p
              WHERE p.commande_id = ?
                AND p.mode = 'cb_online'
@@ -183,7 +182,7 @@ final class PaymentLedgerService
             (int) $payment['commande_id'],
             !empty($payment['document_id']) ? (int) $payment['document_id'] : null,
             (string) $payment['type_paiement'],
-            (string) $payment['montant_cents'],
+            self::canonicalCents($payment['montant_cents'] ?? null),
             (string) $payment['mode'],
             date('Y-m-d'),
             $reference,
@@ -203,7 +202,7 @@ final class PaymentLedgerService
         if (!$existing
             || (int) $existing['commande_id'] !== (int) $payment['commande_id']
             || (string) $existing['nature'] !== 'remboursement'
-            || Money::fromDecimal((string) $existing['montant_cents']) !== (int) $payment['montant_cents']
+            || self::canonicalCents($existing['montant_cents'] ?? null) !== self::canonicalCents($payment['montant_cents'] ?? null)
             || (string) $existing['mode'] !== (string) $payment['mode']
             || (string) $existing['operation_key'] !== $operationKey
             || (int) $existing['reversal_of_paiement_id'] !== (int) $payment['paiement_id']
@@ -212,6 +211,18 @@ final class PaymentLedgerService
         }
 
         return $refundId;
+    }
+
+    private static function canonicalCents(mixed $value): int
+    {
+        if (is_int($value)) {
+            return $value;
+        }
+        if (!is_string($value) || preg_match('/^\d+$/', $value) !== 1) {
+            throw new InvalidArgumentException('Montant de paiement en centimes invalide.');
+        }
+
+        return (int) $value;
     }
 
     private static function lockOrder(PDO $db, int $commandeId): array
