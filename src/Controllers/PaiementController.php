@@ -6,6 +6,7 @@ use App\Config\Database;
 use App\Domain\Money;
 use App\Models\CommandeModel;
 use App\Models\PaiementModel;
+use App\Services\PaymentMethodRegistry;
 use InvalidArgumentException;
 use Throwable;
 
@@ -25,13 +26,17 @@ class PaiementController
                 throw new InvalidArgumentException('Commande introuvable.');
             }
 
+            $paymentType = trim((string)($_POST['type_paiement'] ?? ''));
+            $paymentMode = trim((string)($_POST['mode'] ?? ''));
+            PaymentMethodRegistry::requireManualCollectionMethod($paymentMode, $paymentType);
+
             $paymentData = $_POST;
             $paymentData['montant_cents'] = Money::fromDecimal((string)($_POST['montant'] ?? ''));
             unset($paymentData['montant']);
             PaiementModel::create($paymentData, (int)currentUser()['id']);
 
             $documentId = !empty($_POST['document_id']) ? (int)$_POST['document_id'] : null;
-            if ($documentId && in_array($_POST['type_paiement'] ?? '', ['acompte', 'paiement_unique'], true)) {
+            if ($documentId && in_array($paymentType, ['acompte', 'paiement_unique'], true)) {
                 $synthese = PaiementModel::getSyntheseByCommande($commandeId);
                 $encaisseCents = (int)($synthese['total_encaisse_cents'] ?? 0);
                 $prixTotalCents = (int)($commande['prix_total_cents'] ?? 0);
