@@ -37,10 +37,8 @@ final class PaymentCheckoutRequest
         if ($this->expiresAt <= time()) {
             throw new InvalidArgumentException('Expiration de paiement invalide.');
         }
-        if (!filter_var($this->successUrl, FILTER_VALIDATE_URL)
-            || !filter_var($this->cancelUrl, FILTER_VALIDATE_URL)) {
-            throw new InvalidArgumentException('URL de retour paiement invalide.');
-        }
+        self::assertHttpUrl($this->successUrl);
+        self::assertHttpUrl($this->cancelUrl);
         if ($this->items === []) {
             throw new InvalidArgumentException('Le checkout doit contenir au moins une ligne.');
         }
@@ -64,5 +62,15 @@ final class PaymentCheckoutRequest
     public function normalizedCurrency(): string
     {
         return strtolower($this->currency);
+    }
+
+    private static function assertHttpUrl(string $url): void
+    {
+        $parts = parse_url($url);
+        $scheme = strtolower((string) ($parts['scheme'] ?? ''));
+        $host = trim((string) ($parts['host'] ?? ''));
+        if (!in_array($scheme, ['http', 'https'], true) || $host === '') {
+            throw new InvalidArgumentException('URL de retour paiement invalide.');
+        }
     }
 }
