@@ -172,9 +172,9 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                 $lignesCommande    = $lignesByCommande[$commandeId] ?? [];
                 $documentsCommande = $documentsByCommande[$commandeId] ?? [];
                 $paiementsSynthese = $paiementsByCommande[$commandeId] ?? null;
-                $totalEncaisse     = (float)($paiementsSynthese['total_encaisse'] ?? 0);
-                $prixTotal         = (float)($cmd['prix_total_cents'] ?? 0);
-                $soldeRestant      = max(0, round($prixTotal - $totalEncaisse, 2));
+                $totalEncaisse     = (int)($paiementsSynthese['total_encaisse_cents'] ?? 0);
+                $prixTotal         = (int)($cmd['prix_total_cents'] ?? 0);
+                $soldeRestant      = max(0, $prixTotal - $totalEncaisse);
                 $statutPaiement    = \App\Models\PaiementModel::statutPaiement($totalEncaisse, $prixTotal);
                 $peutAnnuler = $statutActuel !== commandeCancelledStatus()
                     && commandeCanTransition($statutActuel, commandeCancelledStatus());
@@ -442,16 +442,16 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                         <div class="commande-paiement-synthese mb-3">
                                             <div class="commande-paiement-row">
                                                 <span class="text-muted small">Total commande</span>
-                                                <strong><?= sanitize(formatPrice($prixTotal)) ?></strong>
+                                                <strong><?= sanitize(formatMoneyCents($prixTotal)) ?></strong>
                                             </div>
                                             <div class="commande-paiement-row">
                                                 <span class="text-muted small">Encaissé</span>
-                                                <strong class="text-success"><?= sanitize(formatPrice($totalEncaisse)) ?></strong>
+                                                <strong class="text-success"><?= sanitize(formatMoneyCents($totalEncaisse)) ?></strong>
                                             </div>
                                             <?php if ($soldeRestant > 0): ?>
                                             <div class="commande-paiement-row">
                                                 <span class="text-muted small">Solde restant</span>
-                                                <strong class="text-brand"><?= sanitize(formatPrice($soldeRestant)) ?></strong>
+                                                <strong class="text-brand"><?= sanitize(formatMoneyCents($soldeRestant)) ?></strong>
                                             </div>
                                             <?php endif; ?>
                                         </div>
@@ -477,7 +477,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                                     <?php endif; ?>
                                                 </div>
                                                 <div class="commande-paiement-item-actions">
-                                                    <strong class="small"><?= sanitize(formatPrice($p['montant'] ?? 0)) ?></strong>
+                                                    <strong class="small"><?= sanitize(formatMoneyCents($p['montant_cents'] ?? 0)) ?></strong>
                                                     <form method="POST" action="/employe/paiement/supprimer" class="d-inline">
                                                         <?= csrfField() ?>
                                                         <input type="hidden" name="paiement_id" value="<?= (int)$p['paiement_id'] ?>">
@@ -524,7 +524,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                                         <label class="form-label form-label-sm">Montant (€)</label>
                                                         <input type="number" step="0.01" min="0.01" class="form-control form-control-sm"
                                                                name="montant"
-                                                               value="<?= $soldeRestant > 0 ? sanitize(formatPriceInput($soldeRestant)) : '' ?>"
+                                                               value="<?= $soldeRestant > 0 ? sanitize(\App\Domain\Money::toDecimalString($soldeRestant)) : '' ?>"
                                                                required>
                                                     </div>
                                                     <div class="col-6 col-lg-4">
@@ -709,7 +709,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                     info.event.title + '\n' +
                     'Heure : ' + (p.heure || '—') + '\n' +
                     'Menu : ' + (p.menu || '—') + '\n' +
-                    'Total : ' + new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(p.prix);
+                    'Total : ' + new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' }).format(Number(p.prix || 0) / 100);
             },
             loading: function (isLoading) {
                 labelCount.textContent = isLoading ? 'Chargement…' : '';

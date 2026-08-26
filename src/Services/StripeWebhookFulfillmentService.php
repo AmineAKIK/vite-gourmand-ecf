@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Config\Database;
-use App\Domain\Money;
 use App\Domain\OrderStatus;
 use App\Domain\StripeWebhookContract;
 use App\Models\CommandeModel;
@@ -77,7 +76,7 @@ final class StripeWebhookFulfillmentService
             }
 
             [$commandeData, $pricing, $panier] = self::decodeSnapshots($draft);
-            $commandeData['prix_total_cents'] = Money::toDecimal($validated['amount_total']);
+            $commandeData['prix_total_cents'] = (int) $validated['amount_total'];
 
             $commandeId = self::createCommande($db, $commandeData, $pricing['lignes'] ?? []);
             OrderAdmissionService::consume(
@@ -90,7 +89,7 @@ final class StripeWebhookFulfillmentService
             PaiementModel::create([
                 'commande_id' => $commandeId,
                 'type_paiement' => 'paiement_unique',
-                'montant' => Money::toDecimal($validated['amount_total']),
+                'montant_cents' => (int) $validated['amount_total'],
                 'mode' => 'cb_online',
                 'date_paiement' => date('Y-m-d'),
                 'reference' => $validated['payment_intent'] ?? (string) $session['id'],
