@@ -14,6 +14,7 @@ final class PaymentWebhookArchitectureContractTest extends TestCase
 
         self::assertStringContainsString("PaymentGatewayFactory::webhookForProvider('stripe')", $source);
         self::assertStringContainsString('PaymentWebhookFulfillmentService::handle($event)', $source);
+        self::assertStringContainsString('AdditionalProviderPaymentReconciliationService::recordIfNeeded', $source);
         self::assertStringContainsString("PaymentAttemptModel::findProviderContextForUser('stripe'", $source);
         self::assertStringContainsString('PaymentSuccessReconciliation::state(', $source);
         self::assertStringNotContainsString('\\Stripe\\', $source);
@@ -21,6 +22,17 @@ final class PaymentWebhookArchitectureContractTest extends TestCase
         self::assertStringNotContainsString('StripeWebhookFulfillmentService', $source);
         self::assertStringNotContainsString('Checkout\\Session::retrieve', $source);
         self::assertStringNotContainsString('OperatorConfiguration', $source);
+    }
+
+    public function testAdditionalPaidAttemptIsPersistedForFinancialReconciliation(): void
+    {
+        $source = $this->source('src/Services/AdditionalProviderPaymentReconciliationService.php');
+
+        self::assertStringContainsString("SET status = 'paid'", $source);
+        self::assertStringContainsString('provider_payment_intent_id = COALESCE', $source);
+        self::assertStringContainsString('réconciliation financière requise', $source);
+        self::assertStringNotContainsString('INSERT INTO paiement', $source);
+        self::assertStringNotContainsString('INSERT INTO commande', $source);
     }
 
     public function testStripeAdapterPropagatesCanonicalMetadataToPaymentIntent(): void
