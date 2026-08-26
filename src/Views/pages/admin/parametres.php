@@ -875,18 +875,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
                             <div class="form-text">Le template premium affiche un en-tête coloré aux couleurs de la charte.</div>
                         </div>
                         <div class="col-12 col-lg-8">
-                            <label class="form-label fw-medium" for="cron_secret_token">Token secret cron</label>
-                            <div class="input-group">
-                                <input type="text" class="form-control font-monospace" id="cron_secret_token"
-                                       name="cron_secret_token"
-                                       value="<?= htmlspecialchars($config['cron_secret_token'] ?? '') ?>"
-                                       maxlength="128" placeholder="Laisser vide pour désactiver">
-                                <button type="button" class="btn btn-outline-secondary" id="btn-gen-token"
-                                        title="Générer un token aléatoire">
-                                    <i class="bi bi-arrow-repeat"></i>
-                                </button>
-                            </div>
-                            <div class="form-text">Chaîne aléatoire longue — utilisée comme clé secrète dans l'URL cron.</div>
+                            <div class="alert alert-secondary mb-0">Le secret cron est une configuration opérateur et n’est jamais stocké dans les paramètres tenant.</div>
                         </div>
                     </div>
                     <button type="submit" class="btn btn-brand mt-3">
@@ -898,19 +887,7 @@ $activeTab = $_GET['tab'] ?? 'identite';
     </div>
 
 </div><!-- /.tab-content -->
-<script nonce="<?= cspNonce() ?>">
-(function () {
-    var btn = document.getElementById('btn-gen-token');
-    if (btn) {
-        btn.addEventListener('click', function () {
-            var arr = new Uint8Array(32);
-            crypto.getRandomValues(arr);
-            document.getElementById('cron_secret_token').value =
-                Array.from(arr).map(b => b.toString(16).padStart(2, '0')).join('');
-        });
-    }
-}());
-</script>
+
 
 <script nonce="<?= $cspNonce ?>">
 (function () {
