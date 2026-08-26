@@ -103,6 +103,7 @@ function assertCanonicalV1(PDO $db): void
     assertColumns($db, 'commande', [
         'prix_total_cents',
         'currency',
+        'payment_method_code',
     ], [
         'prix_total',
     ]);
@@ -128,6 +129,26 @@ function assertCanonicalV1(PDO $db): void
         'taux_tva_id',
     ]);
     assertColumns($db, 'paiement', ['montant_cents'], ['montant']);
+    assertColumns($db, 'mode_paiement', [
+        'actif',
+        'checkout_enabled',
+        'manual_collection_enabled',
+        'allow_deposit',
+        'allow_balance',
+        'allow_single_payment',
+        'instructions',
+    ], []);
+
+    foreach (['chk_mode_paiement_flags', 'chk_mode_paiement_cb_online', 'chk_mode_paiement_instructions'] as $constraint) {
+        $stmt = $db->prepare(
+            'SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+             WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?',
+        );
+        $stmt->execute(['mode_paiement', $constraint]);
+        if ((int) $stmt->fetchColumn() !== 1) {
+            throw new RuntimeException('Contrainte moyens de paiement V1 manquante : ' . $constraint);
+        }
+    }
 
     foreach (['v_paiements_commande', 'v_ca_stats', 'v_ca_commandes', 'v_ca_mensuel', 'v_ca_par_menu'] as $view) {
         $stmt = $db->prepare(

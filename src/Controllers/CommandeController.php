@@ -2,6 +2,7 @@
 
 namespace App\Controllers;
 
+use App\Config\ConfigurationCompleteness;
 use App\Config\ConfigurationIncompleteException;
 use App\Config\Database;
 use App\Config\PlanConfig;
@@ -17,6 +18,7 @@ use App\Services\MailService;
 use App\Services\OrderAdmissionService;
 use App\Services\OrderReferenceGenerator;
 use App\Services\OrderTransitionService;
+use App\Services\PaymentMethodRegistry;
 use App\Services\PricingService;
 
 class CommandeController {
@@ -149,15 +151,16 @@ class CommandeController {
             redirect('/panier');
         }
 
-        $modePaiement = sanitize($_POST['mode_paiement'] ?? 'virement');
-
-        // Validate mode_paiement exists and is active
-        $modeActif = db()->fetchOne(
-            "SELECT code FROM mode_paiement WHERE code = ? AND actif = 1",
-            [$modePaiement]
-        );
-        if (!$modeActif) {
-            flash('error', 'Mode de paiement invalide.');
+        $modePaiement = sanitize($_POST['mode_paiement'] ?? '');
+        try {
+            ConfigurationCompleteness::assertCheckoutReady();
+            $paymentMethod = PaymentMethodRegistry::requireCheckoutMethod($modePaiement);
+        } catch (ConfigurationIncompleteException $e) {
+            error_log('[payment] checkout incomplet: ' . $e->getMessage());
+            flash('error', 'Aucun moyen de paiement utilisable n’est actuellement configuré. Contactez le traiteur.');
+            redirect('/panier');
+        } catch (\InvalidArgumentException) {
+            flash('error', 'Mode de paiement invalide ou indisponible.');
             redirect('/panier');
         }
 
@@ -175,13 +178,19 @@ class CommandeController {
             'code_postal_livraison' => $codePostal,
             'prix_total_cents'            => $pricing['total_ttc_cents'],
             'currency'                    => $pricing['currency'],
+            'payment_method_code'         => (string) $paymentMethod['code'],
             'prix_livraison_cents'        => $pricing['prix_livraison_cents'],
             'instructions'          => $instructions ?: null,
         ];
 
         // CB en ligne : draft + tentative + réservation admission sont persistés
         // dans une transaction unique avant toute redirection externe.
-        if ($modePaiement === 'cb_online') {
+        if ($paymentMethod['checkout_strategy'] === PaymentMethodRegistry::CHECKOUT_STRATEGY_PROVIDER_CONFIRMATION) {
+            if (($paymentMethod['provider'] ?? null) !== 'stripe') {
+                error_log('[payment] provider checkout non implémenté: ' . (string) ($paymentMethod['provider'] ?? 'none'));
+                flash('error', 'Ce moyen de paiement en ligne n’est pas disponible.');
+                redirect('/panier');
+            }
             try {
                 $draft = PaymentAttemptModel::createDraftWithAttempt(
                     $commandeData,

@@ -77,6 +77,9 @@ final class StripeWebhookFulfillmentService
 
             [$commandeData, $pricing, $panier] = self::decodeSnapshots($draft);
             $commandeData['prix_total_cents'] = (int) $validated['amount_total'];
+            if (($commandeData['payment_method_code'] ?? '') !== 'cb_online') {
+                throw new RuntimeException('Le draft Stripe ne porte pas le moyen de paiement CB attendu.');
+            }
 
             $commandeId = self::createCommande($db, $commandeData, $pricing['lignes'] ?? []);
             OrderAdmissionService::consume(
@@ -220,8 +223,8 @@ final class StripeWebhookFulfillmentService
             'INSERT INTO commande (
                 numero_commande, utilisateur_id, date_prestation, heure_livraison,
                 adresse_livraison, ville_livraison, code_postal_livraison,
-                prix_total_cents, currency, instructions
-             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
+                prix_total_cents, currency, payment_method_code, instructions
+             ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         );
         $stmt->execute([
             $commandeData['numero_commande'],
@@ -233,6 +236,7 @@ final class StripeWebhookFulfillmentService
             $commandeData['code_postal_livraison'],
             (int) $commandeData['prix_total_cents'],
             (string) $commandeData['currency'],
+            (string) $commandeData['payment_method_code'],
             $commandeData['instructions'] ?? null,
         ]);
         $commandeId = (int) $db->lastInsertId();

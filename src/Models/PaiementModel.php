@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Config\Database;
 use App\Services\PaymentLedgerService;
+use App\Services\PaymentMethodRegistry;
 use Throwable;
 
 class PaiementModel
@@ -76,9 +77,7 @@ class PaiementModel
 
     public static function getModePaiements(): array
     {
-        return self::db()
-            ->query('SELECT * FROM mode_paiement WHERE actif = 1 ORDER BY libelle ASC')
-            ->fetchAll();
+        return PaymentMethodRegistry::manualCollectionMethods();
     }
 
     public static function create(array $data, ?int $creePar = null): int
