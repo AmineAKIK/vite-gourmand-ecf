@@ -78,7 +78,17 @@ final class ConfigurationResolverTest extends TestCase
         ]);
 
         self::assertSame(
-            ['order.number_prefix', 'tax.regime'],
+            [
+                'material.late_fee_cents',
+                'material.return_days',
+                'order.cancellation_cutoff_hours',
+                'order.maximum_advance_days',
+                'order.minimum_lead_hours',
+                'order.number_prefix',
+                'quote.validity_days',
+                'reminder.order_days_before',
+                'tax.regime',
+            ],
             $resolver->missingRequired(ConfigurationScope::TENANT),
         );
     }

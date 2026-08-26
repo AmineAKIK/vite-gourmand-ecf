@@ -106,6 +106,13 @@ final class ConfigurationRegistry
             self::tenant('delivery.per_km_fee', 'livraison_km', ConfigurationType::DECIMAL, false, $admin, 'delivery', 'Frais variables par kilomètre.', null, ['min' => 0.0]),
             self::tenant('order.capacity.max_per_day', 'commandes_max_par_jour', ConfigurationType::INTEGER, false, $admin, 'orders', 'Capacité maximale de commandes par jour.', null, ['min' => 0, 'max' => 999]),
             self::tenant('order.number_prefix', 'commande_prefixe', ConfigurationType::STRING, true, $admin, 'orders', 'Préfixe public des références de commande.', null, ['max_length' => 12, 'pattern' => '/^[A-Za-z0-9]+$/']),
+            self::tenant('order.minimum_lead_hours', 'commande_delai_min_heures', ConfigurationType::INTEGER, true, $admin, 'orders', 'Délai minimum entre commande et prestation, en heures.', null, ['min' => 1, 'max' => 8760]),
+            self::tenant('order.maximum_advance_days', 'commande_horizon_max_jours', ConfigurationType::INTEGER, true, $admin, 'orders', 'Horizon maximal de réservation, en jours.', null, ['min' => 1, 'max' => 1095]),
+            self::tenant('order.cancellation_cutoff_hours', 'commande_annulation_limite_heures', ConfigurationType::INTEGER, true, $admin, 'orders', 'Délai limite d’annulation client avant prestation, en heures.', null, ['min' => 0, 'max' => 8760]),
+            self::tenant('quote.validity_days', 'devis_validite_jours', ConfigurationType::INTEGER, true, $admin, 'quote', 'Durée de validité des devis, en jours.', null, ['min' => 1, 'max' => 365]),
+            self::tenant('material.return_days', 'materiel_retour_jours', ConfigurationType::INTEGER, true, $admin, 'material', 'Délai de retour du matériel, en jours.', null, ['min' => 0, 'max' => 365]),
+            self::tenant('material.late_fee_cents', 'materiel_penalite_retard_centimes', ConfigurationType::INTEGER, true, $admin, 'material', 'Pénalité de retard matériel en centimes.', null, ['min' => 0, 'max' => 10000000]),
+            self::tenant('reminder.order_days_before', 'rappels_commande_jours_avant', ConfigurationType::STRING_LIST, true, $admin, 'notifications', 'Jours avant prestation auxquels envoyer les rappels.', null, ['max_items' => 20]),
 
             self::tenant('business.legal_name', 'entreprise_nom', ConfigurationType::STRING, true, $admin, 'business', 'Raison sociale utilisée sur les documents.', null, ['max_length' => 100]),
             self::tenant('business.siret', 'entreprise_siret', ConfigurationType::SIRET, true, $admin, 'business', 'SIRET de l’entreprise.'),

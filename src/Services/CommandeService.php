@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Config\Configuration;
+use App\Domain\BusinessPolicy;
 use App\Domain\InputPolicy;
 use DateTimeImmutable;
 use InvalidArgumentException;
@@ -23,16 +25,13 @@ class CommandeService
             'code_postal_livraison' => InputPolicy::postalCode($source['code_postal_livraison'] ?? ''),
         ];
 
-        $datePrestation = DateTimeImmutable::createFromFormat('!Y-m-d', $payload['date_prestation']);
-        $tomorrow       = new DateTimeImmutable('tomorrow');
-        $maxDate        = new DateTimeImmutable('+365 days');
+        $datePrestation = DateTimeImmutable::createFromFormat('!Y-m-d H:i', $payload['date_prestation'] . ' ' . $payload['heure_livraison']);
+        if (!$datePrestation) {
+            throw new InvalidArgumentException('Date ou heure de prestation invalide.');
+        }
 
-        if (!$datePrestation || $datePrestation < $tomorrow) {
-            throw new InvalidArgumentException('La date de prestation doit être au minimum demain.');
-        }
-        if ($datePrestation > $maxDate) {
-            throw new InvalidArgumentException('La date de prestation ne peut pas dépasser 1 an à l\'avance.');
-        }
+        $policy = new BusinessPolicy(static fn(string $key): mixed => Configuration::get($key));
+        $policy->assertOrderSchedule($datePrestation, new DateTimeImmutable());
 
         $heureObj = DateTimeImmutable::createFromFormat('!H:i', $payload['heure_livraison']);
         if (!$heureObj) {
