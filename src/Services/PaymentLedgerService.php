@@ -133,7 +133,7 @@ final class PaymentLedgerService
     public static function stripeCollectionsForOrder(PDO $db, int $commandeId): array
     {
         $stmt = $db->prepare(
-            "SELECT p.*, CAST(p.montant_cents AS DECIMAL(20,2)) / 100 AS montant
+            "SELECT p.*
              FROM paiement p
              WHERE p.commande_id = ?
                AND p.mode = 'cb_online'
