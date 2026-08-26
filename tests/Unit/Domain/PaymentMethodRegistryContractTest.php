@@ -64,8 +64,8 @@ final class PaymentMethodRegistryContractTest extends TestCase
         self::assertStringContainsString('payment_method_code, instructions', $model);
         self::assertStringContainsString("['payment_method_code']", $model);
 
-        self::assertStringContainsString("$paymentMethodCode = trim((string) ($commandeData['payment_method_code'] ?? ''))", $providerWebhook);
-        self::assertStringContainsString("'mode' => $paymentMethodCode", $providerWebhook);
+        self::assertStringContainsString('$paymentMethodCode = trim((string) ($commandeData[\'payment_method_code\'] ?? \'\'))', $providerWebhook);
+        self::assertStringContainsString("'mode' => \$paymentMethodCode", $providerWebhook);
         self::assertStringContainsString('payment_method_code, instructions', $providerWebhook);
         self::assertStringNotContainsString("payment_method_code'] ?? '') !== 'cb_online'", $providerWebhook);
 
