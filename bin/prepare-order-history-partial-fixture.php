@@ -62,10 +62,20 @@ try {
             )
         SQL);
 
-    $tracked = $db->prepare('SELECT COUNT(*) FROM schema_migrations WHERE migration = ?');
-    $tracked->execute(['004_immutable_order_status_history.sql']);
-    if ((int) $tracked->fetchColumn() !== 0) {
-        throw new RuntimeException('Fixture invalide : la migration 004 ne doit pas être trackée.');
+    // A raw historical baseline predates the migration ledger itself. The
+    // important recovery condition is that 004 has not been recorded yet;
+    // Migrator will create the ledger before applying forward migrations.
+    $ledgerExists = (int) $db->query(
+        "SELECT COUNT(*)
+         FROM information_schema.TABLES
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'schema_migrations'",
+    )->fetchColumn() === 1;
+    if ($ledgerExists) {
+        $tracked = $db->prepare('SELECT COUNT(*) FROM schema_migrations WHERE migration = ?');
+        $tracked->execute(['004_immutable_order_status_history.sql']);
+        if ((int) $tracked->fetchColumn() !== 0) {
+            throw new RuntimeException('Fixture invalide : la migration 004 ne doit pas être trackée.');
+        }
     }
 
     fwrite(STDOUT, "Railway partial order-history migration fixture prepared.\n");
