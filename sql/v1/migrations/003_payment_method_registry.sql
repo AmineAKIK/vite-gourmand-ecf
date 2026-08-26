@@ -1,4 +1,4 @@
--- V1 forward-only: tenant payment method policy by journey.
+-- V1 forward-only: tenant payment-method policy by journey.
 -- Product-supported capability codes remain application invariants; this table stores
 -- only tenant activation/rules. Fresh installs remain unconfigured until an admin
 -- explicitly enables methods.
@@ -9,17 +9,9 @@ ALTER TABLE mode_paiement
     ADD COLUMN allow_deposit TINYINT(1) NOT NULL DEFAULT 1 AFTER manual_collection_enabled,
     ADD COLUMN allow_balance TINYINT(1) NOT NULL DEFAULT 1 AFTER allow_deposit,
     ADD COLUMN allow_single_payment TINYINT(1) NOT NULL DEFAULT 1 AFTER allow_balance,
-    ADD COLUMN instructions TEXT NULL AFTER allow_single_payment,
-    ADD CONSTRAINT chk_mode_paiement_flags CHECK (
-        actif IN (0, 1)
-        AND checkout_enabled IN (0, 1)
-        AND manual_collection_enabled IN (0, 1)
-        AND allow_deposit IN (0, 1)
-        AND allow_balance IN (0, 1)
-        AND allow_single_payment IN (0, 1)
-    );
+    ADD COLUMN instructions TEXT NULL AFTER allow_single_payment;
 
--- Preserve the historical tenant activation intent. Online card remains checkout-only:
+-- Preserve historical tenant activation intent. Online card remains checkout-only:
 -- it must never be forged as a manual Stripe collection in the employee workspace.
 UPDATE mode_paiement
 SET checkout_enabled = actif,
@@ -27,3 +19,33 @@ SET checkout_enabled = actif,
     allow_deposit = CASE WHEN code = 'cb_online' THEN 0 ELSE 1 END,
     allow_balance = CASE WHEN code = 'cb_online' THEN 0 ELSE 1 END,
     allow_single_payment = 1;
+
+ALTER TABLE mode_paiement
+    ADD CONSTRAINT chk_mode_paiement_flags CHECK (
+        actif IN (0, 1)
+        AND checkout_enabled IN (0, 1)
+        AND manual_collection_enabled IN (0, 1)
+        AND allow_deposit IN (0, 1)
+        AND allow_balance IN (0, 1)
+        AND allow_single_payment IN (0, 1)
+        AND (checkout_enabled = 0 OR actif = 1)
+        AND (manual_collection_enabled = 0 OR actif = 1)
+    ),
+    ADD CONSTRAINT chk_mode_paiement_cb_online CHECK (
+        code <> 'cb_online'
+        OR (
+            manual_collection_enabled = 0
+            AND allow_deposit = 0
+            AND allow_balance = 0
+            AND allow_single_payment = 1
+        )
+    ),
+    ADD CONSTRAINT chk_mode_paiement_instructions CHECK (
+        instructions IS NULL OR CHAR_LENGTH(instructions) <= 2000
+    );
+
+-- Transactional snapshot. Do not add a foreign key to the mutable tenant registry:
+-- historical orders must remain readable if a method is later disabled.
+ALTER TABLE commande
+    ADD COLUMN payment_method_code VARCHAR(30) NULL AFTER currency,
+    ADD KEY idx_commande_payment_method_code (payment_method_code);
