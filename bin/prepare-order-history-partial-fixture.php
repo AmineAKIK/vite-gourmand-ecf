@@ -39,16 +39,16 @@ try {
             DROP FOREIGN KEY legacy_history_order_fk,
             DROP FOREIGN KEY legacy_history_actor_fk',
     );
-    $db->exec(
-        'ALTER TABLE commande_historique
+    $db->exec(<<<'SQL'
+        ALTER TABLE commande_historique
             ADD CONSTRAINT fk_commande_historique_commande
                 FOREIGN KEY (commande_id) REFERENCES commande(commande_id) ON DELETE RESTRICT,
             ADD CONSTRAINT fk_commande_historique_user
                 FOREIGN KEY (modifie_par) REFERENCES utilisateur(utilisateur_id) ON DELETE RESTRICT,
             ADD COLUMN ancien_statut_guard VARCHAR(50)
-                GENERATED ALWAYS AS (COALESCE(ancien_statut, \"\")) STORED,
+                GENERATED ALWAYS AS (COALESCE(ancien_statut, '')) STORED,
             ADD COLUMN commentaire_guard CHAR(64)
-                GENERATED ALWAYS AS (SHA2(COALESCE(commentaire, \"\"), 256)) STORED,
+                GENERATED ALWAYS AS (SHA2(COALESCE(commentaire, ''), 256)) STORED,
             ADD COLUMN modifie_par_guard INT
                 GENERATED ALWAYS AS (COALESCE(modifie_par, 0)) STORED,
             ADD CONSTRAINT uk_commande_historique_immutable UNIQUE (
@@ -59,8 +59,8 @@ try {
                 commentaire_guard,
                 modifie_par_guard,
                 created_at
-            )',
-    );
+            )
+        SQL);
 
     $tracked = $db->prepare('SELECT COUNT(*) FROM schema_migrations WHERE migration = ?');
     $tracked->execute(['004_immutable_order_status_history.sql']);
