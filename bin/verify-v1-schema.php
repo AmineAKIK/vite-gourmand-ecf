@@ -7,8 +7,6 @@ require_once dirname(__DIR__) . '/src/Config/config.php';
 
 use App\Config\Database;
 use App\Config\Provisioner;
-use PDO;
-use RuntimeException;
 
 $db = Database::getConnection();
 
@@ -26,9 +24,39 @@ function databaseTables(PDO $db): array
     return array_values(array_map('strval', $rows));
 }
 
+/** @return list<string> */
+function tableColumns(PDO $db, string $table): array
+{
+    $stmt = $db->prepare(
+        'SELECT COLUMN_NAME
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?
+         ORDER BY ORDINAL_POSITION',
+    );
+    $stmt->execute([$table]);
+
+    return array_values(array_map('strval', $stmt->fetchAll(PDO::FETCH_COLUMN)));
+}
+
 function scalarInt(PDO $db, string $sql): int
 {
     return (int) $db->query($sql)->fetchColumn();
+}
+
+/** @param list<string> $required @param list<string> $forbidden */
+function assertColumns(PDO $db, string $table, array $required, array $forbidden): void
+{
+    $columns = array_fill_keys(tableColumns($db, $table), true);
+    foreach ($required as $column) {
+        if (!isset($columns[$column])) {
+            throw new RuntimeException(sprintf('Colonne V1 manquante : %s.%s', $table, $column));
+        }
+    }
+    foreach ($forbidden as $column) {
+        if (isset($columns[$column])) {
+            throw new RuntimeException(sprintf('Colonne monétaire pré-V1 encore présente : %s.%s', $table, $column));
+        }
+    }
 }
 
 function assertCanonicalV1(PDO $db): void
@@ -70,6 +98,47 @@ function assertCanonicalV1(PDO $db): void
             $expectedMigrationCount,
             $actualMigrationCount,
         ));
+    }
+
+    assertColumns($db, 'commande', [
+        'prix_total_cents',
+        'currency',
+    ], [
+        'prix_total',
+    ]);
+    assertColumns($db, 'commande_ligne', [
+        'prix_menu_cents',
+        'prix_livraison_cents',
+        'prix_total_ligne_cents',
+        'prix_par_personne_snapshot_cents',
+        'taux_tva_menu_basis_points',
+        'taux_tva_livraison_basis_points',
+        'taux_reduction_basis_points',
+        'remise_appliquee_cents',
+        'taux_tva_menu_id',
+        'taux_tva_livraison_id',
+    ], [
+        'prix_menu',
+        'prix_livraison',
+        'prix_total_ligne',
+        'prix_par_personne_snapshot',
+        'taux_tva_snapshot',
+        'taux_reduction_snapshot',
+        'remise_appliquee',
+        'taux_tva_id',
+    ]);
+    assertColumns($db, 'paiement', ['montant_cents'], ['montant']);
+
+    foreach (['v_paiements_commande', 'v_ca_stats', 'v_ca_commandes', 'v_ca_mensuel', 'v_ca_par_menu'] as $view) {
+        $stmt = $db->prepare(
+            "SELECT COUNT(*)
+             FROM information_schema.VIEWS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ?",
+        );
+        $stmt->execute([$view]);
+        if ((int) $stmt->fetchColumn() !== 1) {
+            throw new RuntimeException('Vue V1 manquante : ' . $view);
+        }
     }
 
     $roles = $db->query('SELECT role_id, libelle FROM role ORDER BY role_id')->fetchAll(PDO::FETCH_ASSOC);
@@ -138,6 +207,6 @@ try {
         fwrite(STDOUT, "V1 schema verified.\n");
     }
 } catch (Throwable $e) {
-    fwrite(STDERR, 'V1 schema verification failed: ' . $e->getMessage() . PHP_EOL);
+    fwrite(STDERR, 'V1 schema verification failed: ' . $e->getMessage() . PHP_EOL;
     exit(1);
 }
