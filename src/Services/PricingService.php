@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Config\Configuration;
 use App\Config\ConfigurationCompleteness;
 use App\Config\Database;
-use App\Config\SiteConfig;
 use App\Domain\Money;
 use App\Domain\OrderPricingCalculator;
 use App\Geo\DeliveryResolver;
@@ -32,8 +31,13 @@ class PricingService
         $tauxTvaLivraison = self::defaultTauxTvaByCategorie('livraison');
         $tauxTvaMenuId = self::defaultTauxTvaIdByCategorie('menu');
         $tauxTvaLivraisonId = self::defaultTauxTvaIdByCategorie('livraison');
-        $seuilReduction = SiteConfig::discountThreshold();
-        $tauxReduction = SiteConfig::discountRate();
+        $seuilReduction = Configuration::get('discount.threshold');
+        $tauxReduction = Configuration::get('discount.rate_percent');
+        if (!is_string($seuilReduction) || !is_int($tauxReduction)) {
+            throw new RuntimeException('configuration_incomplete:pricing');
+        }
+        $discountThresholdCents = Money::fromDecimal($seuilReduction);
+        $discountRateBasisPoints = $tauxReduction * 100;
         $regimeTva = self::regimeTva();
 
         $prixLivraison = DeliveryResolver::computeDeliveryPrice($adresse, $ville, $codePostal);
@@ -46,8 +50,8 @@ class PricingService
         $pricing = OrderPricingCalculator::calculate(
             $panierItems,
             Money::fromDecimal($prixLivraison),
-            Money::fromDecimal($seuilReduction),
-            $tauxReduction
+            $discountThresholdCents,
+            $discountRateBasisPoints
         );
 
         $lignes = [];
@@ -58,41 +62,29 @@ class PricingService
             $lignes[] = [
                 'menu_id' => $line['menu_id'],
                 'nombre_personne' => $line['nombre_personne'],
-                'prix_par_personne_snapshot' => Money::toDecimal($line['prix_par_personne_cents']),
                 'prix_par_personne_cents' => $line['prix_par_personne_cents'],
-                'prix_menu_brut' => Money::toDecimal($line['prix_menu_brut_cents']),
                 'prix_menu_brut_cents' => $line['prix_menu_brut_cents'],
-                'prix_menu' => Money::toDecimal($line['prix_menu_net_cents']),
                 'prix_menu_net_cents' => $line['prix_menu_net_cents'],
-                'remise_appliquee' => Money::toDecimal($line['remise_appliquee_cents']),
                 'remise_appliquee_cents' => $line['remise_appliquee_cents'],
-                'taux_tva_snapshot' => $tauxTvaMenu,
+                'taux_tva_basis_points' => $tauxTvaMenu,
                 'taux_tva_id' => $tauxTvaMenuId,
-                'taux_reduction_snapshot' => $pricing['taux_reduction_applique'],
-                'prix_livraison' => Money::toDecimal($prixLivraisonCents),
+                'taux_reduction_basis_points' => $pricing['taux_reduction_basis_points'],
                 'prix_livraison_cents' => $prixLivraisonCents,
-                'prix_total_ligne' => Money::toDecimal($prixTotalLigneCents),
                 'prix_total_ligne_cents' => $prixTotalLigneCents,
             ];
         }
 
         return [
             'lignes' => $lignes,
-            'total_brut' => Money::toDecimal($pricing['total_brut_cents']),
             'total_brut_cents' => $pricing['total_brut_cents'],
-            'remise_globale' => Money::toDecimal($pricing['remise_globale_cents']),
             'remise_globale_cents' => $pricing['remise_globale_cents'],
-            'total_menus_net' => Money::toDecimal($pricing['total_menus_net_cents']),
             'total_menus_net_cents' => $pricing['total_menus_net_cents'],
-            'prix_livraison' => Money::toDecimal($pricing['prix_livraison_cents']),
             'prix_livraison_cents' => $pricing['prix_livraison_cents'],
-            'total_ttc' => Money::toDecimal($pricing['total_ttc_cents']),
             'total_ttc_cents' => $pricing['total_ttc_cents'],
-            'currency' => 'eur',
+            'currency' => (string) Configuration::get('market.currency'),
             'snapshots' => [
-                'seuil_reduction' => $seuilReduction,
-                'seuil_reduction_cents' => Money::fromDecimal($seuilReduction),
-                'taux_reduction' => $pricing['taux_reduction_applique'],
+                'seuil_reduction_cents' => $discountThresholdCents,
+                'taux_reduction_basis_points' => $pricing['taux_reduction_basis_points'],
                 'taux_tva_menu' => $tauxTvaMenu,
                 'taux_tva_menu_id' => $tauxTvaMenuId,
                 'taux_tva_livraison' => $tauxTvaLivraison,
@@ -119,7 +111,7 @@ class PricingService
         foreach ($stmt->fetchAll() as $row) {
             $prixActuels[(int) $row['menu_id']] = [
                 'titre' => $row['titre'],
-                'prix_par_personne' => (float) $row['prix_par_personne'],
+                'prix_par_personne' => (string) $row['prix_par_personne'],
             ];
         }
 
@@ -129,9 +121,9 @@ class PricingService
             if (!isset($prixActuels[$menuId])) {
                 continue;
             }
-            $prixSession = (float) $item['prix_par_personne'];
-            $prixActuel = $prixActuels[$menuId]['prix_par_personne'];
-            if (abs($prixSession - $prixActuel) > 0.001) {
+            $prixSession = (string) $item['prix_par_personne'];
+            $prixActuel = (string) $prixActuels[$menuId]['prix_par_personne'];
+            if (Money::fromDecimal($prixSession) !== Money::fromDecimal($prixActuel)) {
                 $changes[] = [
                     'menu_id' => $menuId,
                     'titre' => $prixActuels[$menuId]['titre'],

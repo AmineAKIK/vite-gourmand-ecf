@@ -173,7 +173,7 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                 $documentsCommande = $documentsByCommande[$commandeId] ?? [];
                 $paiementsSynthese = $paiementsByCommande[$commandeId] ?? null;
                 $totalEncaisse     = (float)($paiementsSynthese['total_encaisse'] ?? 0);
-                $prixTotal         = (float)($cmd['prix_total'] ?? 0);
+                $prixTotal         = (float)($cmd['prix_total_cents'] ?? 0);
                 $soldeRestant      = max(0, round($prixTotal - $totalEncaisse, 2));
                 $statutPaiement    = \App\Models\PaiementModel::statutPaiement($totalEncaisse, $prixTotal);
                 $peutAnnuler = $statutActuel !== commandeCancelledStatus()
@@ -360,24 +360,24 @@ $activeAdvancedFilters = !empty($filters['date_debut'])
                                                             $nbPersonnes = (int)($ligne['nombre_personne'] ?? 0);
                                                             $brutMenu = !empty($ligne['prix_par_personne'])
                                                                 ? round((float)$ligne['prix_par_personne'] * $nbPersonnes, 2)
-                                                                : (float)($ligne['prix_menu'] ?? 0);
-                                                            $remiseMenu = max(0, $brutMenu - (float)($ligne['prix_menu'] ?? 0));
+                                                                : (float)($ligne['prix_menu_cents'] ?? 0);
+                                                            $remiseMenu = max(0, $brutMenu - (float)($ligne['prix_menu_cents'] ?? 0));
                                                         ?>
                                                         <tr>
                                                             <td data-label="Menu"><?= sanitize($ligne['menu_titre'] ?? '') ?></td>
                                                             <td data-label="Pers." class="text-end"><?= $nbPersonnes ?></td>
                                                             <td data-label="Brut" class="text-end text-nowrap"><?= sanitize(formatPrice($brutMenu)) ?></td>
                                                             <td data-label="Remise" class="text-end text-nowrap text-success"><?= $remiseMenu > 0 ? '-' . sanitize(formatPrice($remiseMenu)) : '—' ?></td>
-                                                            <td data-label="Net menu" class="text-end text-nowrap"><?= sanitize(formatPrice($ligne['prix_menu'] ?? 0)) ?></td>
-                                                            <td data-label="Livraison" class="text-end text-nowrap"><?= sanitize(formatPrice($ligne['prix_livraison'] ?? 0)) ?></td>
-                                                            <td data-label="Total" class="text-end text-nowrap fw-semibold"><?= sanitize(formatPrice($ligne['prix_total_ligne'] ?? 0)) ?></td>
+                                                            <td data-label="Net menu" class="text-end text-nowrap"><?= sanitize(formatMoneyCents($ligne['prix_menu_cents'] ?? 0)) ?></td>
+                                                            <td data-label="Livraison" class="text-end text-nowrap"><?= sanitize(formatMoneyCents($ligne['prix_livraison_cents'] ?? 0)) ?></td>
+                                                            <td data-label="Total" class="text-end text-nowrap fw-semibold"><?= sanitize(formatMoneyCents($ligne['prix_total_ligne_cents'] ?? 0)) ?></td>
                                                         </tr>
                                                     <?php endforeach; ?>
                                                 </tbody>
                                                 <tfoot>
                                                     <tr>
                                                         <th colspan="6" class="text-end commande-total-label">Total commande</th>
-                                                        <th class="text-end text-nowrap text-brand commande-total-value"><?= sanitize(formatPrice($cmd['prix_total'] ?? 0)) ?></th>
+                                                        <th class="text-end text-nowrap text-brand commande-total-value"><?= sanitize(formatMoneyCents($cmd['prix_total_cents'] ?? 0)) ?></th>
                                                     </tr>
                                                 </tfoot>
                                             </table>

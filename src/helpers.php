@@ -89,6 +89,10 @@ function formatPrice(float|int|string|null $amount, int $decimals = 2): string
 {
     return Formatter::price($amount, $decimals);
 }
+function formatMoneyCents(int|string|null $cents): string
+{
+    return Formatter::moneyCents((int) ($cents ?? 0));
+}
 function formatPriceInput(float|int|string|null $amount): string
 {
     return Formatter::priceInput($amount);

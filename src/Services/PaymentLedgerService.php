@@ -20,7 +20,7 @@ final class PaymentLedgerService
 
         $commandeId = (int) ($data['commande_id'] ?? 0);
         $type = (string) ($data['type_paiement'] ?? '');
-        $amountCents = Money::fromDecimal((string) ($data['montant'] ?? '0'));
+        $amountCents = Money::fromDecimal((string) ($data['montant_cents'] ?? '0'));
         $mode = trim((string) ($data['mode'] ?? ''));
         $date = trim((string) ($data['date_paiement'] ?? ''));
         $reference = trim((string) ($data['reference'] ?? '')) ?: null;
@@ -39,7 +39,7 @@ final class PaymentLedgerService
             throw new RuntimeException('Impossible d’enregistrer un paiement sur une commande annulée.');
         }
         $netCents = self::netCollectedCents($db, $commandeId);
-        PaymentLedgerPolicy::assertCollectionAmount($amountCents, $netCents, Money::fromDecimal((string) $commande['prix_total']));
+        PaymentLedgerPolicy::assertCollectionAmount($amountCents, $netCents, (int) $commande['prix_total_cents']);
 
         if ($documentId !== null) {
             $doc = $db->prepare('SELECT commande_id FROM document_facturation WHERE document_id = ?');
@@ -52,14 +52,14 @@ final class PaymentLedgerService
 
         $stmt = $db->prepare(
             "INSERT INTO paiement
-                (commande_id, document_id, type_paiement, nature, montant, mode, date_paiement, reference, note, cree_par)
+                (commande_id, document_id, type_paiement, nature, montant_cents, mode, date_paiement, reference, note, cree_par)
              VALUES (?, ?, ?, 'encaissement', ?, ?, ?, ?, ?, ?)",
         );
         $stmt->execute([
             $commandeId,
             $documentId,
             $type,
-            Money::toDecimal($amountCents),
+            $amountCents,
             $mode,
             $date,
             $reference,
@@ -112,23 +112,23 @@ final class PaymentLedgerService
     public static function netCollectedCents(PDO $db, int $commandeId): int
     {
         $stmt = $db->prepare(
-            "SELECT COALESCE(SUM(CASE WHEN nature = 'remboursement' THEN -montant ELSE montant END), 0)
+            "SELECT COALESCE(SUM(CASE WHEN nature = 'remboursement' THEN -montant_cents ELSE montant_cents END), 0)
              FROM paiement WHERE commande_id = ?",
         );
         $stmt->execute([$commandeId]);
 
-        return Money::fromDecimal((string) $stmt->fetchColumn());
+        return (int) $stmt->fetchColumn();
     }
 
     public static function netManualCollectedCents(PDO $db, int $commandeId): int
     {
         $stmt = $db->prepare(
-            "SELECT COALESCE(SUM(CASE WHEN nature = 'remboursement' THEN -montant ELSE montant END), 0)
+            "SELECT COALESCE(SUM(CASE WHEN nature = 'remboursement' THEN -montant_cents ELSE montant_cents END), 0)
              FROM paiement WHERE commande_id = ? AND mode <> 'cb_online'",
         );
         $stmt->execute([$commandeId]);
 
-        return Money::fromDecimal((string) $stmt->fetchColumn());
+        return (int) $stmt->fetchColumn();
     }
 
     public static function stripeCollectionsForOrder(PDO $db, int $commandeId): array
@@ -174,7 +174,7 @@ final class PaymentLedgerService
     ): int {
         $stmt = $db->prepare(
             "INSERT INTO paiement
-                (commande_id, document_id, type_paiement, nature, montant, mode, date_paiement,
+                (commande_id, document_id, type_paiement, nature, montant_cents, mode, date_paiement,
                  reference, note, operation_key, reversal_of_paiement_id, cree_par)
              VALUES (?, ?, ?, 'remboursement', ?, ?, ?, ?, ?, ?, ?, ?)
              ON DUPLICATE KEY UPDATE paiement_id = LAST_INSERT_ID(paiement_id)",
@@ -183,7 +183,7 @@ final class PaymentLedgerService
             (int) $payment['commande_id'],
             !empty($payment['document_id']) ? (int) $payment['document_id'] : null,
             (string) $payment['type_paiement'],
-            (string) $payment['montant'],
+            (string) $payment['montant_cents'],
             (string) $payment['mode'],
             date('Y-m-d'),
             $reference,
@@ -195,7 +195,7 @@ final class PaymentLedgerService
         $refundId = (int) $db->lastInsertId();
 
         $verify = $db->prepare(
-            'SELECT commande_id, nature, montant, mode, operation_key, reversal_of_paiement_id
+            'SELECT commande_id, nature, montant_cents, mode, operation_key, reversal_of_paiement_id
              FROM paiement WHERE paiement_id = ?',
         );
         $verify->execute([$refundId]);
@@ -203,7 +203,7 @@ final class PaymentLedgerService
         if (!$existing
             || (int) $existing['commande_id'] !== (int) $payment['commande_id']
             || (string) $existing['nature'] !== 'remboursement'
-            || Money::fromDecimal((string) $existing['montant']) !== Money::fromDecimal((string) $payment['montant'])
+            || Money::fromDecimal((string) $existing['montant_cents']) !== (int) $payment['montant_cents']
             || (string) $existing['mode'] !== (string) $payment['mode']
             || (string) $existing['operation_key'] !== $operationKey
             || (int) $existing['reversal_of_paiement_id'] !== (int) $payment['paiement_id']
@@ -216,7 +216,7 @@ final class PaymentLedgerService
 
     private static function lockOrder(PDO $db, int $commandeId): array
     {
-        $stmt = $db->prepare('SELECT commande_id, prix_total, statut FROM commande WHERE commande_id = ? FOR UPDATE');
+        $stmt = $db->prepare('SELECT commande_id, prix_total_cents, statut FROM commande WHERE commande_id = ? FOR UPDATE');
         $stmt->execute([$commandeId]);
         $order = $stmt->fetch();
         if (!$order) {

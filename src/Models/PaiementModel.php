@@ -17,7 +17,7 @@ class PaiementModel
     {
         $stmt = self::db()->prepare(
             "SELECT p.*,
-                    CASE WHEN p.nature = 'remboursement' THEN -p.montant ELSE p.montant END AS montant,
+                    CASE WHEN p.nature = 'remboursement' THEN -p.montant_cents ELSE p.montant_cents END AS montant_cents,
                     u.prenom, u.nom
              FROM paiement p
              LEFT JOIN utilisateur u ON u.utilisateur_id = p.cree_par

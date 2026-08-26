@@ -23,7 +23,7 @@ class DashboardController
         $commandesAujourdhui = array_filter($toutesCommandes, fn($c) => str_starts_with($c['date_commande'] ?? '', $today));
         $commandesSemaine    = array_filter($toutesCommandes, fn($c) => ($c['date_commande'] ?? '') >= $lundiSemaine);
         $caSemaine = array_sum(array_map(
-            fn($c) => OrderStatus::countsTowardRevenue($c['statut'] ?? null) ? (float)($c['prix_total'] ?? 0) : 0,
+            fn($c) => OrderStatus::countsTowardRevenue($c['statut'] ?? null) ? (float)($c['prix_total_cents'] ?? 0) : 0,
             array_filter(
                 $toutesCommandes,
                 fn($c) => ($c['date_acceptation'] ?? $c['date_commande'] ?? '') >= $lundiSemaine

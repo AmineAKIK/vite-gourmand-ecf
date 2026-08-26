@@ -138,7 +138,7 @@ final class ConfigurationRegistry
             self::tenant('payment.late_fee_rate_percent', 'penalites_retard_taux', ConfigurationType::DECIMAL, false, $admin, 'payment', 'Taux de pénalités de retard.', null, ['min' => 0.0]),
             self::tenant('payment.recovery_fee', 'indemnite_recouvrement', ConfigurationType::DECIMAL, false, $admin, 'payment', 'Indemnité forfaitaire de recouvrement.', null, ['min' => 0.0]),
 
-            self::tenant('discount.threshold', 'reduction_seuil', ConfigurationType::DECIMAL, false, $admin, 'pricing', 'Seuil déclenchant une remise commerciale.', null, ['min' => 0.0]),
+            self::tenant('discount.threshold', 'reduction_seuil', ConfigurationType::MONEY, false, $admin, 'pricing', 'Seuil déclenchant une remise commerciale.', null, ['min' => 0.0]),
             self::tenant('discount.rate_percent', 'reduction_taux', ConfigurationType::INTEGER, false, $admin, 'pricing', 'Pourcentage de remise commerciale.', null, ['min' => 0, 'max' => 100]),
 
             self::tenant('content.home.hero_subtitle', 'hero_sous_titre', ConfigurationType::STRING, false, $admin, 'content', 'Sous-titre du hero de la page d’accueil.', null, ['max_length' => 120]),

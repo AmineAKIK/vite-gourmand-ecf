@@ -130,19 +130,19 @@ class FacturationModel
 
             // Taux TVA : snapshot stocké au moment de la commande (migration 012)
             // Fallback sur PricingService si snapshot absent (commandes pré-migration)
-            $tauxTvaMenu = (float)($ligne['taux_tva_snapshot'] ?? 0) > 0
-                ? (float)$ligne['taux_tva_snapshot']
+            $tauxTvaMenu = (float)($ligne['taux_tva_basis_points'] ?? 0) > 0
+                ? (float)$ligne['taux_tva_basis_points']
                 : PricingService::defaultTauxTvaByCategorie('menu');
 
             // Prix brut menu (avant remise) : depuis le snapshot de prix/pers
             // Si snapshot absent (commandes pré-migration 012), fallback sur prix_par_personne DB actuel
-            $prixParPers = (float)($ligne['prix_par_personne_snapshot'] ?? 0) > 0
-                ? (float)$ligne['prix_par_personne_snapshot']
+            $prixParPers = (float)($ligne['prix_par_personne_snapshot_cents'] ?? 0) > 0
+                ? (float)$ligne['prix_par_personne_snapshot_cents']
                 : (float)($ligne['prix_par_personne'] ?? 0);
             $menuBrutTtc = round($prixParPers * $nbPersonnes, 2);
 
             // Prix net menu (après remise) : valeur réelle persistée
-            $menuNetTtc = (float)($ligne['prix_menu'] ?? 0);
+            $menuNetTtc = (float)($ligne['prix_menu_cents'] ?? 0);
 
             // Ligne menu au prix BRUT
             $computed = self::lineTotals(1, $menuBrutTtc, $tauxTvaMenu);
@@ -161,14 +161,14 @@ class FacturationModel
             $totals['tva'] += $computed['total_tva'];
             $totals['ttc'] += $computed['total_ttc'];
 
-            // Ligne remise : depuis le snapshot remise_appliquee (migration 012)
+            // Ligne remise : depuis le snapshot remise_appliquee_cents (migration 012)
             // Si snapshot absent, calcul depuis la différence brut/net
-            $remiseTtc = (float)($ligne['remise_appliquee'] ?? 0) > 0
-                ? (float)$ligne['remise_appliquee']
+            $remiseTtc = (float)($ligne['remise_appliquee_cents'] ?? 0) > 0
+                ? (float)$ligne['remise_appliquee_cents']
                 : round($menuBrutTtc - $menuNetTtc, 2);
 
             if ($remiseTtc > 0.005) {
-                $tauxReduction = (float)($ligne['taux_reduction_snapshot'] ?? 0);
+                $tauxReduction = (float)($ligne['taux_reduction_basis_points'] ?? 0);
                 $remiseLabel = $tauxReduction > 0
                     ? 'Réduction volume (' . formatPriceInput($tauxReduction) . ' %)'
                     : 'Réduction volume';
@@ -190,7 +190,7 @@ class FacturationModel
             }
 
             // Ligne livraison (portée sur la première ligne commande uniquement)
-            $livraisonTtc = (float)($ligne['prix_livraison'] ?? 0);
+            $livraisonTtc = (float)($ligne['prix_livraison_cents'] ?? 0);
             if ($livraisonTtc > 0) {
                 $livraisonComputed = self::lineTotals(1, $livraisonTtc, $tauxTvaLivraison);
                 $lignes[] = [

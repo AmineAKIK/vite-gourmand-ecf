@@ -77,7 +77,7 @@ final class StripeWebhookFulfillmentService
             }
 
             [$commandeData, $pricing, $panier] = self::decodeSnapshots($draft);
-            $commandeData['prix_total'] = Money::toDecimal($validated['amount_total']);
+            $commandeData['prix_total_cents'] = Money::toDecimal($validated['amount_total']);
 
             $commandeId = self::createCommande($db, $commandeData, $pricing['lignes'] ?? []);
             OrderAdmissionService::consume(
@@ -220,7 +220,7 @@ final class StripeWebhookFulfillmentService
         $stmt = $db->prepare(
             'INSERT INTO commande (
                 numero_commande, utilisateur_id, date_prestation, heure_livraison,
-                adresse_livraison, ville_livraison, code_postal_livraison, prix_total, instructions
+                adresse_livraison, ville_livraison, code_postal_livraison, prix_total_cents, instructions
              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
         );
         $stmt->execute([
@@ -231,16 +231,16 @@ final class StripeWebhookFulfillmentService
             $commandeData['adresse_livraison'],
             $commandeData['ville_livraison'],
             $commandeData['code_postal_livraison'],
-            $commandeData['prix_total'],
+            $commandeData['prix_total_cents'],
             $commandeData['instructions'] ?? null,
         ]);
         $commandeId = (int) $db->lastInsertId();
 
         $ligneStmt = $db->prepare(
             'INSERT INTO commande_ligne (
-                commande_id, menu_id, nombre_personne, prix_menu, prix_livraison,
-                prix_total_ligne, prix_par_personne_snapshot, taux_tva_snapshot,
-                taux_reduction_snapshot, remise_appliquee, taux_tva_id
+                commande_id, menu_id, nombre_personne, prix_menu_cents, prix_livraison_cents,
+                prix_total_ligne_cents, prix_par_personne_snapshot_cents, taux_tva_basis_points,
+                taux_reduction_basis_points, remise_appliquee_cents, taux_tva_id
              ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
         );
 
@@ -249,13 +249,13 @@ final class StripeWebhookFulfillmentService
                 $commandeId,
                 (int) $ligne['menu_id'],
                 (int) $ligne['nombre_personne'],
-                (float) $ligne['prix_menu'],
-                (float) $ligne['prix_livraison'],
-                (float) $ligne['prix_total_ligne'],
-                (float) ($ligne['prix_par_personne_snapshot'] ?? 0),
-                (float) ($ligne['taux_tva_snapshot'] ?? 10.0),
-                (float) ($ligne['taux_reduction_snapshot'] ?? 0),
-                (float) ($ligne['remise_appliquee'] ?? 0),
+                (float) $ligne['prix_menu_cents'],
+                (float) $ligne['prix_livraison_cents'],
+                (float) $ligne['prix_total_ligne_cents'],
+                (float) ($ligne['prix_par_personne_snapshot_cents'] ?? 0),
+                (float) ($ligne['taux_tva_basis_points'] ?? 10.0),
+                (float) ($ligne['taux_reduction_basis_points'] ?? 0),
+                (float) ($ligne['remise_appliquee_cents'] ?? 0),
                 isset($ligne['taux_tva_id']) ? (int) $ligne['taux_tva_id'] : null,
             ]);
 
