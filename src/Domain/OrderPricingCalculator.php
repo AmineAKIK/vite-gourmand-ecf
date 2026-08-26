@@ -5,28 +5,28 @@ namespace App\Domain;
 final class OrderPricingCalculator
 {
     /**
-     * @param array<int, array{menu_id:int|string, prix_par_personne:float|int|string, nombre_personne:int|string}> $items
+     * @param array<int, array{menu_id:int|string, prix_par_personne:string|int, nombre_personne:int|string}> $items
      * @return array{
-     *   lignes: array<int, array<string, int|float>>,
+     *   lignes: array<int, array<string, int>>,
      *   total_brut_cents:int,
      *   remise_globale_cents:int,
      *   total_menus_net_cents:int,
      *   prix_livraison_cents:int,
      *   total_ttc_cents:int,
-     *   taux_reduction_applique:float
+     *   taux_reduction_basis_points:int
      * }
      */
     public static function calculate(
         array $items,
         int $deliveryCents,
         int $discountThresholdCents,
-        float $discountRate,
+        int $discountRateBasisPoints,
     ): array {
         $grossLines = [];
         $totalGrossCents = 0;
 
         foreach ($items as $item) {
-            $unitCents = Money::fromDecimal($item['prix_par_personne']);
+            $unitCents = Money::fromDecimal((string) $item['prix_par_personne']);
             $quantity = max(0, (int) $item['nombre_personne']);
             $lineGrossCents = $unitCents * $quantity;
             $totalGrossCents += $lineGrossCents;
@@ -39,11 +39,11 @@ final class OrderPricingCalculator
             ];
         }
 
-        $appliedRate = 0.0;
+        $appliedBasisPoints = 0;
         $discountCents = 0;
         if ($discountThresholdCents > 0 && $totalGrossCents >= $discountThresholdCents) {
-            $appliedRate = min(100.0, max(0.0, $discountRate));
-            $discountCents = Money::percentage($totalGrossCents, $appliedRate);
+            $appliedBasisPoints = min(10000, max(0, $discountRateBasisPoints));
+            $discountCents = Money::percentageBasisPoints($totalGrossCents, $appliedBasisPoints);
         }
 
         $lines = [];
@@ -55,11 +55,11 @@ final class OrderPricingCalculator
             if ($discountCents > 0) {
                 if ($index === $lastIndex) {
                     $lineDiscount = $discountCents - $allocatedDiscount;
-                } elseif ($totalGrossCents > 0) {
-                    $lineDiscount = (int) round(
-                        $discountCents * ($line['prix_menu_brut_cents'] / $totalGrossCents),
-                        0,
-                        PHP_ROUND_HALF_UP,
+                } else {
+                    $lineDiscount = Money::allocateProportionally(
+                        $discountCents,
+                        $line['prix_menu_brut_cents'],
+                        $totalGrossCents,
                     );
                     $allocatedDiscount += $lineDiscount;
                 }
@@ -81,7 +81,7 @@ final class OrderPricingCalculator
             'total_menus_net_cents' => $menusNetCents,
             'prix_livraison_cents' => $deliveryCents,
             'total_ttc_cents' => $menusNetCents + $deliveryCents,
-            'taux_reduction_applique' => $appliedRate,
+            'taux_reduction_basis_points' => $appliedBasisPoints,
         ];
     }
 }
