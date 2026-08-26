@@ -13,7 +13,7 @@ final class Money
             throw new InvalidArgumentException('Montant monétaire invalide.');
         }
 
-        $negative = ($matches[1] ?? '') === '-';
+        $negative = $matches[1] === '-';
         $whole = (int) $matches[2];
         $fraction = $matches[3] ?? '';
         $centDigits = str_pad(substr($fraction, 0, 2), 2, '0');
