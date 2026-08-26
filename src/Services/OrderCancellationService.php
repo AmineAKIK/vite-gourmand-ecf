@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Config\Database;
-use App\Domain\Money;
 use App\Domain\OrderStatus;
 use App\Domain\PaymentLedgerPolicy;
 use PDO;
@@ -82,7 +81,7 @@ final class OrderCancellationService
                     $commandeId,
                     $operationKey,
                     $reference,
-                    Money::fromDecimal((string) $payment['montant']),
+                    (int) $payment['montant_cents'],
                 ]);
 
                 $find = $db->prepare('SELECT * FROM payment_refund_attempt WHERE paiement_id = ? FOR UPDATE');
