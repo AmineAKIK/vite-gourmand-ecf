@@ -171,12 +171,20 @@ final class StripeFulfillmentController
 
     private function clearMatchingBrowserPaymentState(string $sessionId, int $draftId, int $attemptId): void
     {
-        $storedSessionId = (string) ($_SESSION['stripe_session_id'] ?? '');
-        $storedDraftId = (int) ($_SESSION['stripe_draft_id'] ?? 0);
-        $storedAttemptId = (int) ($_SESSION['stripe_attempt_id'] ?? 0);
+        $storedSessionId = (string) (
+            $_SESSION['payment_provider_session_id']
+            ?? $_SESSION['stripe_session_id']
+            ?? ''
+        );
+        $storedDraftId = (int) ($_SESSION['payment_draft_id'] ?? $_SESSION['stripe_draft_id'] ?? 0);
+        $storedAttemptId = (int) ($_SESSION['payment_attempt_id'] ?? $_SESSION['stripe_attempt_id'] ?? 0);
 
         if ($storedSessionId === $sessionId || ($storedDraftId === $draftId && $storedAttemptId === $attemptId)) {
             unset(
+                $_SESSION['payment_provider'],
+                $_SESSION['payment_draft_id'],
+                $_SESSION['payment_attempt_id'],
+                $_SESSION['payment_provider_session_id'],
                 $_SESSION['stripe_pending'],
                 $_SESSION['stripe_draft_id'],
                 $_SESSION['stripe_attempt_id'],
