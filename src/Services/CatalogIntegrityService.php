@@ -90,6 +90,22 @@ final class CatalogIntegrityService
         }
     }
 
+    public static function deactivateMenu(int $menuId): void
+    {
+        $db = Database::getConnection();
+        $db->beginTransaction();
+        try {
+            self::lockMenu($db, $menuId);
+            $db->prepare('UPDATE menu SET actif = 0 WHERE menu_id = ?')->execute([$menuId]);
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
     public static function createPlat(array $data): int
     {
         CatalogIntegrityPolicy::assertPlatPayload($data);
@@ -128,6 +144,27 @@ final class CatalogIntegrityService
             $db->prepare('UPDATE plat SET titre = ?, categorie_id = ? WHERE plat_id = ?')
                 ->execute([$data['titre'], $data['categorie_id'], $platId]);
             self::replacePlatAllergens($db, $platId, $allergenIds);
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+    }
+
+    public static function deletePlat(int $platId): void
+    {
+        $db = Database::getConnection();
+        $db->beginTransaction();
+        try {
+            self::lockPlat($db, $platId);
+            $usage = $db->prepare('SELECT COUNT(*) FROM menu_plat WHERE plat_id = ?');
+            $usage->execute([$platId]);
+            if ((int) $usage->fetchColumn() > 0) {
+                throw new RuntimeException('Impossible de supprimer un plat utilisé dans un menu. Retirez-le d’abord des menus concernés.');
+            }
+            $db->prepare('DELETE FROM plat WHERE plat_id = ?')->execute([$platId]);
             $db->commit();
         } catch (Throwable $e) {
             if ($db->inTransaction()) {
