@@ -59,6 +59,30 @@ function assertColumns(PDO $db, string $table, array $required, array $forbidden
     }
 }
 
+function assertBinary32Column(PDO $db, string $table, string $column, bool $generated): void
+{
+    $stmt = $db->prepare(
+        'SELECT COLUMN_TYPE, CHARACTER_SET_NAME, COLLATION_NAME, EXTRA
+         FROM information_schema.COLUMNS
+         WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = ? AND COLUMN_NAME = ?',
+    );
+    $stmt->execute([$table, $column]);
+    $row = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!is_array($row)) {
+        throw new RuntimeException(sprintf('Colonne de garde V1 manquante : %s.%s', $table, $column));
+    }
+    if (strtolower((string) $row['COLUMN_TYPE']) !== 'binary(32)') {
+        throw new RuntimeException(sprintf('Type de garde V1 invalide : %s.%s', $table, $column));
+    }
+    if ($row['CHARACTER_SET_NAME'] !== null || $row['COLLATION_NAME'] !== null) {
+        throw new RuntimeException(sprintf('La garde binaire ne doit dépendre d’aucune collation : %s.%s', $table, $column));
+    }
+    $isGenerated = str_contains(strtoupper((string) $row['EXTRA']), 'GENERATED');
+    if ($isGenerated !== $generated) {
+        throw new RuntimeException(sprintf('Mode généré invalide : %s.%s', $table, $column));
+    }
+}
+
 function assertCanonicalV1(PDO $db): void
 {
     $tables = array_fill_keys(databaseTables($db), true);
@@ -147,6 +171,7 @@ function assertCanonicalV1(PDO $db): void
         'ancien_statut',
         'ancien_statut_guard',
         'nouveau_statut',
+        'nouveau_statut_guard',
         'commentaire',
         'commentaire_guard',
         'modifie_par',
@@ -157,11 +182,16 @@ function assertCanonicalV1(PDO $db): void
         'historique_id',
         'commande_id',
         'ancien_statut_guard',
-        'nouveau_statut',
+        'nouveau_statut_guard',
         'commentaire_guard',
         'modifie_par_guard',
         'created_at',
     ], []);
+
+    foreach (['ancien_statut_guard', 'nouveau_statut_guard', 'commentaire_guard'] as $column) {
+        assertBinary32Column($db, 'commande_historique', $column, true);
+        assertBinary32Column($db, 'commande_historique_guard', $column, false);
+    }
 
     foreach (['chk_mode_paiement_flags', 'chk_mode_paiement_cb_online', 'chk_mode_paiement_instructions'] as $constraint) {
         $stmt = $db->prepare(
@@ -272,6 +302,6 @@ try {
         fwrite(STDOUT, "V1 schema verified.\n");
     }
 } catch (Throwable $e) {
-    fwrite(STDERR, 'V1 schema verification failed: ' . $e->getMessage() . PHP_EOL);
+    fwrite(STDERR, 'V1 schema verification failed: ' . $e->getMessage() . PHP_EOL;
     exit(1);
 }
