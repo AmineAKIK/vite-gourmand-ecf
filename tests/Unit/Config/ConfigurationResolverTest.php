@@ -78,7 +78,7 @@ final class ConfigurationResolverTest extends TestCase
         ]);
 
         self::assertSame(
-            ['tax.regime'],
+            ['order.number_prefix', 'tax.regime'],
             $resolver->missingRequired(ConfigurationScope::TENANT),
         );
     }

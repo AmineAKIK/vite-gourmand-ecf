@@ -216,6 +216,12 @@ $activeTab = $_GET['tab'] ?? 'identite';
                                    value="<?= (int)($config['livraison_rayon_max_km'] ?? 50) ?>" min="1" max="500">
                             <div class="form-text">Au-delà, commande refusée.</div>
                         </div>
+                        <div class="col-6 col-lg-3">
+                            <label class="form-label fw-medium" for="commande_prefixe">Préfixe des commandes</label>
+                            <input type="text" class="form-control text-uppercase" id="commande_prefixe" name="commande_prefixe"
+                                   value="<?= $cfg('commande_prefixe') ?>" maxlength="12" pattern="[A-Za-z0-9]+" required>
+                            <div class="form-text">Exemple : ACME. Utilisé dans les références publiques.</div>
+                        </div>
                         <div class="col-6 col-lg-2">
                             <label class="form-label fw-medium" for="commandes_max_par_jour">Commandes max / jour</label>
                             <input type="number" class="form-control" id="commandes_max_par_jour" name="commandes_max_par_jour"

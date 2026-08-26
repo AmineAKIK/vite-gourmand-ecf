@@ -105,6 +105,7 @@ final class ConfigurationRegistry
             self::tenant('delivery.base_fee', 'livraison_base', ConfigurationType::DECIMAL, false, $admin, 'delivery', 'Frais fixes de livraison.', null, ['min' => 0.0]),
             self::tenant('delivery.per_km_fee', 'livraison_km', ConfigurationType::DECIMAL, false, $admin, 'delivery', 'Frais variables par kilomètre.', null, ['min' => 0.0]),
             self::tenant('order.capacity.max_per_day', 'commandes_max_par_jour', ConfigurationType::INTEGER, false, $admin, 'orders', 'Capacité maximale de commandes par jour.', null, ['min' => 0, 'max' => 999]),
+            self::tenant('order.number_prefix', 'commande_prefixe', ConfigurationType::STRING, true, $admin, 'orders', 'Préfixe public des références de commande.', null, ['max_length' => 12, 'pattern' => '/^[A-Za-z0-9]+$/']),
 
             self::tenant('business.legal_name', 'entreprise_nom', ConfigurationType::STRING, true, $admin, 'business', 'Raison sociale utilisée sur les documents.', null, ['max_length' => 100]),
             self::tenant('business.siret', 'entreprise_siret', ConfigurationType::SIRET, true, $admin, 'business', 'SIRET de l’entreprise.'),

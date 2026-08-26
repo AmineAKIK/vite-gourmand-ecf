@@ -2,6 +2,7 @@
 
 namespace App\Config;
 
+use App\Domain\BrandAsset;
 use App\Models\SiteConfigModel;
 use App\Models\SiteImageModel;
 use UnexpectedValueException;
@@ -148,7 +149,7 @@ class SiteConfig
     public static function logoUrl(): ?string
     {
         try {
-            $url = SiteImageModel::get('logo');
+            $url = SiteImageModel::get(BrandAsset::LOGO);
             return $url ?: null;
         } catch (\Throwable) {
             return null;

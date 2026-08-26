@@ -7,8 +7,8 @@
     <?php if (isset($metaDescription) && is_string($metaDescription) && trim($metaDescription) !== ''): ?><meta name="description" content="<?= sanitize($metaDescription) ?>"><?php endif; ?>
     <?php
     $siteLogo = \App\Config\SiteConfig::logoUrl();
-    $siteFavicon = \App\Models\SiteImageModel::get('favicon');
-    $siteOgImage = \App\Models\SiteImageModel::get('og_image');
+    $siteFavicon = \App\Models\SiteImageModel::get(\App\Domain\BrandAsset::FAVICON);
+    $siteOgImage = \App\Models\SiteImageModel::get(\App\Domain\BrandAsset::OG_IMAGE);
     $cspNonce = $GLOBALS['csp_nonce'] ?? '';
     ?>
     <?php if ($siteFavicon): ?>

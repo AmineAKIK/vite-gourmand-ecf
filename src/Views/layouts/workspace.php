@@ -6,7 +6,7 @@
     <title><?= sanitize($pageTitle ?? buildPageTitle()) ?></title>
     <?php
     $siteLogo = \App\Config\SiteConfig::logoUrl();
-    $siteFavicon = \App\Models\SiteImageModel::get('favicon');
+    $siteFavicon = \App\Models\SiteImageModel::get(\App\Domain\BrandAsset::FAVICON);
     $cspNonce = $GLOBALS['csp_nonce'] ?? '';
     ?>
     <?php if ($siteFavicon): ?><link rel="icon" href="<?= sanitize($siteFavicon) ?>"><?php endif; ?>

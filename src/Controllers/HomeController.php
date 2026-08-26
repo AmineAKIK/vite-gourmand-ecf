@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use App\Config\Configuration;
+use App\Domain\BrandAsset;
 use App\Models\AvisModel;
 use App\Models\SiteImageModel;
 
@@ -12,8 +13,8 @@ class HomeController
     {
         $avisValides = AvisModel::getHomepage();
         $siteImages = SiteImageModel::getAll();
-        $heroUrl = isset($siteImages['hero']) && $siteImages['hero'] !== ''
-            ? imageUrl($siteImages['hero'], '')
+        $heroUrl = isset($siteImages[BrandAsset::HERO->value]) && $siteImages[BrandAsset::HERO->value] !== ''
+            ? imageUrl($siteImages[BrandAsset::HERO->value], '')
             : null;
         $preloadImages = $heroUrl !== null ? [$heroUrl] : [];
         $heroSousTitre = Configuration::get('content.home.hero_subtitle');

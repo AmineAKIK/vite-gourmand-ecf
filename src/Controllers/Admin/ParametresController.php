@@ -5,6 +5,7 @@ namespace App\Controllers\Admin;
 use App\Config\ConfigurationInvalidException;
 use App\Config\ConfigurationRegistry;
 use App\Config\ConfigurationWriter;
+use App\Domain\BrandAsset;
 use App\Models\HoraireModel;
 use App\Models\SiteConfigModel;
 use App\Models\SiteImageModel;
@@ -185,16 +186,16 @@ class ParametresController
             redirect('/admin/parametres#personnalisation');
         }
 
-        foreach (['logo', 'favicon', 'og_image', 'hero', 'preparation'] as $cle) {
-            $file = $_FILES[$cle] ?? null;
+        foreach (BrandAsset::cases() as $asset) {
+            $file = $_FILES[$asset->value] ?? null;
             if (!$file || ($file['error'] ?? UPLOAD_ERR_NO_FILE) === UPLOAD_ERR_NO_FILE) {
                 continue;
             }
-            $url = MenuAdminService::uploadSiteImage($file, 'site/' . $cle);
+            $url = MenuAdminService::uploadSiteImage($file, 'site/' . $asset->value);
             if ($url) {
-                SiteImageModel::set($cle, $url);
+                SiteImageModel::set($asset, $url);
             } else {
-                flash('error', 'Erreur lors de l\'upload de l\'image "' . $cle . '".');
+                flash('error', 'Erreur lors de l\'upload de l\'image "' . $asset->value . '".');
                 redirect('/admin/parametres#personnalisation');
             }
         }
