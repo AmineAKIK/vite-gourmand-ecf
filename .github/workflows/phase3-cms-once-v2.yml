@@ -17,6 +17,12 @@ jobs:
         with:
           ref: v1/white-label-cms-final
           fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql, zip
+          coverage: none
+          tools: composer:v2, phpunit:10
       - name: Compile refactor script
         run: python3 -m py_compile bin/phase3_cms_refactor.py
       - name: Apply refactor
@@ -26,7 +32,7 @@ jobs:
       - name: Lint PHP
         run: find src public tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
       - name: Run unit tests
-        run: vendor/bin/phpunit --configuration phpunit.xml
+        run: phpunit --configuration phpunit.xml
       - name: Commit refactor
         run: |
           set -euo pipefail
