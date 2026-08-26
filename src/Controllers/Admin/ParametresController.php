@@ -27,6 +27,7 @@ class ParametresController
         'livraison_base',
         'livraison_km',
         'commandes_max_par_jour',
+        'commande_dates_fermees',
         'commande_delai_min_heures',
         'commande_horizon_max_jours',
         'commande_annulation_limite_heures',

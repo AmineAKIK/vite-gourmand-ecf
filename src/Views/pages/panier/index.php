@@ -248,8 +248,9 @@ async function checkDispo() {
     if (!date || !dispoIndicator) { checkForm(); return; }
     try {
         const data = await window.tugeresFetchJson('/commande/disponibilite?date=' + encodeURIComponent(date));
-        if (data.complet) {
-            dispoIndicator.innerHTML = '<span class="text-danger"><i class="bi bi-calendar-x me-1"></i>Date complète — choisissez une autre date.</span>';
+        if (data.available === false) {
+            const message = data.message || 'Date indisponible — choisissez une autre date.';
+            dispoIndicator.innerHTML = '<span class="text-danger"><i class="bi bi-calendar-x me-1"></i>' + message + '</span>';
             if (submitBtn) submitBtn.disabled = true;
         } else if (data.max > 0) {
             const restant = data.max - data.count;

@@ -32,6 +32,38 @@ final class BusinessPolicy
         return $this->requiredInt('order.cancellation_cutoff_hours', 0);
     }
 
+    /** @return list<string> */
+    public function blackoutDates(): array
+    {
+        $value = ($this->resolve)('order.blackout_dates');
+        if ($value === null) {
+            return [];
+        }
+        if (!is_array($value)) {
+            throw new ConfigurationInvalidException('Configuration invalid: order.blackout_dates');
+        }
+
+        $dates = [];
+        foreach ($value as $item) {
+            if (!is_string($item)) {
+                throw new ConfigurationInvalidException('Configuration invalid: order.blackout_dates');
+            }
+            $date = DateTimeImmutable::createFromFormat('!Y-m-d', $item);
+            if (!$date || $date->format('Y-m-d') !== $item) {
+                throw new ConfigurationInvalidException('Configuration invalid: order.blackout_dates');
+            }
+            $dates[$item] = $item;
+        }
+
+        ksort($dates, SORT_STRING);
+        return array_values($dates);
+    }
+
+    public function isBlackoutDate(string $date): bool
+    {
+        return in_array($date, $this->blackoutDates(), true);
+    }
+
     public function quoteValidityDays(): int
     {
         return $this->requiredInt('quote.validity_days', 1);
@@ -74,6 +106,10 @@ final class BusinessPolicy
 
     public function assertOrderSchedule(DateTimeImmutable $serviceAt, DateTimeImmutable $now): void
     {
+        if ($this->isBlackoutDate($serviceAt->format('Y-m-d'))) {
+            throw new InvalidArgumentException('Le traiteur est indisponible à cette date. Choisissez une autre date.');
+        }
+
         $earliest = $now->modify('+' . $this->minimumOrderLeadHours() . ' hours');
         $latest = $now->modify('+' . $this->maximumOrderAdvanceDays() . ' days');
 
