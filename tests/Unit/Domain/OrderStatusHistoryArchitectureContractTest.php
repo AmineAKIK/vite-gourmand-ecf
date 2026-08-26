@@ -30,15 +30,15 @@ final class OrderStatusHistoryArchitectureContractTest extends TestCase
     {
         $transition = $this->source('src/Services/OrderTransitionService.php');
         $cancellation = $this->source('src/Services/OrderCancellationService.php');
-        $stripe = $this->source('src/Services/StripeWebhookFulfillmentService.php');
+        $providerWebhook = $this->source('src/Services/PaymentWebhookFulfillmentService.php');
         $history = $this->source('src/Services/OrderStatusHistoryService.php');
 
         self::assertStringContainsString('OrderStatusHistoryService::append(', $transition);
         self::assertStringContainsString('OrderStatusHistoryService::append(', $cancellation);
-        self::assertStringContainsString('OrderStatusHistoryService::append(', $stripe);
+        self::assertStringContainsString('OrderStatusHistoryService::append(', $providerWebhook);
         self::assertStringNotContainsString('INSERT INTO commande_historique', $transition);
         self::assertStringNotContainsString('INSERT INTO commande_historique', $cancellation);
-        self::assertStringNotContainsString('CommandeModel::addHistorique', $stripe);
+        self::assertStringNotContainsString('CommandeModel::addHistorique', $providerWebhook);
         self::assertStringContainsString('INSERT INTO commande_historique_guard', $history);
         self::assertStringContainsString('nouveau_statut_guard', $history);
     }

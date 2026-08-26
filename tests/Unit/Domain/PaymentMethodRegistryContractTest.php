@@ -57,15 +57,17 @@ final class PaymentMethodRegistryContractTest extends TestCase
     {
         $commande = $this->source('src/Controllers/CommandeController.php');
         $model = $this->source('src/Models/CommandeModel.php');
-        $stripe = $this->source('src/Services/StripeWebhookFulfillmentService.php');
+        $providerWebhook = $this->source('src/Services/PaymentWebhookFulfillmentService.php');
         $migration = $this->source('sql/v1/migrations/003_payment_method_registry.sql');
 
         self::assertStringContainsString("'payment_method_code'", $commande);
         self::assertStringContainsString('payment_method_code, instructions', $model);
         self::assertStringContainsString("['payment_method_code']", $model);
 
-        self::assertStringContainsString("['payment_method_code'] ?? '') !== 'cb_online'", $stripe);
-        self::assertStringContainsString('payment_method_code, instructions', $stripe);
+        self::assertStringContainsString("$paymentMethodCode = trim((string) ($commandeData['payment_method_code'] ?? ''))", $providerWebhook);
+        self::assertStringContainsString("'mode' => $paymentMethodCode", $providerWebhook);
+        self::assertStringContainsString('payment_method_code, instructions', $providerWebhook);
+        self::assertStringNotContainsString("payment_method_code'] ?? '') !== 'cb_online'", $providerWebhook);
 
         self::assertStringContainsString('ADD COLUMN payment_method_code VARCHAR(30) NULL', $migration);
         self::assertStringNotContainsString('FOREIGN KEY (payment_method_code)', $migration);
