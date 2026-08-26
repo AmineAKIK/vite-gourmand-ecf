@@ -135,6 +135,9 @@ jobs:
       - name: Verify inventory invariants against MySQL
         run: php bin/verify-inventory-invariants.php
 
+      - name: Verify immutable order status history against MySQL
+        run: php bin/verify-order-status-history.php
+
       - name: Verify canonical schema and snapshot fingerprint
         shell: bash
         run: |
