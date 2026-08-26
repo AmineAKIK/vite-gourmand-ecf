@@ -62,7 +62,7 @@ final class OrderStatusHistoryService
                 historique_id,
                 commande_id,
                 ancien_statut_guard,
-                nouveau_statut,
+                nouveau_statut_guard,
                 commentaire_guard,
                 modifie_par_guard,
                 created_at
@@ -71,7 +71,7 @@ final class OrderStatusHistoryService
                 historique_id,
                 commande_id,
                 ancien_statut_guard,
-                nouveau_statut,
+                nouveau_statut_guard,
                 commentaire_guard,
                 modifie_par_guard,
                 created_at
