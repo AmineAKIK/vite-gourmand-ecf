@@ -12,10 +12,10 @@ use Throwable;
 
 final class AdditionalProviderPaymentReconciliationService
 {
-    public static function recordIfNeeded(PaymentProviderEvent $event, int $commandeId): bool
+    public static function recordIfNeeded(PaymentProviderEvent $event): bool
     {
         $session = $event->checkout;
-        if ($event->kind !== PaymentProviderEvent::CHECKOUT_PAID || $session === null || $commandeId <= 0) {
+        if ($event->kind !== PaymentProviderEvent::CHECKOUT_PAID || $session === null) {
             return false;
         }
 
@@ -32,8 +32,10 @@ final class AdditionalProviderPaymentReconciliationService
             $draftStmt = $db->prepare('SELECT * FROM order_draft WHERE draft_id = ? FOR UPDATE');
             $draftStmt->execute([$draftId]);
             $draft = $draftStmt->fetch();
-            if (!$draft || (int) ($draft['commande_id'] ?? 0) !== $commandeId || (string) ($draft['status'] ?? '') !== 'consumed') {
-                throw new RuntimeException('Draft consommé incohérent pour la réconciliation financière.');
+            $commandeId = (int) ($draft['commande_id'] ?? 0);
+            if (!$draft || $commandeId <= 0 || (string) ($draft['status'] ?? '') !== 'consumed') {
+                $db->commit();
+                return false;
             }
 
             $attemptStmt = $db->prepare(
