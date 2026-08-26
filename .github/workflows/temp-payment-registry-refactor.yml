@@ -1,0 +1,33 @@
+name: Temporary payment registry refactor
+
+on:
+  push:
+    branches:
+      - v1/payment-method-registry
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Validate refactor syntax
+        run: php -l tools/temp-payment-registry-refactor.php
+      - name: Apply deterministic refactor
+        run: php tools/temp-payment-registry-refactor.php
+      - name: Validate changed PHP syntax
+        run: |
+          git diff --name-only --diff-filter=ACM | grep -E '\.php$' | xargs -r -n1 php -l
+      - name: Commit deterministic refactor
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Phase 4: wire payment registry across checkout and admin"
+          git push
