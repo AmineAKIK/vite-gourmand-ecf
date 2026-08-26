@@ -56,9 +56,9 @@ final class CanonicalMoneyMigrationContractTest extends TestCase
         self::assertStringNotContainsString('ADD COLUMN taux_tva_basis_points', $sql);
     }
 
-    public function testStripeFulfillmentPersistsCurrencyPaymentMethodAndBothVatSnapshots(): void
+    public function testProviderFulfillmentPersistsCurrencyPaymentMethodAndBothVatSnapshots(): void
     {
-        $source = file_get_contents(dirname(__DIR__, 3) . '/src/Services/StripeWebhookFulfillmentService.php');
+        $source = file_get_contents(dirname(__DIR__, 3) . '/src/Services/PaymentWebhookFulfillmentService.php');
         self::assertIsString($source);
 
         self::assertStringContainsString('prix_total_cents, currency, payment_method_code, instructions', preg_replace('/\s+/', ' ', $source));

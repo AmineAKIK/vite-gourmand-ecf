@@ -21,6 +21,14 @@ final class PaymentGatewayFactory
         };
     }
 
+    public static function webhookForProvider(string $provider): PaymentWebhookGateway
+    {
+        return match (self::normalize($provider)) {
+            'stripe' => StripePaymentWebhookGateway::fromConfiguration(),
+            default => throw new InvalidArgumentException('Webhook fournisseur non supporté.'),
+        };
+    }
+
     public static function checkoutPath(string $provider): string
     {
         return match (self::normalize($provider)) {

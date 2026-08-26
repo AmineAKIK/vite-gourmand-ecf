@@ -34,9 +34,9 @@ final class InventoryArchitectureContractTest extends TestCase
         self::assertStringNotContainsString('consommation de stock reste non bloquante', $controller);
     }
 
-    public function testStripeConsumesInventoryInTheWebhookTransaction(): void
+    public function testProviderWebhookConsumesInventoryInItsTransaction(): void
     {
-        $service = $this->source('src/Services/StripeWebhookFulfillmentService.php');
+        $service = $this->source('src/Services/PaymentWebhookFulfillmentService.php');
 
         self::assertStringContainsString('InventoryLedgerService::consumeOrder($db, $commandeId, null)', $service);
         self::assertStringNotContainsString('StockModel::consommerPourCommande', $service);

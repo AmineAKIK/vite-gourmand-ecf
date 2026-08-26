@@ -31,9 +31,9 @@ final class PaymentMoneyBoundaryContractTest extends TestCase
         self::assertStringContainsString('Money::toDecimalString($encaisseCents)', $source);
     }
 
-    public function testStripeWebhookPersistsProviderMinorUnitsWithoutDecimalRoundTrip(): void
+    public function testProviderWebhookPersistsMinorUnitsWithoutDecimalRoundTrip(): void
     {
-        $source = file_get_contents(dirname(__DIR__, 3) . '/src/Services/StripeWebhookFulfillmentService.php');
+        $source = file_get_contents(dirname(__DIR__, 3) . '/src/Services/PaymentWebhookFulfillmentService.php');
         self::assertIsString($source);
 
         self::assertStringContainsString('\'montant_cents\' => (int) $validated[\'amount_total\']', $source);

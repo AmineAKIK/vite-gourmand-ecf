@@ -72,13 +72,14 @@ final class StripePaymentGateway implements PaymentGateway
             'success_url' => $request->successUrl,
             'cancel_url' => $request->cancelUrl,
             'metadata' => $metadata,
+            'payment_intent_data' => ['metadata' => $metadata],
             'client_reference_id' => $request->orderReference,
             'expires_at' => $request->expiresAt,
         ], [
             'idempotency_key' => PaymentCheckoutContract::idempotencyKey($request->attemptId, 'checkout-session'),
         ]);
 
-        return $this->mapSession($session);
+        return StripeCheckoutSessionMapper::map($session);
     }
 
     public function retrieveCheckout(string $providerSessionId): PaymentCheckoutSession
@@ -88,28 +89,8 @@ final class StripePaymentGateway implements PaymentGateway
             throw new RuntimeException('Référence de session paiement invalide.');
         }
 
-        return $this->mapSession($this->client->checkout->sessions->retrieve($providerSessionId));
-    }
-
-    private function mapSession(object $session): PaymentCheckoutSession
-    {
-        $metadata = [];
-        foreach (['draft_id', 'attempt_id', 'numero_commande', 'utilisateur_id', 'expected_total_cents', 'currency'] as $key) {
-            if (isset($session->metadata->{$key})) {
-                $metadata[$key] = (string) $session->metadata->{$key};
-            }
-        }
-
-        return new PaymentCheckoutSession(
-            provider: $this->provider(),
-            id: (string) ($session->id ?? ''),
-            status: (string) ($session->status ?? ''),
-            url: isset($session->url) ? (string) $session->url : null,
-            paymentStatus: isset($session->payment_status) ? (string) $session->payment_status : null,
-            amountTotalCents: isset($session->amount_total) ? (int) $session->amount_total : null,
-            currency: isset($session->currency) ? strtolower((string) $session->currency) : null,
-            paymentIntentId: isset($session->payment_intent) ? (string) $session->payment_intent : null,
-            metadata: $metadata,
+        return StripeCheckoutSessionMapper::map(
+            $this->client->checkout->sessions->retrieve($providerSessionId),
         );
     }
 }

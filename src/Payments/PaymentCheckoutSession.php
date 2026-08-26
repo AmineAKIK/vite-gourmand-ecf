@@ -16,6 +16,7 @@ final class PaymentCheckoutSession
         public readonly ?int $amountTotalCents = null,
         public readonly ?string $currency = null,
         public readonly ?string $paymentIntentId = null,
+        public readonly ?string $clientReferenceId = null,
         public readonly array $metadata = [],
     ) {}
 
