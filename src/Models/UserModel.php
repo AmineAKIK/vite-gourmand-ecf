@@ -148,9 +148,30 @@ class UserModel {
 
     public static function deleteEmploye(int $id): void {
         $db = Database::getConnection();
-        $db->prepare("UPDATE commande_historique SET modifie_par = NULL WHERE modifie_par = ?")->execute([$id]);
-        $db->prepare("DELETE FROM password_reset WHERE utilisateur_id = ?")->execute([$id]);
-        $db->prepare("DELETE FROM utilisateur WHERE utilisateur_id = ?")->execute([$id]);
+        $db->beginTransaction();
+        try {
+            $db->prepare("DELETE FROM password_reset WHERE utilisateur_id = ?")->execute([$id]);
+            $history = $db->prepare("SELECT 1 FROM commande_historique WHERE modifie_par = ? LIMIT 1");
+            $history->execute([$id]);
+            if ($history->fetchColumn() !== false) {
+                $db->prepare(
+                    "UPDATE utilisateur
+                     SET email = ?, password = '*', prenom = 'Compte', nom = 'supprimé',
+                         telephone = NULL, adresse = NULL, ville = NULL, code_postal = NULL,
+                         actif = 0, must_change_password = 0
+                     WHERE utilisateur_id = ? AND role_id = ?"
+                )->execute(['employe-supprime-' . $id . '@supprime.invalid', $id, ROLE_ID_EMPLOYE]);
+            } else {
+                $db->prepare("DELETE FROM utilisateur WHERE utilisateur_id = ? AND role_id = ?")
+                    ->execute([$id, ROLE_ID_EMPLOYE]);
+            }
+            $db->commit();
+        } catch (\Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
     }
 
     public static function delete(int $id): void {
