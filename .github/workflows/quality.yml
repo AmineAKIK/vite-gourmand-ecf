@@ -132,6 +132,9 @@ jobs:
       - name: Provision a truly empty V1 database
         run: php bin/migrate.php
 
+      - name: Verify inventory invariants against MySQL
+        run: php bin/verify-inventory-invariants.php
+
       - name: Verify canonical schema and snapshot fingerprint
         shell: bash
         run: |
