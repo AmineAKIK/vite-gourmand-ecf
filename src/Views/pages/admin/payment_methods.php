@@ -21,10 +21,10 @@ $pageTitle = buildPageTitle('Moyens de paiement');
     <div class="row g-4">
         <?php foreach ($paymentMethods as $method): ?>
             <?php
-                $code = (string)$method['code'];
-                $isStripe = ($method['provider'] ?? null) === 'stripe';
-                $providerReady = (bool)($method['provider_ready'] ?? true);
-                $missingKeys = $method['provider_missing_keys'] ?? [];
+                $code = (string) $method['code'];
+            $isStripe = ($method['provider'] ?? null) === 'stripe';
+            $providerReady = (bool) ($method['provider_ready'] ?? true);
+            $missingKeys = $method['provider_missing_keys'] ?? [];
             ?>
             <div class="col-12 col-xl-6">
                 <section class="card h-100 shadow-sm">
