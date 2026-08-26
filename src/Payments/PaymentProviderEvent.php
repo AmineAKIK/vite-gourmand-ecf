@@ -13,6 +13,7 @@ final class PaymentProviderEvent
     public const PAYMENT_FAILED = 'payment_failed';
     public const IGNORED = 'ignored';
 
+    /** @param array<string,string> $metadata */
     public function __construct(
         public readonly string $provider,
         public readonly string $id,
@@ -22,6 +23,7 @@ final class PaymentProviderEvent
         public readonly ?int $occurredAt = null,
         public readonly ?PaymentCheckoutSession $checkout = null,
         public readonly ?string $paymentIntentId = null,
+        public readonly array $metadata = [],
     ) {
         if (trim($this->provider) === '' || trim($this->id) === '' || trim($this->providerType) === '') {
             throw new InvalidArgumentException('Événement de paiement incomplet.');
