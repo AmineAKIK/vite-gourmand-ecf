@@ -10,53 +10,61 @@ use PHPUnit\Framework\TestCase;
 
 final class ConfigurationResolverTest extends TestCase
 {
-    public function testResolvesFixedMarketAndTypedTenantValues(): void
+    public function testFixedMarketValuesResolveFromRegistry(): void
     {
-        $resolver = new ConfigurationResolver([
-            'livraison_rayon_max_km' => '35',
-            'livraison_codes_postaux_gratuits' => '33000,33100,33000',
-        ]);
+        $resolver = new ConfigurationResolver();
 
+        self::assertSame('FR', $resolver->resolve('market.country'));
         self::assertSame('EUR', $resolver->resolve('market.currency'));
-        self::assertSame(35, $resolver->resolve('delivery.radius_km'));
-        self::assertSame(
-            ['33000', '33100'],
-            $resolver->resolve('delivery.free_postal_codes'),
-        );
+        self::assertSame('fr-FR', $resolver->resolve('market.locale'));
+        self::assertSame('Europe/Paris', $resolver->resolve('market.timezone'));
+        self::assertSame('INCO', $resolver->resolve('market.allergen_standard'));
     }
 
-    public function testOptionalMissingValueUsesOnlyDeclaredDefault(): void
-    {
-        $resolver = new ConfigurationResolver([]);
-
-        self::assertSame('#1F2937', $resolver->resolve('theme.primary_color'));
-        self::assertSame('sobre', $resolver->resolve('quote.template'));
-        self::assertNull($resolver->resolve('delivery.radius_km'));
-    }
-
-    public function testRequiredMissingValueFailsClosedEvenWhenOtherValuesExist(): void
+    public function testTenantValuesAreResolvedAndTypedFromLegacyStorageKeys(): void
     {
         $resolver = new ConfigurationResolver([
-            'site_slogan' => 'Cuisine locale',
+            'site_nom' => 'Maison Exemple',
+            'livraison_rayon_max_km' => '42.5',
+            'commandes_max_par_jour' => '18',
+            'livraison_cp_gratuits' => '33000, 33100;33200',
         ]);
+
+        self::assertSame('Maison Exemple', $resolver->resolve('brand.name'));
+        self::assertSame(42.5, $resolver->resolve('delivery.radius_km'));
+        self::assertSame(18, $resolver->resolve('order.capacity.max_per_day'));
+        self::assertSame(['33000', '33100', '33200'], $resolver->resolve('delivery.free_postal_codes'));
+    }
+
+    public function testMissingRequiredValueFailsClosed(): void
+    {
+        $resolver = new ConfigurationResolver();
 
         $this->expectException(ConfigurationMissingException::class);
         $resolver->resolve('brand.name');
     }
 
-    public function testInvalidPersistedValueIsNotSilentlyReplaced(): void
+    public function testInvalidPersistedValueFailsClosedInsteadOfUsingDefault(): void
     {
         $resolver = new ConfigurationResolver([
-            'livraison_rayon_max_km' => '0',
+            'couleur_primaire' => 'not-a-color',
         ]);
 
         $this->expectException(ConfigurationInvalidException::class);
-        $resolver->resolve('delivery.radius_km');
+        $resolver->resolve('theme.primary_color');
     }
 
-    public function testExplicitConfigurationIsSeparateFromEffectiveDefault(): void
+    public function testOptionalMissingValueCanResolveToNull(): void
     {
-        $resolver = new ConfigurationResolver([]);
+        $resolver = new ConfigurationResolver();
+
+        self::assertNull($resolver->resolve('business.vat_number'));
+        self::assertNull($resolver->resolve('delivery.free_postal_codes'));
+    }
+
+    public function testDeclaredDefaultIsUsedOnlyWhenAllowed(): void
+    {
+        $resolver = new ConfigurationResolver();
 
         self::assertSame('sobre', $resolver->resolve('quote.template'));
         self::assertFalse($resolver->isExplicitlyConfigured('quote.template'));
@@ -78,7 +86,7 @@ final class ConfigurationResolverTest extends TestCase
         ]);
 
         self::assertSame(
-            ['tax.regime'],
+            ['order.number_prefix', 'tax.regime'],
             $resolver->missingRequired(ConfigurationScope::TENANT),
         );
     }
@@ -88,9 +96,19 @@ final class ConfigurationResolverTest extends TestCase
         $resolver = new ConfigurationResolver([], [
             'APP_ENV' => 'production',
             'DB_HOST' => 'db.internal',
+            'DB_PORT' => '3307',
         ]);
 
         self::assertSame('production', $resolver->resolve('operator.app_env'));
-        self::assertSame('db.internal', $resolver->resolve('operator.database.host'));
+        self::assertSame('db.internal', $resolver->resolve('operator.db.host'));
+        self::assertSame(3307, $resolver->resolve('operator.db.port'));
+    }
+
+    public function testInvalidOperatorEnumFailsClosed(): void
+    {
+        $resolver = new ConfigurationResolver([], ['APP_ENV' => 'prod-ish']);
+
+        $this->expectException(ConfigurationInvalidException::class);
+        $resolver->resolve('operator.app_env');
     }
 }
