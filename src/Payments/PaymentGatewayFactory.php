@@ -20,4 +20,12 @@ final class PaymentGatewayFactory
             default => throw new InvalidArgumentException('Fournisseur de paiement non supporté.'),
         };
     }
+
+    public static function checkoutPath(string $provider): string
+    {
+        return match (trim(strtolower($provider))) {
+            'stripe' => '/stripe/checkout',
+            default => throw new InvalidArgumentException('Fournisseur de paiement non supporté.'),
+        };
+    }
 }
