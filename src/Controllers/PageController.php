@@ -3,6 +3,8 @@
 namespace App\Controllers;
 
 use App\Config\Configuration;
+use App\Services\TermsAndConditionsService;
+use Throwable;
 
 class PageController
 {
@@ -14,7 +16,15 @@ class PageController
 
     public function cgv(): void
     {
-        $cgvContenu = Configuration::get('legal.terms_content') ?? '';
-        view('pages/cgv', compact('cgvContenu'));
+        $explicitContent = Configuration::get('legal.terms_content') ?? '';
+        $termsDocument = null;
+
+        try {
+            $termsDocument = TermsAndConditionsService::fromConfiguration()->build();
+        } catch (Throwable $exception) {
+            error_log('[cgv] génération canonique indisponible : ' . $exception->getMessage());
+        }
+
+        view('pages/cgv', compact('termsDocument', 'explicitContent'));
     }
 }
