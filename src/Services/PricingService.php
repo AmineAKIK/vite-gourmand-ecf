@@ -7,7 +7,6 @@ use App\Config\ConfigurationCompleteness;
 use App\Config\Database;
 use App\Domain\Money;
 use App\Domain\OrderPricingCalculator;
-use App\Geo\DeliveryResolver;
 use InvalidArgumentException;
 use RuntimeException;
 
@@ -40,8 +39,8 @@ class PricingService
         $discountRateBasisPoints = $tauxReduction * 100;
         $regimeTva = self::regimeTva();
 
-        $prixLivraisonCents = DeliveryResolver::computeDeliveryPriceCents($adresse, $ville, $codePostal);
-        if ($prixLivraisonCents === null) {
+        $deliveryQuote = DeliveryQuoteService::quote($adresse, $ville, $codePostal);
+        if ($deliveryQuote === null) {
             throw new InvalidArgumentException(
                 'Adresse de livraison non reconnue ou incohérente avec la ville et le code postal.'
             );
@@ -49,7 +48,7 @@ class PricingService
 
         $pricing = OrderPricingCalculator::calculate(
             $panierItems,
-            $prixLivraisonCents,
+            $deliveryQuote['price_cents'],
             $discountThresholdCents,
             $discountRateBasisPoints
         );
@@ -192,7 +191,7 @@ class PricingService
         $stmt = Database::getConnection()->prepare(
             'SELECT taux_id FROM taux_tva WHERE categorie = ? AND par_defaut = 1 AND actif = 1 LIMIT 1'
         );
-        $stmt->execute([$categorie]);
+        $stmt->execute();
         $id = $stmt->fetchColumn();
         if ($id === false) {
             throw new RuntimeException('configuration_incomplete:tax_rate:' . $categorie);
