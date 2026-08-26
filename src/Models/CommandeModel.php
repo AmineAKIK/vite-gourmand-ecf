@@ -7,6 +7,7 @@ use App\Config\PlanConfig;
 use App\Domain\OrderStatus;
 use App\Models\NotificationModel;
 use App\Services\InventoryLedgerService;
+use App\Services\OrderStatusHistoryService;
 use RuntimeException;
 use Throwable;
 
@@ -96,7 +97,14 @@ class CommandeModel
 
             InventoryLedgerService::consumeOrder($db, $commandeId, (int) $commandeData['utilisateur_id']);
 
-            self::addHistorique($commandeId, null, OrderStatus::initial(), 'Commande passée', $commandeData['utilisateur_id']);
+            OrderStatusHistoryService::append(
+                $db,
+                $commandeId,
+                null,
+                OrderStatus::initial(),
+                'Commande passée',
+                (int) $commandeData['utilisateur_id'],
+            );
             $db->commit();
 
             // Notification employés/admins (hors transaction — fail silencieux)
@@ -400,13 +408,6 @@ class CommandeModel
         return (int)$stmt->fetchColumn();
     }
 
-    public static function updateStatut(int $id, string $statut, ?string $commentaire, int $modifiePar): void {
-        $db   = Database::getConnection();
-        $old  = self::getById($id);
-        $db->prepare("UPDATE commande SET statut=? WHERE commande_id=?")->execute([$statut, $id]);
-        self::addHistorique($id, $old['statut'], $statut, $commentaire, $modifiePar);
-    }
-
     public static function updateDetails(int $id, array $data): void {
         $db   = Database::getConnection();
         $stmt = $db->prepare("
@@ -425,14 +426,6 @@ class CommandeModel
         ]);
     }
 
-    public static function cancel(int $id, string $motif, string $modeContact, int $modifiePar): void {
-        $db   = Database::getConnection();
-        $old  = self::getById($id);
-        $db->prepare("UPDATE commande SET statut=?, motif_annulation=?, mode_contact_annulation=? WHERE commande_id=?")
-           ->execute([OrderStatus::cancelled(), $motif, $modeContact, $id]);
-        self::addHistorique($id, $old['statut'] ?? null, OrderStatus::cancelled(), "Annulation ($modeContact) : $motif", $modifiePar);
-    }
-
     public static function getHistorique(int $commandeId): array {
         $db   = Database::getConnection();
         $stmt = $db->prepare("
@@ -446,11 +439,6 @@ class CommandeModel
         return $stmt->fetchAll();
     }
 
-    public static function addHistorique(int $commandeId, ?string $ancien, string $nouveau, ?string $commentaire, ?int $modifiePar): void {
-        $db = Database::getConnection();
-        $db->prepare("INSERT INTO commande_historique (commande_id, ancien_statut, nouveau_statut, commentaire, modifie_par) VALUES (?,?,?,?,?)")
-           ->execute([$commandeId, $ancien, $nouveau, $commentaire, $modifiePar]);
-    }
 
     public static function canModify(array $commande): bool
     {

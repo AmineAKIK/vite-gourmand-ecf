@@ -75,6 +75,9 @@ function assertCanonicalV1(PDO $db): void
     if (!isset($tables['schema_migrations'])) {
         throw new RuntimeException('Table schema_migrations manquante.');
     }
+    if (!isset($tables['commande_historique_guard'])) {
+        throw new RuntimeException('Table de garde de l’historique des statuts manquante.');
+    }
 
     $baselinePath = dirname(__DIR__) . '/sql/v1/001_v1_baseline.sql';
     $baseline = file_get_contents($baselinePath);
@@ -138,6 +141,27 @@ function assertCanonicalV1(PDO $db): void
         'allow_single_payment',
         'instructions',
     ], []);
+    assertColumns($db, 'commande_historique', [
+        'historique_id',
+        'commande_id',
+        'ancien_statut',
+        'ancien_statut_guard',
+        'nouveau_statut',
+        'commentaire',
+        'commentaire_guard',
+        'modifie_par',
+        'modifie_par_guard',
+        'created_at',
+    ], []);
+    assertColumns($db, 'commande_historique_guard', [
+        'historique_id',
+        'commande_id',
+        'ancien_statut_guard',
+        'nouveau_statut',
+        'commentaire_guard',
+        'modifie_par_guard',
+        'created_at',
+    ], []);
 
     foreach (['chk_mode_paiement_flags', 'chk_mode_paiement_cb_online', 'chk_mode_paiement_instructions'] as $constraint) {
         $stmt = $db->prepare(
@@ -148,6 +172,26 @@ function assertCanonicalV1(PDO $db): void
         if ((int) $stmt->fetchColumn() !== 1) {
             throw new RuntimeException('Contrainte moyens de paiement V1 manquante : ' . $constraint);
         }
+    }
+
+    foreach (['uk_commande_historique_immutable', 'fk_commande_historique_commande', 'fk_commande_historique_user'] as $constraint) {
+        $stmt = $db->prepare(
+            'SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+             WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?',
+        );
+        $stmt->execute(['commande_historique', $constraint]);
+        if ((int) $stmt->fetchColumn() !== 1) {
+            throw new RuntimeException('Contrainte d’historique de statut V1 manquante : ' . $constraint);
+        }
+    }
+
+    $stmt = $db->prepare(
+        'SELECT COUNT(*) FROM information_schema.TABLE_CONSTRAINTS
+         WHERE CONSTRAINT_SCHEMA = DATABASE() AND TABLE_NAME = ? AND CONSTRAINT_NAME = ?',
+    );
+    $stmt->execute(['commande_historique_guard', 'fk_commande_historique_guard_event']);
+    if ((int) $stmt->fetchColumn() !== 1) {
+        throw new RuntimeException('Contrainte de garde de l’historique de statut V1 manquante.');
     }
 
     foreach (['v_paiements_commande', 'v_ca_stats', 'v_ca_commandes', 'v_ca_mensuel', 'v_ca_par_menu'] as $view) {

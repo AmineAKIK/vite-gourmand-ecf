@@ -257,18 +257,14 @@ final class OrderCancellationService
             );
             $stmt->execute([OrderStatus::cancelled(), $motif, $modeContact, $commandeId]);
 
-            $history = $db->prepare(
-                'INSERT INTO commande_historique
-                    (commande_id, ancien_statut, nouveau_statut, commentaire, modifie_par)
-                 VALUES (?, ?, ?, ?, ?)',
-            );
-            $history->execute([
+            OrderStatusHistoryService::append(
+                $db,
                 $commandeId,
                 $oldStatus,
                 OrderStatus::cancelled(),
-                sprintf('Annulation (%s) : %s', $modeContact, $motif),
+                'Annulation (' . $modeContact . ') : ' . $motif,
                 $modifiePar,
-            ]);
+            );
 
             $db->commit();
 

@@ -275,7 +275,8 @@ final class StripeWebhookFulfillmentService
             }
         }
 
-        CommandeModel::addHistorique(
+        OrderStatusHistoryService::append(
+            $db,
             $commandeId,
             null,
             OrderStatus::initial(),

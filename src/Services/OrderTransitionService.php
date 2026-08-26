@@ -95,18 +95,14 @@ final class OrderTransitionService
                 $stmt->execute([$nouveauStatut, $commandeId]);
             }
 
-            $history = $db->prepare(
-                'INSERT INTO commande_historique
-                    (commande_id, ancien_statut, nouveau_statut, commentaire, modifie_par)
-                 VALUES (?, ?, ?, ?, ?)',
-            );
-            $history->execute([
+            OrderStatusHistoryService::append(
+                $db,
                 $commandeId,
                 $ancienStatut,
                 $nouveauStatut,
-                $commentaire !== null && trim($commentaire) !== '' ? trim($commentaire) : null,
+                $commentaire,
                 $modifiePar,
-            ]);
+            );
 
             $db->commit();
 
