@@ -30,7 +30,9 @@ final class ReferenceAndAssetContractTest extends TestCase
         foreach (['src', 'public'] as $dir) {
             $it = new RecursiveIteratorIterator(new RecursiveDirectoryIterator($root . '/' . $dir));
             foreach ($it as $file) {
-                if (!$file->isFile() || !in_array($file->getExtension(), ['php', 'js', 'css'], true)) continue;
+                if (!$file->isFile() || !in_array($file->getExtension(), ['php', 'js', 'css'], true)) {
+                    continue;
+                }
                 $runtime .= file_get_contents($file->getPathname()) ?: '';
             }
         }
