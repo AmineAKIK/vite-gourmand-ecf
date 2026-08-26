@@ -51,8 +51,6 @@ final class ConfigurationCompleteness
             'reminder.order_days_before',
             'discount.threshold',
             'discount.rate_percent',
-            'operator.stripe.secret_key',
-            'operator.base_url',
         ],
         'billing' => [
             'business.legal_name',
