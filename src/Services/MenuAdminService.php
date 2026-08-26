@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-use App\Models\MenuModel;
 use InvalidArgumentException;
 use RuntimeException;
 use Throwable;
@@ -96,12 +95,7 @@ class MenuAdminService
             : self::storeUploadedImage($file, str_replace('/', '_', $folder));
     }
 
-    /**
-     * Prépare physiquement les nouvelles images avant la transaction DB.
-     * Si une image annoncée est invalide ou échoue, toutes les images déjà préparées sont nettoyées.
-     *
-     * @return list<string>
-     */
+    /** @return list<string> */
     public static function prepareMenuImages(array $files, bool $required = false): array
     {
         $names = is_array($files['name'] ?? null) ? $files['name'] : [];
@@ -176,27 +170,6 @@ class MenuAdminService
         }
     }
 
-    /** @deprecated Utiliser prepareMenuImages + CatalogIntegrityService. */
-    public static function uploadMenuImages(int $menuId, array $files, int $startOrder): void
-    {
-        $paths = self::prepareMenuImages($files, false);
-        $order = $startOrder;
-        foreach ($paths as $path) {
-            MenuModel::addMenuImage($menuId, $path, $order++);
-        }
-    }
-
-    /** @deprecated Utiliser CatalogIntegrityService::detachImage puis deleteStoredImagePath. */
-    public static function deleteMenuImageFile(int $imageId): void
-    {
-        $path = MenuModel::getMenuImagePath($imageId);
-        if (!$path) {
-            return;
-        }
-        MenuModel::deleteMenuImage($imageId);
-        self::deleteStoredImagePath($path);
-    }
-
     private static function env(string $key): string
     {
         return (string) ($_ENV[$key] ?? $_SERVER[$key] ?? getenv($key) ?? '');
@@ -263,7 +236,7 @@ class MenuAdminService
 
     private static function deleteFromCloudinary(string $url): void
     {
-        if (!preg_match('#/upload/(?:v\d+/)?(.+)\.[a-z]+$#i', $url, $m)) {
+        if (!preg_match('#/upload/(?:v\\d+/)?(.+)\\.[a-z]+$#i', $url, $m)) {
             throw new RuntimeException('URL Cloudinary non reconnue.');
         }
         try {
