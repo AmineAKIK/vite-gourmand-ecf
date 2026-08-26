@@ -31,6 +31,7 @@ final class OrderStatusHistoryArchitectureContractTest extends TestCase
         $transition = $this->source('src/Services/OrderTransitionService.php');
         $cancellation = $this->source('src/Services/OrderCancellationService.php');
         $stripe = $this->source('src/Services/StripeWebhookFulfillmentService.php');
+        $history = $this->source('src/Services/OrderStatusHistoryService.php');
 
         self::assertStringContainsString('OrderStatusHistoryService::append(', $transition);
         self::assertStringContainsString('OrderStatusHistoryService::append(', $cancellation);
@@ -38,16 +39,21 @@ final class OrderStatusHistoryArchitectureContractTest extends TestCase
         self::assertStringNotContainsString('INSERT INTO commande_historique', $transition);
         self::assertStringNotContainsString('INSERT INTO commande_historique', $cancellation);
         self::assertStringNotContainsString('CommandeModel::addHistorique', $stripe);
+        self::assertStringContainsString('INSERT INTO commande_historique_guard', $history);
     }
 
-    public function testMigrationMakesHistoryAppendOnlyAndPreventsCascadeErasure(): void
+    public function testMigrationMakesHistoryRelationallyImmutableWithoutPrivilegedTriggers(): void
     {
         $migration = $this->source('sql/v1/migrations/004_immutable_order_status_history.sql');
 
-        self::assertStringContainsString('trg_commande_historique_no_update', $migration);
-        self::assertStringContainsString('trg_commande_historique_no_delete', $migration);
-        self::assertSame(2, substr_count($migration, 'ON DELETE RESTRICT'));
-        self::assertStringContainsString("SQLSTATE '45000'", $migration);
+        self::assertStringContainsString('CREATE TABLE commande_historique_guard', $migration);
+        self::assertStringContainsString('uk_commande_historique_immutable', $migration);
+        self::assertStringContainsString('fk_commande_historique_guard_event', $migration);
+        self::assertStringContainsString('commentaire_guard CHAR(64)', $migration);
+        self::assertStringContainsString("SHA2(COALESCE(commentaire, ''), 256)", $migration);
+        self::assertStringContainsString('ON UPDATE RESTRICT ON DELETE RESTRICT', $migration);
+        self::assertSame(3, substr_count($migration, 'ON DELETE RESTRICT'));
+        self::assertStringNotContainsString('CREATE TRIGGER', $migration);
     }
 
     public function testEmployeeDeletionPreservesActorLinkByAnonymizingWhenAudited(): void
@@ -56,7 +62,7 @@ final class OrderStatusHistoryArchitectureContractTest extends TestCase
 
         self::assertStringNotContainsString('UPDATE commande_historique SET modifie_par = NULL', $model);
         self::assertStringContainsString('SELECT 1 FROM commande_historique WHERE modifie_par = ? LIMIT 1', $model);
-        self::assertStringContainsString("employe-supprime-", $model);
+        self::assertStringContainsString('employe-supprime-', $model);
     }
 
     private function source(string $path): string
