@@ -1,0 +1,54 @@
+name: Phase 4 delivery policy one-shot
+
+on:
+  push:
+    branches:
+      - v1/delivery-policy
+
+permissions:
+  contents: write
+
+jobs:
+  finalize:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v1/delivery-policy
+          fetch-depth: 0
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: pdo_mysql, zip
+          coverage: none
+          tools: composer:v2, phpunit:10, phpstan:2.2, php-cs-fixer:3
+      - run: python3 -m py_compile bin/phase4_delivery_policy_finalize.py
+      - run: python3 bin/phase4_delivery_policy_finalize.py
+      - run: composer install --prefer-dist --no-progress --no-interaction
+      - run: find src public tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+      - run: phpunit --configuration phpunit.xml
+      - run: phpstan analyse --configuration=phpstan.neon --no-progress
+      - name: Reject policy logic in geography resolver
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -nE 'deliveryRadiusKm|deliveryBaseCents|deliveryPerKmCents|freePostalCodes|computeDeliveryPrice|deliveryQuote' src/Geo/DeliveryResolver.php; then
+            echo 'DeliveryResolver still owns business policy.' >&2
+            exit 1
+          fi
+      - name: Find stale delivery helpers
+        shell: bash
+        run: |
+          set -euo pipefail
+          if grep -RInE --include='*.php' '(DeliveryGeoNotConfiguredException|distanceKmDepuisCoordonnees|livraisonBaseCents|livraisonPerKmCents|livraisonRayonMaxKm|livraisonGeoConfigured|sitePostalCodesFree)' src; then
+            echo 'Stale delivery policy surface found.' >&2
+            exit 1
+          fi
+      - name: Commit finalized runtime
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src tests
+          git commit -m 'Phase 4: separate delivery policy from geography resolution'
+          git push origin HEAD:v1/delivery-policy
