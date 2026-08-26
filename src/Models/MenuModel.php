@@ -3,11 +3,13 @@
 namespace App\Models;
 
 use App\Config\Database;
+use PDO;
 
-class MenuModel {
-
-    public static function getAll(array $filters = []): array {
-        $db  = Database::getConnection();
+class MenuModel
+{
+    public static function getAll(array $filters = []): array
+    {
+        $db = Database::getConnection();
         $sql = "
             SELECT m.*, t.libelle AS theme, r.libelle AS regime,
                    (SELECT chemin FROM menu_image WHERE menu_id=m.menu_id ORDER BY ordre LIMIT 1) AS image_principale
@@ -19,20 +21,20 @@ class MenuModel {
         $params = [];
 
         if (!empty($filters['budget_personne_max'])) {
-            $sql .= " AND m.prix_par_personne <= ?";
-            $params[] = (float)$filters['budget_personne_max'];
+            $sql .= ' AND m.prix_par_personne <= ?';
+            $params[] = (float) $filters['budget_personne_max'];
         }
         if (!empty($filters['theme_id'])) {
-            $sql .= " AND m.theme_id = ?";
-            $params[] = (int)$filters['theme_id'];
+            $sql .= ' AND m.theme_id = ?';
+            $params[] = (int) $filters['theme_id'];
         }
         if (!empty($filters['regime_id'])) {
-            $sql .= " AND m.regime_id = ?";
-            $params[] = (int)$filters['regime_id'];
+            $sql .= ' AND m.regime_id = ?';
+            $params[] = (int) $filters['regime_id'];
         }
         if (!empty($filters['nb_personnes'])) {
-            $sql .= " AND m.nombre_personne_minimum <= ?";
-            $params[] = (int)$filters['nb_personnes'];
+            $sql .= ' AND m.nombre_personne_minimum <= ?';
+            $params[] = (int) $filters['nb_personnes'];
         }
 
         $sort = $filters['tri'] ?? 'recommande';
@@ -43,15 +45,16 @@ class MenuModel {
             'personnes_desc' => 'm.nombre_personne_minimum DESC, m.prix_par_personne ASC, m.titre ASC',
             default => '(m.quantite_restante IS NOT NULL AND m.quantite_restante <= 0) ASC, m.nombre_personne_minimum ASC, m.prix_par_personne ASC, m.titre ASC',
         };
-        $sql .= " ORDER BY $orderBy";
+        $sql .= " ORDER BY {$orderBy}";
 
         $stmt = $db->prepare($sql);
         $stmt->execute($params);
         return $stmt->fetchAll();
     }
 
-    public static function getById(int $id): ?array {
-        $db   = Database::getConnection();
+    public static function getById(int $id): ?array
+    {
+        $db = Database::getConnection();
         $stmt = $db->prepare("
             SELECT m.*, t.libelle AS theme, r.libelle AS regime
             FROM menu m
@@ -61,43 +64,48 @@ class MenuModel {
         ");
         $stmt->execute([$id]);
         $menu = $stmt->fetch();
-        if (!$menu) return null;
+        if (!$menu) {
+            return null;
+        }
 
         $menu['images'] = self::getImages($id);
-        $menu['plats']  = self::getPlats($id);
+        $menu['plats'] = self::getPlats($id);
         return $menu;
     }
 
-    public static function getImages(int $menuId): array {
-        $db   = Database::getConnection();
-        $stmt = $db->prepare("SELECT * FROM menu_image WHERE menu_id=? ORDER BY ordre");
+    public static function getImages(int $menuId): array
+    {
+        $db = Database::getConnection();
+        $stmt = $db->prepare('SELECT * FROM menu_image WHERE menu_id=? ORDER BY ordre');
         $stmt->execute([$menuId]);
         return $stmt->fetchAll();
     }
 
-    public static function getImagesByMenuIds(array $menuIds): array {
+    public static function getImagesByMenuIds(array $menuIds): array
+    {
         $ids = array_values(array_unique(array_filter(array_map('intval', $menuIds))));
-        if (empty($ids)) {
+        if ($ids === []) {
             return [];
         }
 
         $placeholders = implode(',', array_fill(0, count($ids), '?'));
         $stmt = Database::getConnection()->prepare("
             SELECT * FROM menu_image
-            WHERE menu_id IN ($placeholders)
+            WHERE menu_id IN ({$placeholders})
             ORDER BY menu_id, ordre
         ");
         $stmt->execute($ids);
 
         $images = [];
         foreach ($stmt->fetchAll() as $image) {
-            $images[(int)$image['menu_id']][] = $image;
+            $images[(int) $image['menu_id']][] = $image;
         }
         return $images;
     }
 
-    public static function getPlats(int $menuId): array {
-        $db   = Database::getConnection();
+    public static function getPlats(int $menuId): array
+    {
+        $db = Database::getConnection();
         $stmt = $db->prepare("
             SELECT p.plat_id, p.titre, p.categorie_id, cp.libelle AS categorie
             FROM plat p
@@ -107,59 +115,22 @@ class MenuModel {
             ORDER BY cp.libelle, p.titre
         ");
         $stmt->execute([$menuId]);
-        $plats = $stmt->fetchAll();
-        return self::enrichWithAllergens($db, $plats);
+        return self::enrichWithAllergens($db, $stmt->fetchAll());
     }
 
-    public static function create(array $data): int {
-        $db   = Database::getConnection();
-        $stmt = $db->prepare("
-            INSERT INTO menu (titre, description, nombre_personne_minimum, prix_par_personne,
-                              quantite_restante, conditions, theme_id, regime_id)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-        ");
-        $stmt->execute([
-            $data['titre'], $data['description'], $data['nombre_personne_minimum'],
-            $data['prix_par_personne'], $data['quantite_restante'],
-            $data['conditions'], $data['theme_id'] ?: null, $data['regime_id'] ?: null
-        ]);
-        return (int)$db->lastInsertId();
+    public static function getThemes(): array
+    {
+        return Database::getConnection()->query('SELECT * FROM theme ORDER BY libelle')->fetchAll();
     }
 
-    public static function update(int $id, array $data): void {
-        $db   = Database::getConnection();
-        $stmt = $db->prepare("
-            UPDATE menu SET titre=?, description=?, nombre_personne_minimum=?,
-            prix_par_personne=?, quantite_restante=?, conditions=?, theme_id=?, regime_id=?
-            WHERE menu_id=?
-        ");
-        $stmt->execute([
-            $data['titre'], $data['description'], $data['nombre_personne_minimum'],
-            $data['prix_par_personne'], $data['quantite_restante'],
-            $data['conditions'], $data['theme_id'] ?: null, $data['regime_id'] ?: null, $id
-        ]);
+    public static function getRegimes(): array
+    {
+        return Database::getConnection()->query('SELECT * FROM regime ORDER BY libelle')->fetchAll();
     }
 
-    public static function delete(int $id): void {
+    public static function getPlatsForAdmin(): array
+    {
         $db = Database::getConnection();
-        $db->prepare("UPDATE menu SET actif=0 WHERE menu_id=?")->execute([$id]);
-    }
-
-    public static function getThemes(): array {
-        return Database::getConnection()->query("SELECT * FROM theme")->fetchAll();
-    }
-
-    public static function getRegimes(): array {
-        return Database::getConnection()->query("SELECT * FROM regime")->fetchAll();
-    }
-
-    public static function decrementStock(int $menuId): void {
-        $db = Database::getConnection();
-        $db->prepare("UPDATE menu SET quantite_restante = quantite_restante - 1 WHERE menu_id=? AND quantite_restante > 0")->execute([$menuId]);
-    }
-
-    public static function getPlatsForAdmin(): array {
-        $db    = Database::getConnection();
         $plats = $db->query("
             SELECT p.plat_id, p.titre, p.categorie_id, cp.libelle AS categorie
             FROM plat p
@@ -169,124 +140,38 @@ class MenuModel {
         return self::enrichWithAllergens($db, $plats);
     }
 
-    public static function getCategories(): array {
-        return Database::getConnection()->query("SELECT * FROM categorie_plat ORDER BY libelle")->fetchAll();
+    public static function getCategories(): array
+    {
+        return Database::getConnection()->query('SELECT * FROM categorie_plat ORDER BY libelle')->fetchAll();
     }
 
-    public static function getPlatsByMenu(): array {
+    public static function getPlatsByMenu(): array
+    {
         $platsByMenu = [];
-        $rows = Database::getConnection()->query("SELECT menu_id, plat_id FROM menu_plat")->fetchAll();
+        $rows = Database::getConnection()->query('SELECT menu_id, plat_id FROM menu_plat')->fetchAll();
         foreach ($rows as $row) {
-            $platsByMenu[(int)$row['menu_id']][] = (int)$row['plat_id'];
+            $platsByMenu[(int) $row['menu_id']][] = (int) $row['plat_id'];
         }
         return $platsByMenu;
     }
 
-    public static function replaceMenuPlats(int $menuId, array $platIds): void {
-        $db = Database::getConnection();
-        $db->prepare("DELETE FROM menu_plat WHERE menu_id = ?")->execute([$menuId]);
-
-        if (empty($platIds)) {
-            return;
-        }
-
-        self::insertMenuPlats($db, $menuId, $platIds);
-    }
-
-    public static function addMenuPlats(int $menuId, array $platIds): void {
-        if (empty($platIds)) {
-            return;
-        }
-
-        self::insertMenuPlats(Database::getConnection(), $menuId, $platIds);
-    }
-
-    public static function nextMenuImageOrder(int $menuId): int {
-        $stmt = Database::getConnection()->prepare("SELECT COALESCE(MAX(ordre),0)+1 FROM menu_image WHERE menu_id=?");
-        $stmt->execute([$menuId]);
-        return (int)$stmt->fetchColumn();
-    }
-
-    public static function addMenuImage(int $menuId, string $path, int $order): void {
-        Database::getConnection()
-            ->prepare("INSERT INTO menu_image (menu_id, chemin, ordre) VALUES (?,?,?)")
-            ->execute([$menuId, $path, $order]);
-    }
-
-    public static function getMenuImagePath(int $imageId): ?string {
-        $stmt = Database::getConnection()->prepare("SELECT chemin FROM menu_image WHERE image_id=?");
-        $stmt->execute([$imageId]);
-        $path = $stmt->fetchColumn();
-        return $path !== false ? (string)$path : null;
-    }
-
-    public static function deleteMenuImage(int $imageId): void {
-        Database::getConnection()
-            ->prepare("DELETE FROM menu_image WHERE image_id=?")
-            ->execute([$imageId]);
-    }
-
-    public static function getAllergens(): array {
+    public static function getAllergens(): array
+    {
         return Database::getConnection()
-            ->query("SELECT * FROM allergen ORDER BY ordre ASC")
+            ->query('SELECT * FROM allergen ORDER BY ordre ASC')
             ->fetchAll();
     }
 
-    public static function getPlatAllergenIds(int $platId): array {
-        $stmt = Database::getConnection()->prepare(
-            "SELECT allergen_id FROM plat_allergen WHERE plat_id = ?"
-        );
+    public static function getPlatAllergenIds(int $platId): array
+    {
+        $stmt = Database::getConnection()->prepare('SELECT allergen_id FROM plat_allergen WHERE plat_id = ?');
         $stmt->execute([$platId]);
         return array_column($stmt->fetchAll(), 'allergen_id');
     }
 
-    public static function syncPlatAllergens(int $platId, array $allergenIds): void {
-        $db = Database::getConnection();
-        $db->prepare("DELETE FROM plat_allergen WHERE plat_id = ?")->execute([$platId]);
-        if (empty($allergenIds)) {
-            return;
-        }
-        $ids = array_values(array_unique(array_map('intval', $allergenIds)));
-        $placeholders = implode(',', array_fill(0, count($ids), '(?,?)'));
-        $params = [];
-        foreach ($ids as $id) {
-            $params[] = $platId;
-            $params[] = $id;
-        }
-        $db->prepare("INSERT IGNORE INTO plat_allergen (plat_id, allergen_id) VALUES $placeholders")
-           ->execute($params);
-    }
-
-    public static function createPlat(array $data): int {
-        $db = Database::getConnection();
-        $stmt = $db->prepare("INSERT INTO plat (titre, categorie_id) VALUES (?, ?)");
-        $stmt->execute([$data['titre'], $data['categorie_id']]);
-        $platId = (int)$db->lastInsertId();
-        self::syncPlatAllergens($platId, $data['allergen_ids'] ?? []);
-        return $platId;
-    }
-
-    public static function updatePlat(int $id, array $data): void {
-        Database::getConnection()
-            ->prepare("UPDATE plat SET titre=?, categorie_id=? WHERE plat_id=?")
-            ->execute([$data['titre'], $data['categorie_id'], $id]);
-        self::syncPlatAllergens($id, $data['allergen_ids'] ?? []);
-    }
-
-    public static function platIsUsed(int $platId): bool {
-        $stmt = Database::getConnection()->prepare("SELECT COUNT(*) FROM menu_plat WHERE plat_id = ?");
-        $stmt->execute([$platId]);
-        return (int)$stmt->fetchColumn() > 0;
-    }
-
-    public static function deletePlat(int $platId): void {
-        Database::getConnection()
-            ->prepare("DELETE FROM plat WHERE plat_id = ?")
-            ->execute([$platId]);
-    }
-
-    private static function enrichWithAllergens(\PDO $db, array $plats): array {
-        if (empty($plats)) {
+    private static function enrichWithAllergens(PDO $db, array $plats): array
+    {
+        if ($plats === []) {
             return $plats;
         }
         $ids = array_column($plats, 'plat_id');
@@ -295,31 +180,18 @@ class MenuModel {
             SELECT pa.plat_id, a.allergen_id, a.code, a.libelle, a.emoji
             FROM plat_allergen pa
             JOIN allergen a ON a.allergen_id = pa.allergen_id
-            WHERE pa.plat_id IN ($placeholders)
+            WHERE pa.plat_id IN ({$placeholders})
             ORDER BY a.ordre ASC
         ");
         $stmt->execute($ids);
         $byPlat = [];
         foreach ($stmt->fetchAll() as $row) {
-            $byPlat[(int)$row['plat_id']][] = $row;
+            $byPlat[(int) $row['plat_id']][] = $row;
         }
         foreach ($plats as &$plat) {
-            $plat['allergens'] = $byPlat[(int)$plat['plat_id']] ?? [];
+            $plat['allergens'] = $byPlat[(int) $plat['plat_id']] ?? [];
         }
         unset($plat);
         return $plats;
     }
-
-    private static function insertMenuPlats(\PDO $db, int $menuId, array $platIds): void {
-        $platIds = array_values(array_unique(array_map('intval', $platIds)));
-        if (empty($platIds)) return;
-        $placeholders = implode(',', array_fill(0, count($platIds), '(?, ?)'));
-        $params = [];
-        foreach ($platIds as $platId) {
-            $params[] = $menuId;
-            $params[] = $platId;
-        }
-        $db->prepare("INSERT IGNORE INTO menu_plat (menu_id, plat_id) VALUES $placeholders")->execute($params);
-    }
-
 }
