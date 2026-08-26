@@ -10,9 +10,7 @@ use Stripe\StripeClient;
 
 final class StripePaymentGateway implements PaymentGateway
 {
-    public function __construct(private readonly StripeClient $client)
-    {
-    }
+    public function __construct(private readonly StripeClient $client) {}
 
     public static function fromConfiguration(): self
     {
