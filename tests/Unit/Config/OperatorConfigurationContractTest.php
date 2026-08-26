@@ -53,12 +53,13 @@ final class OperatorConfigurationContractTest extends TestCase
     public function testStripeConsumersDoNotReadBootstrapAliasesDirectly(): void
     {
         $root = dirname(__DIR__, 3);
-        foreach ([
-            $root . '/src/Controllers/StripeController.php',
-            $root . '/src/Controllers/StripeFulfillmentController.php',
-        ] as $path) {
-            $source = (string) file_get_contents($path);
-            self::assertStringContainsString('OperatorConfiguration::', $source);
+        $checkout = (string) file_get_contents($root . '/src/Controllers/StripeController.php');
+        $fulfillment = (string) file_get_contents($root . '/src/Controllers/StripeFulfillmentController.php');
+
+        self::assertStringContainsString('OperatorConfiguration::', $checkout);
+        self::assertStringNotContainsString('OperatorConfiguration::', $fulfillment);
+
+        foreach ([$checkout, $fulfillment] as $source) {
             self::assertStringNotContainsString('STRIPE_SECRET_KEY', $source);
             self::assertStringNotContainsString('STRIPE_WEBHOOK_SECRET', $source);
             self::assertStringNotContainsString('BASE_URL', $source);
