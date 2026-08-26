@@ -1,0 +1,37 @@
+name: Phase 3 CMS one-shot v2
+
+on:
+  push:
+    branches:
+      - v1/white-label-cms-final
+
+permissions:
+  contents: write
+
+jobs:
+  refactor:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: v1/white-label-cms-final
+          fetch-depth: 0
+      - name: Compile refactor script
+        run: python3 -m py_compile bin/phase3_cms_refactor.py
+      - name: Apply refactor
+        run: python3 bin/phase3_cms_refactor.py
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-progress --no-interaction
+      - name: Lint PHP
+        run: find src public tests -type f -name '*.php' -print0 | xargs -0 -n1 php -l >/dev/null
+      - name: Run unit tests
+        run: vendor/bin/phpunit --configuration phpunit.xml
+      - name: Commit refactor
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add src tests
+          git commit -m 'Phase 3: complete canonical editable content surface'
+          git push origin HEAD:v1/white-label-cms-final
