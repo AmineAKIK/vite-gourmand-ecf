@@ -1,5 +1,8 @@
 -- V1 forward-only: canonical transactional money uses integer minor units.
 -- Existing DECIMAL values are converted exactly once, then the old columns are removed.
+-- Historical pre-V1 installations may contain the same columns without the named
+-- constraints introduced by the V1 baseline. Constraint removal is therefore
+-- conditional on information_schema, while the target schema remains strict.
 
 DROP VIEW IF EXISTS v_ca_par_menu;
 DROP VIEW IF EXISTS v_ca_mensuel;
@@ -7,8 +10,23 @@ DROP VIEW IF EXISTS v_ca_commandes;
 DROP VIEW IF EXISTS v_ca_stats;
 DROP VIEW IF EXISTS v_paiements_commande;
 
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) > 0,
+        'ALTER TABLE commande DROP CHECK chk_commande_prix_total',
+        'SELECT 1'
+    )
+    FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'commande'
+      AND CONSTRAINT_NAME = 'chk_commande_prix_total'
+      AND CONSTRAINT_TYPE = 'CHECK'
+);
+PREPARE migration_stmt FROM @ddl;
+EXECUTE migration_stmt;
+DEALLOCATE PREPARE migration_stmt;
+
 ALTER TABLE commande
-    DROP CHECK chk_commande_prix_total,
     ADD COLUMN prix_total_cents BIGINT UNSIGNED NULL AFTER code_postal_livraison,
     ADD COLUMN currency CHAR(3) NULL AFTER prix_total_cents;
 UPDATE commande
@@ -21,9 +39,39 @@ ALTER TABLE commande
     ADD CONSTRAINT chk_commande_prix_total_cents CHECK (prix_total_cents >= 0),
     ADD CONSTRAINT chk_commande_currency CHECK (currency REGEXP '^[A-Z]{3}$');
 
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) > 0,
+        'ALTER TABLE commande_ligne DROP FOREIGN KEY fk_commande_ligne_taux_tva',
+        'SELECT 1'
+    )
+    FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'commande_ligne'
+      AND CONSTRAINT_NAME = 'fk_commande_ligne_taux_tva'
+      AND CONSTRAINT_TYPE = 'FOREIGN KEY'
+);
+PREPARE migration_stmt FROM @ddl;
+EXECUTE migration_stmt;
+DEALLOCATE PREPARE migration_stmt;
+
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) > 0,
+        'ALTER TABLE commande_ligne DROP CHECK chk_commande_ligne_montants',
+        'SELECT 1'
+    )
+    FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'commande_ligne'
+      AND CONSTRAINT_NAME = 'chk_commande_ligne_montants'
+      AND CONSTRAINT_TYPE = 'CHECK'
+);
+PREPARE migration_stmt FROM @ddl;
+EXECUTE migration_stmt;
+DEALLOCATE PREPARE migration_stmt;
+
 ALTER TABLE commande_ligne
-    DROP FOREIGN KEY fk_commande_ligne_taux_tva,
-    DROP CHECK chk_commande_ligne_montants,
     RENAME COLUMN taux_tva_id TO taux_tva_menu_id,
     ADD COLUMN prix_menu_cents BIGINT UNSIGNED NULL AFTER nombre_personne,
     ADD COLUMN prix_livraison_cents BIGINT UNSIGNED NULL AFTER prix_menu_cents,
@@ -75,8 +123,23 @@ ALTER TABLE commande_ligne
     ADD CONSTRAINT fk_commande_ligne_tva_livraison FOREIGN KEY (taux_tva_livraison_id) REFERENCES taux_tva(taux_id) ON DELETE SET NULL,
     ADD KEY idx_commande_ligne_tva_livraison (taux_tva_livraison_id);
 
+SET @ddl = (
+    SELECT IF(
+        COUNT(*) > 0,
+        'ALTER TABLE paiement DROP CHECK chk_paiement_montant',
+        'SELECT 1'
+    )
+    FROM information_schema.TABLE_CONSTRAINTS
+    WHERE CONSTRAINT_SCHEMA = DATABASE()
+      AND TABLE_NAME = 'paiement'
+      AND CONSTRAINT_NAME = 'chk_paiement_montant'
+      AND CONSTRAINT_TYPE = 'CHECK'
+);
+PREPARE migration_stmt FROM @ddl;
+EXECUTE migration_stmt;
+DEALLOCATE PREPARE migration_stmt;
+
 ALTER TABLE paiement
-    DROP CHECK chk_paiement_montant,
     ADD COLUMN montant_cents BIGINT UNSIGNED NULL AFTER nature;
 UPDATE paiement
 SET montant_cents = CAST(ROUND(montant * 100) AS UNSIGNED);
