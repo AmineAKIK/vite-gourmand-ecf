@@ -20,8 +20,8 @@ final class OrderAvailabilityArchitectureContractTest extends TestCase
         $controller = $this->source('src/Controllers/CommandeController.php');
 
         self::assertStringContainsString('OrderAvailabilityService::checkDate(Database::getConnection(), $date)', $controller);
-        self::assertStringContainsString("'available' => $availability['available']", $controller);
-        self::assertStringContainsString("'month_count' => $availability['month_count']", $controller);
+        self::assertStringContainsString("'available' => \$availability['available']", $controller);
+        self::assertStringContainsString("'month_count' => \$availability['month_count']", $controller);
     }
 
     public function testServerCheckoutValidationUsesSameScheduleEngine(): void
@@ -55,6 +55,7 @@ final class OrderAvailabilityArchitectureContractTest extends TestCase
     {
         $source = file_get_contents($this->root . '/' . $path);
         self::assertIsString($source, 'Unable to read ' . $path);
+
         return $source;
     }
 }
