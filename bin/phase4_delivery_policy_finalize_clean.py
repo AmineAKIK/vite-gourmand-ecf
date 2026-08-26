@@ -276,3 +276,5 @@ final class DeliveryResolverTest extends TestCase
 ''')
 
 print('phase4 delivery policy clean finalizer applied')
+
+# Trigger commit after the workflow exists on the branch.
