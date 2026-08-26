@@ -191,7 +191,7 @@ class PricingService
         $stmt = Database::getConnection()->prepare(
             'SELECT taux_id FROM taux_tva WHERE categorie = ? AND par_defaut = 1 AND actif = 1 LIMIT 1'
         );
-        $stmt->execute();
+        $stmt->execute([$categorie]);
         $id = $stmt->fetchColumn();
         if ($id === false) {
             throw new RuntimeException('configuration_incomplete:tax_rate:' . $categorie);
