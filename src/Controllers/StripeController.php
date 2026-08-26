@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Controllers;
 
-use App\Config\ConfigurationIncompleteException;
 use App\Config\OperatorConfiguration;
 use App\Models\MenuModel;
 use App\Models\PaymentAttemptModel;
@@ -39,7 +38,7 @@ final class StripeController
             $gateway = PaymentGatewayFactory::forProvider($provider);
             $pending = $this->preparePersistedAttempt($pending, $gateway);
             $expiresAt = PaymentCheckoutContract::sessionExpiresAt((string) $pending['draft']['expires_at']);
-        } catch (ConfigurationIncompleteException|\InvalidArgumentException|RuntimeException $e) {
+        } catch (\InvalidArgumentException|RuntimeException $e) {
             error_log('[payment] checkout fournisseur indisponible: ' . $e->getMessage());
             flash('error', 'Le paiement en ligne n’est plus disponible. Choisissez un autre moyen de paiement.');
             redirect('/panier');
