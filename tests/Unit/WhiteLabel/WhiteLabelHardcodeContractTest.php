@@ -39,12 +39,19 @@ final class WhiteLabelHardcodeContractTest extends TestCase
             'bg-creme',
             'btn-vg',
             'VITE & GOURMAND',
+            'Vite Gourmand',
+            'VG-',
             '#8B1A2B',
             '#6B1221',
             '#D4A843',
             '#E8C46A',
             '#FDF6EC',
             'Playfair Display',
+            'hero-traiteur',
+            'preparation-traiteur-generique',
+            "25 ans d'expérience",
+            '25 ans d’expérience',
+            'réponse sous 48',
         ] as $marker) {
             yield $marker => [$marker];
         }
