@@ -45,9 +45,9 @@ final class PaymentMethodRegistryContractTest extends TestCase
         self::assertStringNotContainsString('$modePaiement === \'cb_online\'', $commande);
 
         self::assertStringContainsString('PaymentMethodRegistry::checkoutMethods()', $panierController);
-        self::assertStringNotContainsString('mode_paiement', $panierController);
         self::assertStringNotContainsString('SELECT * FROM mode_paiement', $panierView);
-        self::assertStringNotContainsString('db()->', $panierView);
+        self::assertStringNotContainsString('mode_paiement', $panierView);
+        self::assertStringNotContainsString('db()', $panierView);
         self::assertStringContainsString('$paymentMethods', $panierView);
 
         self::assertStringContainsString('PaymentMethodRegistry::requireManualCollectionMethod', $paiementController);
@@ -98,7 +98,7 @@ final class PaymentMethodRegistryContractTest extends TestCase
         $billingBlockStart = strpos($completeness, "'billing' => [");
         self::assertNotFalse($checkoutBlockStart);
         self::assertNotFalse($billingBlockStart);
-        $checkoutBlock = substr($completeness, (int)$checkoutBlockStart, (int)$billingBlockStart - (int)$checkoutBlockStart);
+        $checkoutBlock = substr($completeness, (int) $checkoutBlockStart, (int) $billingBlockStart - (int) $checkoutBlockStart);
 
         self::assertStringNotContainsString('operator.stripe.secret_key', $checkoutBlock);
         self::assertStringContainsString("'operator.stripe.secret_key'", $registry);
