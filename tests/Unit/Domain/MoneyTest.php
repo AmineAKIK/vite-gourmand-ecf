@@ -29,6 +29,7 @@ final class MoneyTest extends TestCase
         self::assertSame(333, Money::percentageBasisPoints(999, 3333));
         self::assertSame(1000, Money::percentageBasisPoints(1000, 15000));
         self::assertSame(0, Money::percentageBasisPoints(1000, 0));
+        self::assertSame(1000, Money::percentToBasisPoints('10.00'));
         self::assertSame(3333, Money::percentToBasisPoints('33.33'));
     }
 
