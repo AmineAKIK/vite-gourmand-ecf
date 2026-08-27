@@ -210,7 +210,7 @@ final class BillingFinalizedSnapshotService
             ],
             'finalization' => [
                 'at' => (string) $document['finalized_at'],
-                'by' => $document['finalized_by'] === null ? $finalizedBy ?? null : (int) $document['finalized_by'],
+                'by' => $document['finalized_by'] === null ? null : (int) $document['finalized_by'],
             ],
             'lines' => $lineSnapshots,
         ];
