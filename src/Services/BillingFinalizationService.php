@@ -42,6 +42,11 @@ final class BillingFinalizationService
             throw new RuntimeException('Finalisation du document incohérente.');
         }
 
+        // A finalized document must have an immutable canonical snapshot before it
+        // can be delivered or exposed as an accounting artifact. Snapshot failure
+        // is therefore fatal and never downgraded to an archive warning.
+        BillingFinalizedSnapshotService::capture($documentId, $finalizedBy);
+
         try {
             $archive = BillingDocumentStorage::ensureArchive($documentId);
             return [
