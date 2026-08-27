@@ -124,12 +124,13 @@ final class TermsAndConditionsService
     private function cancellationSection(): array
     {
         return [
-            'title' => 'Annulation',
+            'title' => 'Annulation et remboursement',
             'paragraphs' => [
                 sprintf(
-                    'La demande d’annulation par le client est admise jusqu’à %d heure(s) avant la prestation.',
+                    'La demande d’annulation est admise jusqu’à %d heure(s) avant la prestation. Une annulation effectuée dans ce délai ouvre droit au remboursement intégral des sommes encaissées ; au-delà, le workflow d’annulation financière est bloqué.',
                     $this->businessPolicy->customerCancellationCutoffHours(),
                 ),
+                'Un remboursement fournisseur est confirmé avant que la commande ne soit marquée annulée. Le système interdit tout remboursement supérieur aux sommes effectivement encaissées.',
             ],
             'items' => [],
         ];
