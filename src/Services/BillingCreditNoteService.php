@@ -58,7 +58,9 @@ final class BillingCreditNoteService
             $existing->execute([$sourceId]);
             $existingId = $existing->fetchColumn();
             if ($existingId !== false) {
-                $created[] = (int) $existingId;
+                $creditId = (int) $existingId;
+                BillingFinalizedSnapshotService::captureInTransaction($db, $creditId, $createdBy);
+                $created[] = $creditId;
                 continue;
             }
 
@@ -128,6 +130,7 @@ final class BillingCreditNoteService
                 ]);
             }
 
+            BillingFinalizedSnapshotService::captureInTransaction($db, $creditId, $createdBy);
             $created[] = $creditId;
         }
 
