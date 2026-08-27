@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Config\Database;
-use App\Domain\BillingDocumentPolicy;
+use App\Domain\QuotePolicy;
 use PDO;
 use RuntimeException;
 use Throwable;
@@ -19,7 +19,8 @@ final class QuoteDecisionService
         try {
             $document = self::lockDocumentById($db, $documentId);
             self::assertFinalizedQuote($document);
-            BillingDocumentPolicy::assertQuoteOpen(
+            $policy = QuotePolicy::fromConfiguration();
+            $policy->assertOpen(
                 $document['statut_devis'] ?? null,
                 $document['signature_expires_at'] ?? null,
                 $document['date_emission'] ?? null,
@@ -27,7 +28,10 @@ final class QuoteDecisionService
 
             $token = bin2hex(random_bytes(32));
             $hash = hash('sha256', $token);
-            $expiresAt = BillingDocumentPolicy::signatureExpiry((string) $document['date_emission']);
+            $expiresAt = $policy->expiry(
+                $document['signature_expires_at'] ?? null,
+                $document['date_emission'] ?? null,
+            )->format('Y-m-d H:i:s');
 
             $stmt = $db->prepare(
                 'UPDATE document_facturation
@@ -67,17 +71,18 @@ final class QuoteDecisionService
         }
 
         try {
-            if (($document['statut_devis'] ?? null) === null) {
-                BillingDocumentPolicy::assertQuoteOpen(
-                    null,
-                    $document['signature_expires_at'] ?? null,
-                    $document['date_emission'] ?? null,
-                );
-            }
+            QuotePolicy::fromConfiguration()->assertOpen(
+                $document['statut_devis'] ?? null,
+                $document['signature_expires_at'] ?? null,
+                $document['date_emission'] ?? null,
+            );
         } catch (RuntimeException) {
-            return null;
+            if (($document['statut_devis'] ?? null) !== 'accepte') {
+                return null;
+            }
         }
 
+        $document['workflow_state'] = QuotePolicy::fromConfiguration()->workflowState($document);
         return $document;
     }
 
@@ -91,10 +96,11 @@ final class QuoteDecisionService
 
             if (($document['statut_devis'] ?? null) === 'accepte') {
                 $db->commit();
+                $document['workflow_state'] = 'accepte';
                 return $document;
             }
 
-            BillingDocumentPolicy::assertQuoteOpen(
+            QuotePolicy::fromConfiguration()->assertOpen(
                 $document['statut_devis'] ?? null,
                 $document['signature_expires_at'] ?? null,
                 $document['date_emission'] ?? null,
@@ -102,12 +108,15 @@ final class QuoteDecisionService
 
             $stmt = $db->prepare(
                 "UPDATE document_facturation
-                 SET signed_at = NOW(), signed_ip = ?, statut_devis = 'accepte', date_decision_devis = NOW()
+                 SET signed_at = NOW(), signed_ip = ?, statut_devis = 'accepte', date_decision_devis = NOW(),
+                     signature_token_hash = NULL, token_signature = NULL
                  WHERE document_id = ?",
             );
             $stmt->execute([$ip, (int) $document['document_id']]);
             $db->commit();
 
+            $document['statut_devis'] = 'accepte';
+            $document['workflow_state'] = 'accepte';
             return $document;
         } catch (Throwable $e) {
             if ($db->inTransaction()) {
@@ -137,7 +146,7 @@ final class QuoteDecisionService
             if ($current !== null && $current !== '') {
                 throw new RuntimeException('La décision sur ce devis est déjà définitive.');
             }
-            BillingDocumentPolicy::assertQuoteOpen(
+            QuotePolicy::fromConfiguration()->assertOpen(
                 null,
                 $document['signature_expires_at'] ?? null,
                 $document['date_emission'] ?? null,
@@ -157,6 +166,12 @@ final class QuoteDecisionService
             }
             throw $e;
         }
+    }
+
+    /** @param array<string,mixed> $document */
+    public static function workflowState(array $document): string
+    {
+        return QuotePolicy::fromConfiguration()->workflowState($document);
     }
 
     private static function lockDocumentById(PDO $db, int $documentId): array
