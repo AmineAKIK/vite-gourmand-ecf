@@ -11,9 +11,7 @@ use RuntimeException;
 
 final class QuotePolicy
 {
-    public function __construct(private readonly BusinessPolicy $businessPolicy)
-    {
-    }
+    public function __construct(private readonly BusinessPolicy $businessPolicy) {}
 
     public static function fromConfiguration(): self
     {
