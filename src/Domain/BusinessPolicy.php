@@ -32,6 +32,20 @@ final class BusinessPolicy
         return $this->requiredInt('order.cancellation_cutoff_hours', 0);
     }
 
+    public function cancellationRefundPercent(DateTimeImmutable $serviceAt, DateTimeImmutable $now): int
+    {
+        $cutoff = $this->customerCancellationCutoffHours();
+        $latestCancellation = $serviceAt->modify('-' . $cutoff . ' hours');
+        if ($now > $latestCancellation) {
+            throw new InvalidArgumentException(sprintf(
+                'Le délai d’annulation de %d heure(s) avant la prestation est dépassé.',
+                $cutoff,
+            ));
+        }
+
+        return 100;
+    }
+
     /** @return list<string> */
     public function blackoutDates(): array
     {

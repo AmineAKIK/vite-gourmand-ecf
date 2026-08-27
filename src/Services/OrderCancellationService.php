@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Config\Configuration;
 use App\Config\Database;
+use App\Domain\BusinessPolicy;
 use App\Domain\OrderStatus;
 use App\Domain\PaymentLedgerPolicy;
+use App\Payments\PaymentGatewayFactory;
+use DateTimeImmutable;
+use DateTimeZone;
 use PDO;
 use RuntimeException;
 use Throwable;
@@ -28,22 +33,25 @@ final class OrderCancellationService
             throw new RuntimeException('Le motif et le mode de contact sont obligatoires pour une annulation.');
         }
 
-        $refunds = self::prepareRefunds($commandeId);
+        $refunds = self::prepareLedgerRefunds($commandeId);
         foreach ($refunds as $refund) {
             if ((string) $refund['status'] !== 'succeeded') {
-                self::performStripeRefund($refund);
+                self::performLedgerProviderRefund($refund);
             }
         }
+
+        self::refundAdditionalProviderAttempts($commandeId);
 
         return self::finalizeCancellation($commandeId, $motif, $modeContact, $modifiePar);
     }
 
-    private static function prepareRefunds(int $commandeId): array
+    private static function prepareLedgerRefunds(int $commandeId): array
     {
         $db = Database::getConnection();
         $db->beginTransaction();
         try {
             $order = self::lockOrder($db, $commandeId);
+            self::assertCancellationPolicy($order);
             $status = (string) $order['statut'];
             if ($status === OrderStatus::cancelled()) {
                 $db->commit();
@@ -67,7 +75,7 @@ final class OrderCancellationService
                 $paymentId = (int) $payment['paiement_id'];
                 $reference = trim((string) ($payment['reference'] ?? ''));
                 if ($reference === '') {
-                    throw new RuntimeException('Référence Stripe absente pour un paiement à rembourser.');
+                    throw new RuntimeException('Référence fournisseur absente pour un paiement à rembourser.');
                 }
                 $operationKey = PaymentLedgerPolicy::stripeRefundOperationKey($paymentId);
                 $stmt = $db->prepare(
@@ -103,74 +111,151 @@ final class OrderCancellationService
         }
     }
 
-    private static function performStripeRefund(array $attempt): void
+    private static function performLedgerProviderRefund(array $attempt): void
     {
-        if (!defined('STRIPE_SECRET_KEY') || !STRIPE_SECRET_KEY || str_starts_with(STRIPE_SECRET_KEY, 'sk_test_REMPLACER')) {
-            throw new RuntimeException('Stripe n’est pas configuré : remboursement impossible.');
+        $provider = trim((string) ($attempt['provider'] ?? ''));
+        if ($provider === '') {
+            throw new RuntimeException('Fournisseur de remboursement absent.');
         }
-
-        \Stripe\Stripe::setApiKey(STRIPE_SECRET_KEY);
 
         try {
-            if (!empty($attempt['provider_refund_id'])) {
-                $refund = \Stripe\Refund::retrieve((string) $attempt['provider_refund_id']);
-            } else {
-                $paymentReference = (string) $attempt['provider_payment_reference'];
-                if (str_starts_with($paymentReference, 'cs_')) {
-                    $session = \Stripe\Checkout\Session::retrieve($paymentReference);
-                    $paymentReference = (string) ($session->payment_intent ?? '');
-                }
-                if (!str_starts_with($paymentReference, 'pi_')) {
-                    throw new RuntimeException('Référence de PaymentIntent Stripe introuvable.');
-                }
-
-                $refund = \Stripe\Refund::create([
-                    'payment_intent' => $paymentReference,
-                    'amount' => (int) $attempt['amount_cents'],
-                    'metadata' => [
-                        'commande_id' => (string) $attempt['commande_id'],
-                        'paiement_id' => (string) $attempt['paiement_id'],
-                    ],
-                ], [
-                    'idempotency_key' => (string) $attempt['operation_key'],
-                ]);
-            }
+            $refund = PaymentGatewayFactory::refundForProvider($provider)->refund(
+                (string) $attempt['provider_payment_reference'],
+                (int) $attempt['amount_cents'],
+                (string) $attempt['operation_key'],
+                [
+                    'commande_id' => (string) $attempt['commande_id'],
+                    'paiement_id' => (string) $attempt['paiement_id'],
+                ],
+            );
         } catch (Throwable $e) {
-            self::updateRefundAttempt(
-                (int) $attempt['refund_attempt_id'],
-                'failed',
-                isset($refund) ? (string) $refund->id : null,
-                $e->getMessage(),
-            );
-            throw new RuntimeException('Le remboursement Stripe a échoué. La commande n’a pas été annulée.', 0, $e);
-        }
-
-        $providerStatus = (string) ($refund->status ?? '');
-        $refundId = (string) $refund->id;
-        if ($providerStatus === 'succeeded') {
-            self::updateRefundAttempt((int) $attempt['refund_attempt_id'], 'succeeded', $refundId, null);
-            return;
-        }
-
-        if (in_array($providerStatus, ['failed', 'canceled'], true)) {
-            self::updateRefundAttempt(
-                (int) $attempt['refund_attempt_id'],
-                'failed',
-                $refundId,
-                'Statut Stripe: ' . $providerStatus,
-            );
-            throw new RuntimeException('Le remboursement Stripe a échoué. La commande n’a pas été annulée.');
+            self::updateRefundAttempt((int) $attempt['refund_attempt_id'], 'failed', null, $e->getMessage());
+            throw new RuntimeException('Le remboursement fournisseur a échoué. La commande n’a pas été annulée.', 0, $e);
         }
 
         self::updateRefundAttempt(
             (int) $attempt['refund_attempt_id'],
-            'pending',
-            $refundId,
-            'Statut Stripe: ' . ($providerStatus !== '' ? $providerStatus : 'pending'),
+            $refund->status,
+            $refund->id,
+            $refund->status === 'succeeded' ? null : 'Statut fournisseur: ' . $refund->status,
         );
-        throw new RuntimeException(
-            'Le remboursement Stripe est encore en cours. Réessayez l’annulation après confirmation du remboursement.',
+
+        if ($refund->status !== 'succeeded') {
+            throw new RuntimeException(
+                $refund->status === 'failed'
+                    ? 'Le remboursement fournisseur a échoué. La commande n’a pas été annulée.'
+                    : 'Le remboursement fournisseur est encore en cours. Réessayez après confirmation.',
+            );
+        }
+    }
+
+    private static function refundAdditionalProviderAttempts(int $commandeId): void
+    {
+        $db = Database::getConnection();
+        $db->beginTransaction();
+        try {
+            $order = self::lockOrder($db, $commandeId);
+            self::assertCancellationPolicy($order);
+
+            $stmt = $db->prepare(
+                "SELECT pa.*
+                 FROM payment_attempt pa
+                 JOIN order_draft d ON d.draft_id = pa.draft_id
+                 WHERE d.commande_id = ?
+                   AND pa.status = 'paid'
+                   AND pa.provider_payment_intent_id IS NOT NULL
+                   AND NOT EXISTS (
+                       SELECT 1
+                       FROM paiement p
+                       WHERE p.commande_id = d.commande_id
+                         AND p.nature = 'encaissement'
+                         AND p.reference = pa.provider_payment_intent_id
+                   )
+                 ORDER BY pa.attempt_id ASC
+                 FOR UPDATE",
+            );
+            $stmt->execute([$commandeId]);
+            $attempts = $stmt->fetchAll();
+            $db->commit();
+        } catch (Throwable $e) {
+            if ($db->inTransaction()) {
+                $db->rollBack();
+            }
+            throw $e;
+        }
+
+        foreach ($attempts as $attempt) {
+            $provider = trim((string) ($attempt['provider'] ?? ''));
+            $paymentReference = trim((string) ($attempt['provider_payment_intent_id'] ?? ''));
+            if ($provider === '' || $paymentReference === '') {
+                throw new RuntimeException('Tentative fournisseur additionnelle incohérente.');
+            }
+
+            try {
+                $refund = PaymentGatewayFactory::refundForProvider($provider)->refund(
+                    $paymentReference,
+                    (int) $attempt['expected_amount_cents'],
+                    sprintf('provider-attempt-refund:%s:%d', $provider, (int) $attempt['attempt_id']),
+                    [
+                        'commande_id' => (string) $commandeId,
+                        'attempt_id' => (string) $attempt['attempt_id'],
+                    ],
+                );
+            } catch (Throwable $e) {
+                self::recordAdditionalAttemptRefund(
+                    (int) $attempt['attempt_id'],
+                    'paid',
+                    null,
+                    'Remboursement fournisseur additionnel échoué : ' . $e->getMessage(),
+                );
+                throw new RuntimeException(
+                    'Un encaissement fournisseur additionnel n’a pas pu être remboursé. Annulation bloquée.',
+                    0,
+                    $e,
+                );
+            }
+
+            if ($refund->status !== 'succeeded') {
+                self::recordAdditionalAttemptRefund(
+                    (int) $attempt['attempt_id'],
+                    'paid',
+                    $refund->id,
+                    'Remboursement additionnel en statut ' . $refund->status . '.',
+                );
+                throw new RuntimeException('Un remboursement fournisseur additionnel n’est pas confirmé. Annulation bloquée.');
+            }
+
+            self::recordAdditionalAttemptRefund(
+                (int) $attempt['attempt_id'],
+                'refunded',
+                $refund->id,
+                null,
+            );
+        }
+    }
+
+    private static function recordAdditionalAttemptRefund(
+        int $attemptId,
+        string $status,
+        ?string $providerRefundId,
+        ?string $lastError,
+    ): void {
+        $db = Database::getConnection();
+        $stmt = $db->prepare(
+            'UPDATE payment_attempt
+             SET status = ?,
+                 provider_refund_id = COALESCE(?, provider_refund_id),
+                 refunded_at = CASE WHEN ? = \'refunded\' THEN NOW() ELSE refunded_at END,
+                 last_error = ?
+             WHERE attempt_id = ?',
         );
+        $stmt->execute([
+            $status,
+            $providerRefundId,
+            $status,
+            $lastError !== null ? substr($lastError, 0, 500) : null,
+            $attemptId,
+        ]);
     }
 
     private static function updateRefundAttempt(
@@ -206,6 +291,7 @@ final class OrderCancellationService
         $db->beginTransaction();
         try {
             $order = self::lockOrder($db, $commandeId);
+            self::assertCancellationPolicy($order);
             $oldStatus = (string) $order['statut'];
             if ($oldStatus === OrderStatus::cancelled()) {
                 $db->commit();
@@ -237,9 +323,28 @@ final class OrderCancellationService
                 $attempt->execute([(int) $payment['paiement_id']]);
                 $refundId = $attempt->fetchColumn();
                 if ($refundId === false || (string) $refundId === '') {
-                    throw new RuntimeException('Remboursement Stripe non confirmé : annulation bloquée.');
+                    throw new RuntimeException('Remboursement fournisseur non confirmé : annulation bloquée.');
                 }
                 PaymentLedgerService::appendStripeRefund($db, $payment, (string) $refundId);
+            }
+
+            $unreconciled = $db->prepare(
+                "SELECT COUNT(*)
+                 FROM payment_attempt pa
+                 JOIN order_draft d ON d.draft_id = pa.draft_id
+                 WHERE d.commande_id = ?
+                   AND pa.status = 'paid'
+                   AND pa.provider_payment_intent_id IS NOT NULL
+                   AND NOT EXISTS (
+                       SELECT 1 FROM paiement p
+                       WHERE p.commande_id = d.commande_id
+                         AND p.nature = 'encaissement'
+                         AND p.reference = pa.provider_payment_intent_id
+                   )",
+            );
+            $unreconciled->execute([$commandeId]);
+            if ((int) $unreconciled->fetchColumn() !== 0) {
+                throw new RuntimeException('Un encaissement fournisseur additionnel reste non remboursé. Annulation bloquée.');
             }
 
             if (PaymentLedgerService::netCollectedCents($db, $commandeId) !== 0) {
@@ -294,6 +399,37 @@ final class OrderCancellationService
         }
     }
 
+    private static function assertCancellationPolicy(array $order): void
+    {
+        $date = trim((string) ($order['date_prestation'] ?? ''));
+        $time = trim((string) ($order['heure_livraison'] ?? ''));
+        if ($date === '') {
+            throw new RuntimeException('Date de prestation absente : annulation financière bloquée.');
+        }
+        if ($time === '') {
+            $time = '00:00:00';
+        } elseif (preg_match('/^\d{2}:\d{2}$/', $time) === 1) {
+            $time .= ':00';
+        }
+
+        $timezoneName = (string) (Configuration::get('market.timezone') ?? 'Europe/Paris');
+        $timezone = new DateTimeZone($timezoneName);
+        $serviceAt = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $date . ' ' . $time, $timezone);
+        if (!$serviceAt) {
+            throw new RuntimeException('Date de prestation invalide : annulation financière bloquée.');
+        }
+
+        $policy = new BusinessPolicy(static fn(string $key): mixed => Configuration::get($key));
+        try {
+            $refundPercent = $policy->cancellationRefundPercent($serviceAt, new DateTimeImmutable('now', $timezone));
+        } catch (\InvalidArgumentException $e) {
+            throw new RuntimeException($e->getMessage(), 0, $e);
+        }
+        if ($refundPercent !== 100) {
+            throw new RuntimeException('La politique V1 exige un remboursement intégral pour toute annulation autorisée.');
+        }
+    }
+
     private static function restoreMenuStockOnce(PDO $db, int $commandeId): void
     {
         $insert = $db->prepare(
@@ -324,7 +460,10 @@ final class OrderCancellationService
 
     private static function lockOrder(PDO $db, int $commandeId): array
     {
-        $stmt = $db->prepare('SELECT commande_id, statut FROM commande WHERE commande_id = ? FOR UPDATE');
+        $stmt = $db->prepare(
+            'SELECT commande_id, statut, date_prestation, heure_livraison
+             FROM commande WHERE commande_id = ? FOR UPDATE',
+        );
         $stmt->execute([$commandeId]);
         $order = $stmt->fetch();
         if (!$order) {

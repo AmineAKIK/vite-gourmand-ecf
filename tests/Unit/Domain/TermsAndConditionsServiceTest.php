@@ -86,7 +86,9 @@ final class TermsAndConditionsServiceTest extends TestCase
         self::assertStringContainsString('48 heure(s)', $sections['Commande et devis']['paragraphs'][0]);
         self::assertStringContainsString('180 jour(s)', $sections['Commande et devis']['paragraphs'][0]);
         self::assertStringContainsString('21 jour(s)', $sections['Commande et devis']['paragraphs'][1]);
-        self::assertStringContainsString('72 heure(s)', $sections['Annulation']['paragraphs'][0]);
+        self::assertStringContainsString('72 heure(s)', $sections['Annulation et remboursement']['paragraphs'][0]);
+        self::assertStringContainsString('remboursement intégral', $sections['Annulation et remboursement']['paragraphs'][0]);
+        self::assertStringContainsString('interdit tout remboursement supérieur', $sections['Annulation et remboursement']['paragraphs'][1]);
         self::assertStringContainsString('5.00 € + 1.00 €/km', $sections['Livraison']['paragraphs'][0]);
         self::assertStringContainsString('30 km', $sections['Livraison']['paragraphs'][0]);
         self::assertStringContainsString('5 jour(s)', $sections['Matériel confié']['paragraphs'][0]);

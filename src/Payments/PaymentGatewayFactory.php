@@ -29,6 +29,14 @@ final class PaymentGatewayFactory
         };
     }
 
+    public static function refundForProvider(string $provider): PaymentRefundGateway
+    {
+        return match (self::normalize($provider)) {
+            'stripe' => StripePaymentRefundGateway::fromConfiguration(),
+            default => throw new InvalidArgumentException('Remboursement fournisseur non supporté.'),
+        };
+    }
+
     public static function checkoutPath(string $provider): string
     {
         return match (self::normalize($provider)) {
