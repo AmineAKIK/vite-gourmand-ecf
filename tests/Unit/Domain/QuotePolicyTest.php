@@ -72,9 +72,9 @@ final class QuotePolicyTest extends TestCase
         $now = new DateTimeImmutable('2026-08-27 12:00:00');
 
         self::assertSame('finalise', $policy->workflowState($base, $now));
-        self::assertSame('envoye', $policy->workflowState($base + ['sent_at' => '2026-08-26 10:00:00'], $now));
-        self::assertSame('accepte', $policy->workflowState($base + ['statut_devis' => 'accepte'], $now));
-        self::assertSame('refuse', $policy->workflowState($base + ['statut_devis' => 'refuse'], $now));
+        self::assertSame('envoye', $policy->workflowState(array_replace($base, ['sent_at' => '2026-08-26 10:00:00']), $now));
+        self::assertSame('accepte', $policy->workflowState(array_replace($base, ['statut_devis' => 'accepte']), $now));
+        self::assertSame('refuse', $policy->workflowState(array_replace($base, ['statut_devis' => 'refuse']), $now));
         self::assertSame('expire', $policy->workflowState($base, new DateTimeImmutable('2026-09-08 00:00:00')));
         self::assertSame('brouillon', $policy->workflowState([
             'type_document' => 'devis',
