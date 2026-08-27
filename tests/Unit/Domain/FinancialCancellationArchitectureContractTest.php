@@ -37,7 +37,10 @@ final class FinancialCancellationArchitectureContractTest extends TestCase
 
         self::assertStringContainsString('provider_refund_id', $sql);
         self::assertStringContainsString('refunded_at', $sql);
-        self::assertStringContainsString('ADD COLUMN IF NOT EXISTS', $sql);
+        self::assertStringContainsString('information_schema.COLUMNS', $sql);
+        self::assertStringContainsString('PREPARE add_provider_refund_id_stmt', $sql);
+        self::assertStringContainsString('PREPARE add_refunded_at_stmt', $sql);
+        self::assertStringNotContainsString('ADD COLUMN IF NOT EXISTS', $sql);
         self::assertStringNotContainsString('DROP TABLE', strtoupper($sql));
         self::assertStringNotContainsString('TRUNCATE', strtoupper($sql));
         self::assertStringNotContainsString('DELETE FROM', strtoupper($sql));
