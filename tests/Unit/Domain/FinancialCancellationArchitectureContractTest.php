@@ -28,7 +28,7 @@ final class FinancialCancellationArchitectureContractTest extends TestCase
 
         self::assertStringContainsString('implements PaymentRefundGateway', $source);
         self::assertStringContainsString("OperatorConfiguration::string('operator.stripe.secret_key')", $source);
-        self::assertStringContainsString("'idempotency_key' => $idempotencyKey", $source);
+        self::assertStringContainsString("'idempotency_key' => \$idempotencyKey", $source);
     }
 
     public function testMigrationPersistsAdditionalProviderRefundOutcomeWithoutDeletingData(): void
