@@ -36,6 +36,21 @@ final class BusinessPolicyTest extends TestCase
         self::assertSame([7, 2], $policy->reminderDaysBefore());
     }
 
+    public function testCancellationRefundIsFullBeforeCutoffAndFailsAfterCutoff(): void
+    {
+        $values = ['order.cancellation_cutoff_hours' => 72];
+        $policy = new BusinessPolicy(static fn(string $key): mixed => $values[$key] ?? null);
+        $serviceAt = new DateTimeImmutable('2026-09-10 12:00:00');
+
+        self::assertSame(
+            100,
+            $policy->cancellationRefundPercent($serviceAt, new DateTimeImmutable('2026-09-07 12:00:00')),
+        );
+
+        $this->expectException(InvalidArgumentException::class);
+        $policy->cancellationRefundPercent($serviceAt, new DateTimeImmutable('2026-09-07 12:00:01'));
+    }
+
     public function testMissingCommercialRuleFailsClosed(): void
     {
         $policy = new BusinessPolicy(static fn(string $key): mixed => null);
