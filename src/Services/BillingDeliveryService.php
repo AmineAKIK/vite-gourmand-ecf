@@ -41,7 +41,7 @@ final class BillingDeliveryService
         ];
     }
 
-    public static function sendSignatureRequest(int $documentId): void
+    public static function sendSignatureRequest(int $documentId, ?int $sentBy = null): void
     {
         $document = FacturationModel::getById($documentId);
         if (!$document) {
@@ -52,5 +52,6 @@ final class BillingDeliveryService
         $token = QuoteDecisionService::createSignatureToken($documentId);
         $signatureUrl = rtrim(BASE_URL, '/') . '/devis/accepter?token=' . urlencode($token);
         MailService::sendDevisSignatureRequest($document, $signatureUrl);
+        FacturationModel::markSent($documentId, $sentBy);
     }
 }
